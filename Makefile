@@ -9,6 +9,8 @@ IMAGE ?= golang
 ARCH=amd64
 OS=darwin
 
+VERSION=0.1.0
+
 .PHONY: setup fmt vendored
 
 setup:
@@ -34,3 +36,8 @@ docker:
 push:
 	$$(aws ecr get-login --region us-west-2)
 	docker push $(REPOSITORY):$(TAG)
+
+release:
+	git tag $(VERSION)
+	GOOS=linux GOARCH=amd64 go build -o skuid_linux_amd64
+	GOOS=darwin GOARCH=amd64 go build -o skuid_darwin_amd64
