@@ -86,3 +86,8 @@ $ GOOS=linux GOARCH=amd64 go build
 # or
 $ GOOS=linux GOARCH=amd64 make build #requires docker
 ```
+
+## Future
+
+* Support for Skuid Platform
+* Support for other Skuid objects (Data Source, Theme, etc.)
