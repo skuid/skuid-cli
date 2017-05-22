@@ -12,8 +12,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var inputDir string
-var desiredModule string
 var f string
 
 // pushCmd represents the push command
@@ -23,7 +21,7 @@ var pushCmd = &cobra.Command{
 	Long:  "Push Skuid Pages from a directory to Skuid.",
 	Run: func(cmd *cobra.Command, args []string) {
 
-		pageDefinitions, _ := types.ReadFiles(inputDir, desiredModule, f)
+		pageDefinitions, _ := types.ReadFiles(targetDir, module, f)
 
 		pagePost := &types.PagePost{Changes: pageDefinitions}
 
@@ -71,7 +69,5 @@ var pushCmd = &cobra.Command{
 
 func init() {
 	RootCmd.AddCommand(pushCmd)
-	pushCmd.Flags().StringVarP(&inputDir, "dir", "d", "skuidpages", "Directory where Skuid Pages live.")
-	pushCmd.Flags().StringVarP(&desiredModule, "module", "m", "", "Module to push. (Only supports single module)")
-	pushCmd.Flags().StringVarP(&f, "file", "f", "", "Skuid Page to Push. Supports file globs.")
+	pushCmd.Flags().StringVarP(&f, "file", "f", "", "Skuid Page file(s) to push. Supports file globs.")
 }

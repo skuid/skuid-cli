@@ -9,12 +9,15 @@ import (
 	"github.com/spf13/viper"
 )
 
-var username string
-var password string
 var appClientID string
 var appClientSecret string
 var apiVersion string
 var host string
+var module string
+var password string
+var targetDir string
+var username string
+var verbose bool
 
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
@@ -35,14 +38,17 @@ func Execute() {
 func init() {
 	cobra.OnInitialize(initConfig)
 
-	RootCmd.PersistentFlags().StringVar(&username, "username", "", "Skuid Platform / Salesforce Username")
-	RootCmd.PersistentFlags().StringVar(&password, "password", "", "Skuid Platform / Salesforce Password")
 	RootCmd.PersistentFlags().StringVar(&appClientID, "client-id", "", "OAuth Client ID")
 	RootCmd.PersistentFlags().StringVar(&appClientSecret, "client-secret", "", "OAuth Client Secret")
 	RootCmd.PersistentFlags().StringVar(&apiVersion, "api-version", "", "API Version")
 	RootCmd.PersistentFlags().StringVar(&host, "host", "", 
 		"API Host base URL, e.g. my-site.skuidsite.com for Skuid Platform or my-domain.my.salesforce.com for Salesforce")
-
+	RootCmd.PersistentFlags().StringVarP(&module, "module", "m", "", "Module name(s), separated by a comma.")
+	RootCmd.PersistentFlags().StringVarP(&password, "password", "p", "", "Skuid Platform / Salesforce Password")
+	RootCmd.PersistentFlags().StringVarP(&targetDir, "dir", "d", "", "Input/output directory.")
+	RootCmd.PersistentFlags().StringVarP(&username, "username", "u", "", "Skuid Platform / Salesforce Username")
+	RootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Display all possible logging info")
+	
 	if username == "" {
 		username = os.Getenv("SKUID_UN")
 	}
