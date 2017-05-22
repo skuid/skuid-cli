@@ -4,6 +4,8 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"fmt"
+
 	"net/url"
 
 	"encoding/json"
@@ -33,10 +35,18 @@ type RestApi struct {
 
 // Logs a given user into a target Skuid Platform site and returns a RestApi connection
 // that can be used to make GET / POST requests
-func Login(host string, username string, password string, apiVersion string) (api *RestApi, err error) {
+func Login(host string, username string, password string, apiVersion string, verboseLogs bool) (api *RestApi, err error) {
 
 	if apiVersion == "" {
 		apiVersion = "1"
+	}
+
+	if verboseLogs {
+		fmt.Println("Logging in to Skuid Platform... ")
+		fmt.Println("Host: " + host)
+		fmt.Println("Username: " + username)
+		fmt.Println("Password: " + password)
+		fmt.Println("API Version: " + apiVersion)
 	}
 
 	conn := RestConnection{
@@ -52,6 +62,10 @@ func Login(host string, username string, password string, apiVersion string) (ap
 		api = &RestApi{
 			Connection: &conn,
 		}
+	}
+
+	if verboseLogs {
+		fmt.Println("Login successful! Access Token: " + conn.AccessToken)
 	}
 
 	return api, err

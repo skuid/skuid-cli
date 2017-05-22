@@ -27,6 +27,7 @@ var retrieveCmd = &cobra.Command{
 			username,
 			password,
 			apiVersion,
+			verbose,
 		)
 
 		if err != nil {
