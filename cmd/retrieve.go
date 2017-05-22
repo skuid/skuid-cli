@@ -47,7 +47,7 @@ var retrieveCmd = &cobra.Command{
 		fmt.Println("Retrieving metadata...")
 
 		//query the API for all Skuid metadata of every type
-		result, err := api.Connection.Post("/metadata/retrieve", retrieveRequest, apiVersion)
+		result, err := api.Connection.Post("/metadata/retrieve", retrieveRequest)
 
 		fmt.Println("Successfully retrieved metadata!")
 

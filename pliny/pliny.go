@@ -94,19 +94,19 @@ func (conn *RestConnection) Refresh() (err error) {
 }
 
 // Makes a GET request
-func (conn *RestConnection) Get(url string, query url.Values, apiVersion string) (result []byte, err error) {
-	return conn.MakeRequest("GET", url, apiVersion, nil, query)
+func (conn *RestConnection) Get(url string, query url.Values) (result []byte, err error) {
+	return conn.MakeRequest("GET", url, nil, query)
 }
 
 // Makes a POST request
-func (conn *RestConnection) Post(url string, payload interface{}, apiVersion string) (result []byte, err error) {
-	return conn.MakeRequest("POST", url, apiVersion, payload, nil)
+func (conn *RestConnection) Post(url string, payload interface{}) (result []byte, err error) {
+	return conn.MakeRequest("POST", url, payload, nil)
 }
 
 // Executes an HTTP request
-func (conn *RestConnection) MakeRequest(method string, url string, apiVersion string, payload interface{}, params url.Values) (result []byte, err error) {
+func (conn *RestConnection) MakeRequest(method string, url string, payload interface{}, params url.Values) (result []byte, err error) {
 
-	endpoint := conn.Host + "/api/v" + apiVersion + url
+	endpoint := conn.Host + "/api/v" + conn.APIVersion + url
 
 	if params != nil && len(params) != 0 {
 		endpoint += "?" + params.Encode()
