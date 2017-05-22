@@ -36,12 +36,10 @@ func Login(consumerKey string, consumerSecret string, instanceUrl string, userna
 
 	err = conn.Refresh()
 
-	if err != nil {
-		return api, err
-	}
-
-	api = &RestApi{
-		Connection: &conn,
+	if err == nil {
+		api = &RestApi{
+			Connection: &conn,
+		}
 	}
 
 	return api, err
