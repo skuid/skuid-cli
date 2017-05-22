@@ -35,13 +35,21 @@ var retrieveCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		
 		retrieveMetadata := &types.RetrieveMetadata{}
-		retrieveMetadata.Apps = make(map[string]string)
-		retrieveMetadata.DataSources = make(map[string]string)
-		retrieveMetadata.Pages = make(map[string]string)
-		retrieveMetadata.Profiles = make(map[string]string)
-		retrieveMetadata.Themes = make(map[string]string)
+
+		fetchApps := make(map[string]string)
+		fetchDataSources := make(map[string]string)
+		fetchPages := make(map[string]string)
+		fetchProfiles := make(map[string]string)
+		fetchThemes := make(map[string]string)
+
+		// TODO: parse file globals, only pull requested metadata rather than all of it
+
+		retrieveMetadata.Apps = fetchApps
+		retrieveMetadata.DataSources = fetchDataSources
+		retrieveMetadata.Pages = fetchPages
+		retrieveMetadata.Profiles = fetchProfiles
+		retrieveMetadata.Themes = fetchThemes
 
 		retrieveRequest := &types.RetrieveRequest{}
 
