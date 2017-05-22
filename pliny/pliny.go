@@ -35,6 +35,10 @@ type RestApi struct {
 // that can be used to make GET / POST requests
 func Login(host string, username string, password string, apiVersion string) (api *RestApi, err error) {
 
+	if apiVersion == "" {
+		apiVersion = "1"
+	}
+
 	conn := RestConnection{
 		Host:			host,
 		Username:		username,

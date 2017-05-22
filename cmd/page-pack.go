@@ -20,13 +20,8 @@ var outputFile string
 // page-packCmd represents the page-pack command
 var pagePackCmd = &cobra.Command{
 	Use:   "page-pack",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "Retrieve a collection of Skuid Pages as a Page Pack.",
+	Long: "Retrieves all Pages in a given Module and returns in a Page Pack, which is a JSON-serialized array of Page objects.",
 	Run: func(cmd *cobra.Command, args []string) {
 		//login to the Force API
 		api, err := force.Login(
@@ -73,5 +68,5 @@ to quickly create a Cobra application.`,
 func init() {
 	RootCmd.AddCommand(pagePackCmd)
 	
-	pagePackCmd.Flags().StringVarP(&outputFile, "output", "o", "", "Filename of output file")
+	pagePackCmd.Flags().StringVarP(&outputFile, "output", "o", "", "Filename of output Page Pack file")
 }

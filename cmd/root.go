@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -63,6 +62,10 @@ func init() {
 
 	if appClientSecret == "" {
 		appClientSecret = os.Getenv("SKUID_CLIENT_SECRET")
+	}
+
+	if host == "" {
+		host = os.Getenv("SKUID_HOST")
 	}
 
 }

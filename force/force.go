@@ -25,6 +25,10 @@ type RestApi struct {
 // Login is logging-in the User to the Salesforce organization
 func Login(consumerKey string, consumerSecret string, instanceUrl string, username string, password string, apiVersion string) (api *RestApi, err error) {
 
+	if apiVersion == "" {
+		apiVersion = "39.0"
+	}
+
 	conn := RestConnection{force.Connection{
 		ConsumerKey:    consumerKey,
 		ConsumerSecret: consumerSecret,
