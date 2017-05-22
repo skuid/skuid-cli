@@ -114,12 +114,15 @@ func unzip(sourceFileLocation, targetLocation string) error {
 			// Remove the actual file name from the slice, 
 			// i.e. pages/MyAwesomePage.xml ---> pages
 			pathParts = pathParts[:len(pathParts)-1]
-			// and then make dirs for all paths up to that point, i.e. pages
-			intermediatePaths := filepath.Join(targetLocation, strings.Join(pathParts[:],","))
-			if verbose {
-				fmt.Println("Creating intermediate directories: " + intermediatePaths + "...")
+			// and then make dirs for all paths up to that point, i.e. pages, apps
+			intermediatePath := filepath.Join(targetLocation, strings.Join(pathParts[:],","))
+			//if the desired directory isn't there, create it
+			if _, err := os.Stat(intermediatePath); err != nil {
+				if verbose {
+					fmt.Println("Creating intermediate directory: " + intermediatePath)
+				}
+				os.MkdirAll(intermediatePath, 0755)
 			}
-			os.MkdirAll(intermediatePaths, 0755)
 		}
 
 		if file.FileInfo().IsDir() {
@@ -128,7 +131,7 @@ func unzip(sourceFileLocation, targetLocation string) error {
 		}
 
 		if verbose {
-			fmt.Println("Creating file: " + file.Name + "...")
+			fmt.Println("Creating file: " + file.Name)
 		}
 
 		fileReader, err := file.Open()
