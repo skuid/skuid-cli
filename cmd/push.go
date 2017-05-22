@@ -32,9 +32,9 @@ var pushCmd = &cobra.Command{
 		api, err := force.Login(
 			appClientID,
 			appClientSecret,
-			sfdcHost,
-			sfdcUsername,
-			sfdcPassword,
+			host,
+			username,
+			password,
 			apiVersion,
 		)
 

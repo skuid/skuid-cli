@@ -32,9 +32,9 @@ to quickly create a Cobra application.`,
 		api, err := force.Login(
 			appClientID,
 			appClientSecret,
-			sfdcHost,
-			sfdcUsername,
-			sfdcPassword,
+			host,
+			username,
+			password,
 			apiVersion,
 		)
 

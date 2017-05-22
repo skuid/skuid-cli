@@ -3,23 +3,24 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
-var sfdcUsername string
-var sfdcPassword string
+var username string
+var password string
 var appClientID string
 var appClientSecret string
 var apiVersion string
-var sfdcHost string
+var host string
 
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
 	Use:   "skuid",
-	Short: "A CLI for interating with Skuid Pages",
-	Long:  `Push and Pull Skuid pages to and from Skuid running on the Salesforce Platform`,
+	Short: "A CLI for interating with Skuid APIs",
+	Long:  `Deploy and retrieve Skuid metadata to / from Skuid Platform or Skuid on Salesforce`,
 }
 
 // Execute adds all child commands to the root command sets flags appropriately.
@@ -34,19 +35,20 @@ func Execute() {
 func init() {
 	cobra.OnInitialize(initConfig)
 
-	RootCmd.PersistentFlags().StringVar(&sfdcUsername, "username", "", "Salesforce Username")
-	RootCmd.PersistentFlags().StringVar(&sfdcPassword, "password", "", "Salesforce Password")
-	RootCmd.PersistentFlags().StringVar(&appClientID, "client-id", "", "Connected App Client ID")
-	RootCmd.PersistentFlags().StringVar(&appClientSecret, "client-secret", "", "Connected App Client Secret")
-	RootCmd.PersistentFlags().StringVar(&apiVersion, "api-version", "36.0", "Salesforce API Version")
-	RootCmd.PersistentFlags().StringVar(&sfdcHost, "host", "https://login.salesforce.com", "Salesforce Login Url")
+	RootCmd.PersistentFlags().StringVar(&username, "username", "", "Skuid Platform / Salesforce Username")
+	RootCmd.PersistentFlags().StringVar(&password, "password", "", "Skuid Platform / Salesforce Password")
+	RootCmd.PersistentFlags().StringVar(&appClientID, "client-id", "", "OAuth Client ID")
+	RootCmd.PersistentFlags().StringVar(&appClientSecret, "client-secret", "", "OAuth Client Secret")
+	RootCmd.PersistentFlags().StringVar(&apiVersion, "api-version", "", "API Version")
+	RootCmd.PersistentFlags().StringVar(&host, "host", "", 
+		"API Host base URL, e.g. my-site.skuidsite.com for Skuid Platform or my-domain.my.salesforce.com for Salesforce")
 
-	if sfdcUsername == "" {
-		sfdcUsername = os.Getenv("SKUID_UN")
+	if username == "" {
+		username = os.Getenv("SKUID_UN")
 	}
 
-	if sfdcPassword == "" {
-		sfdcPassword = os.Getenv("SKUID_PW")
+	if password == "" {
+		password = os.Getenv("SKUID_PW")
 	}
 
 	if appClientID == "" {
