@@ -13,7 +13,7 @@ import (
 	"path/filepath"
 )
 
-type PullResponse struct {
+type PullResponse struct { 
 	Name               string  `json:"name"`
 	UniqueID           string  `json:"uniqueId"`
 	Type               string  `json:"type"`
@@ -34,6 +34,18 @@ type PagePostResult struct {
 	OrgName string   `json:"orgName"`
 	Success bool     `json:"success"`
 	Errors  []string `json:"upsertErrors,omitempty"`
+}
+
+type RetrieveRequest struct {
+	Metadata        RetrieveMetadata `json:metadata`
+}
+
+type RetrieveMetadata struct {
+	Apps            map[string]string `json:"apps,omitempty"`
+    DataSources     map[string]string `json:"dataSources,omitempty"`
+    Pages           map[string]string `json:"pages,omitempty"`
+    Profiles        map[string]string `json:"profiles,omitempty"`
+    Themes          map[string]string `json:"themes,omitempty"`
 }
 
 func (page *PullResponse) FileBasename() string {
