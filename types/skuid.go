@@ -37,15 +37,7 @@ type PagePostResult struct {
 }
 
 type RetrieveRequest struct {
-	Metadata        RetrieveMetadata `json:metadata`
-}
-
-type RetrieveMetadata struct {
-	Apps            map[string]string `json:"apps,omitempty"`
-    DataSources     map[string]string `json:"dataSources,omitempty"`
-    Pages           map[string]string `json:"pages,omitempty"`
-    Profiles        map[string]string `json:"profiles,omitempty"`
-    Themes          map[string]string `json:"themes,omitempty"`
+	Metadata        map[string]map[string]string `json:metadata`
 }
 
 func (page *PullResponse) FileBasename() string {

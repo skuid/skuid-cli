@@ -21,6 +21,11 @@ var retrieveCmd = &cobra.Command{
 	Long: "Retrieve Skuid metadata from a Skuid Platform Site and output it into a local directory.",
 	Run: func(cmd *cobra.Command, args []string) {
 
+		if verbose {
+			fmt.Println("args")
+			fmt.Println(args)
+		}
+
 		//login to a Skuid Platform Site
 		api, err := pliny.Login(
 			host,
@@ -35,23 +40,95 @@ var retrieveCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		retrieveMetadata := &types.RetrieveMetadata{}
+		retrieveMetadata := make(map[string]map[string]string)
 
-		fetchApps := make(map[string]string)
-		fetchDataSources := make(map[string]string)
-		fetchPages := make(map[string]string)
-		fetchProfiles := make(map[string]string)
-		fetchThemes := make(map[string]string)
+		allTypes := []string{
+			"apps",
+			"authproviders",
+			"datasources",
+			"pages",
+			"profiles",
+			"themes",
+		}
 
-		// TODO: parse file globals, only pull requested metadata rather than all of it
+		camelCasings := make(map[string]string)
 
-		retrieveMetadata.Apps = fetchApps
-		retrieveMetadata.DataSources = fetchDataSources
-		retrieveMetadata.Pages = fetchPages
-		retrieveMetadata.Profiles = fetchProfiles
-		retrieveMetadata.Themes = fetchThemes
+		// Put in default camel casings into the map
+		for _, typeName := range allTypes {
+			camelCasings[typeName] = typeName
+		}
+		// Add in camel-casing exceptions
+		camelCasings.authproviders = "authProviders"
+		camelCasings.datasources = "dataSources"
 
+		fetchAll := false
+
+		fetchAllByType := make(map[string]bool)
+		fetchByType := make(map[string]string)
+
+		// If we have args, build up our list of args to retrieve
+		if len(args) > 0 {
+
+			for _, path := range args {
+				// Handle global wildcard
+				if strings.Contains(path, "**/*") {
+					fetchAll = true
+					break
+				} else if strings.Contains(path, "}/*") && strings.Contains(path, "{") {
+					// Handle multi-type wildcard, e.g. '{pages,themes}/*'
+					startTypes, endTypes := strings.Index(path, "{"), strings.Index(path, "}")
+					desiredTypes := path[startTypes:endTypes]
+					for typeName := strings.Split(desiredTypes, ",") {
+						fetchAllByType[typeName] = true
+					}
+				}
+				else if strings.Contains(path, "/*") && !strings.Contains(path, "{") {
+					// Handle single-type wildcard, e.g. 'pages/*'
+					wildcardIndex := strings.Index(path, "/*")
+					// If the wildcard is the only /, then everything up to the slash
+					// is the name of the type to retrieve
+					if strings.Index(path, "/") == wildcardIndex {
+						typeName := path[0:wildcardIndex]
+						fetchAllByType[typeName] = true
+					} 
+					// If we have other / chars, split on the last index prior to the wildcard
+					else {
+						if stringParts := strings.Split(path, "/"); len(stringParts) > 1 {
+							typeName := stringParts[len(stringParts) - 2]
+							fetchAllByType[typeName] = true
+						}
+					}
+				}
+				// // Handle individual file requests
+				// else {
+
+				// }
+			}
+		} 
+
+		if fetchAll {
+			// fetch all of each type,
+			// which is accomplished by sending an empty map	
+			for _, metadataType := range allTypes {
+				retrieveMetadata[camelCasings[metadataType]] = make(map[string]string)
+			}
+		} 
+		// Process individual and/or type-wildcard requests
+		else {
+			for _, metadataType := range allTypes {
+				if fetchAllByType[metadataType] == true {
+					// If we have a "fetch all" for this type,
+					// ignore individual type requests and fetch it all
+					retrieveMetadata[camelCasings[metadataType]] = make(map[string]string)
+				} else if fetchByType[metadataType] != nil && len(fetchByType[metadataType]) > 0 {
+					// Otherwise, process individual file requests
+					retrieveMetadata[camelCasings[metadataType]] = fetchByType[metadataType]
+				}
+			}	
+		}
+		
 		retrieveRequest := &types.RetrieveRequest{}
+		retrieveRequest.Metadata = retrieveMetadata
 
 		fmt.Println("Retrieving metadata...")
 
