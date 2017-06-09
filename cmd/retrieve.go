@@ -58,13 +58,14 @@ var retrieveCmd = &cobra.Command{
 			camelCasings[typeName] = typeName
 		}
 		// Add in camel-casing exceptions
-		camelCasings.authproviders = "authProviders"
-		camelCasings.datasources = "dataSources"
+		camelCasings["authproviders"] = "authProviders"
+		camelCasings["datasources"] = "dataSources"
 
 		fetchAll := false
 
 		fetchAllByType := make(map[string]bool)
-		fetchByType := make(map[string]string)
+		// Not implemented yet by Retrieve API - waiting on a PR to be merged
+		// fetchByType := make(map[string]string)
 
 		// If we have args, build up our list of args to retrieve
 		if len(args) > 0 {
@@ -78,11 +79,10 @@ var retrieveCmd = &cobra.Command{
 					// Handle multi-type wildcard, e.g. '{pages,themes}/*'
 					startTypes, endTypes := strings.Index(path, "{"), strings.Index(path, "}")
 					desiredTypes := path[startTypes:endTypes]
-					for typeName := strings.Split(desiredTypes, ",") {
+					for _, typeName := range strings.Split(desiredTypes, ",") {
 						fetchAllByType[typeName] = true
 					}
-				}
-				else if strings.Contains(path, "/*") && !strings.Contains(path, "{") {
+				} else if (strings.Contains(path, "/*") && !strings.Contains(path, "{")) {
 					// Handle single-type wildcard, e.g. 'pages/*'
 					wildcardIndex := strings.Index(path, "/*")
 					// If the wildcard is the only /, then everything up to the slash
@@ -90,19 +90,16 @@ var retrieveCmd = &cobra.Command{
 					if strings.Index(path, "/") == wildcardIndex {
 						typeName := path[0:wildcardIndex]
 						fetchAllByType[typeName] = true
-					} 
-					// If we have other / chars, split on the last index prior to the wildcard
-					else {
+					} else {
+						// If we have other / chars, split on the last index prior to the wildcard
 						if stringParts := strings.Split(path, "/"); len(stringParts) > 1 {
 							typeName := stringParts[len(stringParts) - 2]
 							fetchAllByType[typeName] = true
 						}
 					}
+				// } else {
+				// 	// Handle individual file requests
 				}
-				// // Handle individual file requests
-				// else {
-
-				// }
 			}
 		} 
 
@@ -112,17 +109,16 @@ var retrieveCmd = &cobra.Command{
 			for _, metadataType := range allTypes {
 				retrieveMetadata[camelCasings[metadataType]] = make(map[string]string)
 			}
-		} 
-		// Process individual and/or type-wildcard requests
-		else {
+		} else {
+			// Process individual and/or type-wildcard requests
 			for _, metadataType := range allTypes {
 				if fetchAllByType[metadataType] == true {
 					// If we have a "fetch all" for this type,
 					// ignore individual type requests and fetch it all
 					retrieveMetadata[camelCasings[metadataType]] = make(map[string]string)
-				} else if fetchByType[metadataType] != nil && len(fetchByType[metadataType]) > 0 {
-					// Otherwise, process individual file requests
-					retrieveMetadata[camelCasings[metadataType]] = fetchByType[metadataType]
+				// } else if typeRequest, ok := fetchByType[metadataType]; ok && len(fetchByType[metadataType]) > 0 {
+				// 	// Otherwise, process individual file requests
+				// 	retrieveMetadata[camelCasings[metadataType]] = typeRequest
 				}
 			}	
 		}
