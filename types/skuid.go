@@ -104,8 +104,11 @@ func FilterByModule(dir, moduleFilter string) ([]string, error) {
 
 	filter := &bytes.Buffer{}
 
-	filter.WriteString(moduleFilter)
-	filter.WriteString("_*")
+	if moduleFilter != "" {
+		filter.WriteString(moduleFilter + "_")
+	}
+
+	filter.WriteString("*")
 
 	pattern := filepath.Join(dir, filter.String())
 	return filepath.Glob(pattern)
