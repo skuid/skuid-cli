@@ -2,12 +2,15 @@ package types
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
-	"path/filepath"
 	"strings"
+
+	"encoding/json"
+	"io/ioutil"
+	"path/filepath"
+
+	"github.com/beevik/etree"
 )
 
 type PullResponse struct {
@@ -62,15 +65,32 @@ func (page *PullResponse) WriteAtRest(path string) (err error) {
 	if err != nil {
 		return err
 	}
-	xml := page.Body
+	pageXml := page.Body
 	//write the body to the file
-	err = ioutil.WriteFile(fmt.Sprintf("%s/%s.xml", path, page.FileBasename()), []byte(xml), 0644)
+	formatted, err := FormatXml(pageXml)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	err = ioutil.WriteFile(fmt.Sprintf("%s/%s.xml", path, page.FileBasename()), []byte(formatted), 0644)
 
 	if err != nil {
 		return err
 	}
 
 	return nil
+
+}
+
+func FormatXml(toFormat string) (string, error) {
+	doc := etree.NewDocument()
+	err := doc.ReadFromString(toFormat)
+
+	if err != nil {
+		return "", err
+	}
+
+	doc.Indent(2)
+	return doc.WriteToString()
 
 }
 
@@ -82,8 +102,11 @@ func FilterByModule(dir, moduleFilter string) ([]string, error) {
 
 	filter := &bytes.Buffer{}
 
-	filter.WriteString(moduleFilter)
-	filter.WriteString("_*")
+	if moduleFilter != "" {
+		filter.WriteString(moduleFilter + "_")
+	}
+
+	filter.WriteString("*")
 
 	pattern := filepath.Join(dir, filter.String())
 	return filepath.Glob(pattern)
