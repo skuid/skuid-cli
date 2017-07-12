@@ -25,8 +25,7 @@ var retrieveCmd = &cobra.Command{
 			fmt.Println(args)
 		}
 
-		//login to a Skuid Platform Site
-		api, err := pliny.Login(
+		api, err := platform.Login(
 			host,
 			username,
 			password,
@@ -219,19 +218,26 @@ func unzip(sourceFileLocation, targetLocation string) error {
 			return err
 		}
 
-		defer fileReader.Close()
-
 		targetFile, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 
 		if err != nil {
 			return err
 		}
 
-		defer targetFile.Close()
-
 		if _, err := io.Copy(targetFile, fileReader); err != nil {
+			targetFile.Close()
+			fileReader.Close()
 			return err
 		}
+
+		if err := targetFile.Close(); err != nil {
+			return err
+		}
+
+		if err := fileReader.Close(); err != nil {
+			return err
+		}
+
 	}
 
 	return nil

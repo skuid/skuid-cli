@@ -1,17 +1,13 @@
-package pliny
+package platform
 
 import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
-
-	"fmt"
-
 	"net/url"
-
-	"encoding/json"
-	"io"
-
-	"bytes"
 )
 
 type OAuthResponse struct {
@@ -20,13 +16,13 @@ type OAuthResponse struct {
 }
 
 type RestConnection struct {
-	AccessToken    string
-	APIVersion     string
-	ClientId       string
-	ClientSecret   string
-	Host           string
-	Password       string
-	Username       string
+	AccessToken  string
+	APIVersion   string
+	ClientId     string
+	ClientSecret string
+	Host         string
+	Password     string
+	Username     string
 }
 
 type RestApi struct {
@@ -50,38 +46,38 @@ func Login(host string, username string, password string, apiVersion string, ver
 	}
 
 	conn := RestConnection{
-		Host:			host,
-		Username:		username,
-		Password:		password,
-		APIVersion:		apiVersion,
+		Host:       host,
+		Username:   username,
+		Password:   password,
+		APIVersion: apiVersion,
 	}
 
 	err = conn.Refresh()
 
-	if err == nil {
-		api = &RestApi{
-			Connection: &conn,
-		}
+	if err != nil {
+		return nil, err
+	}
+
+	api = &RestApi{
+		Connection: &conn,
 	}
 
 	if verboseLogs {
 		fmt.Println("Login successful! Access Token: " + conn.AccessToken)
 	}
 
-	return api, err
+	return api, nil
 }
 
 // Used to obtain an OAuth2 access_token
-func (conn *RestConnection) Refresh() (err error) {
+func (conn *RestConnection) Refresh() error {
 	urlValues := url.Values{}
 
 	urlValues.Set("grant_type", "password")
-	// urlValues.Set("client_id", conn.ClientId)
-	// urlValues.Set("client_secret", conn.ClientSecret)
 	urlValues.Set("username", conn.Username)
 	urlValues.Set("password", conn.Password)
 
-	resp, err := http.PostForm(conn.Host + "/auth/oauth/token", urlValues)
+	resp, err := http.PostForm(conn.Host+"/auth/oauth/token", urlValues)
 
 	if err != nil {
 		return err
@@ -96,9 +92,7 @@ func (conn *RestConnection) Refresh() (err error) {
 
 	result := OAuthResponse{}
 
-	err = json.Unmarshal(body, &result)
-
-	if err != nil {
+	if err := json.Unmarshal(body, &result); err != nil {
 		return err
 	}
 
@@ -130,9 +124,6 @@ func (conn *RestConnection) MakeRequest(method string, url string, payload inter
 
 	if payload != nil {
 		jsonBytes, err := json.Marshal(payload)
-
-		// quoted := []byte(strconv.Quote(string(jsonBytes)))
-
 		if err != nil {
 			return nil, err
 		}
@@ -144,26 +135,21 @@ func (conn *RestConnection) MakeRequest(method string, url string, payload inter
 	req, err := http.NewRequest(method, endpoint, body)
 
 	if err != nil {
-		return result, err
+		return nil, err
 	}
 
-	req.Header.Add("Authorization", "Bearer " + conn.AccessToken)
+	req.Header.Add("Authorization", "Bearer "+conn.AccessToken)
 	req.Header.Add("Content-Type", "application/json")
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
 
 	if err != nil {
-		return result, err
+		return nil, err
 	}
 
 	defer resp.Body.Close()
 
-	result, err = ioutil.ReadAll(resp.Body)
+	return ioutil.ReadAll(resp.Body)
 
-	if err != nil {
-		return result, err
-	}
-
-	return result, nil
 }

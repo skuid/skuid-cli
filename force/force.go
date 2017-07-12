@@ -36,13 +36,15 @@ func Login(consumerKey string, consumerSecret string, instanceUrl string, userna
 
 	err = conn.Refresh()
 
-	if err == nil {
-		api = &RestApi{
-			Connection: &conn,
-		}
+	if err != nil {
+		return nil, err
 	}
 
-	return api, err
+	api = &RestApi{
+		Connection: &conn,
+	}
+
+	return api, nil
 }
 
 func (conn *RestConnection) Get(url string, query url.Values) (result []byte, err error) {
@@ -65,8 +67,6 @@ func (conn *RestConnection) Query(method string, url string, payload interface{}
 
 	if payload != nil {
 		jsonBytes, err := json.Marshal(payload)
-
-		// quoted := []byte(strconv.Quote(string(jsonBytes)))
 
 		if err != nil {
 			return nil, err
