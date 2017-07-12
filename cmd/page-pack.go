@@ -21,7 +21,7 @@ var outputFile string
 var pagePackCmd = &cobra.Command{
 	Use:   "page-pack",
 	Short: "Retrieve a collection of Skuid Pages as a Page Pack.",
-	Long: "Retrieves all Pages in a given Module and returns in a Page Pack, which is a JSON-serialized array of Page objects.",
+	Long:  "Retrieves all Pages in a given Module and returns in a Page Pack, which is a JSON-serialized array of Page objects.",
 	Run: func(cmd *cobra.Command, args []string) {
 		//login to the Force API
 		api, err := force.Login(
@@ -67,6 +67,6 @@ var pagePackCmd = &cobra.Command{
 
 func init() {
 	RootCmd.AddCommand(pagePackCmd)
-	
+
 	pagePackCmd.Flags().StringVarP(&outputFile, "output", "o", "", "Filename of output Page Pack file")
 }

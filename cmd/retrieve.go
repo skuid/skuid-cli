@@ -1,24 +1,23 @@
 package cmd
 
 import (
+	"archive/zip"
 	"fmt"
+	"github.com/skuid/skuid/platform"
+	"github.com/skuid/skuid/types"
+	"github.com/spf13/cobra"
 	"io"
 	"io/ioutil"
 	"os"
-	"archive/zip"
 	"path/filepath"
 	"strings"
-
-	"github.com/skuid/skuid/pliny"
-	"github.com/skuid/skuid/types"
-	"github.com/spf13/cobra"
 )
 
 // retrieveCmd represents the retrieve command
 var retrieveCmd = &cobra.Command{
 	Use:   "retrieve",
 	Short: "Retrieve Skuid metadata from a Site into a local directory.",
-	Long: "Retrieve Skuid metadata from a Skuid Platform Site and output it into a local directory.",
+	Long:  "Retrieve Skuid metadata from a Skuid Platform Site and output it into a local directory.",
 	Run: func(cmd *cobra.Command, args []string) {
 
 		if verbose {
@@ -82,7 +81,7 @@ var retrieveCmd = &cobra.Command{
 					for _, typeName := range strings.Split(desiredTypes, ",") {
 						fetchAllByType[typeName] = true
 					}
-				} else if (strings.Contains(path, "/*") && !strings.Contains(path, "{")) {
+				} else if strings.Contains(path, "/*") && !strings.Contains(path, "{") {
 					// Handle single-type wildcard, e.g. 'pages/*'
 					wildcardIndex := strings.Index(path, "/*")
 					// If the wildcard is the only /, then everything up to the slash
@@ -93,19 +92,19 @@ var retrieveCmd = &cobra.Command{
 					} else {
 						// If we have other / chars, split on the last index prior to the wildcard
 						if stringParts := strings.Split(path, "/"); len(stringParts) > 1 {
-							typeName := stringParts[len(stringParts) - 2]
+							typeName := stringParts[len(stringParts)-2]
 							fetchAllByType[typeName] = true
 						}
 					}
-				// } else {
-				// 	// Handle individual file requests
+					// } else {
+					// 	// Handle individual file requests
 				}
 			}
-		} 
+		}
 
 		if fetchAll {
 			// fetch all of each type,
-			// which is accomplished by sending an empty map	
+			// which is accomplished by sending an empty map
 			for _, metadataType := range allTypes {
 				retrieveMetadata[camelCasings[metadataType]] = make(map[string]string)
 			}
@@ -116,13 +115,13 @@ var retrieveCmd = &cobra.Command{
 					// If we have a "fetch all" for this type,
 					// ignore individual type requests and fetch it all
 					retrieveMetadata[camelCasings[metadataType]] = make(map[string]string)
-				// } else if typeRequest, ok := fetchByType[metadataType]; ok && len(fetchByType[metadataType]) > 0 {
-				// 	// Otherwise, process individual file requests
-				// 	retrieveMetadata[camelCasings[metadataType]] = typeRequest
+					// } else if typeRequest, ok := fetchByType[metadataType]; ok && len(fetchByType[metadataType]) > 0 {
+					// 	// Otherwise, process individual file requests
+					// 	retrieveMetadata[camelCasings[metadataType]] = typeRequest
 				}
-			}	
+			}
 		}
-		
+
 		retrieveRequest := &types.RetrieveRequest{}
 		retrieveRequest.Metadata = retrieveMetadata
 
@@ -157,7 +156,7 @@ var retrieveCmd = &cobra.Command{
 
 		// unzip the contents of our temp zip file
 		err = unzip(tmpFileName, targetDir)
-		
+
 		// schedule cleanup of temp file
 		defer os.Remove(tmpFileName)
 
@@ -192,11 +191,11 @@ func unzip(sourceFileLocation, targetLocation string) error {
 
 		// If this file name contains a /, make sure that we create the
 		if pathParts := strings.Split(file.Name, "/"); len(pathParts) > 0 {
-			// Remove the actual file name from the slice, 
+			// Remove the actual file name from the slice,
 			// i.e. pages/MyAwesomePage.xml ---> pages
 			pathParts = pathParts[:len(pathParts)-1]
 			// and then make dirs for all paths up to that point, i.e. pages, apps
-			intermediatePath := filepath.Join(targetLocation, strings.Join(pathParts[:],","))
+			intermediatePath := filepath.Join(targetLocation, strings.Join(pathParts[:], ","))
 			//if the desired directory isn't there, create it
 			if _, err := os.Stat(intermediatePath); err != nil {
 				if verbose {
@@ -237,8 +236,6 @@ func unzip(sourceFileLocation, targetLocation string) error {
 
 	return nil
 }
-
-
 
 func init() {
 	RootCmd.AddCommand(retrieveCmd)

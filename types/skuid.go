@@ -1,19 +1,16 @@
 package types
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"strings"
-
 	"os"
-
-	"bytes"
-
 	"path/filepath"
+	"strings"
 )
 
-type PullResponse struct { 
+type PullResponse struct {
 	Name               string  `json:"name"`
 	UniqueID           string  `json:"uniqueId"`
 	Type               string  `json:"type"`
@@ -37,7 +34,7 @@ type PagePostResult struct {
 }
 
 type RetrieveRequest struct {
-	Metadata        map[string]map[string]string `json:metadata`
+	Metadata map[string]map[string]string `json:metadata`
 }
 
 func (page *PullResponse) FileBasename() string {

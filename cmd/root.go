@@ -2,21 +2,22 @@ package cmd
 
 import (
 	"fmt"
-	"os"
-
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"os"
 )
 
-var appClientID string
-var appClientSecret string
-var apiVersion string
-var host string
-var module string
-var password string
-var targetDir string
-var username string
-var verbose bool
+var (
+	appClientID     string
+	appClientSecret string
+	apiVersion      string
+	host            string
+	module          string
+	password        string
+	targetDir       string
+	username        string
+	verbose         bool
+)
 
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
