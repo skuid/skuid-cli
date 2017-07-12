@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"strings"
 
@@ -62,7 +63,10 @@ var retrieveCmd = &cobra.Command{
 		// unzip the archive into the output directory
 		targetDirFriendly := targetDir
 		if targetDir == "" {
-			targetDirFriendly = "current working directory"
+			targetDirFriendly, err = filepath.Abs(filepath.Dir(os.Args[0]))
+			if err != nil {
+				log.Fatal(err)
+			}
 		}
 		fmt.Println("Writing results to " + targetDirFriendly + " ...")
 
