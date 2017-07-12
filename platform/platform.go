@@ -32,13 +32,13 @@ type RestApi struct {
 
 // Logs a given user into a target Skuid Platform site and returns a RestApi connection
 // that can be used to make HTTP requests
-func Login(host string, username string, password string, apiVersion string, verboseLogs bool) (api *RestApi, err error) {
+func Login(host string, username string, password string, apiVersion string, verbose bool) (api *RestApi, err error) {
 
 	if apiVersion == "" {
 		apiVersion = "1"
 	}
 
-	if verboseLogs {
+	if verbose {
 		fmt.Println("Logging in to Skuid Platform... ")
 		fmt.Println("Host: " + host)
 		fmt.Println("Username: " + username)
@@ -63,7 +63,7 @@ func Login(host string, username string, password string, apiVersion string, ver
 		Connection: &conn,
 	}
 
-	if verboseLogs {
+	if verbose {
 		fmt.Println("Login successful! Access Token: " + conn.AccessToken)
 	}
 
