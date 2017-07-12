@@ -5,9 +5,8 @@ import (
 	"os"
 	"strconv"
 
-	"net/url"
-
 	"encoding/json"
+	"net/url"
 
 	"github.com/skuid/skuid/force"
 	"github.com/skuid/skuid/types"

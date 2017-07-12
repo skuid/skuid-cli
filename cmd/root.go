@@ -2,9 +2,10 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"os"
 )
 
 var (
@@ -74,8 +75,8 @@ func init() {
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
 
-	viper.SetConfigName(".skuid")        // name of config file (without extension)
-	viper.AddConfigPath("$HOME")         // adding home directory as first search path
+	viper.SetConfigName(".skuid") // name of config file (without extension)
+	viper.AddConfigPath("$HOME")  // adding home directory as first search path
 
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {

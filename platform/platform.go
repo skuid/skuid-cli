@@ -2,9 +2,10 @@ package platform
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"io"
+
+	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"net/url"

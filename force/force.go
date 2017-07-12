@@ -2,12 +2,15 @@ package force
 
 import (
 	"bytes"
-	"encoding/json"
-	"github.com/jpmonette/goforce"
 	"io"
+
+	"encoding/json"
+
 	"io/ioutil"
 	"net/http"
 	"net/url"
+
+	"github.com/jpmonette/goforce"
 )
 
 type RestConnection struct {

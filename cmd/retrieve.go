@@ -1,17 +1,19 @@
 package cmd
 
 import (
-	"archive/zip"
 	"fmt"
+	"io"
+	"os"
+	"strings"
+
+	"archive/zip"
+	"io/ioutil"
+	"net/http"
+	"path/filepath"
+
 	"github.com/skuid/skuid/platform"
 	"github.com/skuid/skuid/types"
 	"github.com/spf13/cobra"
-	"io"
-	"io/ioutil"
-	"net/http"
-	"os"
-	"path/filepath"
-	"strings"
 )
 
 // retrieveCmd represents the retrieve command
@@ -36,85 +38,10 @@ var retrieveCmd = &cobra.Command{
 
 		retrieveMetadata := make(map[string]map[string]string)
 
-		allTypes := []string{
-			"apps",
-			"authproviders",
-			"datasources",
-			"pages",
-			"profiles",
-			"themes",
-		}
-
-		camelCasings := make(map[string]string)
-
-		// Put in default camel casings into the map
-		for _, typeName := range allTypes {
-			camelCasings[typeName] = typeName
-		}
-		// Add in camel-casing exceptions
-		camelCasings["authproviders"] = "authProviders"
-		camelCasings["datasources"] = "dataSources"
-
-		fetchAll := false
-
-		fetchAllByType := make(map[string]bool)
-		// Not implemented yet by Retrieve API - waiting on a PR to be merged
-		// fetchByType := make(map[string]string)
-
-		// If we have args, build up our list of args to retrieve
-		if len(args) > 0 {
-
-			for _, path := range args {
-				// Handle global wildcard
-				if strings.Contains(path, "**/*") {
-					fetchAll = true
-					break
-				} else if strings.Contains(path, "}/*") && strings.Contains(path, "{") {
-					// Handle multi-type wildcard, e.g. '{pages,themes}/*'
-					startTypes, endTypes := strings.Index(path, "{"), strings.Index(path, "}")
-					desiredTypes := path[startTypes:endTypes]
-					for _, typeName := range strings.Split(desiredTypes, ",") {
-						fetchAllByType[typeName] = true
-					}
-				} else if strings.Contains(path, "/*") && !strings.Contains(path, "{") {
-					// Handle single-type wildcard, e.g. 'pages/*'
-					wildcardIndex := strings.Index(path, "/*")
-					// If the wildcard is the only /, then everything up to the slash
-					// is the name of the type to retrieve
-					if strings.Index(path, "/") == wildcardIndex {
-						typeName := path[0:wildcardIndex]
-						fetchAllByType[typeName] = true
-					} else {
-						// If we have other / chars, split on the last index prior to the wildcard
-						if stringParts := strings.Split(path, "/"); len(stringParts) > 1 {
-							typeName := stringParts[len(stringParts)-2]
-							fetchAllByType[typeName] = true
-						}
-					}
-					// } else {
-					// 	// Handle individual file requests
-				}
-			}
-		}
-
-		if fetchAll {
-			// fetch all of each type,
-			// which is accomplished by sending an empty map
-			for _, metadataType := range allTypes {
-				retrieveMetadata[camelCasings[metadataType]] = make(map[string]string)
-			}
-		} else {
-			// Process individual and/or type-wildcard requests
-			for _, metadataType := range allTypes {
-				if fetchAllByType[metadataType] == true {
-					// If we have a "fetch all" for this type,
-					// ignore individual type requests and fetch it all
-					retrieveMetadata[camelCasings[metadataType]] = make(map[string]string)
-					// } else if typeRequest, ok := fetchByType[metadataType]; ok && len(fetchByType[metadataType]) > 0 {
-					// 	// Otherwise, process individual file requests
-					// 	retrieveMetadata[camelCasings[metadataType]] = typeRequest
-				}
-			}
+		// To fetch all metadata of a given type,
+		// add an empty map for each type's camel-cased name
+		for _, camelCaseName := range types.MetadataTypes {
+			retrieveMetadata[camelCaseName] = make(map[string]string)
 		}
 
 		retrieveRequest := &types.RetrieveRequest{}
@@ -182,58 +109,63 @@ func unzip(sourceFileLocation, targetLocation string) error {
 	}
 
 	for _, file := range reader.File {
-		path := filepath.Join(targetLocation, file.Name)
+		readFileFromZipAndWriteToFilesystem(file, targetLocation)
+	}
 
-		// If this file name contains a /, make sure that we create the
-		if pathParts := strings.Split(file.Name, "/"); len(pathParts) > 0 {
-			// Remove the actual file name from the slice,
-			// i.e. pages/MyAwesomePage.xml ---> pages
-			pathParts = pathParts[:len(pathParts)-1]
-			// and then make dirs for all paths up to that point, i.e. pages, apps
-			intermediatePath := filepath.Join(targetLocation, strings.Join(pathParts[:], ","))
-			//if the desired directory isn't there, create it
-			if _, err := os.Stat(intermediatePath); err != nil {
-				if verbose {
-					fmt.Println("Creating intermediate directory: " + intermediatePath)
-				}
-				os.MkdirAll(intermediatePath, 0755)
+	return nil
+}
+
+func readFileFromZipAndWriteToFilesystem(file *zip.File, targetLocation string) error {
+	path := filepath.Join(targetLocation, file.Name)
+
+	// If this file name contains a /, make sure that we create the
+	if pathParts := strings.Split(file.Name, "/"); len(pathParts) > 0 {
+		// Remove the actual file name from the slice,
+		// i.e. pages/MyAwesomePage.xml ---> pages
+		pathParts = pathParts[:len(pathParts)-1]
+		// and then make dirs for all paths up to that point, i.e. pages, apps
+		intermediatePath := filepath.Join(targetLocation, strings.Join(pathParts[:], ","))
+		//if the desired directory isn't there, create it
+		if _, err := os.Stat(intermediatePath); err != nil {
+			if verbose {
+				fmt.Println("Creating intermediate directory: " + intermediatePath)
 			}
+			os.MkdirAll(intermediatePath, 0755)
 		}
+	}
 
-		if file.FileInfo().IsDir() {
-			os.MkdirAll(path, file.Mode())
-			continue
-		}
+	if file.FileInfo().IsDir() {
+		os.MkdirAll(path, file.Mode())
+		return nil
+	}
 
-		if verbose {
-			fmt.Println("Creating file: " + file.Name)
-		}
+	if verbose {
+		fmt.Println("Creating file: " + file.Name)
+	}
 
-		fileReader, err := file.Open()
-		if err != nil {
-			return err
-		}
+	fileReader, err := file.Open()
+	if err != nil {
+		return err
+	}
 
-		targetFile, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
+	targetFile, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 
-		if err != nil {
-			return err
-		}
+	if err != nil {
+		return err
+	}
 
-		if _, err := io.Copy(targetFile, fileReader); err != nil {
-			targetFile.Close()
-			fileReader.Close()
-			return err
-		}
+	if _, err := io.Copy(targetFile, fileReader); err != nil {
+		targetFile.Close()
+		fileReader.Close()
+		return err
+	}
 
-		if err := targetFile.Close(); err != nil {
-			return err
-		}
+	if err := targetFile.Close(); err != nil {
+		return err
+	}
 
-		if err := fileReader.Close(); err != nil {
-			return err
-		}
-
+	if err := fileReader.Close(); err != nil {
+		return err
 	}
 
 	return nil

@@ -33,10 +33,6 @@ type PagePostResult struct {
 	Errors  []string `json:"upsertErrors,omitempty"`
 }
 
-type RetrieveRequest struct {
-	Metadata map[string]map[string]string `json:metadata`
-}
-
 func (page *PullResponse) FileBasename() string {
 
 	var buf bytes.Buffer
