@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"strings"
 	"os"
 )
 
@@ -50,23 +49,33 @@ func init() {
 	RootCmd.PersistentFlags().StringVarP(&username, "username", "u", "", "Skuid Platform / Salesforce Username")
 	RootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Display all possible logging info")
 
+	if username == "" {
+		username = os.Getenv("SKUID_UN")
+	}
+
+	if password == "" {
+		password = os.Getenv("SKUID_PW")
+	}
+
+	if host == "" {
+		host = os.Getenv("SKUID_HOST")
+	}
+
+	if appClientID == "" {
+		appClientID = os.Getenv("SKUID_CLIENT_ID")
+	}
+
+	if appClientSecret == "" {
+		appClientSecret = os.Getenv("SKUID_CLIENT_SECRET")
+	}
+
 }
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
 
-	envReplacer := strings.NewReplacer(
-		"SKUID_UN", "username",
-		"SKUID_PW", "password",
-		"SKUID_CLIENT_ID", "appClientID",
-		"SKUID_CLIENT_SECRET", "appClientSecret",
-		"SKUID_HOST", "host",
-	)
-
 	viper.SetConfigName(".skuid")        // name of config file (without extension)
 	viper.AddConfigPath("$HOME")         // adding home directory as first search path
-	viper.SetEnvKeyReplacer(envReplacer) // transform environment variable names to match variables
-	viper.AutomaticEnv()                 // read in environment variables that match
 
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {

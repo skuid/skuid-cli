@@ -30,7 +30,7 @@ type RestApi struct {
 }
 
 // Logs a given user into a target Skuid Platform site and returns a RestApi connection
-// that can be used to make GET / POST requests
+// that can be used to make HTTP requests
 func Login(host string, username string, password string, apiVersion string, verboseLogs bool) (api *RestApi, err error) {
 
 	if apiVersion == "" {
@@ -101,24 +101,10 @@ func (conn *RestConnection) Refresh() error {
 	return nil
 }
 
-// Makes a GET request
-func (conn *RestConnection) Get(url string, query url.Values) (result []byte, err error) {
-	return conn.MakeRequest("GET", url, nil, query)
-}
-
-// Makes a POST request
-func (conn *RestConnection) Post(url string, payload interface{}) (result []byte, err error) {
-	return conn.MakeRequest("POST", url, payload, nil)
-}
-
 // Executes an HTTP request
-func (conn *RestConnection) MakeRequest(method string, url string, payload interface{}, params url.Values) (result []byte, err error) {
+func (conn *RestConnection) MakeRequest(method string, url string, payload interface{}) (result []byte, err error) {
 
 	endpoint := conn.Host + "/api/v" + conn.APIVersion + url
-
-	if params != nil && len(params) != 0 {
-		endpoint += "?" + params.Encode()
-	}
 
 	var body io.Reader
 

@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 	"io"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -19,11 +20,6 @@ var retrieveCmd = &cobra.Command{
 	Short: "Retrieve Skuid metadata from a Site into a local directory.",
 	Long:  "Retrieve Skuid metadata from a Skuid Platform Site and output it into a local directory.",
 	Run: func(cmd *cobra.Command, args []string) {
-
-		if verbose {
-			fmt.Println("args")
-			fmt.Println(args)
-		}
 
 		api, err := platform.Login(
 			host,
@@ -127,7 +123,7 @@ var retrieveCmd = &cobra.Command{
 		fmt.Println("Retrieving metadata...")
 
 		//query the API for all Skuid metadata of every type
-		result, err := api.Connection.Post("/metadata/retrieve", retrieveRequest)
+		result, err := api.Connection.MakeRequest(http.MethodPost, "/metadata/retrieve", retrieveRequest)
 
 		fmt.Println("Successfully retrieved metadata!")
 
