@@ -38,12 +38,6 @@ Retrieve all available Skuid Platform metadata from a given Site
 $ skuid retrieve
 ```
 
-Deploys all local Skuid Platform metadata to a Skuid Platform Site
-
-```
-$ skuid deploy
-```
-
 ## Installation
 
 If you have go installed on your system, you can simply `go get github.com/skuid/skuid`. If not, download the latest release from
@@ -61,16 +55,18 @@ Available Commands:
   page-pack   Retrieve a collection of Skuid Pages as a Page Pack.
   pull        Pull Skuid Pages from Salesforce into a local directory.
   push        Push Skuid Pages from a directory to Skuid.
+  retrieve    Retrieve Skuid metadata from a Site into a local directory.  
 
 Flags:
-          --api-version string     API Version for Salesforce (default "39.0") / Skuid Platform (default "1")
-          --client-id string       OAuth Client ID
-          --client-secret string   OAuth Client Secret
-      -d  --dir string             Input / output directory to use for a given command
-      -h  --host string            Salesforce Login Url (default "https://login.salesforce.com") or Skuid Platform Site Url (e.g. "acme-us-trial.skuidsite.com")
-      -m  --module string          Module name(s) to use for pull / push / page-pack commands
-      -p  --password string        Password
-      -u  --username string        Username
+      --api-version string     API Version
+      --client-id string       OAuth Client ID
+      --client-secret string   OAuth Client Secret
+  -d, --dir string             Input/output directory.
+      --host string            API Host base URL, e.g. my-site.skuidsite.com for Skuid Platform or my-domain.my.salesforce.com for Salesforce
+  -m, --module string          Module name(s), separated by a comma.
+  -p, --password string        Skuid Platform / Salesforce Password
+  -u, --username string        Skuid Platform / Salesforce Username
+  -v, --verbose                Display all possible logging info
 
 
 Use "skuid [command] --help" for more information about a command.
