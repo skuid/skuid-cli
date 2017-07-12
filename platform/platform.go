@@ -105,7 +105,7 @@ func (conn *RestConnection) Refresh() error {
 // Executes an HTTP request
 func (conn *RestConnection) MakeRequest(method string, url string, payload interface{}) (result []byte, err error) {
 
-	endpoint := conn.Host + "/api/v" + conn.APIVersion + url
+	endpoint := fmt.Sprintf("%s/api/v%s%s", conn.Host, conn.APIVersion, url)
 
 	var body io.Reader
 
