@@ -32,10 +32,28 @@ $ skuid page-pack -m Dashboard -o src/staticresources/DashboardPages.resource
 
 ## Examples (Skuid Platform)
 
-Retrieve all available Skuid Platform metadata from a given Site
+Retrieve all Skuid Platform metadata from a given Site, into the current directory
 
 ```
 $ skuid retrieve
+```
+
+Retrieve all Skuid Platform metadata from a given Site, into a specified directory
+
+```
+$ skuid retrieve -d sites/humboldt-us-trial
+```
+
+Deploy all metadata in the current directory to a Skuid Platform Site
+
+```
+$ skuid deploy
+```
+
+Deploy all metadata in a different directory to a Skuid Platform Site
+
+```
+$ skuid deploy -d path/to/site
 ```
 
 ## Installation
@@ -52,6 +70,7 @@ Usage:
   skuid [command]
 
 Available Commands:
+  deploy      Deploy local Skuid metadata to a Skuid Platform Site.
   page-pack   Retrieve a collection of Skuid Pages as a Page Pack.
   pull        Pull Skuid Pages from Salesforce into a local directory.
   push        Push Skuid Pages from a directory to Skuid.
@@ -88,12 +107,12 @@ export SKUID_CLIENT_ID={connected-app-consumer-key}
 export SKUID_CLIENT_SECRET={connected-app-consumer-secret}
 ```
 
-### Salesforce Platform Example
+### Skuid Platform Example
 
 ```bash
 export SKUID_UN={username}
 export SKUID_PW={password}
-export SKUID_HOST={host}
+export SKUID_HOST=https://humboldt-us-trial.skuidsite.com
 ```
 
 ## Building from source
