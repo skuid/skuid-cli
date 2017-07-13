@@ -81,9 +81,6 @@ var deployCmd = &cobra.Command{
 		}
 
 		fmt.Println("Successfully deployed metadata to Skuid Site.")
-
-		// schedule cleanup of temp file
-		defer os.Remove(outFilePath)
 	},
 }
 
