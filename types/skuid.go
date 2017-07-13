@@ -1,15 +1,13 @@
 package types
 
 import (
-	"encoding/json"
+	"bytes"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"strings"
 
-	"os"
-
-	"bytes"
-
+	"encoding/json"
+	"io/ioutil"
 	"path/filepath"
 
 	"github.com/beevik/etree"

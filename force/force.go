@@ -1,15 +1,14 @@
 package force
 
 import (
-	"io/ioutil"
-	"net/http"
-
-	"net/url"
-
-	"encoding/json"
+	"bytes"
 	"io"
 
-	"bytes"
+	"encoding/json"
+
+	"io/ioutil"
+	"net/http"
+	"net/url"
 
 	"github.com/jpmonette/goforce"
 )
@@ -25,6 +24,10 @@ type RestApi struct {
 // Login is logging-in the User to the Salesforce organization
 func Login(consumerKey string, consumerSecret string, instanceUrl string, username string, password string, apiVersion string) (api *RestApi, err error) {
 
+	if apiVersion == "" {
+		apiVersion = "39.0"
+	}
+
 	conn := RestConnection{force.Connection{
 		ConsumerKey:    consumerKey,
 		ConsumerSecret: consumerSecret,
@@ -37,14 +40,14 @@ func Login(consumerKey string, consumerSecret string, instanceUrl string, userna
 	err = conn.Refresh()
 
 	if err != nil {
-		return api, err
+		return nil, err
 	}
 
 	api = &RestApi{
 		Connection: &conn,
 	}
 
-	return api, err
+	return api, nil
 }
 
 func (conn *RestConnection) Get(url string, query url.Values) (result []byte, err error) {
@@ -67,8 +70,6 @@ func (conn *RestConnection) Query(method string, url string, payload interface{}
 
 	if payload != nil {
 		jsonBytes, err := json.Marshal(payload)
-
-		// quoted := []byte(strconv.Quote(string(jsonBytes)))
 
 		if err != nil {
 			return nil, err

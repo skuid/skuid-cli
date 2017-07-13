@@ -13,10 +13,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var outputDir string
-var verbose bool
-var module string
-
 // pullCmd represents the pull command
 var pullCmd = &cobra.Command{
 	Use:   "pull",
@@ -28,15 +24,20 @@ var pullCmd = &cobra.Command{
 		api, err := force.Login(
 			appClientID,
 			appClientSecret,
-			sfdcHost,
-			sfdcUsername,
-			sfdcPassword,
+			host,
+			username,
+			password,
 			apiVersion,
 		)
 
 		if err != nil {
 			fmt.Println(err.Error())
 			os.Exit(1)
+		}
+
+		// Provide a default for targetDir
+		if targetDir == "" {
+			targetDir = "skuidpages"
 		}
 
 		//build the module query paramater
@@ -76,20 +77,17 @@ var pullCmd = &cobra.Command{
 		for _, page := range pages {
 
 			//write the page in the at rest format
-			err = page.WriteAtRest(outputDir)
+			err = page.WriteAtRest(targetDir)
 			if err != nil {
 				fmt.Println(err.Error())
 				os.Exit(1)
 			}
 		}
 
-		fmt.Printf("Pages written to %s\n", outputDir)
+		fmt.Printf("Pages written to %s\n", targetDir)
 	},
 }
 
 func init() {
 	RootCmd.AddCommand(pullCmd)
-
-	pullCmd.Flags().StringVarP(&outputDir, "dir", "d", "skuidpages", "Output directory for all pages.")
-	pullCmd.Flags().StringVarP(&module, "module", "m", "", "Page module(s) to pull. Separated by a comma.")
 }

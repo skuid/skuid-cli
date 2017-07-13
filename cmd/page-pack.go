@@ -5,9 +5,8 @@ import (
 	"os"
 	"strconv"
 
-	"net/url"
-
 	"encoding/json"
+	"net/url"
 
 	"github.com/skuid/skuid/force"
 	"github.com/skuid/skuid/types"
@@ -20,21 +19,16 @@ var outputFile string
 // page-packCmd represents the page-pack command
 var pagePackCmd = &cobra.Command{
 	Use:   "page-pack",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "Retrieve a collection of Skuid Pages as a Page Pack.",
+	Long:  "Retrieves all Pages in a given Module and returns in a Page Pack, which is a JSON-serialized array of Page objects.",
 	Run: func(cmd *cobra.Command, args []string) {
 		//login to the Force API
 		api, err := force.Login(
 			appClientID,
 			appClientSecret,
-			sfdcHost,
-			sfdcUsername,
-			sfdcPassword,
+			host,
+			username,
+			password,
 			apiVersion,
 		)
 
@@ -73,15 +67,5 @@ to quickly create a Cobra application.`,
 func init() {
 	RootCmd.AddCommand(pagePackCmd)
 
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// pagePackCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// pagePackCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-	pagePackCmd.Flags().StringVarP(&pagePackModule, "module", "m", "", "Module to pull.")
-	pagePackCmd.Flags().StringVarP(&outputFile, "output", "o", "", "Filename of output file")
+	pagePackCmd.Flags().StringVarP(&outputFile, "output", "o", "", "Filename of output Page Pack file")
 }
