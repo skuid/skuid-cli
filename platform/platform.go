@@ -1,8 +1,8 @@
 package platform
 
 import (
-	"fmt"
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -113,6 +113,7 @@ func (conn *RestConnection) MakeRequest(method string, url string, payload io.Re
 
 	req.Header.Add("Authorization", "Bearer "+conn.AccessToken)
 	req.Header.Add("Content-Type", contentType)
+	req.Header.Add("User-Agent", "Skuid-CLI/0.2")
 
 	client := &http.Client{}
 	resp, err := client.Do(req)

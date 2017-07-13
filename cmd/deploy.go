@@ -32,16 +32,20 @@ var deployCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
+		var targetDirFriendly string
+
 		// If target directory is not provided,
 		// use the current directory's contents
-		targetDirFriendly := targetDir
 		if targetDir == "" {
 			targetDir = "."
 			targetDirFriendly, err = filepath.Abs(filepath.Dir(os.Args[0]))
 			if err != nil {
 				log.Fatal(err)
 			}
+		} else {
+			targetDirFriendly = targetDir
 		}
+
 		if verbose {
 			fmt.Println("Deploying site from", targetDirFriendly)
 		}
@@ -49,10 +53,10 @@ var deployCmd = &cobra.Command{
 		// Create a temporary directory into which to put our ZIP
 		tmpDir, err := ioutil.TempDir("", "skuid-deploy")
 		if err != nil {
-		    panic(err)
+			panic(err)
 		}
 		defer func() {
-		    _ = os.RemoveAll(tmpDir)
+			_ = os.RemoveAll(tmpDir)
 		}()
 
 		outFilePath := filepath.Join(tmpDir, "site.zip")
@@ -65,10 +69,13 @@ var deployCmd = &cobra.Command{
 
 		err = zip.ArchiveFile(targetDir, outFilePath, progress)
 		if err != nil {
-		    panic(err)
+			panic(err)
 		}
 
 		reader, err := os.Open(outFilePath)
+
+		defer reader.Close()
+
 		if err != nil {
 			log.Fatal(err)
 		}

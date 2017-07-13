@@ -52,19 +52,19 @@ var retrieveCmd = &cobra.Command{
 
 		fmt.Println("Retrieving metadata...")
 
-		var body io.Reader
-
-		if retrieveRequest != nil {
-			jsonBytes, err := json.Marshal(retrieveRequest)
-			if err != nil {
-				fmt.Println(err.Error())
-				os.Exit(1)
-			}
-			body = bytes.NewReader(jsonBytes)
+		jsonBytes, err := json.Marshal(retrieveRequest)
+		if err != nil {
+			fmt.Println(err.Error())
+			os.Exit(1)
 		}
 
 		//query the API for all Skuid metadata of every type
-		result, err := api.Connection.MakeRequest(http.MethodPost, "/metadata/retrieve", body, "application/json")
+		result, err := api.Connection.MakeRequest(
+			http.MethodPost,
+			"/metadata/retrieve",
+			bytes.NewReader(jsonBytes),
+			"application/json",
+		)
 
 		if err != nil {
 			fmt.Println("Error retrieving metadata: ", err.Error())
