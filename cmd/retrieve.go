@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"log"
@@ -8,6 +9,7 @@ import (
 	"strings"
 
 	"archive/zip"
+	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"path/filepath"
@@ -50,15 +52,26 @@ var retrieveCmd = &cobra.Command{
 
 		fmt.Println("Retrieving metadata...")
 
-		//query the API for all Skuid metadata of every type
-		result, err := api.Connection.MakeRequest(http.MethodPost, "/metadata/retrieve", retrieveRequest)
+		var body io.Reader
 
-		fmt.Println("Successfully retrieved metadata!")
+		if retrieveRequest != nil {
+			jsonBytes, err := json.Marshal(retrieveRequest)
+			if err != nil {
+				fmt.Println(err.Error())
+				os.Exit(1)
+			}
+			body = bytes.NewReader(jsonBytes)
+		}
+
+		//query the API for all Skuid metadata of every type
+		result, err := api.Connection.MakeRequest(http.MethodPost, "/metadata/retrieve", body, "application/json")
 
 		if err != nil {
-			fmt.Println(err.Error())
+			fmt.Println("Error retrieving metadata: ", err.Error())
 			os.Exit(1)
 		}
+
+		fmt.Println("Successfully retrieved metadata!")
 
 		// unzip the archive into the output directory
 		targetDirFriendly := targetDir

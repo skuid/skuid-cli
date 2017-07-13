@@ -1,11 +1,9 @@
 package platform
 
 import (
-	"bytes"
 	"fmt"
-	"io"
-
 	"encoding/json"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -103,36 +101,27 @@ func (conn *RestConnection) Refresh() error {
 }
 
 // Executes an HTTP request
-func (conn *RestConnection) MakeRequest(method string, url string, payload interface{}) (result []byte, err error) {
+func (conn *RestConnection) MakeRequest(method string, url string, payload io.Reader, contentType string) (result []byte, err error) {
 
 	endpoint := fmt.Sprintf("%s/api/v%s%s", conn.Host, conn.APIVersion, url)
 
-	var body io.Reader
-
-	if payload != nil {
-		jsonBytes, err := json.Marshal(payload)
-		if err != nil {
-			return nil, err
-		}
-
-		body = bytes.NewReader(jsonBytes)
-
-	}
-
-	req, err := http.NewRequest(method, endpoint, body)
+	req, err := http.NewRequest(method, endpoint, payload)
 
 	if err != nil {
 		return nil, err
 	}
 
 	req.Header.Add("Authorization", "Bearer "+conn.AccessToken)
-	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("Content-Type", contentType)
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
 
 	if err != nil {
 		return nil, err
+	}
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("Error making HTTP request", resp.Status)
 	}
 
 	defer resp.Body.Close()
