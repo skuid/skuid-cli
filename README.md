@@ -131,6 +131,5 @@ $ GOOS=linux GOARCH=amd64 make build #requires docker
 
 ## Future
 
-* Support for deploy on Skuid Platform
 * Support for watch behavior (e.g. skuid watch pages/*)
 * Support for other Skuid objects on Salesforce Platform (Data Source, Theme, etc.)
