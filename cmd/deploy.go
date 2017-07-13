@@ -34,16 +34,16 @@ var deployCmd = &cobra.Command{
 
 		// If target directory is not provided,
 		// use the current directory's contents
+		targetDirFriendly := targetDir
 		if targetDir == "" {
 			targetDir = "."
-
-			targetDirFriendly, err := filepath.Abs(filepath.Dir(os.Args[0]))
+			targetDirFriendly, err = filepath.Abs(filepath.Dir(os.Args[0]))
 			if err != nil {
 				log.Fatal(err)
 			}
+		}
+		if verbose {
 			fmt.Println("Deploying site from", targetDirFriendly)
-		} else {
-			fmt.Println("Deploying site from", targetDir)
 		}
 
 		// Create a temporary directory into which to put our ZIP
@@ -58,7 +58,9 @@ var deployCmd = &cobra.Command{
 		outFilePath := filepath.Join(tmpDir, "site.zip")
 
 		progress := func(archivePath string) {
-		    fmt.Println("Adding file to ZIP:", archivePath)
+			if verbose {
+				fmt.Println("Adding file to ZIP:", archivePath)
+			}
 		}
 
 		err = zip.ArchiveFile(targetDir, outFilePath, progress)
