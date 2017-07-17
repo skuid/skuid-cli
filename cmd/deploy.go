@@ -53,7 +53,9 @@ var deployCmd = &cobra.Command{
 		// Create a temporary directory into which to put our ZIP
 		tmpDir, err := ioutil.TempDir("", "skuid-deploy")
 		if err != nil {
-			panic(err)
+			log.Fatal("Unable to create a temporary directory for ZIP file")
+			log.Fatal(err)
+			os.Exit(1)
 		}
 		defer func() {
 			_ = os.RemoveAll(tmpDir)
@@ -69,7 +71,9 @@ var deployCmd = &cobra.Command{
 
 		err = zip.ArchiveFile(targetDir, outFilePath, progress)
 		if err != nil {
-			panic(err)
+			log.Fatal("Error creating deployment ZIP archive")
+			log.Fatal(err)
+			os.Exit(1)
 		}
 
 		reader, err := os.Open(outFilePath)
@@ -78,6 +82,7 @@ var deployCmd = &cobra.Command{
 
 		if err != nil {
 			log.Fatal(err)
+			os.Exit(1)
 		}
 
 		fmt.Println("Deploying metadata...")
@@ -85,7 +90,8 @@ var deployCmd = &cobra.Command{
 		_, err = api.Connection.MakeRequest(http.MethodPost, "/metadata/deploy", reader, "application/zip")
 
 		if err != nil {
-			fmt.Println("Error deploying metadata:", err.Error())
+			log.Fatal("Error deploying metadata")
+			log.Fatal(err)
 			os.Exit(1)
 		}
 
