@@ -19,6 +19,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var packageFile string
+
 // retrieveCmd represents the retrieve command
 var retrieveCmd = &cobra.Command{
 	Use:   "retrieve",
@@ -40,24 +42,31 @@ var retrieveCmd = &cobra.Command{
 		}
 
 		retrieveMetadata := make(map[string]map[string]string)
-
-		// To fetch all metadata of a given type,
-		// add an empty map for each type's camel-cased name
-		for _, camelCaseName := range types.MetadataTypes {
-			retrieveMetadata[camelCaseName] = make(map[string]string)
-		}
-
 		retrieveRequest := &types.RetrieveRequest{}
-		retrieveRequest.Metadata = retrieveMetadata
+		var jsonBytes []byte
+		if packageFile == "" {
+			// To fetch all metadata of a given type,
+			// add an empty map for each type's camel-cased name
+			for _, camelCaseName := range types.MetadataTypes {
+				retrieveMetadata[camelCaseName] = make(map[string]string)
+			}
+			retrieveRequest.Metadata = retrieveMetadata
+			b, err := json.Marshal(retrieveRequest)
+			if err != nil {
+				fmt.Println(err.Error())
+				os.Exit(1)
+			}
+			jsonBytes = b
+		} else {
+			content, err := ioutil.ReadFile(packageFile)
+			if err != nil {
+				fmt.Println(err.Error())
+				os.Exit(1)
+			}
+			jsonBytes = []byte(fmt.Sprintf(`{"metadata": %s}`, string(content)))
+		}
 
 		fmt.Println("Retrieving metadata...")
-
-		jsonBytes, err := json.Marshal(retrieveRequest)
-		if err != nil {
-			fmt.Println(err.Error())
-			os.Exit(1)
-		}
-
 		//query the API for all Skuid metadata of every type
 		result, err := api.Connection.MakeRequest(
 			http.MethodPost,
@@ -189,5 +198,6 @@ func readFileFromZipAndWriteToFilesystem(file *zip.File, targetLocation string) 
 }
 
 func init() {
+	retrieveCmd.Flags().StringVarP(&packageFile, "package", "f", "", "Filename of the package definition.")
 	RootCmd.AddCommand(retrieveCmd)
 }
