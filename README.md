@@ -72,7 +72,7 @@ Flags:
       --client-id string       OAuth Client ID
       --client-secret string   OAuth Client Secret
   -d, --dir string             Input/output directory.
-      --host string            API Host base URL, e.g. my-site.skuidsite.com for Skuid Platform or my-domain.my.salesforce.com for Salesforce
+      --host string            API Host base URL, e.g. https://my-site.skuidsite.com for Skuid Platform or https://my-domain.my.salesforce.com for Salesforce
   -m, --module string          Module name(s), separated by a comma.
   -p, --password string        Skuid Platform / Salesforce Password
   -u, --username string        Skuid Platform / Salesforce Username
