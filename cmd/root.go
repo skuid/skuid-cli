@@ -53,7 +53,6 @@ func init() {
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
-/Users/codytaylor/repos/skuid/README.md:
 
 	viper.SetConfigName(".skuid") // name of config file (without extension)
 	viper.AddConfigPath("$HOME")  // adding home directory as first search path
