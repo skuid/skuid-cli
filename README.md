@@ -2,9 +2,9 @@
 
 `skuid` is a command line application for retrieving and deploying Skuid objects (data and metadata) on both Skuid Platform sites and Salesforce orgs running the Skuid managed package.
 
-While Skuid is a cloud user experience platform, it can be helpful download an entire site's worth of pages to make small adjustments on multiple pages, to move them from a sandbox site to a production site, or to store them in a version control system (VCS). And while it's possible to save page XML and create page packs, moving entire swathes of metadata from site to site can prove challenging.
+While Skuid is a cloud user experience platform, it can be helpful download an entire site's worth of pages to make small adjustments on multiple pages, to move them from a sandbox site to a production site, or to store them in a version control system (VCS). While it's possible to save page XML and create page packs, moving entire apps of Skuid objects from site to site can prove challenging.
 
-Enter the ``skuid`` command-line application. Using ``skuid`` you can easily pull—or download—your Skuid pages and push—upload—your Skuid metadata from one site to another using only a few commands.
+Enter the `skuid` command-line application. Using `skuid` you can easily pull—or download—your Skuid pages and push—upload—your Skuid metadata from one site to another using only a few commands.
 
 * [Prerequisites](#prerequisites)
 * [Installation](#installation)
@@ -27,7 +27,7 @@ Enter the ``skuid`` command-line application. Using ``skuid`` you can easily pul
 
 ## Prerequisites
 
-- A UNIX-based CLI, meaning you'll need to be working on a macOS or Linux machine.
+- A UNIX-based terminal, available by default when working on a macOS or Linux machine. Examples on macOS include iTerm2 or the Terminal application. 
 - Some basic knowledge of the command line is required. You'll need to be able to navigate your file system with `cd` and enter the `skuid` command. 
 - If pulling and pushing pages with Skuid on Salesforce...
   - You must [enable My Domain](https://help.salesforce.com/articleView?id=domain_name_overview.htm&type=5) for your Salesforce org
@@ -35,28 +35,52 @@ Enter the ``skuid`` command-line application. Using ``skuid`` you can easily pul
   
 ## Installation
 
+To quickly install the application, copy and paste the following commands in your terminal:
+
+```bash
+curl -L https://github.com/skuid/skuid/releases/download/0.2.0/skuid_darwin_amd64 -o skuid
+# On a Linux macine? Use this instead:
+# curl -L https://github.com/skuid/skuid/releases/download/0.2.0/skuid_linux_amd64 -o skuid
+chmod +x skuid
+mv skuid /usr/local/bin/skuid
+```
+
 To manually install the application, follow these steps:
 
-1. Download [the latest release of the `skuid` CLI application binary.](https://github.com/skuid/skuid/releases)
-1. Rename the downloaded application binary file to ``skuid``.
-1. Move the application to a folder in your `$PATH` variable, like `/usr/local/bin`, or add the application's folder to the PATH variable.
-1. Give the application executable permissions: `chmod +x skuid`
-1. Verify that you can run the application: ``skuid --help``.
+1. Download [the latest release of the `skuid` application binary.](https://github.com/skuid/skuid/releases)
+1. Navigate to the directory containing the `skuid_darwin_amd64` file in a terminal application.
 
-You may also copy and paste the following commands in your terminal:
+   ```bash
+   cd a-folder
+   ```
 
-```
-curl -L https://github.com/skuid/skuid/releases/download/0.2.0/skuid_darwin_amd64 -o skuid
-chmod +x skuid
-mv skuid /usr/local/bin/
-```
+1. Rename the downloaded application binary file to `skuid`:  
 
-*Note*: If you are on a Linux machine, download the appropriate version of the application with: 
-```bash
-curl -L https://github.com/skuid/skuid/releases/download/0.2.0/skuid_linux_amd64 -o skuid
-```
+   ```bash
+   mv skuid_darwin_amd64 skuid
+   ```
 
-*Note:* Use the [the Go programming language?](https://golang.org/doc/install) If so, you can also install ``skuid`` by running `go get github.com/skuid/skuid`.
+1. Give the application executable permissions: 
+
+   ```bash
+   chmod +x skuid
+   ```
+
+1. Move the application to a folder in your `$PATH` variable, like `/usr/local/bin`, or add the application's folder to the PATH variable:
+
+   ```bash
+   mv skuid /usr/local/bin/skuid
+   # or add the below to your shell profile
+   export PATH=$PATH:/path/to/a-folder
+   ```
+
+1. Verify that you can run the application: 
+   
+   ```bash
+   skuid --help
+   ```
+
+*Note:* Use the [the Go programming language?](https://golang.org/doc/install) If so, you can also install `skuid` by running `go get github.com/skuid/skuid`.
 
 ### Building from source
 
@@ -296,7 +320,7 @@ Some errors you may encounter include:
 - `Error deploying metadata: Post https://example.skuidsite.com/api/v1/metadata/deploy: EOF`
   - This may mean your Skuid credentials are not correct within your environment variables. Verify both your username and password.
 - `Post example.my.salesforce.com/services/oauth2/token: unsupported protocol scheme ""`
-  - Your ``SKUID_HOST`` or ``--host`` flag value may not have the `https` protocol in the proper place.
+  - Your `SKUID_HOST` or `--host` flag value may not have the `https` protocol in the proper place.
 
     **Correct**
 
