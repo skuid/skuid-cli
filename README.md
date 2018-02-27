@@ -1,4 +1,4 @@
-# skuid CLI
+# skuid
 
 `skuid` is a command line application for retrieving and deploying Skuid objects (data and metadata) on both Skuid Platform sites and Salesforce orgs running the Skuid managed package.
 
