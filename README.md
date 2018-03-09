@@ -8,7 +8,7 @@ While Skuid is a cloud user experience platform, it can be helpful to:
 - move Skuid configurations from a sandbox site to a production site
 - store Skuid configurations in a version control system (VCS)
 
-While it's possible to save page XML and create page packs, moving entire apps of Skuid objects from site to site can prove challenging.
+While it's possible to save page XML and create page packs, moving entire apps' worth of Skuid objects from site to site can prove challenging.
 
 Enter the `skuid` CLI. Using `skuid`, you can easily pull—download—Skuid pages and push—upload—Skuid metadata from one site to another using only a few commands.
 
@@ -32,11 +32,15 @@ Enter the `skuid` CLI. Using `skuid`, you can easily pull—download—Skuid pag
 To quickly install the application, copy and paste the following commands in the terminal:
 
 ```bash
+# Download the skuid application
 # On a macOS machine? Use this:
 wget https://github.com/skuid/skuid/releases/download/0.2.0/skuid_darwin_amd64 -O skuid
 # On a Linux machine? Use this instead:
 # wget https://github.com/skuid/skuid/releases/download/0.2.0/skuid_linux_amd64 -O skuid
+# Give the skuid application the permissions it needs to run
 chmod +x skuid
+# Move the skuid application to a folder where it can be used easily
+# Enter your computer account password if prompted
 sudo mv skuid /usr/local/bin/skuid
 ```
 
@@ -70,6 +74,8 @@ To manually install the application, follow these steps:
    # or add the below to your shell profile
    export PATH=$PATH:/path/to/a-folder
    ```
+
+   _Note_: If you choose to update your shell profile you'll need to `source` your shell profile or restart your session for those changes to take effect.
 
 1. Verify that you can run the application:
 
