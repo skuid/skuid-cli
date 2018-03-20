@@ -23,7 +23,7 @@ var (
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
 	Use:   "skuid",
-	Short: "A CLI for interating with Skuid APIs",
+	Short: "A CLI for iterating with Skuid APIs",
 	Long:  `Deploy and retrieve Skuid metadata to / from Skuid Platform or Skuid on Salesforce`,
 }
 
@@ -43,7 +43,7 @@ func init() {
 	RootCmd.PersistentFlags().StringVar(&appClientSecret, "client-secret", os.Getenv("SKUID_CLIENT_SECRET"), "OAuth Client Secret")
 	RootCmd.PersistentFlags().StringVar(&apiVersion, "api-version", "", "API Version")
 	RootCmd.PersistentFlags().StringVar(&host, "host", os.Getenv("SKUID_HOST"),
-		"API Host base URL, e.g. my-site.skuidsite.com for Skuid Platform or my-domain.my.salesforce.com for Salesforce")
+		"API Host base URL, e.g. https://my-site.skuidsite.com for Skuid Platform or https://my-domain.my.salesforce.com for Salesforce")
 	RootCmd.PersistentFlags().StringVarP(&module, "module", "m", "", "Module name(s), separated by a comma.")
 	RootCmd.PersistentFlags().StringVarP(&password, "password", "p", os.Getenv("SKUID_PW"), "Skuid Platform / Salesforce Password")
 	RootCmd.PersistentFlags().StringVarP(&targetDir, "dir", "d", "", "Input/output directory.")

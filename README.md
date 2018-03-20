@@ -1,135 +1,134 @@
 # skuid
 
-`skuid` is a command line application for interacting with Skuid metadata, on both Salesforce Platform and Skuid Platform.
-It provides ways to deploy and retrieve Skuid application metadata to and from either a Salesforce Platform org running the Skuid managed package or a Skuid Platform Site.
+`skuid` is a command line application (CLI) for retrieving and deploying Skuid objects (data and metadata) on both Skuid Platform sites and Salesforce orgs running the Skuid managed package.
 
-## Motiviation
+While Skuid is a cloud user experience platform, it can be helpful to:
 
-Our previous offering [`skuid-grunt`](https://bitbucket.org/skuid/skuid-grunt) provided this functionality as a Grunt plugin.
-It allowed users to configure Grunt tasks to perform pushes and pulls of Skuid Pages. This was great for projects already using NodeJS and Grunt
-but not so great if you really didn't want to require those dependencies. `skuid` solves that problem by producing a self-contained
-CLI to perform all the same operations.
+- download an entire site's worth of pages to make small adjustments locally
+- move Skuid configurations from a sandbox site to a production site
+- store Skuid configurations in a version control system (VCS)
 
-## Examples (Salesforce Platform)
+While it's possible to save page XML and create page packs, moving entire apps' worth of Skuid objects from site to site can prove challenging.
 
-Pull all Skuid pages in the `Dashboard` module
+Enter the `skuid` CLI. Using `skuid`, you can easily pull—download—Skuid pages and push—upload—Skuid metadata from one site to another using only a few commands.
 
-```
-$ skuid pull -m Dashboard
-```
+* [Prerequisites](#prerequisites)
+* [Installation](#installation)
+	* [Building from source](#building-from-source)
+* [Usage](#usage)
+* [skuid vs skuid-grunt](#skuid-vs-skuid-grunt)
 
-Push all Skuid pages in the `Dashboard` module
+## Prerequisites
 
-```
-$ skuid push -m Dashboard
-```
-
-Create a Page Pack from all pages in the Dashboard module
-
-```
-$ skuid page-pack -m Dashboard -o src/staticresources/DashboardPages.resource
-```
-
-## Examples (Skuid Platform)
-
-Retrieve all Skuid Platform metadata from a given Site, into the current directory
-
-```
-$ skuid retrieve
-```
-
-Retrieve all Skuid Platform metadata from a given Site, into a specified directory
-
-```
-$ skuid retrieve -d sites/humboldt-us-trial
-```
-
-Deploy all metadata in the current directory to a Skuid Platform Site
-
-```
-$ skuid deploy
-```
-
-Deploy all metadata in a different directory to a Skuid Platform Site
-
-```
-$ skuid deploy -d path/to/site
-```
+- Some basic knowledge of the command line is required. You should be able to navigate the file system with `cd` and enter the `skuid` command.
+- If pulling and pushing pages with Skuid on Salesforce...
+  - [Enable My Domain](https://help.salesforce.com/articleView?id=domain_name_overview.htm&type=5) for your Salesforce org
+  - Configure a [Salesforce connected app](https://help.salesforce.com/articleView?id=connected_app_overview.htm&type=5) and have both the _consumer key_ and the _consumer secret_ available
 
 ## Installation
 
-If you have go installed on your system, you can simply `go get github.com/skuid/skuid`. If not, download the latest release from
-[here](https://github.com/skuid/skuid/releases). You'll need to make sure `skuid` is in your `$PATH` and executable.
+### macOS and Linux
+
+To quickly install the application, copy and paste the following commands in the terminal:
+
+```bash
+# Download the skuid application
+# On a macOS machine? Use this:
+wget https://github.com/skuid/skuid/releases/download/0.2.0/skuid_darwin_amd64 -O skuid
+# On a Linux machine? Use this instead:
+# wget https://github.com/skuid/skuid/releases/download/0.2.0/skuid_linux_amd64 -O skuid
+# Give the skuid application the permissions it needs to run
+chmod +x skuid
+# Move the skuid application to a folder where it can be used easily
+# Enter your computer account password if prompted
+sudo mv skuid /usr/local/bin/skuid
+```
+
+To manually install the application, follow these steps:
+
+1. Download [the latest release of the `skuid` application binary.](https://github.com/skuid/skuid/releases)
+1. Navigate to the directory containing the `skuid` binary file in a terminal application.
+
+   ```bash
+   cd a-folder
+   ```
+
+1. Rename the downloaded application binary file to `skuid`:
+
+   ```bash
+   mv skuid_darwin_amd64 skuid
+   # or for Linux:
+   # mv skuid_linux_amd64 skuid
+   ```
+
+1. Give the application executable permissions:
+
+   ```bash
+   chmod +x skuid
+   ```
+
+1. Move the application to a folder in your `$PATH` variable, like `/usr/local/bin`, or add the application's folder to the PATH variable:
+
+   ```bash
+   mv skuid /usr/local/bin/skuid
+   # or add the below to your shell profile
+   export PATH=$PATH:/path/to/a-folder
+   ```
+
+   _Note_: If you choose to update your shell profile you'll need to `source` your shell profile or restart your session for those changes to take effect.
+
+1. Verify that you can run the application:
+
+   ```bash
+   skuid --help
+   ```
+
+### Windows
+
+1. Download the [latest Windows executable release](https://github.com/skuid/skuid/releases) in your web browser.
+1. (_Optional_) Move the executable to a more permanent location, such as `C:\Program Files\Skuid\`.
+1. (_Optional_) Set an alias to easily access the executable.
+
+   In Windows Powershell, use Set-Alias. For information about saving aliases in Powershell, see [Microsoft documentation](https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.utility/set-alias?view=powershell-6)
+
+   ```bash
+   Set-Alias skuid C:\Path\To\skuid_windows_amd64.exe
+   ```
+
+   In the Windows Command Prompt, use doskey. For information about saving doskey aliases for future sessions, see [Microsoft documentation](https://technet.microsoft.com/en-us/library/ff382652.aspx).
+
+   ```bash
+   doskey skuid=C:\Path\To\skuid_windows_amd64.exe
+   ```
+
+1. Invoke the executable by typing its name or alias and pressing enter: `skuid --help`.
+
+### Using go
+
+Use the [the Go programming language?](https://golang.org/doc/install) If so, you can also install `skuid` by running `go get github.com/skuid/skuid`.
+
+### Building from source
+
+To build the application from the source, first clone the repository or download the source. You also need [Go installed on your machine](https://golang.org/doc/install).
+
+- To build from source for your machine:
+
+  ```bash
+  go build
+  ```
+
+- Building for a specific platform:
+
+  ```bash
+  GOOS=linux GOARCH=amd64 go build
+  # or
+  GOOS=linux GOARCH=amd64 make build #requires docker
+  ```
 
 ## Usage
 
-```bash
-Push and Pull Skuid pages to and from Skuid running on the Salesforce Platform
+For up-to-date usage information see [our documentation page.](https://docs.skuid.com/latest/en/skuid/cli)
 
-Usage:
-  skuid [command]
+## skuid vs skuid-grunt
 
-Available Commands:
-  deploy      Deploy local Skuid metadata to a Skuid Platform Site.
-  page-pack   Retrieve a collection of Skuid Pages as a Page Pack.
-  pull        Pull Skuid Pages from Salesforce into a local directory.
-  push        Push Skuid Pages from a directory to Skuid.
-  retrieve    Retrieve Skuid metadata from a Site into a local directory.  
-
-Flags:
-      --api-version string     API Version
-      --client-id string       OAuth Client ID
-      --client-secret string   OAuth Client Secret
-  -d, --dir string             Input/output directory.
-      --host string            API Host base URL, e.g. my-site.skuidsite.com for Skuid Platform or my-domain.my.salesforce.com for Salesforce
-  -m, --module string          Module name(s), separated by a comma.
-  -p, --password string        Skuid Platform / Salesforce Password
-  -u, --username string        Skuid Platform / Salesforce Username
-  -v, --verbose                Display all possible logging info
-
-
-Use "skuid [command] --help" for more information about a command.
-```
-
-## Configuration
-
-`skuid` uses Environment variables by default to provide credentials for interacting with the Skuid APIs under the hood.
-The following Environment variables should be set to avoid having to enter your credentials with every command. You can drop these in your
-`~/.bash_profile` or a `.env` file in your project directory.
-
-
-### Salesforce Platform Example
-
-```bash
-export SKUID_UN={username}
-export SKUID_PW={password + salesforce-security-token}
-export SKUID_CLIENT_ID={connected-app-consumer-key}
-export SKUID_CLIENT_SECRET={connected-app-consumer-secret}
-```
-
-### Skuid Platform Example
-
-```bash
-export SKUID_UN={username}
-export SKUID_PW={password}
-export SKUID_HOST=https://humboldt-us-trial.skuidsite.com
-```
-
-## Building from source
-
-* To build from source for your machine
-```
-$ go build
-```
-
-* Building for a specific platform
-```
-$ GOOS=linux GOARCH=amd64 go build
-# or
-$ GOOS=linux GOARCH=amd64 make build #requires docker
-```
-
-## Future
-
-* Support for watch behavior (e.g. skuid watch pages/*)
-* Support for other Skuid objects on Salesforce Platform (Data Source, Theme, etc.)
+[`skuid-grunt`](https://github.com/skuid/skuid-grunt) previously provided this push/pull functionality as a Grunt plugin. While great for projects already using NodeJS and Grunt, the plugin was not so great if you didn't want to require those dependencies. `skuid` solves that dependency problem by producing a self-contained CLI to perform all the same operations.
