@@ -40,15 +40,20 @@ var pullCmd = &cobra.Command{
 			targetDir = "skuidpages"
 		}
 
-		//build the module query paramater
-		var requestedModule = []string{""}
+		//build the module and name query paramaters
+		//var requestedModule = []string{""}
+		var requestedItems = []string{""}
+		var itemKey = "module"
 
 		if module != "" {
-			requestedModule = []string{module}
+			requestedItems = []string{module}
+		} else if name != "" {
+			requestedItems = []string{name}
+			itemsKey = "name"
 		}
 
 		query := url.Values{
-			"module": requestedModule,
+			itemKey: requestedItems,
 		}
 
 		//query the API for all pages in the requested module

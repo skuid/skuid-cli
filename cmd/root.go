@@ -14,6 +14,7 @@ var (
 	apiVersion      string
 	host            string
 	module          string
+	name			string
 	password        string
 	targetDir       string
 	username        string
@@ -45,6 +46,7 @@ func init() {
 	RootCmd.PersistentFlags().StringVar(&host, "host", os.Getenv("SKUID_HOST"),
 		"API Host base URL, e.g. https://my-site.skuidsite.com for Skuid Platform or https://my-domain.my.salesforce.com for Salesforce")
 	RootCmd.PersistentFlags().StringVarP(&module, "module", "m", "", "Module name(s), separated by a comma.")
+	RootCmd.PersistentFlags().StringVarP(&name, "name", "n", "", "Page name(s), separated by a comma.")
 	RootCmd.PersistentFlags().StringVarP(&password, "password", "p", os.Getenv("SKUID_PW"), "Skuid Platform / Salesforce Password")
 	RootCmd.PersistentFlags().StringVarP(&targetDir, "dir", "d", "", "Input/output directory.")
 	RootCmd.PersistentFlags().StringVarP(&username, "username", "u", os.Getenv("SKUID_UN"), "Skuid Platform / Salesforce Username")
