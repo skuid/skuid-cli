@@ -49,7 +49,7 @@ var pullCmd = &cobra.Command{
 			requestedItems = []string{module}
 		} else if name != "" {
 			requestedItems = []string{name}
-			itemsKey = "name"
+			itemKey = "name"
 		}
 
 		query := url.Values{
