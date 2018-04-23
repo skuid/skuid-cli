@@ -87,11 +87,12 @@ var deployCmd = &cobra.Command{
 
 		fmt.Println("Deploying metadata...")
 
-		_, err = api.Connection.MakeRequest(http.MethodPost, "/metadata/deploy", reader, "application/zip")
+		result, err := api.Connection.MakeRequest(http.MethodPost, "/metadata/deploy", reader, "application/zip")
 
 		if err != nil {
-			log.Fatal("Error deploying metadata")
-			log.Fatal(err)
+			log.Print("Error deploying metadata")
+			log.Print(string(result))
+			log.Print(err)
 			os.Exit(1)
 		}
 
