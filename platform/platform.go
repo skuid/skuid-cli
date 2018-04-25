@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+
+	"github.com/skuid/skuid/httperror"
 )
 
 type OAuthResponse struct {
@@ -138,7 +140,7 @@ func (conn *RestConnection) MakeRequest(method string, url string, payload io.Re
 	}
 
 	if resp.StatusCode != 200 {
-		return body, fmt.Errorf("Error making HTTP request", resp.Status)
+		return nil, httperror.New(resp.Status, string(body))
 	}
 
 	return body, nil
