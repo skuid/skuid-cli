@@ -7,6 +7,9 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"strings"
+
+	"github.com/skuid/skuid/httperror"
 )
 
 type OAuthResponse struct {
@@ -76,7 +79,16 @@ func (conn *RestConnection) Refresh() error {
 	urlValues.Set("username", conn.Username)
 	urlValues.Set("password", conn.Password)
 
-	resp, err := http.PostForm(conn.Host+"/auth/oauth/token", urlValues)
+	req, err := http.NewRequest("POST", conn.Host+"/auth/oauth/token", strings.NewReader(urlValues.Encode()))
+	if err != nil {
+		return err
+	}
+
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Add("User-Agent", "Skuid-CLI/0.2")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
 
 	if err != nil {
 		return err
@@ -117,16 +129,20 @@ func (conn *RestConnection) MakeRequest(method string, url string, payload io.Re
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
-
 	if err != nil {
 		return nil, err
 	}
-	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("Error making HTTP request", resp.Status)
-	}
 
 	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
 
-	return ioutil.ReadAll(resp.Body)
+	if resp.StatusCode != 200 {
+		return nil, httperror.New(resp.Status, string(body))
+	}
+
+	return body, nil
 
 }
