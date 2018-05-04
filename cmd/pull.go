@@ -41,19 +41,11 @@ var pullCmd = &cobra.Command{
 		}
 
 		//build the module and name query paramaters
-		//var requestedModule = []string{""}
-		var requestedItems = []string{""}
-		var itemKey = "module"
-
+		query := url.Values{}
 		if module != "" {
-			requestedItems = []string{module}
+			query.Add("module", module)
 		} else if name != "" {
-			requestedItems = []string{name}
-			itemKey = "name"
-		}
-
-		query := url.Values{
-			itemKey: requestedItems,
+			query.Add("name", name)
 		}
 
 		//query the API for all pages in the requested module
