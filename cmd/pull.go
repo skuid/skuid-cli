@@ -42,9 +42,12 @@ var pullCmd = &cobra.Command{
 
 		//build the module and name query paramaters
 		query := url.Values{}
+
 		if module != "" {
 			query.Add("module", module)
-		} else if name != "" {
+		}
+
+		if name != "" {
 			query.Add("name", name)
 		}
 
