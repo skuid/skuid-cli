@@ -40,15 +40,15 @@ var pullCmd = &cobra.Command{
 			targetDir = "skuidpages"
 		}
 
-		//build the module query paramater
-		var requestedModule = []string{""}
+		//build the module and name query paramaters
+		query := url.Values{}
 
 		if module != "" {
-			requestedModule = []string{module}
+			query.Add("module", module)
 		}
 
-		query := url.Values{
-			"module": requestedModule,
+		if page != "" {
+			query.Add("page", page)
 		}
 
 		//query the API for all pages in the requested module
@@ -74,10 +74,10 @@ var pullCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		for _, page := range pages {
+		for _, pageRecord := range pages {
 
 			//write the page in the at rest format
-			err = page.WriteAtRest(targetDir)
+			err = pageRecord.WriteAtRest(targetDir)
 			if err != nil {
 				fmt.Println(err.Error())
 				os.Exit(1)
