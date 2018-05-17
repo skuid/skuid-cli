@@ -47,8 +47,8 @@ var pullCmd = &cobra.Command{
 			query.Add("module", module)
 		}
 
-		if name != "" {
-			query.Add("name", name)
+		if page != "" {
+			query.Add("page", page)
 		}
 
 		//query the API for all pages in the requested module
@@ -74,10 +74,10 @@ var pullCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		for _, page := range pages {
+		for _, pageRecord := range pages {
 
 			//write the page in the at rest format
-			err = page.WriteAtRest(targetDir)
+			err = pageRecord.WriteAtRest(targetDir)
 			if err != nil {
 				fmt.Println(err.Error())
 				os.Exit(1)
