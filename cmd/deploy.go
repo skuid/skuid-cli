@@ -34,16 +34,20 @@ var deployCmd = &cobra.Command{
 
 		var targetDirFriendly string
 
-		// If target directory is not provided,
-		// use the current directory's contents
-		if targetDir == "" {
-			targetDir = "."
-			targetDirFriendly, err = filepath.Abs(filepath.Dir(os.Args[0]))
+		// If target directory is provided,
+		// switch to that target directory and later switch back.
+		if targetDir != "" {
+			os.Chdir(targetDir)
+			pwd, err := os.Getwd()
 			if err != nil {
 				log.Fatal(err)
 			}
-		} else {
-			targetDirFriendly = targetDir
+			defer os.Chdir(pwd)
+		}
+		targetDir = "."
+		targetDirFriendly, err = filepath.Abs(filepath.Dir(os.Args[0]))
+		if err != nil {
+			log.Fatal(err)
 		}
 
 		if verbose {
