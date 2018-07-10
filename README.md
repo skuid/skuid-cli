@@ -132,3 +132,23 @@ For up-to-date usage information see [our documentation page.](https://docs.skui
 ## skuid vs skuid-grunt
 
 [`skuid-grunt`](https://github.com/skuid/skuid-grunt) previously provided this push/pull functionality as a Grunt plugin. While great for projects already using NodeJS and Grunt, the plugin was not so great if you didn't want to require those dependencies. `skuid` solves that dependency problem by producing a self-contained CLI to perform all the same operations.
+
+## Making a new release
+
+In order to make a release for each OS, you'll first want to checkout master and update the version number in `Makefile`.
+
+Then you can simply checkout master and run the `release` make target.
+
+```back
+make release
+```
+
+This will tag the current master commit with the version number you specified in `Makefile` and build the binaries for use on each platform.
+
+You'll push that new tag to github:
+
+```bash
+git push <remote name> <tag_name>
+```
+
+Once the tag is pushed, you should be able to add a new release referencing that tag at https://github.com/skuid/skuid/releases. When adding the new release, there is a section for uploading any binaries for the release which you will use to add the newly built binaries you just created.
