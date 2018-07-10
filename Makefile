@@ -9,7 +9,7 @@ IMAGE ?= golang
 ARCH=amd64
 OS=darwin
 
-VERSION=0.1.0
+VERSION=0.2.3
 
 .PHONY: setup fmt vendored
 
@@ -41,3 +41,4 @@ release:
 	git tag $(VERSION)
 	GOOS=linux GOARCH=amd64 go build -o skuid_linux_amd64
 	GOOS=darwin GOARCH=amd64 go build -o skuid_darwin_amd64
+	GOOS=windows GOARCH=amd64 go build -o skuid_windows_amd64.exe
