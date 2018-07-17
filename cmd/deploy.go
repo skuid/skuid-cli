@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/pierrre/archivefile/zip"
 	"github.com/skuid/skuid/platform"
+	"github.com/skuid/skuid/types"
 	"github.com/spf13/cobra"
 )
 
@@ -86,9 +88,43 @@ var deployCmd = &cobra.Command{
 			log.Fatal(err)
 		}
 
+		planReader, err := os.Open(outFilePath)
+
+		defer planReader.Close()
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		// Get Deployment Plan
+		planResult, err := api.Connection.MakeRequest(
+			http.MethodPost,
+			"/metadata/deploy/plan",
+			planReader,
+			"application/zip",
+		)
+
+		if err != nil {
+			fmt.Println("Error getting deploy plan: ", err.Error())
+			os.Exit(1)
+		}
+
+		var plans map[string]types.Plan
+		err = json.Unmarshal(planResult, &plans)
+		if err != nil {
+			fmt.Println("Error parsing deploy plan: ", err.Error())
+			os.Exit(1)
+		}
+		fmt.Println(plans)
+
 		fmt.Println("Deploying metadata...")
 
-		_, err = api.Connection.MakeRequest(http.MethodPost, "/metadata/deploy", reader, "application/zip")
+		_, err = api.Connection.MakeRequest(
+			http.MethodPost,
+			"/metadata/deploy",
+			reader,
+			"application/zip",
+		)
 
 		if err != nil {
 			log.Print("Error deploying metadata")

@@ -36,7 +36,7 @@ type RestApi struct {
 func Login(host string, username string, password string, apiVersion string, verbose bool) (api *RestApi, err error) {
 
 	if apiVersion == "" {
-		apiVersion = "1"
+		apiVersion = "2"
 	}
 
 	if verbose {
