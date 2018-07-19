@@ -1,17 +1,18 @@
 package cmd
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 
-	"github.com/pierrre/archivefile/zip"
 	"github.com/skuid/skuid/platform"
 	"github.com/skuid/skuid/types"
+	"github.com/skuid/skuid/ziputils"
 	"github.com/spf13/cobra"
 )
 
@@ -56,83 +57,104 @@ var deployCmd = &cobra.Command{
 			fmt.Println("Deploying site from", targetDirFriendly)
 		}
 
-		// Create a temporary directory into which to put our ZIP
-		tmpDir, err := ioutil.TempDir("", "skuid-deploy")
-		if err != nil {
-			log.Fatal("Unable to create a temporary directory for ZIP file")
-			log.Fatal(err)
-		}
-		defer func() {
-			_ = os.RemoveAll(tmpDir)
-		}()
-
-		outFilePath := filepath.Join(tmpDir, "site.zip")
-
-		progress := func(archivePath string) {
-			if verbose {
-				fmt.Println("Adding file to ZIP:", archivePath)
-			}
-		}
-
-		err = zip.ArchiveFile(targetDir, outFilePath, progress)
+		// Create a buffer to write our archive to.
+		bufPlan := new(bytes.Buffer)
+		err = ziputils.Archive(targetDir, bufPlan)
 		if err != nil {
 			log.Print("Error creating deployment ZIP archive")
 			log.Fatal(err)
 		}
 
-		reader, err := os.Open(outFilePath)
-
-		defer reader.Close()
-
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		planReader, err := os.Open(outFilePath)
-
-		defer planReader.Close()
-
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		// Get Deployment Plan
-		planResult, err := api.Connection.MakeRequest(
-			http.MethodPost,
-			"/metadata/deploy/plan",
-			planReader,
-			"application/zip",
-		)
-
+		plan, err := getDeployPlan(api, bufPlan)
 		if err != nil {
 			fmt.Println("Error getting deploy plan: ", err.Error())
 			os.Exit(1)
 		}
-
-		var plans map[string]types.Plan
-		err = json.Unmarshal(planResult, &plans)
-		if err != nil {
-			fmt.Println("Error parsing deploy plan: ", err.Error())
-			os.Exit(1)
-		}
-		fmt.Println(plans)
+		fmt.Println("Got PLAN")
+		fmt.Println(plan)
 
 		fmt.Println("Deploying metadata...")
 
-		_, err = api.Connection.MakeRequest(
-			http.MethodPost,
-			"/metadata/deploy",
-			reader,
-			"application/zip",
-		)
-
+		_, err = executeDeployPlan(api, plan)
 		if err != nil {
-			log.Print("Error deploying metadata")
-			log.Fatal(err)
+			fmt.Println("Error executing deploy plan: ", err.Error())
+			os.Exit(1)
 		}
 
 		fmt.Println("Successfully deployed metadata to Skuid Site.")
 	},
+}
+
+func getDeployPlan(api *platform.RestApi, payload io.Reader) (map[string]types.Plan, error) {
+	// Get a retrieve plan
+	planResult, err := api.Connection.MakeRequest(
+		http.MethodPost,
+		"/metadata/deploy/plan",
+		payload,
+		"application/zip",
+	)
+	defer planResult.Close()
+
+	if err != nil {
+		return nil, err
+	}
+
+	var plans map[string]types.Plan
+	if err := json.NewDecoder(planResult).Decode(&plans); err != nil {
+		return nil, err
+	}
+
+	return plans, nil
+}
+
+func executeDeployPlan(api *platform.RestApi, plans map[string]types.Plan) ([]io.ReadCloser, error) {
+	planResults := []io.ReadCloser{}
+	for _, plan := range plans {
+		metadataBytes, err := json.Marshal(plan.Metadata)
+		if err != nil {
+			return nil, err
+		}
+		fmt.Println("METADATA TO DEPLOY")
+		fmt.Println(metadataBytes)
+
+		// Create a buffer to write our archive to.
+		bufDeploy := new(bytes.Buffer)
+		err = ziputils.Archive(targetDir, bufDeploy)
+		if err != nil {
+			log.Print("Error creating deployment ZIP archive")
+			log.Fatal(err)
+		}
+
+		if plan.Host == "" {
+			planResult, err := api.Connection.MakeRequest(
+				http.MethodPost,
+				plan.URL,
+				bufDeploy,
+				"application/json",
+			)
+			if err != nil {
+				return nil, err
+			}
+			defer planResult.Close()
+			planResults = append(planResults, planResult)
+		} else {
+			fmt.Println("SKIPING OTHER DEPLOY")
+			/*
+				url := fmt.Sprintf("%s:%s%s", plan.Host, plan.Port, plan.URL)
+				planResult, err := api.Connection.MakeJWTRequest(
+					http.MethodPost,
+					url,
+					bytes.NewReader(metadataBytes),
+					"application/json",
+				)
+				if err != nil {
+					return nil, err
+				}
+				planResults = append(planResults, planResult)
+			*/
+		}
+	}
+	return planResults, nil
 }
 
 func init() {

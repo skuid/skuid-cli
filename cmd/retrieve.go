@@ -13,7 +13,6 @@ import (
 	"net/http"
 	"path/filepath"
 
-	"github.com/davecgh/go-spew/spew"
 	jsonpatch "github.com/evanphx/json-patch"
 	"github.com/skuid/skuid/platform"
 	"github.com/skuid/skuid/types"
@@ -71,7 +70,7 @@ func getFriendlyURL(targetDir string) (string, error) {
 
 }
 
-func writeResultsToDisk(results [][]byte) error {
+func writeResultsToDisk(results []io.ReadCloser) error {
 	// unzip the archive into the output directory
 	targetDirFriendly, err := getFriendlyURL(targetDir)
 	if err != nil {
@@ -84,14 +83,10 @@ func writeResultsToDisk(results [][]byte) error {
 
 	for _, result := range results {
 
-		tmpfile, err := ioutil.TempFile("", "skuid")
-
+		tmpFileName, err := createTemporaryZipFile(result)
 		if err != nil {
 			return err
 		}
-		tmpFileName := tmpfile.Name()
-		// write to our new file
-		tmpfile.Write(result)
 
 		// unzip the contents of our temp zip file
 		err = unzip(tmpFileName, targetDir, pathMap)
@@ -105,8 +100,23 @@ func writeResultsToDisk(results [][]byte) error {
 	}
 
 	fmt.Printf("Results written to %s\n", targetDirFriendly)
-	spew.Dump(pathMap)
 	return nil
+}
+
+func createTemporaryZipFile(data io.ReadCloser) (name string, err error) {
+	tmpfile, err := ioutil.TempFile("", "skuid")
+	if err != nil {
+		return "", err
+	}
+	// write to our new file
+	if _, err := io.Copy(tmpfile, data); err != nil {
+		data.Close()
+		return "", err
+	}
+
+	defer data.Close()
+
+	return tmpfile.Name(), nil
 }
 
 // Unzips a ZIP archive and recreates the folders and file structure within it locally
@@ -237,28 +247,27 @@ func getRetrievePlan(api *platform.RestApi) (map[string]types.Plan, error) {
 		"application/json",
 	)
 
+	defer planResult.Close()
+
 	if err != nil {
 		return nil, err
 	}
 
 	var plans map[string]types.Plan
-	err = json.Unmarshal(planResult, &plans)
-	if err != nil {
+	if err := json.NewDecoder(planResult).Decode(&plans); err != nil {
 		return nil, err
 	}
 	return plans, nil
 }
 
-func executeRetrievePlan(api *platform.RestApi, plans map[string]types.Plan) ([][]byte, error) {
-	planResults := [][]byte{}
+func executeRetrievePlan(api *platform.RestApi, plans map[string]types.Plan) ([]io.ReadCloser, error) {
+	planResults := []io.ReadCloser{}
 	for _, plan := range plans {
-		fmt.Println(plan)
+		metadataBytes, err := json.Marshal(plan.Metadata)
+		if err != nil {
+			return nil, err
+		}
 		if plan.Host == "" {
-			metadataBytes, err := json.Marshal(plan.Metadata)
-			if err != nil {
-				return nil, err
-			}
-
 			planResult, err := api.Connection.MakeRequest(
 				http.MethodPost,
 				plan.URL,
@@ -269,12 +278,14 @@ func executeRetrievePlan(api *platform.RestApi, plans map[string]types.Plan) ([]
 				return nil, err
 			}
 			planResults = append(planResults, planResult)
-			fmt.Println("MADE MAIN REQUEST")
 		} else {
 			url := fmt.Sprintf("%s:%s%s", plan.Host, plan.Port, plan.URL)
-			fmt.Println("MAKING DS REQUEST")
-			fmt.Println(url)
-			planResult, err := getFakeResponse()
+			planResult, err := api.Connection.MakeJWTRequest(
+				http.MethodPost,
+				url,
+				bytes.NewReader(metadataBytes),
+				"application/json",
+			)
 			if err != nil {
 				return nil, err
 			}
@@ -282,42 +293,6 @@ func executeRetrievePlan(api *platform.RestApi, plans map[string]types.Plan) ([]
 		}
 	}
 	return planResults, nil
-}
-
-func getFakeResponse() ([]byte, error) {
-	// Create a buffer to write our archive to.
-	fmt.Println("we are in the zipData function")
-	buf := new(bytes.Buffer)
-
-	// Create a new zip archive.
-	zipWriter := zip.NewWriter(buf)
-
-	// Add some files to the archive.
-	var files = []struct {
-		Name, Body string
-	}{
-		{"readme.txt", "This archive contains some text files."},
-		{"gopher.txt", "Gopher names:\nGeorge\nGeoffrey\nGonzo"},
-		{"dataservices/BenLocalDataService.json", "{\"anotherkey\":\"anothervalue\"}"},
-	}
-	for _, file := range files {
-		zipFile, err := zipWriter.Create(file.Name)
-		if err != nil {
-			return nil, err
-		}
-		_, err = zipFile.Write([]byte(file.Body))
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	// Make sure to check the error on Close.
-	err := zipWriter.Close()
-	if err != nil {
-		return nil, err
-	}
-
-	return buf.Bytes(), nil
 }
 
 func init() {

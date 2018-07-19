@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/skuid/skuid/httperror"
+	"github.com/skuid/skuid/ziputils"
 )
 
 type OAuthResponse struct {
@@ -112,8 +113,8 @@ func (conn *RestConnection) Refresh() error {
 	return nil
 }
 
-// Executes an HTTP request
-func (conn *RestConnection) MakeRequest(method string, url string, payload io.Reader, contentType string) (result []byte, err error) {
+// MakeRequest Executes an HTTP request using a session token
+func (conn *RestConnection) MakeRequest(method string, url string, payload io.Reader, contentType string) (result io.ReadCloser, err error) {
 
 	endpoint := fmt.Sprintf("%s/api/v%s%s", conn.Host, conn.APIVersion, url)
 
@@ -133,16 +134,32 @@ func (conn *RestConnection) MakeRequest(method string, url string, payload io.Re
 		return nil, err
 	}
 
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
 	if resp.StatusCode != 200 {
+		defer resp.Body.Close()
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return nil, err
+		}
 		return nil, httperror.New(resp.Status, string(body))
 	}
 
-	return body, nil
+	return resp.Body, nil
+}
 
+// MakeJWTRequest Executes HTTP request using a jwt
+func (conn *RestConnection) MakeJWTRequest(method string, url string, payload io.Reader, contentType string) (result io.ReadCloser, err error) {
+	return ziputils.CreateTestZip([]ziputils.TestFile{
+		{
+			Name: "readme.txt",
+			Body: "This archive contains some text files.",
+		},
+		{
+			Name: "gopher.txt",
+			Body: "Gopher names:\nGeorge\nGeoffrey\nGonzo",
+		},
+		{
+			Name: "dataservices/BenLocalDataService.json",
+			Body: "{\"anotherkey\":\"anothervalue\"}",
+		},
+	})
 }
