@@ -15,3 +15,20 @@ type Metadata struct {
 	DataSources  []string `json:"datasources"`
 	Profiles     []string `json:"profiles"`
 }
+
+func (m Metadata) GetNamesForType(metadataType string) []string {
+	switch metadataType {
+	case "pages":
+		return m.Pages
+	case "apps":
+		return m.Apps
+	case "dataservices":
+		return m.DataServices
+	case "datasources":
+		return m.DataSources
+	case "profiles":
+		return m.Profiles
+	default:
+		return nil
+	}
+}

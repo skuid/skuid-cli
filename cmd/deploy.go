@@ -59,7 +59,7 @@ var deployCmd = &cobra.Command{
 
 		// Create a buffer to write our archive to.
 		bufPlan := new(bytes.Buffer)
-		err = ziputils.Archive(targetDir, bufPlan)
+		err = ziputils.Archive(targetDir, bufPlan, nil)
 		if err != nil {
 			log.Print("Error creating deployment ZIP archive")
 			log.Fatal(err)
@@ -70,8 +70,6 @@ var deployCmd = &cobra.Command{
 			fmt.Println("Error getting deploy plan: ", err.Error())
 			os.Exit(1)
 		}
-		fmt.Println("Got PLAN")
-		fmt.Println(plan)
 
 		fmt.Println("Deploying metadata...")
 
@@ -110,16 +108,9 @@ func getDeployPlan(api *platform.RestApi, payload io.Reader) (map[string]types.P
 func executeDeployPlan(api *platform.RestApi, plans map[string]types.Plan) ([]io.ReadCloser, error) {
 	planResults := []io.ReadCloser{}
 	for _, plan := range plans {
-		metadataBytes, err := json.Marshal(plan.Metadata)
-		if err != nil {
-			return nil, err
-		}
-		fmt.Println("METADATA TO DEPLOY")
-		fmt.Println(metadataBytes)
-
 		// Create a buffer to write our archive to.
 		bufDeploy := new(bytes.Buffer)
-		err = ziputils.Archive(targetDir, bufDeploy)
+		err := ziputils.Archive(targetDir, bufDeploy, &plan.Metadata)
 		if err != nil {
 			log.Print("Error creating deployment ZIP archive")
 			log.Fatal(err)
@@ -130,7 +121,7 @@ func executeDeployPlan(api *platform.RestApi, plans map[string]types.Plan) ([]io
 				http.MethodPost,
 				plan.URL,
 				bufDeploy,
-				"application/json",
+				"application/zip",
 			)
 			if err != nil {
 				return nil, err
@@ -138,20 +129,20 @@ func executeDeployPlan(api *platform.RestApi, plans map[string]types.Plan) ([]io
 			defer planResult.Close()
 			planResults = append(planResults, planResult)
 		} else {
-			fmt.Println("SKIPING OTHER DEPLOY")
-			/*
-				url := fmt.Sprintf("%s:%s%s", plan.Host, plan.Port, plan.URL)
-				planResult, err := api.Connection.MakeJWTRequest(
-					http.MethodPost,
-					url,
-					bytes.NewReader(metadataBytes),
-					"application/json",
-				)
-				if err != nil {
-					return nil, err
-				}
-				planResults = append(planResults, planResult)
-			*/
+
+			url := fmt.Sprintf("%s:%s/api/v2%s", plan.Host, plan.Port, plan.URL)
+			planResult, err := api.Connection.MakeJWTRequest(
+				http.MethodPost,
+				url,
+				bufDeploy,
+				"application/zip",
+			)
+			if err != nil {
+				return nil, err
+			}
+			defer planResult.Close()
+			planResults = append(planResults, planResult)
+
 		}
 	}
 	return planResults, nil

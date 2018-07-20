@@ -279,7 +279,7 @@ func executeRetrievePlan(api *platform.RestApi, plans map[string]types.Plan) ([]
 			}
 			planResults = append(planResults, planResult)
 		} else {
-			url := fmt.Sprintf("%s:%s%s", plan.Host, plan.Port, plan.URL)
+			url := fmt.Sprintf("%s:%s/api/v2%s", plan.Host, plan.Port, plan.URL)
 			planResult, err := api.Connection.MakeJWTRequest(
 				http.MethodPost,
 				url,

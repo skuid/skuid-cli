@@ -8,6 +8,9 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
+
+	"github.com/skuid/skuid/types"
 )
 
 // TestFile contains the information needed to create a test file
@@ -51,7 +54,7 @@ func CreateTestZip(files []TestFile) (io.ReadCloser, error) {
 // the folder as its only item (with contents inside).
 //
 // If progress is not nil, it is called for each file added to the archive.
-func Archive(inFilePath string, writer io.Writer) error {
+func Archive(inFilePath string, writer io.Writer, metadataFilter *types.Metadata) error {
 	zipWriter := zip.NewWriter(writer)
 
 	basePath := filepath.Dir(inFilePath)
@@ -67,6 +70,22 @@ func Archive(inFilePath string, writer io.Writer) error {
 		}
 
 		archivePath := path.Join(filepath.SplitList(relativeFilePath)...)
+
+		// if there was a metadata filter, apply it.
+		if metadataFilter != nil {
+			metadataType := filepath.Dir(relativeFilePath)
+			baseName := filepath.Base(relativeFilePath)
+			metadataName := strings.TrimSuffix(baseName, filepath.Ext(baseName))
+			validMetadataNames := metadataFilter.GetNamesForType(metadataType)
+			if validMetadataNames == nil || len(validMetadataNames) == 0 {
+				// If we don't have valid names for this directory, just skip this file
+				return nil
+			}
+			if !StringSliceContainsKey(validMetadataNames, metadataName) {
+				// If our metadata name is not in the validMetadata names, skip this file
+				return nil
+			}
+		}
 
 		file, err := os.Open(filePath)
 		if err != nil {
@@ -89,4 +108,13 @@ func Archive(inFilePath string, writer io.Writer) error {
 	}
 
 	return zipWriter.Close()
+}
+
+func StringSliceContainsKey(strings []string, key string) bool {
+	for _, item := range strings {
+		if item == key {
+			return true
+		}
+	}
+	return false
 }
