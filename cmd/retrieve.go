@@ -176,6 +176,7 @@ func readFileFromZipAndWriteToFilesystem(file *zip.File, targetLocation string, 
 	if err != nil {
 		return err
 	}
+	defer fileReader.Close()
 
 	if fileAlreadyWritten {
 		if verbose {
@@ -183,7 +184,6 @@ func readFileFromZipAndWriteToFilesystem(file *zip.File, targetLocation string, 
 		}
 		err = combineJSONFile(fileReader, path)
 		if err != nil {
-			fileReader.Close()
 			return err
 		}
 
@@ -193,12 +193,11 @@ func readFileFromZipAndWriteToFilesystem(file *zip.File, targetLocation string, 
 		}
 		err = writeNewFile(fileReader, path)
 		if err != nil {
-			fileReader.Close()
 			return err
 		}
 	}
 
-	return fileReader.Close()
+	return nil
 }
 
 func writeNewFile(fileReader io.ReadCloser, path string) error {
