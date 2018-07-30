@@ -108,13 +108,11 @@ func createTemporaryZipFile(data io.ReadCloser) (name string, err error) {
 	if err != nil {
 		return "", err
 	}
+	defer data.Close()
 	// write to our new file
 	if _, err := io.Copy(tmpfile, data); err != nil {
-		data.Close()
 		return "", err
 	}
-
-	defer data.Close()
 
 	return tmpfile.Name(), nil
 }
@@ -205,12 +203,12 @@ func writeNewFile(fileReader io.ReadCloser, path string) error {
 	if err != nil {
 		return err
 	}
+	defer targetFile.Close()
 	if _, err := io.Copy(targetFile, fileReader); err != nil {
-		targetFile.Close()
 		return err
 	}
 
-	return targetFile.Close()
+	return nil
 }
 
 func combineJSONFile(fileReader io.ReadCloser, path string) error {
