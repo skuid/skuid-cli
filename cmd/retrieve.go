@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"strings"
 
@@ -14,6 +13,7 @@ import (
 	"net/http"
 	"path/filepath"
 
+	jsonpatch "github.com/evanphx/json-patch"
 	"github.com/skuid/skuid/platform"
 	"github.com/skuid/skuid/types"
 	"github.com/spf13/cobra"
@@ -39,78 +39,86 @@ var retrieveCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		retrieveMetadata := make(map[string]map[string]string)
-
-		// To fetch all metadata of a given type,
-		// add an empty map for each type's camel-cased name
-		for _, camelCaseName := range types.MetadataTypes {
-			retrieveMetadata[camelCaseName] = make(map[string]string)
-		}
-
-		retrieveRequest := &types.RetrieveRequest{}
-		retrieveRequest.Metadata = retrieveMetadata
-
-		fmt.Println("Retrieving metadata...")
-
-		jsonBytes, err := json.Marshal(retrieveRequest)
+		plan, err := getRetrievePlan(api)
 		if err != nil {
-			fmt.Println(err.Error())
+			fmt.Println("Error getting retrieve plan: ", err.Error())
 			os.Exit(1)
 		}
 
-		//query the API for all Skuid metadata of every type
-		result, err := api.Connection.MakeRequest(
-			http.MethodPost,
-			"/metadata/retrieve",
-			bytes.NewReader(jsonBytes),
-			"application/json",
-		)
-
+		results, err := executeRetrievePlan(api, plan)
 		if err != nil {
-			fmt.Println("Error retrieving metadata: ", err.Error())
+			fmt.Println("Error executing retrieve plan: ", err.Error())
 			os.Exit(1)
 		}
 
-		fmt.Println("Successfully retrieved metadata!")
-
-		// unzip the archive into the output directory
-		targetDirFriendly := targetDir
-		if targetDir == "" {
-			targetDirFriendly, err = filepath.Abs(filepath.Dir(os.Args[0]))
-			if err != nil {
-				log.Fatal(err)
-			}
-		}
-		fmt.Println("Writing results to " + targetDirFriendly + " ...")
-
-		tmpfile, err := ioutil.TempFile("", "skuid")
-
+		err = writeResultsToDisk(results)
 		if err != nil {
-			fmt.Println(err.Error())
-			os.Exit(1)
+			fmt.Println("Error writing results to disk: ", err.Error())
 		}
-		tmpFileName := tmpfile.Name()
-		// write to our new file
-		tmpfile.Write(result)
+	},
+}
+
+func getFriendlyURL(targetDir string) (string, error) {
+	if targetDir == "" {
+		friendlyResult, err := filepath.Abs(filepath.Dir(os.Args[0]))
+		if err != nil {
+			return "", err
+		}
+		return friendlyResult, nil
+	}
+	return targetDir, nil
+
+}
+
+func writeResultsToDisk(results []io.ReadCloser) error {
+	// unzip the archive into the output directory
+	targetDirFriendly, err := getFriendlyURL(targetDir)
+	if err != nil {
+		return err
+	}
+	fmt.Println("Writing results to " + targetDirFriendly + " ...")
+	// Store a map of paths that we've already encountered. We'll use this
+	// to determine if we need to modify a file or overwrite it.
+	pathMap := map[string]bool{}
+
+	for _, result := range results {
+
+		tmpFileName, err := createTemporaryZipFile(result)
+		if err != nil {
+			return err
+		}
 
 		// unzip the contents of our temp zip file
-		err = unzip(tmpFileName, targetDir)
+		err = unzip(tmpFileName, targetDir, pathMap)
 
 		// schedule cleanup of temp file
 		defer os.Remove(tmpFileName)
 
 		if err != nil {
-			fmt.Println("Error unzipping the retrieved metadata payload")
-			fmt.Println(err.Error())
-			os.Exit(1)
+			return err
 		}
+	}
 
-		fmt.Printf("Results written to %s\n", targetDirFriendly)
-	},
+	fmt.Printf("Results written to %s\n", targetDirFriendly)
+	return nil
+}
+
+func createTemporaryZipFile(data io.ReadCloser) (name string, err error) {
+	tmpfile, err := ioutil.TempFile("", "skuid")
+	if err != nil {
+		return "", err
+	}
+	defer data.Close()
+	// write to our new file
+	if _, err := io.Copy(tmpfile, data); err != nil {
+		return "", err
+	}
+
+	return tmpfile.Name(), nil
 }
 
 // Unzips a ZIP archive and recreates the folders and file structure within it locally
-func unzip(sourceFileLocation, targetLocation string) error {
+func unzip(sourceFileLocation, targetLocation string, pathMap map[string]bool) error {
 
 	reader, err := zip.OpenReader(sourceFileLocation)
 
@@ -126,14 +134,20 @@ func unzip(sourceFileLocation, targetLocation string) error {
 	}
 
 	for _, file := range reader.File {
-		readFileFromZipAndWriteToFilesystem(file, targetLocation)
+		readFileFromZipAndWriteToFilesystem(file, targetLocation, pathMap)
 	}
 
 	return nil
 }
 
-func readFileFromZipAndWriteToFilesystem(file *zip.File, targetLocation string) error {
+func readFileFromZipAndWriteToFilesystem(file *zip.File, targetLocation string, pathMap map[string]bool) error {
 	path := filepath.Join(targetLocation, file.Name)
+
+	// Check to see if we've already written to this file in this retrieve
+	_, fileAlreadyWritten := pathMap[path]
+	if !fileAlreadyWritten {
+		pathMap[path] = true
+	}
 
 	// If this file name contains a /, make sure that we create the
 	if pathParts := strings.Split(file.Name, "/"); len(pathParts) > 0 {
@@ -156,36 +170,126 @@ func readFileFromZipAndWriteToFilesystem(file *zip.File, targetLocation string) 
 		return nil
 	}
 
-	if verbose {
-		fmt.Println("Creating file: " + file.Name)
-	}
-
 	fileReader, err := file.Open()
 	if err != nil {
 		return err
 	}
+	defer fileReader.Close()
 
+	if fileAlreadyWritten {
+		if verbose {
+			fmt.Println("Augmenting existing file with more data: " + file.Name)
+		}
+		err = combineJSONFile(fileReader, path)
+		if err != nil {
+			return err
+		}
+
+	} else {
+		if verbose {
+			fmt.Println("Creating file: " + file.Name)
+		}
+		err = writeNewFile(fileReader, path)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func writeNewFile(fileReader io.ReadCloser, path string) error {
 	targetFile, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
-
 	if err != nil {
 		return err
 	}
-
+	defer targetFile.Close()
 	if _, err := io.Copy(targetFile, fileReader); err != nil {
-		targetFile.Close()
-		fileReader.Close()
-		return err
-	}
-
-	if err := targetFile.Close(); err != nil {
-		return err
-	}
-
-	if err := fileReader.Close(); err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func combineJSONFile(fileReader io.ReadCloser, path string) error {
+	existingBytes, err := ioutil.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	newBytes, err := ioutil.ReadAll(fileReader)
+	if err != nil {
+		return err
+	}
+
+	combined, err := jsonpatch.MergePatch(existingBytes, newBytes)
+	if err != nil {
+		return err
+	}
+
+	var indented bytes.Buffer
+	err = json.Indent(&indented, combined, "", "   ")
+	if err != nil {
+		return err
+	}
+
+	return writeNewFile(ioutil.NopCloser(bytes.NewReader(indented.Bytes())), path)
+}
+
+func getRetrievePlan(api *platform.RestApi) (map[string]types.Plan, error) {
+	// Get a retrieve plan
+	planResult, err := api.Connection.MakeRequest(
+		http.MethodPost,
+		"/metadata/retrieve/plan",
+		nil,
+		"application/json",
+	)
+
+	defer planResult.Close()
+
+	if err != nil {
+		return nil, err
+	}
+
+	var plans map[string]types.Plan
+	if err := json.NewDecoder(planResult).Decode(&plans); err != nil {
+		return nil, err
+	}
+	return plans, nil
+}
+
+func executeRetrievePlan(api *platform.RestApi, plans map[string]types.Plan) ([]io.ReadCloser, error) {
+	planResults := []io.ReadCloser{}
+	for _, plan := range plans {
+		metadataBytes, err := json.Marshal(plan.Metadata)
+		if err != nil {
+			return nil, err
+		}
+		if plan.Host == "" {
+			planResult, err := api.Connection.MakeRequest(
+				http.MethodPost,
+				plan.URL,
+				bytes.NewReader(metadataBytes),
+				"application/json",
+			)
+			if err != nil {
+				return nil, err
+			}
+			planResults = append(planResults, planResult)
+		} else {
+			url := fmt.Sprintf("%s:%s/api/v2%s", plan.Host, plan.Port, plan.URL)
+			planResult, err := api.Connection.MakeJWTRequest(
+				http.MethodPost,
+				url,
+				bytes.NewReader(metadataBytes),
+				"application/json",
+			)
+			if err != nil {
+				return nil, err
+			}
+			planResults = append(planResults, planResult)
+		}
+	}
+	return planResults, nil
 }
 
 func init() {

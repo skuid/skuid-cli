@@ -17,6 +17,10 @@ type OAuthResponse struct {
 	AccessToken string `json:"access_token"`
 }
 
+type JWTResponse struct {
+	Token string `json:"token"`
+}
+
 type RestConnection struct {
 	AccessToken  string
 	APIVersion   string
@@ -25,6 +29,7 @@ type RestConnection struct {
 	Host         string
 	Password     string
 	Username     string
+	JWT          string
 }
 
 type RestApi struct {
@@ -36,7 +41,7 @@ type RestApi struct {
 func Login(host string, username string, password string, apiVersion string, verbose bool) (api *RestApi, err error) {
 
 	if apiVersion == "" {
-		apiVersion = "1"
+		apiVersion = "2"
 	}
 
 	if verbose {
@@ -55,6 +60,12 @@ func Login(host string, username string, password string, apiVersion string, ver
 	}
 
 	err = conn.Refresh()
+
+	if err != nil {
+		return nil, err
+	}
+
+	err = conn.GetJWT()
 
 	if err != nil {
 		return nil, err
@@ -94,16 +105,11 @@ func (conn *RestConnection) Refresh() error {
 		return err
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
 	defer resp.Body.Close()
-
-	if err != nil {
-		return err
-	}
 
 	result := OAuthResponse{}
 
-	if err := json.Unmarshal(body, &result); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return err
 	}
 
@@ -112,8 +118,31 @@ func (conn *RestConnection) Refresh() error {
 	return nil
 }
 
-// Executes an HTTP request
-func (conn *RestConnection) MakeRequest(method string, url string, payload io.Reader, contentType string) (result []byte, err error) {
+func (conn *RestConnection) GetJWT() error {
+	jwtResult, err := conn.MakeRequest(
+		http.MethodGet,
+		"/auth/token",
+		nil,
+		"",
+	)
+
+	if err != nil {
+		return err
+	}
+
+	result := JWTResponse{}
+
+	if err := json.NewDecoder(jwtResult).Decode(&result); err != nil {
+		return err
+	}
+
+	conn.JWT = result.Token
+
+	return nil
+}
+
+// MakeRequest Executes an HTTP request using a session token
+func (conn *RestConnection) MakeRequest(method string, url string, payload io.Reader, contentType string) (result io.ReadCloser, err error) {
 
 	endpoint := fmt.Sprintf("%s/api/v%s%s", conn.Host, conn.APIVersion, url)
 
@@ -124,7 +153,9 @@ func (conn *RestConnection) MakeRequest(method string, url string, payload io.Re
 	}
 
 	req.Header.Add("Authorization", "Bearer "+conn.AccessToken)
-	req.Header.Add("Content-Type", contentType)
+	if contentType != "" {
+		req.Header.Add("Content-Type", contentType)
+	}
 	req.Header.Add("User-Agent", "Skuid-CLI/0.2")
 
 	client := &http.Client{}
@@ -133,16 +164,65 @@ func (conn *RestConnection) MakeRequest(method string, url string, payload io.Re
 		return nil, err
 	}
 
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
+	if resp.StatusCode != 200 {
+		defer resp.Body.Close()
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return nil, err
+		}
+		return nil, httperror.New(resp.Status, string(body))
+	}
+
+	return resp.Body, nil
+}
+
+// MakeJWTRequest Executes HTTP request using a jwt
+func (conn *RestConnection) MakeJWTRequest(method string, url string, payload io.Reader, contentType string) (result io.ReadCloser, err error) {
+	fmt.Println("MAKING JWT REQUEST")
+	fmt.Println(url)
+	endpoint := fmt.Sprintf("https://%s", url)
+	req, err := http.NewRequest(method, endpoint, payload)
+
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Authorization", "Bearer "+conn.JWT)
+	if contentType != "" {
+		req.Header.Add("Content-Type", contentType)
+	}
+	req.Header.Add("User-Agent", "Skuid-CLI/0.2")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}
 
 	if resp.StatusCode != 200 {
+		defer resp.Body.Close()
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return nil, err
+		}
 		return nil, httperror.New(resp.Status, string(body))
 	}
 
-	return body, nil
-
+	return resp.Body, nil
+	/*
+		return ziputils.CreateTestZip([]ziputils.TestFile{
+			{
+				Name: "readme.txt",
+				Body: "This archive contains some text files.",
+			},
+			{
+				Name: "gopher.txt",
+				Body: "Gopher names:\nGeorge\nGeoffrey\nGonzo",
+			},
+			{
+				Name: "dataservices/BenLocalDataService.json",
+				Body: "{\"anotherkey\":\"anothervalue\"}",
+			},
+		})
+	*/
 }
