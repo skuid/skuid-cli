@@ -34,9 +34,9 @@ To quickly install the application, copy and paste the following commands in the
 ```bash
 # Download the skuid application
 # On a macOS machine? Use this:
-wget https://github.com/skuid/skuid/releases/download/0.2.3/skuid_darwin_amd64 -O skuid
+wget https://github.com/skuid/skuid/releases/download/0.3.0/skuid_darwin_amd64 -O skuid
 # On a Linux machine? Use this instead:
-# wget https://github.com/skuid/skuid/releases/download/0.2.3/skuid_linux_amd64 -O skuid
+# wget https://github.com/skuid/skuid/releases/download/0.3.0/skuid_linux_amd64 -O skuid
 # Give the skuid application the permissions it needs to run
 chmod +x skuid
 # Move the skuid application to a folder where it can be used easily
