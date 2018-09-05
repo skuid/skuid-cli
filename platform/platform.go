@@ -105,6 +105,15 @@ func (conn *RestConnection) Refresh() error {
 		return err
 	}
 
+	if resp.StatusCode != 200 {
+		defer resp.Body.Close()
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return err
+		}
+		return httperror.New(resp.Status, string(body))
+	}
+
 	defer resp.Body.Close()
 
 	result := OAuthResponse{}
