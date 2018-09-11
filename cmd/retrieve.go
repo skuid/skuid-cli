@@ -77,6 +77,18 @@ func writeResultsToDisk(results []io.ReadCloser) error {
 		return err
 	}
 	fmt.Println("Writing results to " + targetDirFriendly + " ...")
+
+	// Remove all of our metadata directories so we get a clean slate.
+	// We may want to improve this later when we do partial retrieves so that
+	// we don't clear out the whole directory every time we retrieve.
+	for _, dirName := range types.GetMetadataTypeDirNames() {
+		dirPath := filepath.Join(targetDir, dirName)
+		if verbose {
+			fmt.Println("Deleting Directory: " + dirPath)
+		}
+		os.RemoveAll(dirPath)
+	}
+
 	// Store a map of paths that we've already encountered. We'll use this
 	// to determine if we need to modify a file or overwrite it.
 	pathMap := map[string]bool{}
