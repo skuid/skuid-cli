@@ -239,7 +239,7 @@ func combineJSONFile(fileReader io.ReadCloser, path string) error {
 	}
 
 	var indented bytes.Buffer
-	err = json.Indent(&indented, combined, "", "   ")
+	err = json.Indent(&indented, combined, "", "\t")
 	if err != nil {
 		return err
 	}
