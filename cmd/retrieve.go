@@ -70,7 +70,7 @@ func getFriendlyURL(targetDir string) (string, error) {
 
 }
 
-func writeResultsToDisk(results []io.ReadCloser) error {
+func writeResultsToDisk(results []*io.ReadCloser) error {
 	// unzip the archive into the output directory
 	targetDirFriendly, err := getFriendlyURL(targetDir)
 	if err != nil {
@@ -115,14 +115,14 @@ func writeResultsToDisk(results []io.ReadCloser) error {
 	return nil
 }
 
-func createTemporaryZipFile(data io.ReadCloser) (name string, err error) {
+func createTemporaryZipFile(data *io.ReadCloser) (name string, err error) {
 	tmpfile, err := ioutil.TempFile("", "skuid")
 	if err != nil {
 		return "", err
 	}
-	defer data.Close()
+	defer (*data).Close()
 	// write to our new file
-	if _, err := io.Copy(tmpfile, data); err != nil {
+	if _, err := io.Copy(tmpfile, *data); err != nil {
 		return "", err
 	}
 
@@ -260,17 +260,17 @@ func getRetrievePlan(api *platform.RestApi) (map[string]types.Plan, error) {
 		return nil, err
 	}
 
-	defer planResult.Close()
+	defer (*planResult).Close()
 
 	var plans map[string]types.Plan
-	if err := json.NewDecoder(planResult).Decode(&plans); err != nil {
+	if err := json.NewDecoder(*planResult).Decode(&plans); err != nil {
 		return nil, err
 	}
 	return plans, nil
 }
 
-func executeRetrievePlan(api *platform.RestApi, plans map[string]types.Plan) ([]io.ReadCloser, error) {
-	planResults := []io.ReadCloser{}
+func executeRetrievePlan(api *platform.RestApi, plans map[string]types.Plan) ([]*io.ReadCloser, error) {
+	planResults := []*io.ReadCloser{}
 	for _, plan := range plans {
 		metadataBytes, err := json.Marshal(plan.Metadata)
 		if err != nil {

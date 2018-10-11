@@ -71,18 +71,14 @@ func Archive(inFilePath string, writer io.Writer, metadataFilter *types.Metadata
 
 		archivePath := path.Join(filepath.SplitList(relativeFilePath)...)
 
+		if strings.HasPrefix(archivePath, ".") {
+			return nil
+		}
+
 		// if there was a metadata filter, apply it.
 		if metadataFilter != nil {
-			metadataType := filepath.Dir(relativeFilePath)
-			baseName := filepath.Base(relativeFilePath)
-			metadataName := strings.TrimSuffix(baseName, filepath.Ext(baseName))
-			validMetadataNames := metadataFilter.GetNamesForType(metadataType)
-			if validMetadataNames == nil || len(validMetadataNames) == 0 {
-				// If we don't have valid names for this directory, just skip this file
-				return nil
-			}
-			if !StringSliceContainsKey(validMetadataNames, metadataName) {
-				// If our metadata name is not in the validMetadata names, skip this file
+			if !(*metadataFilter).FilterMetadataItem(relativeFilePath) {
+				// If our file does not meet our filter criteria, just skip this file
 				return nil
 			}
 		}
@@ -108,13 +104,4 @@ func Archive(inFilePath string, writer io.Writer, metadataFilter *types.Metadata
 	}
 
 	return zipWriter.Close()
-}
-
-func StringSliceContainsKey(strings []string, key string) bool {
-	for _, item := range strings {
-		if item == key {
-			return true
-		}
-	}
-	return false
 }

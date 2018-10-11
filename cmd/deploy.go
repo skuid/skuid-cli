@@ -91,61 +91,69 @@ func getDeployPlan(api *platform.RestApi, payload io.Reader) (map[string]types.P
 		payload,
 		"application/zip",
 	)
-	defer planResult.Close()
+	defer (*planResult).Close()
 
 	if err != nil {
 		return nil, err
 	}
 
 	var plans map[string]types.Plan
-	if err := json.NewDecoder(planResult).Decode(&plans); err != nil {
+	if err := json.NewDecoder(*planResult).Decode(&plans); err != nil {
 		return nil, err
 	}
 
 	return plans, nil
 }
 
-func executeDeployPlan(api *platform.RestApi, plans map[string]types.Plan) ([]io.ReadCloser, error) {
-	planResults := []io.ReadCloser{}
+func executeDeployPlan(api *platform.RestApi, plans map[string]types.Plan) ([]*io.ReadCloser, error) {
+	planResults := []*io.ReadCloser{}
 	for _, plan := range plans {
-		// Create a buffer to write our archive to.
-		bufDeploy := new(bytes.Buffer)
-		err := ziputils.Archive(targetDir, bufDeploy, &plan.Metadata)
+		planResult, err := executePlanItem(api, plan)
 		if err != nil {
-			log.Print("Error creating deployment ZIP archive")
-			log.Fatal(err)
+			return nil, err
 		}
-
-		if plan.Host == "" {
-			planResult, err := api.Connection.MakeRequest(
-				http.MethodPost,
-				plan.URL,
-				bufDeploy,
-				"application/zip",
-			)
-			if err != nil {
-				return nil, err
-			}
-			defer planResult.Close()
-			planResults = append(planResults, planResult)
-		} else {
-
-			url := fmt.Sprintf("%s:%s/api/v2%s", plan.Host, plan.Port, plan.URL)
-			planResult, err := api.Connection.MakeJWTRequest(
-				http.MethodPost,
-				url,
-				bufDeploy,
-				"application/zip",
-			)
-			if err != nil {
-				return nil, err
-			}
-			defer planResult.Close()
-			planResults = append(planResults, planResult)
-
-		}
+		planResults = append(planResults, planResult)
 	}
 	return planResults, nil
+}
+
+func executePlanItem(api *platform.RestApi, plan types.Plan) (*io.ReadCloser, error) {
+	// Create a buffer to write our archive to.
+	var planResult *io.ReadCloser
+	bufDeploy := new(bytes.Buffer)
+	err := ziputils.Archive(targetDir, bufDeploy, &plan.Metadata)
+	if err != nil {
+		log.Print("Error creating deployment ZIP archive")
+		log.Fatal(err)
+	}
+
+	if plan.Host == "" {
+		planResult, err = api.Connection.MakeRequest(
+			http.MethodPost,
+			plan.URL,
+			bufDeploy,
+			"application/zip",
+		)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+
+		url := fmt.Sprintf("%s:%s/api/v2%s", plan.Host, plan.Port, plan.URL)
+		planResult, err = api.Connection.MakeJWTRequest(
+			http.MethodPost,
+			url,
+			bufDeploy,
+			"application/zip",
+		)
+		if err != nil {
+			return nil, err
+		}
+
+	}
+	defer (*planResult).Close()
+	return planResult, nil
+
 }
 
 func init() {

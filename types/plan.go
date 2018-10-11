@@ -1,6 +1,10 @@
 package types
 
-import "reflect"
+import (
+	"path/filepath"
+	"reflect"
+	"strings"
+)
 
 type Plan struct {
 	Host     string   `json:"host"`
@@ -16,6 +20,7 @@ type Metadata struct {
 	DataServices []string `json:"dataservices"`
 	DataSources  []string `json:"datasources"`
 	Profiles     []string `json:"profiles"`
+	Files        []string `json:"files"`
 }
 
 // GetMetadataTypeDirNames returns the directory names for a type
@@ -53,4 +58,42 @@ func (m Metadata) GetNamesForType(metadataType string) []string {
 		return field.Interface().([]string)
 	}
 	return nil
+}
+
+// FilterMetadataItem returns true if the path meets the filter criteria, otherwise it returns false
+func (m Metadata) FilterMetadataItem(relativeFilePath string) bool {
+	metadataType := filepath.Dir(relativeFilePath)
+	baseName := filepath.Base(relativeFilePath)
+	validMetadataNames := m.GetNamesForType(metadataType)
+	if validMetadataNames == nil || len(validMetadataNames) == 0 {
+		// If we don't have valid names for this directory, just skip this file
+		return false
+	}
+	// See if our baseName is in the valid metadata, if so, we're done
+	if StringSliceContainsKey(validMetadataNames, baseName) {
+		return true
+	}
+	// Check for our metadata with .xml stripped
+	if StringSliceContainsKey(validMetadataNames, strings.TrimSuffix(baseName, ".xml")) {
+		return true
+	}
+	// Check for our metadata with .json stripped
+	if StringSliceContainsKey(validMetadataNames, strings.TrimSuffix(baseName, ".json")) {
+		return true
+	}
+	// Check for our metadata with .skuid.json stripped
+	if StringSliceContainsKey(validMetadataNames, strings.TrimSuffix(baseName, ".skuid.json")) {
+		return true
+	}
+	return false
+}
+
+// StringSliceContainsKey returns true if a string is contained in a slice
+func StringSliceContainsKey(strings []string, key string) bool {
+	for _, item := range strings {
+		if item == key {
+			return true
+		}
+	}
+	return false
 }
