@@ -98,8 +98,7 @@ func (conn *RestConnection) Refresh() error {
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Add("User-Agent", "Skuid-CLI/0.2")
 
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := http.DefaultClient.Do(req)
 
 	if err != nil {
 		return err
@@ -141,7 +140,7 @@ func (conn *RestConnection) GetJWT() error {
 
 	result := JWTResponse{}
 
-	if err := json.NewDecoder(jwtResult).Decode(&result); err != nil {
+	if err := json.NewDecoder(*jwtResult).Decode(&result); err != nil {
 		return err
 	}
 
@@ -151,8 +150,7 @@ func (conn *RestConnection) GetJWT() error {
 }
 
 // MakeRequest Executes an HTTP request using a session token
-func (conn *RestConnection) MakeRequest(method string, url string, payload io.Reader, contentType string) (result io.ReadCloser, err error) {
-
+func (conn *RestConnection) MakeRequest(method string, url string, payload io.Reader, contentType string) (result *io.ReadCloser, err error) {
 	endpoint := fmt.Sprintf("%s/api/v%s%s", conn.Host, conn.APIVersion, url)
 
 	req, err := http.NewRequest(method, endpoint, payload)
@@ -167,8 +165,7 @@ func (conn *RestConnection) MakeRequest(method string, url string, payload io.Re
 	}
 	req.Header.Add("User-Agent", "Skuid-CLI/0.2")
 
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -182,13 +179,11 @@ func (conn *RestConnection) MakeRequest(method string, url string, payload io.Re
 		return nil, httperror.New(resp.Status, string(body))
 	}
 
-	return resp.Body, nil
+	return &resp.Body, nil
 }
 
 // MakeJWTRequest Executes HTTP request using a jwt
-func (conn *RestConnection) MakeJWTRequest(method string, url string, payload io.Reader, contentType string) (result io.ReadCloser, err error) {
-	fmt.Println("MAKING JWT REQUEST")
-	fmt.Println(url)
+func (conn *RestConnection) MakeJWTRequest(method string, url string, payload io.Reader, contentType string) (result *io.ReadCloser, err error) {
 	endpoint := fmt.Sprintf("https://%s", url)
 	req, err := http.NewRequest(method, endpoint, payload)
 
@@ -202,8 +197,10 @@ func (conn *RestConnection) MakeJWTRequest(method string, url string, payload io
 	}
 	req.Header.Add("User-Agent", "Skuid-CLI/0.2")
 
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	// Send the public key endpoint so that warden can configure a JWT key if needed
+	req.Header.Add("x-skuid-public-key-endpoint", conn.Host)
+
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -217,7 +214,7 @@ func (conn *RestConnection) MakeJWTRequest(method string, url string, payload io
 		return nil, httperror.New(resp.Status, string(body))
 	}
 
-	return resp.Body, nil
+	return &resp.Body, nil
 	/*
 		return ziputils.CreateTestZip([]ziputils.TestFile{
 			{
