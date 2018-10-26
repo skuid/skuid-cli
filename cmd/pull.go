@@ -13,6 +13,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var noModule bool
+
 // pullCmd represents the pull command
 var pullCmd = &cobra.Command{
 	Use:   "pull",
@@ -43,6 +45,10 @@ var pullCmd = &cobra.Command{
 		//build the module and name query paramaters
 		query := url.Values{}
 
+		if noModule && module == "" && page == "" {
+			query.Add("nomodule", strconv.FormatBool(noModule))
+		}
+
 		if module != "" {
 			query.Add("module", module)
 		}
@@ -50,7 +56,7 @@ var pullCmd = &cobra.Command{
 		if page != "" {
 			query.Add("page", page)
 		}
-
+		
 		//query the API for all pages in the requested module
 		result, err := api.Connection.Get("/skuid/api/v1/pages", query)
 
@@ -89,5 +95,7 @@ var pullCmd = &cobra.Command{
 }
 
 func init() {
+	pullCmd.Flags().BoolVarP(&noModule, "no-module", "", false, "Retrieve only those pages that do not have a module")
 	RootCmd.AddCommand(pullCmd)
+
 }
