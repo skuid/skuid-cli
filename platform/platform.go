@@ -198,7 +198,7 @@ func (conn *RestConnection) MakeJWTRequest(method string, url string, payload io
 	req.Header.Add("User-Agent", "Skuid-CLI/0.2")
 
 	// Send the public key endpoint so that warden can configure a JWT key if needed
-	req.Header.Add("x-skuid-public-key-endpoint", conn.Host)
+	req.Header.Add("x-skuid-public-key-endpoint", conn.Host+"/api/v1/site/verificationkey")
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {

@@ -91,11 +91,11 @@ func getDeployPlan(api *platform.RestApi, payload io.Reader) (map[string]types.P
 		payload,
 		"application/zip",
 	)
-	defer (*planResult).Close()
 
 	if err != nil {
 		return nil, err
 	}
+	defer (*planResult).Close()
 
 	var plans map[string]types.Plan
 	if err := json.NewDecoder(*planResult).Decode(&plans); err != nil {
