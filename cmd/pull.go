@@ -45,7 +45,7 @@ var pullCmd = &cobra.Command{
 		//build the module and name query paramaters
 		query := url.Values{}
 
-		if noModule && module == "" && page == "" {
+		if noModule && module == "" {
 			query.Add("nomodule", strconv.FormatBool(noModule))
 		}
 
