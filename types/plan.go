@@ -21,6 +21,7 @@ type Metadata struct {
 	DataSources  []string `json:"datasources"`
 	Profiles     []string `json:"profiles"`
 	Files        []string `json:"files"`
+	Themes       []string `json:"themes"`
 }
 
 // GetMetadataTypeDirNames returns the directory names for a type
@@ -83,6 +84,10 @@ func (m Metadata) FilterMetadataItem(relativeFilePath string) bool {
 	}
 	// Check for our metadata with .skuid.json stripped
 	if StringSliceContainsKey(validMetadataNames, strings.TrimSuffix(baseName, ".skuid.json")) {
+		return true
+	}
+	// Check for theme inline css
+	if StringSliceContainsKey(validMetadataNames, strings.TrimSuffix(baseName, ".inline.css")) {
 		return true
 	}
 	return false
