@@ -1,4 +1,4 @@
 package version
 
 // Name of this version of Skuid CLI
-const Name = "0.3.3"
+const Name = "0.3.4"
