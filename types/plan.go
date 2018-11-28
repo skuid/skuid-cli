@@ -22,6 +22,7 @@ type Metadata struct {
 	Profiles     []string `json:"profiles"`
 	Files        []string `json:"files"`
 	Themes       []string `json:"themes"`
+	DesignSystems []string `json:"designsystems"`
 }
 
 // GetMetadataTypeDirNames returns the directory names for a type
