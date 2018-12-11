@@ -9,8 +9,10 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/skuid/skuid/platform"
+	"github.com/skuid/skuid/text"
 	"github.com/skuid/skuid/types"
 	"github.com/skuid/skuid/ziputils"
 	"github.com/spf13/cobra"
@@ -22,6 +24,8 @@ var deployCmd = &cobra.Command{
 	Long:  "Deploy Skuid metadata stored within a local file system directory to a Skuid Platform Site.",
 	Run: func(cmd *cobra.Command, args []string) {
 
+		fmt.Println(text.RunCommand("Deploy Metadata"))
+
 		api, err := platform.Login(
 			host,
 			username,
@@ -31,7 +35,7 @@ var deployCmd = &cobra.Command{
 		)
 
 		if err != nil {
-			fmt.Println(err.Error())
+			fmt.Println(text.PrettyError("Error logging in to Skuid site", err))
 			os.Exit(1)
 		}
 
@@ -61,29 +65,32 @@ var deployCmd = &cobra.Command{
 		bufPlan := new(bytes.Buffer)
 		err = ziputils.Archive(targetDir, bufPlan, nil)
 		if err != nil {
-			log.Print("Error creating deployment ZIP archive")
-			log.Fatal(err)
+			fmt.Println(text.PrettyError("Error creating deployment ZIP archive", err))
+			os.Exit(1)
 		}
 
 		plan, err := getDeployPlan(api, bufPlan)
 		if err != nil {
-			fmt.Println("Error getting deploy plan: ", err.Error())
+			fmt.Println(text.PrettyError("Error getting deploy plan", err))
 			os.Exit(1)
 		}
-
-		fmt.Println("Deploying metadata...")
 
 		_, err = executeDeployPlan(api, plan)
 		if err != nil {
-			fmt.Println("Error executing deploy plan: ", err.Error())
+			fmt.Println(text.PrettyError("Error executing deploy plan", err))
 			os.Exit(1)
 		}
 
-		fmt.Println("Successfully deployed metadata to Skuid Site.")
+		fmt.Println("Success! Deployed metadata to Skuid Site.")
 	},
 }
 
 func getDeployPlan(api *platform.RestApi, payload io.Reader) (map[string]types.Plan, error) {
+	if verbose {
+		fmt.Println(text.VerboseSection("Getting Retrieve Plan"))
+	}
+
+	planStart := time.Now()
 	// Get a retrieve plan
 	planResult, err := api.Connection.MakeRequest(
 		http.MethodPost,
@@ -95,6 +102,11 @@ func getDeployPlan(api *platform.RestApi, payload io.Reader) (map[string]types.P
 	if err != nil {
 		return nil, err
 	}
+
+	if verbose {
+		fmt.Println(text.SuccessWithTime("Success Getting Deploy Plan", planStart))
+	}
+
 	defer (*planResult).Close()
 
 	var plans map[string]types.Plan
@@ -106,6 +118,9 @@ func getDeployPlan(api *platform.RestApi, payload io.Reader) (map[string]types.P
 }
 
 func executeDeployPlan(api *platform.RestApi, plans map[string]types.Plan) ([]*io.ReadCloser, error) {
+	if verbose {
+		fmt.Println(text.VerboseSection("Executing Retrieve Plan"))
+	}
 	planResults := []*io.ReadCloser{}
 	for _, plan := range plans {
 		planResult, err := executePlanItem(api, plan)
@@ -127,7 +142,12 @@ func executePlanItem(api *platform.RestApi, plan types.Plan) (*io.ReadCloser, er
 		log.Fatal(err)
 	}
 
+	deployStart := time.Now()
+
 	if plan.Host == "" {
+		if verbose {
+			fmt.Println(fmt.Sprintf("Making Retrieve Request: URL: [%s] Type: [%s]", plan.URL, plan.Type))
+		}
 		planResult, err = api.Connection.MakeRequest(
 			http.MethodPost,
 			plan.URL,
@@ -140,6 +160,9 @@ func executePlanItem(api *platform.RestApi, plan types.Plan) (*io.ReadCloser, er
 	} else {
 
 		url := fmt.Sprintf("%s:%s/api/v2%s", plan.Host, plan.Port, plan.URL)
+		if verbose {
+			fmt.Println(fmt.Sprintf("Making Retrieve Request: URL: [%s] Type: [%s]", url, plan.Type))
+		}
 		planResult, err = api.Connection.MakeJWTRequest(
 			http.MethodPost,
 			url,
@@ -150,6 +173,10 @@ func executePlanItem(api *platform.RestApi, plan types.Plan) (*io.ReadCloser, er
 			return nil, err
 		}
 
+	}
+
+	if verbose {
+		fmt.Println(text.SuccessWithTime("Success Retrieving from Source", deployStart))
 	}
 	defer (*planResult).Close()
 	return planResult, nil

@@ -1,17 +1,42 @@
 package httperror
 
-import "fmt"
+import (
+	"encoding/json"
+	"fmt"
+	"io"
+	"io/ioutil"
+)
 
 // New returns an error that formats as the given text.
-func New(statusCode string, body string) error {
-	return &httpError{statusCode, body}
+func New(status string, body io.Reader) error {
+	var httpError HTTPError
+	bodyBytes, err := ioutil.ReadAll(body)
+	if err != nil {
+		return fmt.Errorf("%v - %v", err.Error(), "Could not parse error message")
+	}
+	// Attempt to parse the body
+	err = json.Unmarshal(bodyBytes, &httpError)
+	if err != nil {
+		return fmt.Errorf("%v - %v", err.Error(), string(bodyBytes))
+	}
+
+	httpError.Status = status
+
+	return &httpError
 }
 
-type httpError struct {
-	statusCode string
-	body       string
+// HTTPError generates a structure error from an http response
+type HTTPError struct {
+	StatusCode    int `json:"statusCode"`
+	Status        string
+	Body          string
+	ParsedError   string `json:"error"`
+	ParsedMessage string `json:"message"`
 }
 
-func (e *httpError) Error() string {
-	return fmt.Sprintf("%v - %v", e.statusCode, e.body)
+func (e *HTTPError) Error() string {
+	if e.ParsedError != "" && e.ParsedMessage != "" {
+		return fmt.Sprintf("%v - %v - %v", e.StatusCode, e.ParsedError, e.ParsedMessage)
+	}
+	return fmt.Sprintf("%v - %v", e.StatusCode, e.Body)
 }
