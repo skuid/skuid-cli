@@ -4,12 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/skuid/skuid/httperror"
+	"github.com/skuid/skuid/text"
 )
 
 type OAuthResponse struct {
@@ -36,7 +37,7 @@ type RestApi struct {
 	Connection *RestConnection
 }
 
-// Logs a given user into a target Skuid Platform site and returns a RestApi connection
+// Login logs a given user into a target Skuid Platform site and returns a RestApi connection
 // that can be used to make HTTP requests
 func Login(host string, username string, password string, apiVersion string, verbose bool) (api *RestApi, err error) {
 
@@ -44,10 +45,10 @@ func Login(host string, username string, password string, apiVersion string, ver
 		apiVersion = "2"
 	}
 
+	loginStart := time.Now()
+
 	if verbose {
-		fmt.Println("Logging in to Skuid Platform... ")
-		fmt.Println("Host: " + host)
-		fmt.Println("Username: " + username)
+		fmt.Println(fmt.Sprintf("Logging in to Skuid Platform as user: %v\n%v", username, host))
 		fmt.Println("Password: " + password)
 		fmt.Println("API Version: " + apiVersion)
 	}
@@ -76,7 +77,8 @@ func Login(host string, username string, password string, apiVersion string, ver
 	}
 
 	if verbose {
-		fmt.Println("Login successful! Access Token: " + conn.AccessToken)
+		fmt.Println(text.SuccessWithTime("Login Success", loginStart))
+		fmt.Println("Access Token: " + conn.AccessToken)
 	}
 
 	return api, nil
@@ -101,18 +103,18 @@ func (conn *RestConnection) Refresh() error {
 	resp, err := http.DefaultClient.Do(req)
 
 	if err != nil {
-		return err
+		switch err.(type) {
+		case *url.Error:
+			return text.AugmentError("Could not connect to authorization endpoint", err)
+		default:
+			return err
+		}
 	}
 
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
-
-		body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return err
-		}
-		return httperror.New(resp.Status, string(body))
+		return httperror.New(resp.Status, resp.Body)
 	}
 
 	result := OAuthResponse{}
@@ -172,11 +174,7 @@ func (conn *RestConnection) MakeRequest(method string, url string, payload io.Re
 
 	if resp.StatusCode != 200 {
 		defer resp.Body.Close()
-		body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return nil, err
-		}
-		return nil, httperror.New(resp.Status, string(body))
+		return nil, httperror.New(resp.Status, resp.Body)
 	}
 
 	return &resp.Body, nil
@@ -207,28 +205,8 @@ func (conn *RestConnection) MakeJWTRequest(method string, url string, payload io
 
 	if resp.StatusCode != 200 {
 		defer resp.Body.Close()
-		body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return nil, err
-		}
-		return nil, httperror.New(resp.Status, string(body))
+		return nil, httperror.New(resp.Status, resp.Body)
 	}
 
 	return &resp.Body, nil
-	/*
-		return ziputils.CreateTestZip([]ziputils.TestFile{
-			{
-				Name: "readme.txt",
-				Body: "This archive contains some text files.",
-			},
-			{
-				Name: "gopher.txt",
-				Body: "Gopher names:\nGeorge\nGeoffrey\nGonzo",
-			},
-			{
-				Name: "dataservices/BenLocalDataService.json",
-				Body: "{\"anotherkey\":\"anothervalue\"}",
-			},
-		})
-	*/
 }

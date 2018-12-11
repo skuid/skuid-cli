@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"strings"
+	"time"
 
 	"archive/zip"
 	"encoding/json"
@@ -15,6 +16,7 @@ import (
 
 	jsonpatch "github.com/evanphx/json-patch"
 	"github.com/skuid/skuid/platform"
+	"github.com/skuid/skuid/text"
 	"github.com/skuid/skuid/types"
 	"github.com/spf13/cobra"
 )
@@ -26,6 +28,8 @@ var retrieveCmd = &cobra.Command{
 	Long:  "Retrieve Skuid metadata from a Skuid Platform Site and output it into a local directory.",
 	Run: func(cmd *cobra.Command, args []string) {
 
+		fmt.Println(text.RunCommand("Retrieve Metadata"))
+
 		api, err := platform.Login(
 			host,
 			username,
@@ -35,25 +39,25 @@ var retrieveCmd = &cobra.Command{
 		)
 
 		if err != nil {
-			fmt.Println(err.Error())
+			fmt.Println(text.PrettyError("Error logging in to Skuid site", err))
 			os.Exit(1)
 		}
 
 		plan, err := getRetrievePlan(api)
 		if err != nil {
-			fmt.Println("Error getting retrieve plan: ", err.Error())
+			fmt.Println(text.PrettyError("Error getting retrieve plan", err))
 			os.Exit(1)
 		}
 
 		results, err := executeRetrievePlan(api, plan)
 		if err != nil {
-			fmt.Println("Error executing retrieve plan: ", err.Error())
+			fmt.Println(text.PrettyError("Error executing retrieve plan", err))
 			os.Exit(1)
 		}
 
 		err = writeResultsToDisk(results)
 		if err != nil {
-			fmt.Println("Error writing results to disk: ", err.Error())
+			fmt.Println(text.PrettyError("Error writing results to disk", err))
 		}
 	},
 }
@@ -76,7 +80,10 @@ func writeResultsToDisk(results []*io.ReadCloser) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println("Writing results to " + targetDirFriendly + " ...")
+
+	if verbose {
+		fmt.Println(text.VerboseSection("Writing results to " + targetDirFriendly))
+	}
 
 	// Remove all of our metadata directories so we get a clean slate.
 	// We may want to improve this later when we do partial retrieves so that
@@ -111,7 +118,7 @@ func writeResultsToDisk(results []*io.ReadCloser) error {
 		}
 	}
 
-	fmt.Printf("Results written to %s\n", targetDirFriendly)
+	fmt.Printf("Success! Results written to %s\n", targetDirFriendly)
 	return nil
 }
 
@@ -248,6 +255,11 @@ func combineJSONFile(fileReader io.ReadCloser, path string) error {
 }
 
 func getRetrievePlan(api *platform.RestApi) (map[string]types.Plan, error) {
+	if verbose {
+		fmt.Println(text.VerboseSection("Getting Retrieve Plan"))
+	}
+
+	planStart := time.Now()
 	// Get a retrieve plan
 	planResult, err := api.Connection.MakeRequest(
 		http.MethodPost,
@@ -260,6 +272,10 @@ func getRetrievePlan(api *platform.RestApi) (map[string]types.Plan, error) {
 		return nil, err
 	}
 
+	if verbose {
+		fmt.Println(text.SuccessWithTime("Success Getting Retrieve Plan", planStart))
+	}
+
 	defer (*planResult).Close()
 
 	var plans map[string]types.Plan
@@ -270,13 +286,20 @@ func getRetrievePlan(api *platform.RestApi) (map[string]types.Plan, error) {
 }
 
 func executeRetrievePlan(api *platform.RestApi, plans map[string]types.Plan) ([]*io.ReadCloser, error) {
+	if verbose {
+		fmt.Println(text.VerboseSection("Executing Retrieve Plan"))
+	}
 	planResults := []*io.ReadCloser{}
 	for _, plan := range plans {
 		metadataBytes, err := json.Marshal(plan.Metadata)
 		if err != nil {
 			return nil, err
 		}
+		retrieveStart := time.Now()
 		if plan.Host == "" {
+			if verbose {
+				fmt.Println(fmt.Sprintf("Making Retrieve Request: URL: [%s] Type: [%s]", plan.URL, plan.Type))
+			}
 			planResult, err := api.Connection.MakeRequest(
 				http.MethodPost,
 				plan.URL,
@@ -289,6 +312,9 @@ func executeRetrievePlan(api *platform.RestApi, plans map[string]types.Plan) ([]
 			planResults = append(planResults, planResult)
 		} else {
 			url := fmt.Sprintf("%s:%s/api/v2%s", plan.Host, plan.Port, plan.URL)
+			if verbose {
+				fmt.Println(fmt.Sprintf("Making Retrieve Request: URL: [%s] Type: [%s]", url, plan.Type))
+			}
 			planResult, err := api.Connection.MakeJWTRequest(
 				http.MethodPost,
 				url,
@@ -299,6 +325,10 @@ func executeRetrievePlan(api *platform.RestApi, plans map[string]types.Plan) ([]
 				return nil, err
 			}
 			planResults = append(planResults, planResult)
+		}
+
+		if verbose {
+			fmt.Println(text.SuccessWithTime("Success Retrieving from Source", retrieveStart))
 		}
 	}
 	return planResults, nil
