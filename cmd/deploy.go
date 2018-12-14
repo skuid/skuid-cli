@@ -31,6 +31,8 @@ var deployCmd = &cobra.Command{
 			username,
 			password,
 			apiVersion,
+			metadataServiceProxy,
+			dataServiceProxy,
 			verbose,
 		)
 
@@ -87,11 +89,11 @@ var deployCmd = &cobra.Command{
 
 func getDeployPlan(api *platform.RestApi, payload io.Reader) (map[string]types.Plan, error) {
 	if verbose {
-		fmt.Println(text.VerboseSection("Getting Retrieve Plan"))
+		fmt.Println(text.VerboseSection("Getting Deploy Plan"))
 	}
 
 	planStart := time.Now()
-	// Get a retrieve plan
+	// Get a deploy plan
 	planResult, err := api.Connection.MakeRequest(
 		http.MethodPost,
 		"/metadata/deploy/plan",
@@ -119,7 +121,7 @@ func getDeployPlan(api *platform.RestApi, payload io.Reader) (map[string]types.P
 
 func executeDeployPlan(api *platform.RestApi, plans map[string]types.Plan) ([]*io.ReadCloser, error) {
 	if verbose {
-		fmt.Println(text.VerboseSection("Executing Retrieve Plan"))
+		fmt.Println(text.VerboseSection("Executing Deploy Plan"))
 	}
 	planResults := []*io.ReadCloser{}
 	for _, plan := range plans {
@@ -146,7 +148,7 @@ func executePlanItem(api *platform.RestApi, plan types.Plan) (*io.ReadCloser, er
 
 	if plan.Host == "" {
 		if verbose {
-			fmt.Println(fmt.Sprintf("Making Retrieve Request: URL: [%s] Type: [%s]", plan.URL, plan.Type))
+			fmt.Println(fmt.Sprintf("Making Deploy Request: URL: [%s] Type: [%s]", plan.URL, plan.Type))
 		}
 		planResult, err = api.Connection.MakeRequest(
 			http.MethodPost,
@@ -161,7 +163,7 @@ func executePlanItem(api *platform.RestApi, plan types.Plan) (*io.ReadCloser, er
 
 		url := fmt.Sprintf("%s:%s/api/v2%s", plan.Host, plan.Port, plan.URL)
 		if verbose {
-			fmt.Println(fmt.Sprintf("Making Retrieve Request: URL: [%s] Type: [%s]", url, plan.Type))
+			fmt.Println(fmt.Sprintf("Making Deploy Request: URL: [%s] Type: [%s]", url, plan.Type))
 		}
 		planResult, err = api.Connection.MakeJWTRequest(
 			http.MethodPost,
