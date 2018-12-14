@@ -10,16 +10,18 @@ import (
 )
 
 var (
-	appClientID     string
-	appClientSecret string
-	apiVersion      string
-	host            string
-	module          string
-	page            string
-	password        string
-	targetDir       string
-	username        string
-	verbose         bool
+	appClientID          string
+	appClientSecret      string
+	apiVersion           string
+	host                 string
+	module               string
+	page                 string
+	password             string
+	targetDir            string
+	username             string
+	metadataServiceProxy string
+	dataServiceProxy     string
+	verbose              bool
 )
 
 // RootCmd represents the base command when called without any subcommands
@@ -52,6 +54,8 @@ func init() {
 	RootCmd.PersistentFlags().StringVarP(&password, "password", "p", os.Getenv("SKUID_PW"), "Skuid Platform / Salesforce Password")
 	RootCmd.PersistentFlags().StringVarP(&targetDir, "dir", "d", "", "Input/output directory.")
 	RootCmd.PersistentFlags().StringVarP(&username, "username", "u", os.Getenv("SKUID_UN"), "Skuid Platform / Salesforce Username")
+	RootCmd.PersistentFlags().StringVarP(&metadataServiceProxy, "metadataServiceProxy", "", os.Getenv("METADATA_SERVICE_PROXY"), "Proxy used to reach the metadata service")
+	RootCmd.PersistentFlags().StringVarP(&dataServiceProxy, "dataServiceProxy", "", os.Getenv("DATA_SERVICE_PROXY"), "Proxy used to reach the data service")
 	RootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Display all possible logging info")
 }
 

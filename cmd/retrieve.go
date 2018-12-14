@@ -35,6 +35,8 @@ var retrieveCmd = &cobra.Command{
 			username,
 			password,
 			apiVersion,
+			metadataServiceProxy,
+			dataServiceProxy,
 			verbose,
 		)
 

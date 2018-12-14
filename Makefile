@@ -9,7 +9,7 @@ IMAGE ?= golang
 ARCH=amd64
 OS=darwin
 
-VERSION=0.3.6
+VERSION=0.3.7
 
 .PHONY: setup fmt vendored
 

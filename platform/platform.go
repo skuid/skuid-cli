@@ -23,14 +23,16 @@ type JWTResponse struct {
 }
 
 type RestConnection struct {
-	AccessToken  string
-	APIVersion   string
-	ClientId     string
-	ClientSecret string
-	Host         string
-	Password     string
-	Username     string
-	JWT          string
+	AccessToken          string
+	APIVersion           string
+	ClientId             string
+	ClientSecret         string
+	Host                 string
+	Password             string
+	Username             string
+	JWT                  string
+	MetadataServiceProxy *url.URL
+	DataServiceProxy     *url.URL
 }
 
 type RestApi struct {
@@ -39,7 +41,7 @@ type RestApi struct {
 
 // Login logs a given user into a target Skuid Platform site and returns a RestApi connection
 // that can be used to make HTTP requests
-func Login(host string, username string, password string, apiVersion string, verbose bool) (api *RestApi, err error) {
+func Login(host, username, password, apiVersion, metadataServiceProxy, dataServiceProxy string, verbose bool) (api *RestApi, err error) {
 
 	if apiVersion == "" {
 		apiVersion = "2"
@@ -58,6 +60,22 @@ func Login(host string, username string, password string, apiVersion string, ver
 		Username:   username,
 		Password:   password,
 		APIVersion: apiVersion,
+	}
+
+	if metadataServiceProxy != "" {
+		proxyURL, err := url.Parse(metadataServiceProxy)
+		if err != nil {
+			return nil, err
+		}
+		conn.MetadataServiceProxy = proxyURL
+	}
+
+	if dataServiceProxy != "" {
+		proxyURL, err := url.Parse(dataServiceProxy)
+		if err != nil {
+			return nil, err
+		}
+		conn.DataServiceProxy = proxyURL
 	}
 
 	err = conn.Refresh()
@@ -84,7 +102,7 @@ func Login(host string, username string, password string, apiVersion string, ver
 	return api, nil
 }
 
-// Used to obtain an OAuth2 access_token
+// Refresh is used to obtain an OAuth2 access_token
 func (conn *RestConnection) Refresh() error {
 	urlValues := url.Values{}
 
@@ -100,7 +118,7 @@ func (conn *RestConnection) Refresh() error {
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Add("User-Agent", "Skuid-CLI/0.2")
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := getClientForProxyURL(conn.MetadataServiceProxy).Do(req)
 
 	if err != nil {
 		switch err.(type) {
@@ -167,7 +185,7 @@ func (conn *RestConnection) MakeRequest(method string, url string, payload io.Re
 	}
 	req.Header.Add("User-Agent", "Skuid-CLI/0.2")
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := getClientForProxyURL(conn.MetadataServiceProxy).Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -198,7 +216,7 @@ func (conn *RestConnection) MakeJWTRequest(method string, url string, payload io
 	// Send the public key endpoint so that warden can configure a JWT key if needed
 	req.Header.Add("x-skuid-public-key-endpoint", conn.Host+"/api/v1/site/verificationkey")
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := getClientForProxyURL(conn.DataServiceProxy).Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -209,4 +227,15 @@ func (conn *RestConnection) MakeJWTRequest(method string, url string, payload io
 	}
 
 	return &resp.Body, nil
+}
+
+func getClientForProxyURL(url *url.URL) *http.Client {
+	if url != nil {
+		return &http.Client{
+			Transport: &http.Transport{
+				Proxy: http.ProxyURL(url),
+			},
+		}
+	}
+	return http.DefaultClient
 }
