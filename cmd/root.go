@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/skuid/skuid/version"
 	"github.com/spf13/cobra"
@@ -68,5 +69,26 @@ func initConfig() {
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {
 		fmt.Println("Using config file:", viper.ConfigFileUsed())
+	}
+
+	// Ensure we have universally-required parameters
+	if username == "" {
+		fmt.Println("No Username provided - request could not be performed.")
+		os.Exit(1)
+	}
+
+	if password == "" {
+		fmt.Println("No Password provided - request could not be performed.")
+		os.Exit(1)
+	}
+
+	if host == "" {
+		fmt.Println("No Host provided - request could not be performed.")
+		os.Exit(1)	
+	}
+
+	// Graciously handle an org/site host that does not start "https://"
+	if !strings.HasPrefix(host, "https://") {
+		host = "https://" + host
 	}
 }

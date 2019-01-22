@@ -51,15 +51,16 @@ func Login(consumerKey string, consumerSecret string, instanceUrl string, userna
 }
 
 func (conn *RestConnection) Get(url string, query url.Values) (result []byte, err error) {
-	return conn.Query("GET", url, nil, query)
+	return conn.MakeRequest("GET", url, nil, query)
 }
 
 func (conn *RestConnection) Post(url string, payload interface{}) (result []byte, err error) {
-	return conn.Query("POST", url, payload, nil)
+	return conn.MakeRequest("POST", url, payload, nil)
 }
 
-// Query is executing a HTTP request
-func (conn *RestConnection) Query(method string, url string, payload interface{}, params url.Values) (result []byte, err error) {
+// Executes an HTTP Request against the Skuid Pages REST API
+func (conn *RestConnection) MakeRequest(method string, url string, payload interface{}, params url.Values) (result []byte, err error) {
+
 	endpoint := conn.InstanceUrl + "/services/apexrest" + url
 
 	if params != nil && len(params) != 0 {
