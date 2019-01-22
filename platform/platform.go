@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"os"
 	"net/http"
 	"net/url"
 	"strings"
@@ -49,9 +50,18 @@ func Login(host, username, password, apiVersion, metadataServiceProxy, dataServi
 
 	loginStart := time.Now()
 
+	if username == "" {
+		fmt.Println("No Username provided - login failed.")
+		os.Exit(1)
+	}
+
+	if password == "" {
+		fmt.Println("No Password provided - login failed.")
+		os.Exit(1)
+	}
+
 	if verbose {
 		fmt.Println(fmt.Sprintf("Logging in to Skuid Platform as user: %v\n%v", username, host))
-		fmt.Println("Password: " + password)
 		fmt.Println("API Version: " + apiVersion)
 	}
 

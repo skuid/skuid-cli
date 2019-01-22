@@ -40,6 +40,8 @@ var retrieveCmd = &cobra.Command{
 			verbose,
 		)
 
+		retrieveStart := time.Now()
+
 		if err != nil {
 			fmt.Println(text.PrettyError("Error logging in to Skuid site", err))
 			os.Exit(1)
@@ -60,6 +62,14 @@ var retrieveCmd = &cobra.Command{
 		err = writeResultsToDisk(results)
 		if err != nil {
 			fmt.Println(text.PrettyError("Error writing results to disk", err))
+			os.Exit(1)
+		}
+
+		successMessage := "Successfully retrieved metadata from Skuid Site"
+		if verbose {
+			fmt.Println(text.SuccessWithTime(successMessage, retrieveStart))
+		} else {
+			fmt.Println(successMessage + ".")
 		}
 	},
 }
@@ -77,6 +87,7 @@ func getFriendlyURL(targetDir string) (string, error) {
 }
 
 func writeResultsToDisk(results []*io.ReadCloser) error {
+
 	// unzip the archive into the output directory
 	targetDirFriendly, err := getFriendlyURL(targetDir)
 	if err != nil {
@@ -120,7 +131,8 @@ func writeResultsToDisk(results []*io.ReadCloser) error {
 		}
 	}
 
-	fmt.Printf("Success! Results written to %s\n", targetDirFriendly)
+	fmt.Printf("Results written to %s\n", targetDirFriendly)
+
 	return nil
 }
 

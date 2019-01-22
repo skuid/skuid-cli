@@ -41,6 +41,8 @@ var deployCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
+		deployStart := time.Now()
+
 		var targetDirFriendly string
 
 		// If target directory is provided,
@@ -83,7 +85,14 @@ var deployCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		fmt.Println("Success! Deployed metadata to Skuid Site.")
+		successMessage := "Successfully deployed metadata to Skuid Site"
+
+		if verbose {
+			fmt.Println(text.SuccessWithTime(successMessage, deployStart))
+		} else {
+			fmt.Println(successMessage + ".")
+		}
+		
 	},
 }
 
