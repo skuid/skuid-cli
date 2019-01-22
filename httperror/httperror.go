@@ -14,12 +14,14 @@ func New(status string, body io.Reader) error {
 	if err != nil {
 		return fmt.Errorf("%v - %v", err.Error(), "Could not parse error message")
 	}
+	bodyString := string(bodyBytes)
 	// Attempt to parse the body
 	err = json.Unmarshal(bodyBytes, &httpError)
 	if err != nil {
-		return fmt.Errorf("%v - %v", err.Error(), string(bodyBytes))
+		return fmt.Errorf("%v - %v", err.Error(), bodyString)
 	}
 
+	httpError.Body = bodyString
 	httpError.Status = status
 
 	return &httpError
@@ -36,7 +38,13 @@ type HTTPError struct {
 
 func (e *HTTPError) Error() string {
 	if e.ParsedError != "" && e.ParsedMessage != "" {
-		return fmt.Sprintf("%v - %v - %v", e.StatusCode, e.ParsedError, e.ParsedMessage)
+		return fmt.Sprintf("%v - %v - %v", e.Status, e.ParsedError, e.ParsedMessage)
 	}
-	return fmt.Sprintf("%v - %v", e.StatusCode, e.Body)
+	if e.ParsedError != "" {
+		return fmt.Sprintf("%v - %v", e.Status, e.ParsedError)
+	}
+	if e.ParsedMessage != "" {
+		return fmt.Sprintf("%v - %v", e.Status, e.ParsedMessage)
+	}
+	return fmt.Sprintf("%v - %v", e.Status, e.Body)
 }
