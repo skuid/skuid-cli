@@ -14,6 +14,7 @@ import (
 )
 
 type PullResponse struct {
+	APIVersion         string  `json:"apiVersion"`
 	Name               string  `json:"name"`
 	UniqueID           string  `json:"uniqueId"`
 	Type               string  `json:"type"`
