@@ -187,7 +187,7 @@ func executePlanItem(api *platform.RestApi, plan types.Plan) (*io.ReadCloser, er
 	}
 
 	if verbose {
-		fmt.Println(text.SuccessWithTime("Success Retrieving from Source", deployStart))
+		fmt.Println(text.SuccessWithTime("Success Deploying to Source", deployStart))
 	}
 	defer (*planResult).Close()
 	return planResult, nil
