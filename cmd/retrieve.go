@@ -183,12 +183,12 @@ func readFileFromZipAndWriteToFilesystem(file *zip.File, targetLocation string, 
 	}
 
 	// If this file name contains a /, make sure that we create the
-	if pathParts := strings.Split(file.Name, "/"); len(pathParts) > 0 {
+	if pathParts := strings.Split(file.Name, string(filepath.Separator)); len(pathParts) > 0 {
 		// Remove the actual file name from the slice,
 		// i.e. pages/MyAwesomePage.xml ---> pages
 		pathParts = pathParts[:len(pathParts)-1]
 		// and then make dirs for all paths up to that point, i.e. pages, apps
-		intermediatePath := filepath.Join(targetLocation, strings.Join(pathParts[:], ","))
+		intermediatePath := filepath.Join(targetLocation, strings.Join(pathParts[:], string(filepath.Separator)))
 		//if the desired directory isn't there, create it
 		if _, err := os.Stat(intermediatePath); err != nil {
 			if verbose {

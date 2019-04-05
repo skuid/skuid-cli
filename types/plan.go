@@ -15,14 +15,15 @@ type Plan struct {
 }
 
 type Metadata struct {
-	Pages        []string `json:"pages"`
-	Apps         []string `json:"apps"`
-	DataServices []string `json:"dataservices"`
-	DataSources  []string `json:"datasources"`
-	Profiles     []string `json:"profiles"`
-	Files        []string `json:"files"`
-	Themes       []string `json:"themes"`
+	Pages         []string `json:"pages"`
+	Apps          []string `json:"apps"`
+	DataServices  []string `json:"dataservices"`
+	DataSources   []string `json:"datasources"`
+	Profiles      []string `json:"profiles"`
+	Files         []string `json:"files"`
+	Themes        []string `json:"themes"`
 	DesignSystems []string `json:"designsystems"`
+	Site          []string `json:"site"`
 }
 
 // GetMetadataTypeDirNames returns the directory names for a type
@@ -62,33 +63,45 @@ func (m Metadata) GetNamesForType(metadataType string) []string {
 	return nil
 }
 
+func fromWindowsPath(path string) string {
+	return strings.Replace(path, "\\", string(filepath.Separator), -1)
+}
+
 // FilterMetadataItem returns true if the path meets the filter criteria, otherwise it returns false
 func (m Metadata) FilterMetadataItem(relativeFilePath string) bool {
-	metadataType := filepath.Dir(relativeFilePath)
-	baseName := filepath.Base(relativeFilePath)
+	cleanRelativeFilePath := fromWindowsPath(relativeFilePath)
+	directory := filepath.Dir(cleanRelativeFilePath)
+	baseName := filepath.Base(cleanRelativeFilePath)
+
+	// Find the lowest level folder
+	dirSplit := strings.Split(directory, string(filepath.Separator))
+	metadataType, subFolders := dirSplit[0], dirSplit[1:]
+	filePathArray := append(subFolders, baseName)
+	filePath := strings.Join(filePathArray, string(filepath.Separator))
+
 	validMetadataNames := m.GetNamesForType(metadataType)
 	if validMetadataNames == nil || len(validMetadataNames) == 0 {
 		// If we don't have valid names for this directory, just skip this file
 		return false
 	}
-	// See if our baseName is in the valid metadata, if so, we're done
-	if StringSliceContainsKey(validMetadataNames, baseName) {
+	// See if our filePath is in the valid metadata, if so, we're done
+	if StringSliceContainsKey(validMetadataNames, filePath) {
 		return true
 	}
 	// Check for our metadata with .xml stripped
-	if StringSliceContainsKey(validMetadataNames, strings.TrimSuffix(baseName, ".xml")) {
+	if StringSliceContainsKey(validMetadataNames, strings.TrimSuffix(filePath, ".xml")) {
 		return true
 	}
 	// Check for our metadata with .json stripped
-	if StringSliceContainsKey(validMetadataNames, strings.TrimSuffix(baseName, ".json")) {
+	if StringSliceContainsKey(validMetadataNames, strings.TrimSuffix(filePath, ".json")) {
 		return true
 	}
 	// Check for our metadata with .skuid.json stripped
-	if StringSliceContainsKey(validMetadataNames, strings.TrimSuffix(baseName, ".skuid.json")) {
+	if StringSliceContainsKey(validMetadataNames, strings.TrimSuffix(filePath, ".skuid.json")) {
 		return true
 	}
 	// Check for theme inline css
-	if StringSliceContainsKey(validMetadataNames, strings.TrimSuffix(baseName, ".inline.css")) {
+	if StringSliceContainsKey(validMetadataNames, strings.TrimSuffix(filePath, ".inline.css")) {
 		return true
 	}
 	return false

@@ -137,7 +137,7 @@ func (conn *RestConnection) Refresh() error {
 	result := OAuthResponse{}
 
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return err
+		return httperror.New(resp.Status, resp.Body)
 	}
 
 	conn.AccessToken = result.AccessToken
