@@ -34,9 +34,9 @@ To quickly install the application, copy and paste the following commands in the
 ```bash
 # Download the skuid application
 # On a macOS machine? Use this:
-wget https://github.com/skuid/skuid/releases/download/3/skuid_darwin_amd64 -O skuid
+wget https://github.com/skuid/skuid-cli/releases/download/3/skuid_darwin_amd64 -O skuid
 # On a Linux machine? Use this instead:
-# wget https://github.com/skuid/skuid/releases/download/0.3.10/skuid_linux_amd64 -O skuid
+# wget https://github.com/skuid/skuid-cli/releases/download/0.3.10/skuid_linux_amd64 -O skuid
 # Give the skuid application the permissions it needs to run
 chmod +x skuid
 # Move the skuid application to a folder where it can be used easily
@@ -46,7 +46,7 @@ sudo mv skuid /usr/local/bin/skuid
 
 To manually install the application, follow these steps:
 
-1. Download [the latest release of the `skuid` application binary.](https://github.com/skuid/skuid/releases)
+1. Download [the latest release of the `skuid` application binary.](https://github.com/skuid/skuid-cli/releases)
 1. Navigate to the directory containing the `skuid` binary file in a terminal application.
 
    ```bash
@@ -85,7 +85,7 @@ To manually install the application, follow these steps:
 
 ### Windows
 
-1. Download the [latest Windows executable release](https://github.com/skuid/skuid/releases) in your web browser.
+1. Download the [latest Windows executable release](https://github.com/skuid/skuid-cli/releases) in your web browser.
 1. (_Optional_) Move the executable to a more permanent location, such as `C:\Program Files\Skuid\`.
 1. (_Optional_) Set an alias to easily access the executable.
 
@@ -105,7 +105,7 @@ To manually install the application, follow these steps:
 
 ### Using go
 
-Use the [the Go programming language?](https://golang.org/doc/install) If so, you can also install `skuid` by running `go get github.com/skuid/skuid`.
+Use the [the Go programming language?](https://golang.org/doc/install) If so, you can also install `skuid` by running `go get github.com/skuid/skuid-cli`.
 
 ### Building from source
 
@@ -151,4 +151,4 @@ You'll push that new tag to github:
 git push <remote name> <tag_name>
 ```
 
-Once the tag is pushed, you should be able to add a new release referencing that tag at https://github.com/skuid/skuid/releases. When adding the new release, there is a section for uploading any binaries for the release which you will use to add the newly built binaries you just created.
+Once the tag is pushed, you should be able to add a new release referencing that tag at https://github.com/skuid/skuid-cli/releases. When adding the new release, there is a section for uploading any binaries for the release which you will use to add the newly built binaries you just created.
