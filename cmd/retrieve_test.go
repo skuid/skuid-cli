@@ -8,7 +8,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/skuid/skuid/types"
+	"github.com/skuid/skuid-cli/types"
 	"github.com/stretchr/testify/assert"
 )
 
