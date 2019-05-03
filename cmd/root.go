@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/skuid/skuid/version"
+	"github.com/skuid/skuid-cli/version"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -84,7 +84,7 @@ func initConfig() {
 
 	if host == "" {
 		fmt.Println("No Host provided - request could not be performed.")
-		os.Exit(1)	
+		os.Exit(1)
 	}
 
 	// Graciously handle an org/site host that does not start "https://"

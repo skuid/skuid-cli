@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/skuid/skuid/types"
+	"github.com/skuid/skuid-cli/types"
 )
 
 // TestFile contains the information needed to create a test file

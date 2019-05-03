@@ -8,8 +8,8 @@ import (
 
 	"encoding/json"
 
-	"github.com/skuid/skuid/force"
-	"github.com/skuid/skuid/types"
+	"github.com/skuid/skuid-cli/force"
+	"github.com/skuid/skuid-cli/types"
 	"github.com/spf13/cobra"
 )
 
@@ -56,7 +56,7 @@ var pullCmd = &cobra.Command{
 		if page != "" {
 			query.Add("page", page)
 		}
-		
+
 		//query the API for all pages in the requested module
 		result, err := api.Connection.Get("/skuid/api/v1/pages", query)
 
