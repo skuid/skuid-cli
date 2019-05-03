@@ -5,3 +5,5 @@ os:
   - linux
   - osx
   - windows
+script:
+  - go test -v ./...
