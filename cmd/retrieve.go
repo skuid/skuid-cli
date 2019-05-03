@@ -59,7 +59,7 @@ var retrieveCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		err = writeResultsToDisk(results)
+		err = writeResultsToDisk(results, writeNewFile, createDirectory)
 		if err != nil {
 			fmt.Println(text.PrettyError("Error writing results to disk", err))
 			os.Exit(1)
@@ -86,7 +86,7 @@ func getFriendlyURL(targetDir string) (string, error) {
 
 }
 
-func writeResultsToDisk(results []*io.ReadCloser) error {
+func writeResultsToDisk(results []*io.ReadCloser, fileCreator FileCreator, directoryCreator DirectoryCreator) error {
 
 	// unzip the archive into the output directory
 	targetDirFriendly, err := getFriendlyURL(targetDir)
@@ -121,7 +121,7 @@ func writeResultsToDisk(results []*io.ReadCloser) error {
 		}
 
 		// unzip the contents of our temp zip file
-		err = unzip(tmpFileName, targetDir, pathMap)
+		err = unzip(tmpFileName, targetDir, pathMap, fileCreator, directoryCreator)
 
 		// schedule cleanup of temp file
 		defer os.Remove(tmpFileName)
@@ -151,7 +151,7 @@ func createTemporaryZipFile(data *io.ReadCloser) (name string, err error) {
 }
 
 // Unzips a ZIP archive and recreates the folders and file structure within it locally
-func unzip(sourceFileLocation, targetLocation string, pathMap map[string]bool) error {
+func unzip(sourceFileLocation, targetLocation string, pathMap map[string]bool, fileCreator FileCreator, directoryCreator DirectoryCreator) error {
 
 	reader, err := zip.OpenReader(sourceFileLocation)
 
@@ -161,46 +161,47 @@ func unzip(sourceFileLocation, targetLocation string, pathMap map[string]bool) e
 
 	// If we have a non-empty target directory, ensure it exists
 	if targetLocation != "" {
-		if err := os.MkdirAll(targetLocation, 0755); err != nil {
+		if err := directoryCreator(targetLocation, 0755); err != nil {
 			return err
 		}
 	}
 
 	for _, file := range reader.File {
-		readFileFromZipAndWriteToFilesystem(file, targetLocation, pathMap)
+		path := filepath.Join(targetLocation, filepath.FromSlash(file.Name))
+		// Check to see if we've already written to this file in this retrieve
+		_, fileAlreadyWritten := pathMap[path]
+		if !fileAlreadyWritten {
+			pathMap[path] = true
+		}
+		readFileFromZipAndWriteToFilesystem(file, path, fileAlreadyWritten, fileCreator, directoryCreator)
 	}
 
 	return nil
 }
 
-func readFileFromZipAndWriteToFilesystem(file *zip.File, targetLocation string, pathMap map[string]bool) error {
-	path := filepath.Join(targetLocation, file.Name)
+func readFileFromZipAndWriteToFilesystem(file *zip.File, fullPath string, fileAlreadyWritten bool, fileCreator FileCreator, directoryCreator DirectoryCreator) error {
 
-	// Check to see if we've already written to this file in this retrieve
-	_, fileAlreadyWritten := pathMap[path]
-	if !fileAlreadyWritten {
-		pathMap[path] = true
-	}
-
-	// If this file name contains a /, make sure that we create the
+	// If this file name contains a /, make sure that we create the directory it belongs in
 	if pathParts := strings.Split(file.Name, string(filepath.Separator)); len(pathParts) > 0 {
 		// Remove the actual file name from the slice,
 		// i.e. pages/MyAwesomePage.xml ---> pages
 		pathParts = pathParts[:len(pathParts)-1]
 		// and then make dirs for all paths up to that point, i.e. pages, apps
-		intermediatePath := filepath.Join(targetLocation, strings.Join(pathParts[:], string(filepath.Separator)))
-		//if the desired directory isn't there, create it
-		if _, err := os.Stat(intermediatePath); err != nil {
-			if verbose {
-				fmt.Println("Creating intermediate directory: " + intermediatePath)
+		intermediatePath := filepath.Join(strings.Join(pathParts[:], string(filepath.Separator)))
+		if intermediatePath != "" {
+			err := directoryCreator(intermediatePath, 0755)
+			if err != nil {
+				return err
 			}
-			os.MkdirAll(intermediatePath, 0755)
+		} else {
+			// If we don't have an intermediate path, skip out.
+			// Currently Skuid CLI does not create any files in the base directory
+			return nil
 		}
 	}
 
 	if file.FileInfo().IsDir() {
-		os.MkdirAll(path, file.Mode())
-		return nil
+		return directoryCreator(fullPath, file.Mode())
 	}
 
 	fileReader, err := file.Open()
@@ -213,23 +214,35 @@ func readFileFromZipAndWriteToFilesystem(file *zip.File, targetLocation string, 
 		if verbose {
 			fmt.Println("Augmenting existing file with more data: " + file.Name)
 		}
-		err = combineJSONFile(fileReader, path)
+		fileReader, err = combineJSONFile(fileReader, fullPath)
 		if err != nil {
 			return err
 		}
 
-	} else {
-		if verbose {
-			fmt.Println("Creating file: " + file.Name)
-		}
-		err = writeNewFile(fileReader, path)
-		if err != nil {
-			return err
-		}
+	}
+	if verbose {
+		fmt.Println("Creating file: " + file.Name)
+	}
+	err = fileCreator(fileReader, fullPath)
+	if err != nil {
+		return err
 	}
 
 	return nil
 }
+
+func createDirectory(path string, fileMode os.FileMode) error {
+	if _, err := os.Stat(path); err != nil {
+		if verbose {
+			fmt.Println("Creating intermediate directory: " + path)
+		}
+		return os.MkdirAll(path, fileMode)
+	}
+	return nil
+}
+
+type FileCreator func(fileReader io.ReadCloser, path string) error
+type DirectoryCreator func(path string, fileMode os.FileMode) error
 
 func writeNewFile(fileReader io.ReadCloser, path string) error {
 	targetFile, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
@@ -244,28 +257,28 @@ func writeNewFile(fileReader io.ReadCloser, path string) error {
 	return nil
 }
 
-func combineJSONFile(fileReader io.ReadCloser, path string) error {
+func combineJSONFile(fileReader io.ReadCloser, path string) (io.ReadCloser, error) {
 	existingBytes, err := ioutil.ReadFile(path)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	newBytes, err := ioutil.ReadAll(fileReader)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	combined, err := jsonpatch.MergePatch(existingBytes, newBytes)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	var indented bytes.Buffer
 	err = json.Indent(&indented, combined, "", "\t")
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return writeNewFile(ioutil.NopCloser(bytes.NewReader(indented.Bytes())), path)
+	return ioutil.NopCloser(bytes.NewReader(indented.Bytes())), nil
 }
 
 func getRetrievePlan(api *platform.RestApi) (map[string]types.Plan, error) {
