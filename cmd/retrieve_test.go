@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/skuid/skuid-cli/types"
@@ -53,7 +54,7 @@ func TestRetrieve(t *testing.T) {
 				{"datasources/mydatasource.json", "this is not even close to good JSON"},
 			},
 			[]RetrieveFile{
-				{"datasources/mydatasource.json", "this is not even close to good JSON"},
+				{filepath.FromSlash("datasources/mydatasource.json"), "this is not even close to good JSON"},
 			},
 			[]string{
 				"datasources",
@@ -68,8 +69,8 @@ func TestRetrieve(t *testing.T) {
 				{"datasources/mydatasource2.json", "this is not even close to good JSON2"},
 			},
 			[]RetrieveFile{
-				{"datasources/mydatasource.json", "this is not even close to good JSON"},
-				{"datasources/mydatasource2.json", "this is not even close to good JSON2"},
+				{filepath.FromSlash("datasources/mydatasource.json"), "this is not even close to good JSON"},
+				{filepath.FromSlash("datasources/mydatasource2.json"), "this is not even close to good JSON2"},
 			},
 			[]string{
 				"datasources",
@@ -83,11 +84,11 @@ func TestRetrieve(t *testing.T) {
 				{"datasources/mydatasource.json", "this is not even close to good JSON"},
 			},
 			[]RetrieveFile{
-				{"myTargetDir/datasources/mydatasource.json", "this is not even close to good JSON"},
+				{filepath.FromSlash("myTargetDir/datasources/mydatasource.json"), "this is not even close to good JSON"},
 			},
 			[]string{
 				"myTargetDir",
-				"myTargetDir/datasources",
+				filepath.FromSlash("myTargetDir/datasources"),
 			},
 			nil,
 		},
