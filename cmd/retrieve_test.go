@@ -20,6 +20,7 @@ type RetrieveFile struct {
 func TestRetrieve(t *testing.T) {
 	testCases := []struct {
 		testDescription string
+		giveTargetDir   string
 		giveFiles       []RetrieveFile
 		wantFiles       []RetrieveFile
 		wantDirectories []string
@@ -27,6 +28,7 @@ func TestRetrieve(t *testing.T) {
 	}{
 		{
 			"retrieve nothing",
+			"",
 			[]RetrieveFile{},
 			[]RetrieveFile{},
 			[]string{},
@@ -34,6 +36,7 @@ func TestRetrieve(t *testing.T) {
 		},
 		{
 			"retrieve nonvalid skuid metadata files",
+			"",
 			[]RetrieveFile{
 				{"readme.txt", "This archive contains some text files."},
 				{"gopher.txt", "Gopher names:\nGeorge\nGeoffrey\nGonzo"},
@@ -45,6 +48,7 @@ func TestRetrieve(t *testing.T) {
 		},
 		{
 			"retrieve a data source",
+			"",
 			[]RetrieveFile{
 				{"datasources/mydatasource.json", "this is not even close to good JSON"},
 			},
@@ -58,6 +62,7 @@ func TestRetrieve(t *testing.T) {
 		},
 		{
 			"retrieve two data sources",
+			"",
 			[]RetrieveFile{
 				{"datasources/mydatasource.json", "this is not even close to good JSON"},
 				{"datasources/mydatasource2.json", "this is not even close to good JSON2"},
@@ -71,10 +76,26 @@ func TestRetrieve(t *testing.T) {
 			},
 			nil,
 		},
+		{
+			"retrieve a data source with targetdir",
+			"myTargetDir",
+			[]RetrieveFile{
+				{"datasources/mydatasource.json", "this is not even close to good JSON"},
+			},
+			[]RetrieveFile{
+				{"myTargetDir/datasources/mydatasource.json", "this is not even close to good JSON"},
+			},
+			[]string{
+				"myTargetDir",
+				"myTargetDir/datasources",
+			},
+			nil,
+		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.testDescription, func(t *testing.T) {
+			targetDir = tc.giveTargetDir
 			// Create a buffer to write our archive to.
 			buf := new(bytes.Buffer)
 

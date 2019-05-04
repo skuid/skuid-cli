@@ -182,7 +182,7 @@ func unzip(sourceFileLocation, targetLocation string, pathMap map[string]bool, f
 func readFileFromZipAndWriteToFilesystem(file *zip.File, fullPath string, fileAlreadyWritten bool, fileCreator FileCreator, directoryCreator DirectoryCreator) error {
 
 	// If this file name contains a /, make sure that we create the directory it belongs in
-	if pathParts := strings.Split(file.Name, string(filepath.Separator)); len(pathParts) > 0 {
+	if pathParts := strings.Split(fullPath, string(filepath.Separator)); len(pathParts) > 0 {
 		// Remove the actual file name from the slice,
 		// i.e. pages/MyAwesomePage.xml ---> pages
 		pathParts = pathParts[:len(pathParts)-1]
