@@ -8,8 +8,8 @@ import (
 	"encoding/json"
 	"net/url"
 
-	"github.com/skuid/skuid/force"
-	"github.com/skuid/skuid/types"
+	"github.com/skuid/skuid-cli/force"
+	"github.com/skuid/skuid-cli/types"
 	"github.com/spf13/cobra"
 )
 

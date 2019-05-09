@@ -9,9 +9,12 @@ IMAGE ?= golang
 ARCH=amd64
 OS=darwin
 
-VERSION=0.3.10
+VERSION=0.3.11
 
 .PHONY: setup fmt vendored
+
+test:
+	go test -v ./...
 
 setup:
 	go get -u github.com/kardianos/govendor

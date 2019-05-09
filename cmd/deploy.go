@@ -11,10 +11,10 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/skuid/skuid/platform"
-	"github.com/skuid/skuid/text"
-	"github.com/skuid/skuid/types"
-	"github.com/skuid/skuid/ziputils"
+	"github.com/skuid/skuid-cli/platform"
+	"github.com/skuid/skuid-cli/text"
+	"github.com/skuid/skuid-cli/types"
+	"github.com/skuid/skuid-cli/ziputils"
 	"github.com/spf13/cobra"
 )
 
@@ -92,7 +92,7 @@ var deployCmd = &cobra.Command{
 		} else {
 			fmt.Println(successMessage + ".")
 		}
-		
+
 	},
 }
 

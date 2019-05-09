@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/skuid/skuid/httperror"
-	"github.com/skuid/skuid/text"
+	"github.com/skuid/skuid-cli/httperror"
+	"github.com/skuid/skuid-cli/text"
 )
 
 type OAuthResponse struct {
@@ -50,7 +50,7 @@ func Login(host, username, password, apiVersion, metadataServiceProxy, dataServi
 	loginStart := time.Now()
 
 	if verbose {
-		fmt.Println(fmt.Sprintf("Logging in to Skuid Platform as user: %v\n%v", username, host)) 
+		fmt.Println(fmt.Sprintf("Logging in to Skuid Platform as user: %v\n%v", username, host))
 		fmt.Println("API Version: " + apiVersion)
 	}
 
