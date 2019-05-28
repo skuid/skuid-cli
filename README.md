@@ -31,10 +31,10 @@ If you have `curl`, `grep` and `awk` in your environment, you can quickly instal
 
 ```bash
 # macOS:
-curl -Lo skuid $(curl -sL https://api.github.com/repos/skuid/skuid/releases/latest | grep "browser_download_url.*darwin" | awk -F '"' '{print $4}')
+curl -Lo skuid $(curl -sL https://api.github.com/repos/skuid/skuid-cli/releases/latest | grep "browser_download_url.*darwin" | awk -F '"' '{print $4}')
 
 # Linux:
-# curl -Lo skuid $(curl -sL https://api.github.com/repos/skuid/skuid/releases/latest | grep "browser_download_url.*linux" | awk -F '"' '{print $4}')
+# curl -Lo skuid $(curl -sL https://api.github.com/repos/skuid/skuid-cli/releases/latest | grep "browser_download_url.*linux" | awk -F '"' '{print $4}')
 
 # Give the skuid application the permissions it needs to run
 chmod +x skuid
@@ -47,7 +47,7 @@ sudo mv skuid /usr/local/bin/skuid
 
 To manually install the application, follow these steps:
 
-1. Download [the latest release of the `skuid` application binary.](https://github.com/skuid/skuid/releases)
+1. Download [the latest release of the `skuid` application binary.](https://github.com/skuid/skuid-cli/releases)
 1. Navigate to the directory containing the `skuid` binary file in a terminal application.
 
    ```bash
@@ -89,7 +89,7 @@ To manually install the application, follow these steps:
 
 ### Windows
 
-1. Download the [latest Windows executable release](https://github.com/skuid/skuid/releases) in your web browser.
+1. Download the [latest Windows executable release](https://github.com/skuid/skuid-cli/releases) in your web browser.
 1. (_Optional_) Move the executable to a more permanent location, such as `C:\Program Files\Skuid\`.
 1. (_Optional_) Set an alias to easily access the executable.
 
