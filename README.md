@@ -109,7 +109,7 @@ To manually install the application, follow these steps:
 
 ### Using go
 
-Use the [the Go programming language?](https://golang.org/doc/install) If so, you can also install `skuid` by running `go get github.com/skuid/skuid`.
+Use the [the Go programming language?](https://golang.org/doc/install) If so, you can also install `skuid` by running `go get github.com/skuid/skuid-cli`.
 
 #### Building from source
 
