@@ -1,14 +1,14 @@
+language: go
+go:
+- '1.11'
+os:
+- linux
+- osx
+- windows
+script: go test -v ./...
+
 jobs:
   include:
-    - stage: Run Tests
-      language: go
-      go:
-      - '1.11'
-      os:
-      - linux
-      - osx
-      - windows
-      script: go test -v ./...
     - stage: Build
       script: make release
       on:
