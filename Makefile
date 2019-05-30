@@ -41,7 +41,6 @@ push:
 	docker push $(REPOSITORY):$(TAG)
 
 release:
-	git tag $(VERSION)
 	GOOS=linux GOARCH=amd64 go build -o skuid_linux_amd64
 	GOOS=darwin GOARCH=amd64 go build -o skuid_darwin_amd64
 	GOOS=windows GOARCH=amd64 go build -o skuid_windows_amd64.exe
