@@ -1,20 +1,21 @@
 language: go
 go:
-- '1.11'
+  - '1.11'
 os:
-- linux
-- osx
-- windows
+  - linux
+  - osx
+  - windows
 script: go test -v ./...
 
-deploy:
-  script: make release
-  provider: releases
-  api_key:
-    secure: sofGKsRoyvTdPeSAn1rNcsIfU9+35RJLus3CtiRUiC7W0JBk5gb40Ij3blHxkD2n4qXDXaYelvEG7RvaRmI/Ow/Zrun3/bJzdSnAhnxM81TZ8xLOJQquKz+esgkiJ2rLBYO451+uIvRwmdH50945pkraO3qsASAvBOTtoA+20QwSDMEvT1Q03Z7wj+dbvljnfXrf2C1vXPczZnZlI9vts85TVCzsn2K/kBpxLgneGX8EFc+qTWqUchd7wPi1VvPOwkr8GbCz8hUbcXDmR44e4m7EsSNNoiCeKybqtVtXlNzsFGbXhP9+dCQj/oLw4yAYeSpVnHWSxaQNipgLfnw05yqnQW/dBtRnDshwcyx3u7u0C/owFhS5/LWOC0VUF0Doyq89XtJfDsMO1jmahs6k/iZW/i3ke/GrxK5pZ7H2kbtFmB58kS05XeMdffXyfak4bPyaYJwZM5gkoQhhB6WJ0oUAvfWKMC6a2ScLXtF6qgLmKERah8nkbIkT+uD/+pVmajCUdhDVcQZf1H2sBOFo5RrX2kohuGMoHb6twIT87CBuqox7J1oxJNsZAo1Hg8Vp1iscxNfUo5AJn/JoNAury5jDsCvZiT8bpntZZ8QaPwmf1kgUpQrt4X6lXFelv0bhap6KfNHsg5ea5Ts+TB30WBQ0l+42EQLm+X5WZV29Zpw=
-  file_glob: true
-  file: skuid_*
-  skip_cleanup: true
-  on:
-    repo: skuid/skuid-cli
-    tags: true
+jobs:
+  include:
+    - stage: "GitHub Release"
+      script: make release
+      provider: releases
+      api_key:
+        secure: sofGKsRoyvTdPeSAn1rNcsIfU9+35RJLus3CtiRUiC7W0JBk5gb40Ij3blHxkD2n4qXDXaYelvEG7RvaRmI/Ow/Zrun3/bJzdSnAhnxM81TZ8xLOJQquKz+esgkiJ2rLBYO451+uIvRwmdH50945pkraO3qsASAvBOTtoA+20QwSDMEvT1Q03Z7wj+dbvljnfXrf2C1vXPczZnZlI9vts85TVCzsn2K/kBpxLgneGX8EFc+qTWqUchd7wPi1VvPOwkr8GbCz8hUbcXDmR44e4m7EsSNNoiCeKybqtVtXlNzsFGbXhP9+dCQj/oLw4yAYeSpVnHWSxaQNipgLfnw05yqnQW/dBtRnDshwcyx3u7u0C/owFhS5/LWOC0VUF0Doyq89XtJfDsMO1jmahs6k/iZW/i3ke/GrxK5pZ7H2kbtFmB58kS05XeMdffXyfak4bPyaYJwZM5gkoQhhB6WJ0oUAvfWKMC6a2ScLXtF6qgLmKERah8nkbIkT+uD/+pVmajCUdhDVcQZf1H2sBOFo5RrX2kohuGMoHb6twIT87CBuqox7J1oxJNsZAo1Hg8Vp1iscxNfUo5AJn/JoNAury5jDsCvZiT8bpntZZ8QaPwmf1kgUpQrt4X6lXFelv0bhap6KfNHsg5ea5Ts+TB30WBQ0l+42EQLm+X5WZV29Zpw=
+      file_glob: true
+      file: skuid_*
+      skip_cleanup: true
+      on:
+        tags: true
