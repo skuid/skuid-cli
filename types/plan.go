@@ -15,15 +15,16 @@ type Plan struct {
 }
 
 type Metadata struct {
-	Pages         []string `json:"pages"`
-	Apps          []string `json:"apps"`
-	DataServices  []string `json:"dataservices"`
-	DataSources   []string `json:"datasources"`
-	Profiles      []string `json:"profiles"`
-	Files         []string `json:"files"`
-	Themes        []string `json:"themes"`
-	DesignSystems []string `json:"designsystems"`
-	Site          []string `json:"site"`
+	Apps           []string `json:"apps"`
+	ComponentPacks []string `json:"componentpacks"`
+	DataServices   []string `json:"dataservices"`
+	DataSources    []string `json:"datasources"`
+	DesignSystems  []string `json:"designsystems"`
+	Files          []string `json:"files"`
+	Pages          []string `json:"pages"`
+	Profiles       []string `json:"profiles"`
+	Site           []string `json:"site"`
+	Themes         []string `json:"themes"`
 }
 
 // GetMetadataTypeDirNames returns the directory names for a type
@@ -84,16 +85,24 @@ func (m Metadata) FilterMetadataItem(relativeFilePath string) bool {
 		// If we don't have valid names for this directory, just skip this file
 		return false
 	}
+	// Most common case --- check for our metadata with .json stripped
+	if StringSliceContainsKey(validMetadataNames, strings.TrimSuffix(filePath, ".json")) {
+		return true
+	}
 	// See if our filePath is in the valid metadata, if so, we're done
 	if StringSliceContainsKey(validMetadataNames, filePath) {
 		return true
 	}
+	// Check for children of a component pack
+	if metadataType == "componentpacks" {
+		filePathParts := strings.Split(filePath, string(filepath.Separator))
+		if len(filePathParts) == 2 && StringSliceContainsKey(validMetadataNames, filePathParts[0]) {
+			return true
+		}
+	}
+
 	// Check for our metadata with .xml stripped
 	if StringSliceContainsKey(validMetadataNames, strings.TrimSuffix(filePath, ".xml")) {
-		return true
-	}
-	// Check for our metadata with .json stripped
-	if StringSliceContainsKey(validMetadataNames, strings.TrimSuffix(filePath, ".json")) {
 		return true
 	}
 	// Check for our metadata with .skuid.json stripped
