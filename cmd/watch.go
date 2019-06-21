@@ -61,6 +61,9 @@ var watchCmd = &cobra.Command{
 		// Create our watcher
 		w := watcher.New()
 
+		// Only handle one file change per event cycle.
+		w.SetMaxEvents(1)
+
 		go func() {
 			for {
 				select {
