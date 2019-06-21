@@ -182,15 +182,34 @@ func (conn *RestConnection) MakeRequest(method string, url string, payload io.Re
 		return nil, err
 	}
 
-	req.Header.Add("Authorization", "Bearer "+conn.AccessToken)
+	req.Header.Add("Authorization", "Bearer " + conn.AccessToken)
 	if contentType != "" {
 		req.Header.Add("Content-Type", contentType)
 	}
 	req.Header.Add("User-Agent", "Skuid-CLI/0.3")
 
 	resp, err := getClientForProxyURL(conn.MetadataServiceProxy).Do(req)
+
 	if err != nil {
 		return nil, err
+	}
+
+	// Attempt to seamlessly grab a new access token if our current token has expired
+	if resp.StatusCode == 401 {
+		defer resp.Body.Close()
+		conn.AccessToken = ""
+		refreshErr := conn.Refresh()
+		if refreshErr == nil && conn.AccessToken != "" {
+			newResp, newErr := getClientForProxyURL(conn.MetadataServiceProxy).Do(req)
+			if newErr != nil {
+				return nil, newErr
+			}
+			if newResp.StatusCode != 200 {
+				defer newResp.Body.Close()
+				return nil, httperror.New(newResp.Status, newResp.Body)
+			}
+			return &newResp.Body, nil
+		}
 	}
 
 	if resp.StatusCode != 200 {
