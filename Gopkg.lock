@@ -101,6 +101,14 @@
   version = "v1.0.0"
 
 [[projects]]
+  digest = "1:2389dc36373649d729e089057acf50aca054098f4e252596754d9ea76277fc07"
+  name = "github.com/radovskyb/watcher"
+  packages = ["."]
+  pruneopts = ""
+  revision = "d8b41ca2397a9b5cfc26adb10edbbcde40187a87"
+  version = "v1.0.6"
+
+[[projects]]
   digest = "1:d3e2e29bc7342053edc85e1ad751275694a96d58516f749cf3413db1a0eca2ba"
   name = "github.com/spf13/afero"
   packages = [
@@ -197,6 +205,7 @@
     "github.com/beevik/etree",
     "github.com/evanphx/json-patch",
     "github.com/jpmonette/goforce",
+    "github.com/radovskyb/watcher",
     "github.com/spf13/cobra",
     "github.com/spf13/viper",
     "github.com/stretchr/testify/assert",

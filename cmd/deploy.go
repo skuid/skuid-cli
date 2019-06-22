@@ -2,18 +2,14 @@ package cmd
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
-	"io"
 	"log"
-	"net/http"
 	"os"
 	"path/filepath"
 	"time"
 
 	"github.com/skuid/skuid-cli/platform"
 	"github.com/skuid/skuid-cli/text"
-	"github.com/skuid/skuid-cli/types"
 	"github.com/skuid/skuid-cli/ziputils"
 	"github.com/spf13/cobra"
 )
@@ -73,13 +69,13 @@ var deployCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		plan, err := getDeployPlan(api, bufPlan)
+		plan, err := api.GetDeployPlan(bufPlan, verbose)
 		if err != nil {
 			fmt.Println(text.PrettyError("Error getting deploy plan", err))
 			os.Exit(1)
 		}
 
-		_, err = executeDeployPlan(api, plan)
+		_, err = api.ExecuteDeployPlan(plan, targetDir, verbose)
 		if err != nil {
 			fmt.Println(text.PrettyError("Error executing deploy plan", err))
 			os.Exit(1)
@@ -94,104 +90,6 @@ var deployCmd = &cobra.Command{
 		}
 
 	},
-}
-
-func getDeployPlan(api *platform.RestApi, payload io.Reader) (map[string]types.Plan, error) {
-	if verbose {
-		fmt.Println(text.VerboseSection("Getting Deploy Plan"))
-	}
-
-	planStart := time.Now()
-	// Get a deploy plan
-	planResult, err := api.Connection.MakeRequest(
-		http.MethodPost,
-		"/metadata/deploy/plan",
-		payload,
-		"application/zip",
-	)
-
-	if err != nil {
-		return nil, err
-	}
-
-	if verbose {
-		fmt.Println(text.SuccessWithTime("Success Getting Deploy Plan", planStart))
-	}
-
-	defer (*planResult).Close()
-
-	var plans map[string]types.Plan
-	if err := json.NewDecoder(*planResult).Decode(&plans); err != nil {
-		return nil, err
-	}
-
-	return plans, nil
-}
-
-func executeDeployPlan(api *platform.RestApi, plans map[string]types.Plan) ([]*io.ReadCloser, error) {
-	if verbose {
-		fmt.Println(text.VerboseSection("Executing Deploy Plan"))
-	}
-	planResults := []*io.ReadCloser{}
-	for _, plan := range plans {
-		planResult, err := executePlanItem(api, plan)
-		if err != nil {
-			return nil, err
-		}
-		planResults = append(planResults, planResult)
-	}
-	return planResults, nil
-}
-
-func executePlanItem(api *platform.RestApi, plan types.Plan) (*io.ReadCloser, error) {
-	// Create a buffer to write our archive to.
-	var planResult *io.ReadCloser
-	bufDeploy := new(bytes.Buffer)
-	err := ziputils.Archive(targetDir, bufDeploy, &plan.Metadata)
-	if err != nil {
-		log.Print("Error creating deployment ZIP archive")
-		log.Fatal(err)
-	}
-
-	deployStart := time.Now()
-
-	if plan.Host == "" {
-		if verbose {
-			fmt.Println(fmt.Sprintf("Making Deploy Request: URL: [%s] Type: [%s]", plan.URL, plan.Type))
-		}
-		planResult, err = api.Connection.MakeRequest(
-			http.MethodPost,
-			plan.URL,
-			bufDeploy,
-			"application/zip",
-		)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-
-		url := fmt.Sprintf("%s:%s/api/v2%s", plan.Host, plan.Port, plan.URL)
-		if verbose {
-			fmt.Println(fmt.Sprintf("Making Deploy Request: URL: [%s] Type: [%s]", url, plan.Type))
-		}
-		planResult, err = api.Connection.MakeJWTRequest(
-			http.MethodPost,
-			url,
-			bufDeploy,
-			"application/zip",
-		)
-		if err != nil {
-			return nil, err
-		}
-
-	}
-
-	if verbose {
-		fmt.Println(text.SuccessWithTime("Success Deploying to Source", deployStart))
-	}
-	defer (*planResult).Close()
-	return planResult, nil
-
 }
 
 func init() {

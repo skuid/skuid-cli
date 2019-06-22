@@ -1,9 +1,11 @@
 package platform
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"strings"
@@ -11,6 +13,8 @@ import (
 
 	"github.com/skuid/skuid-cli/httperror"
 	"github.com/skuid/skuid-cli/text"
+	"github.com/skuid/skuid-cli/types"
+	"github.com/skuid/skuid-cli/ziputils"
 )
 
 type OAuthResponse struct {
@@ -115,7 +119,7 @@ func (conn *RestConnection) Refresh() error {
 	}
 
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Add("User-Agent", "Skuid-CLI/0.2")
+	req.Header.Add("User-Agent", "Skuid-CLI/0.3")
 
 	resp, err := getClientForProxyURL(conn.MetadataServiceProxy).Do(req)
 
@@ -178,15 +182,34 @@ func (conn *RestConnection) MakeRequest(method string, url string, payload io.Re
 		return nil, err
 	}
 
-	req.Header.Add("Authorization", "Bearer "+conn.AccessToken)
+	req.Header.Add("Authorization", "Bearer " + conn.AccessToken)
 	if contentType != "" {
 		req.Header.Add("Content-Type", contentType)
 	}
-	req.Header.Add("User-Agent", "Skuid-CLI/0.2")
+	req.Header.Add("User-Agent", "Skuid-CLI/0.3")
 
 	resp, err := getClientForProxyURL(conn.MetadataServiceProxy).Do(req)
+
 	if err != nil {
 		return nil, err
+	}
+
+	// Attempt to seamlessly grab a new access token if our current token has expired
+	if resp.StatusCode == 401 {
+		defer resp.Body.Close()
+		conn.AccessToken = ""
+		refreshErr := conn.Refresh()
+		if refreshErr == nil && conn.AccessToken != "" {
+			newResp, newErr := getClientForProxyURL(conn.MetadataServiceProxy).Do(req)
+			if newErr != nil {
+				return nil, newErr
+			}
+			if newResp.StatusCode != 200 {
+				defer newResp.Body.Close()
+				return nil, httperror.New(newResp.Status, newResp.Body)
+			}
+			return &newResp.Body, nil
+		}
 	}
 
 	if resp.StatusCode != 200 {
@@ -210,7 +233,7 @@ func (conn *RestConnection) MakeJWTRequest(method string, url string, payload io
 	if contentType != "" {
 		req.Header.Add("Content-Type", contentType)
 	}
-	req.Header.Add("User-Agent", "Skuid-CLI/0.2")
+	req.Header.Add("User-Agent", "Skuid-CLI/0.3")
 
 	// Send the public key endpoint so that warden can configure a JWT key if needed
 	req.Header.Add("x-skuid-public-key-endpoint", conn.Host+"/api/v1/site/verificationkey")
@@ -226,6 +249,107 @@ func (conn *RestConnection) MakeJWTRequest(method string, url string, payload io
 	}
 
 	return &resp.Body, nil
+}
+
+// GetDeployPlan fetches a deploymnent plan from Skuid Platform API
+func (api *RestApi) GetDeployPlan(payload io.Reader, verbose bool) (map[string]types.Plan, error) {
+	if verbose {
+		fmt.Println(text.VerboseSection("Getting Deploy Plan"))
+	}
+
+	planStart := time.Now()
+	// Get a deploy plan
+	planResult, err := api.Connection.MakeRequest(
+		http.MethodPost,
+		"/metadata/deploy/plan",
+		payload,
+		"application/zip",
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if verbose {
+		fmt.Println(text.SuccessWithTime("Success Getting Deploy Plan", planStart))
+	}
+
+	defer (*planResult).Close()
+
+	var plans map[string]types.Plan
+	if err := json.NewDecoder(*planResult).Decode(&plans); err != nil {
+		return nil, err
+	}
+
+	return plans, nil
+}
+
+// ExecuteDeployPlan executes a map of plan items in a deployment plan
+func (api *RestApi) ExecuteDeployPlan(plans map[string]types.Plan, targetDir string, verbose bool) ([]*io.ReadCloser, error) {
+	if verbose {
+		fmt.Println(text.VerboseSection("Executing Deploy Plan"))
+	}
+	planResults := []*io.ReadCloser{}
+	for _, plan := range plans {
+		planResult, err := api.ExecutePlanItem(plan, targetDir, verbose)
+		if err != nil {
+			return nil, err
+		}
+		planResults = append(planResults, planResult)
+	}
+	return planResults, nil
+}
+
+// ExecutePlanItem executes a particular item in a deployment plan
+func (api *RestApi) ExecutePlanItem(plan types.Plan, targetDir string, verbose bool) (*io.ReadCloser, error) {
+	// Create a buffer to write our archive to.
+	var planResult *io.ReadCloser
+	bufDeploy := new(bytes.Buffer)
+	err := ziputils.Archive(targetDir, bufDeploy, &plan.Metadata)
+	if err != nil {
+		log.Print("Error creating deployment ZIP archive")
+		log.Fatal(err)
+	}
+
+	deployStart := time.Now()
+
+	if plan.Host == "" {
+		if verbose {
+			fmt.Println(fmt.Sprintf("Making Deploy Request: URL: [%s] Type: [%s]", plan.URL, plan.Type))
+		}
+		planResult, err = api.Connection.MakeRequest(
+			http.MethodPost,
+			plan.URL,
+			bufDeploy,
+			"application/zip",
+		)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+
+		url := fmt.Sprintf("%s:%s/api/v2%s", plan.Host, plan.Port, plan.URL)
+		if verbose {
+			fmt.Println(fmt.Sprintf("Making Deploy Request: URL: [%s] Type: [%s]", url, plan.Type))
+		}
+		planResult, err = api.Connection.MakeJWTRequest(
+			http.MethodPost,
+			url,
+			bufDeploy,
+			"application/zip",
+		)
+		if err != nil {
+			return nil, err
+		}
+
+	}
+
+	if verbose {
+		fmt.Println(text.SuccessWithTime("Success Deploying to Source", deployStart))
+	}
+	defer (*planResult).Close()
+	return planResult, nil
+
 }
 
 func getClientForProxyURL(url *url.URL) *http.Client {

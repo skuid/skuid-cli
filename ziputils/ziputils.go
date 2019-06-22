@@ -55,6 +55,32 @@ func CreateTestZip(files []TestFile) (io.ReadCloser, error) {
 //
 // If progress is not nil, it is called for each file added to the archive.
 func Archive(inFilePath string, writer io.Writer, metadataFilter *types.Metadata) error {
+	return archiveWithFilter(inFilePath, writer, func(relativePath string) bool {
+		// if there was a metadata filter, apply it.
+		if metadataFilter != nil {
+			if !(*metadataFilter).FilterMetadataItem(relativePath) {
+				// If our file does not meet our filter criteria, just skip this file
+				return false
+			}
+		}
+		return true 
+	})
+}
+
+// ArchivePartial compresses all files in a file/directory matching a relative prefix to a writer
+//
+// If the path ends with a separator, then the contents of the folder at that path
+// are at the root level of the archive, otherwise, the root of the archive contains
+// the folder as its only item (with contents inside).
+//
+// If progress is not nil, it is called for each file added to the archive.
+func ArchivePartial(inFilePath string, writer io.Writer, basePrefix string) error {
+	return archiveWithFilter(inFilePath, writer, func(relativePath string) bool {
+		return strings.HasPrefix(relativePath, basePrefix)
+	})
+}
+
+func archiveWithFilter(inFilePath string, writer io.Writer, filter func(string) bool) error {
 	zipWriter := zip.NewWriter(writer)
 
 	basePath := filepath.Dir(inFilePath)
@@ -75,12 +101,8 @@ func Archive(inFilePath string, writer io.Writer, metadataFilter *types.Metadata
 			return nil
 		}
 
-		// if there was a metadata filter, apply it.
-		if metadataFilter != nil {
-			if !(*metadataFilter).FilterMetadataItem(relativeFilePath) {
-				// If our file does not meet our filter criteria, just skip this file
-				return nil
-			}
+		if !filter(relativeFilePath) {
+			return nil
 		}
 
 		file, err := os.Open(filePath)
