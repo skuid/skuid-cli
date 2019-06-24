@@ -43,6 +43,8 @@ type RestApi struct {
 	Connection *RestConnection
 }
 
+var VERSION string = "0.4.0"
+
 // Login logs a given user into a target Skuid Platform site and returns a RestApi connection
 // that can be used to make HTTP requests
 func Login(host, username, password, apiVersion, metadataServiceProxy, dataServiceProxy string, verbose bool) (api *RestApi, err error) {
@@ -119,7 +121,7 @@ func (conn *RestConnection) Refresh() error {
 	}
 
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Add("User-Agent", "Skuid-CLI/0.3")
+	req.Header.Add("User-Agent", "Skuid-CLI/" + VERSION)
 
 	resp, err := getClientForProxyURL(conn.MetadataServiceProxy).Do(req)
 
@@ -186,7 +188,7 @@ func (conn *RestConnection) MakeRequest(method string, url string, payload io.Re
 	if contentType != "" {
 		req.Header.Add("Content-Type", contentType)
 	}
-	req.Header.Add("User-Agent", "Skuid-CLI/0.3")
+	req.Header.Add("User-Agent", "Skuid-CLI/" + VERSION)
 
 	resp, err := getClientForProxyURL(conn.MetadataServiceProxy).Do(req)
 
@@ -233,7 +235,7 @@ func (conn *RestConnection) MakeJWTRequest(method string, url string, payload io
 	if contentType != "" {
 		req.Header.Add("Content-Type", contentType)
 	}
-	req.Header.Add("User-Agent", "Skuid-CLI/0.3")
+	req.Header.Add("User-Agent", "Skuid-CLI/" + VERSION)
 
 	// Send the public key endpoint so that warden can configure a JWT key if needed
 	req.Header.Add("x-skuid-public-key-endpoint", conn.Host+"/api/v1/site/verificationkey")
