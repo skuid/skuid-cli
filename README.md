@@ -236,15 +236,14 @@ All of this is done using the following syntax:
   skuid [command] [flags]
 ```
 
-**Warning**: It is a known issue that **the Windows executable is currently unable to deploy to Skuid Platform sites.**
-
 ### Commands
 
 The commands used to accomplish this depend on the platform of choice:
 
   - When using **Skuid Platform**:
-    - `retrieve` retrieves data from the Skuid Platform site.
-    - `deploy` sends data to the Skuid Platform site.
+    - `retrieve` retrieves metadata from a Skuid Platform site.
+    - `deploy` sends metadata to a Skuid Platform site.
+    - `watch` listens for changes to local metadata files and sends changes to a Skuid Platform site.
   - When using **Skuid on Salesforce**:
     - `pull` retrieves Skuid pages from the Salesforce org.
       - Can be used with the `--module` flag to pull one or more specified modules.
@@ -293,28 +292,40 @@ The commands used to accomplish this depend on the platform of choice:
 
 #### Skuid Platform
 
-- Retrieve all Skuid data from a Skuid Platform site and store in the current directory:
+- Retrieve all Skuid metadata from a Skuid Platform site and store in the current directory:
 
   ```bash
   skuid retrieve
   ```
 
-- Retrieve all Skuid data from a Skuid Platform site and store in a specified directory:
+- Retrieve all Skuid metadata from a Skuid Platform site and store in a specified directory:
 
   ```bash
   skuid retrieve -d sites/humboldt-us-trial
   ```
 
-- Deploy all data in the current directory to a Skuid Platform site:
+- Deploy all metadata in the current directory to a Skuid Platform site:
 
   ```bash
   skuid deploy
   ```
 
-- Deploy all data in a different directory to a Skuid Platform site:
+- Deploy all metadata in a different directory to a Skuid Platform site:
 
   ```bash
   skuid deploy -d path/to/directory
+  ```
+
+- Listen for changes to Skuid metadata in the current directory, and deploy changed files to a Skuid Platform site:
+
+  ```bash
+  skuid watch
+  ```
+
+- Listen for changes to Skuid metadata in a different directory, and deploy changed files to a Skuid Platform site:
+
+  ```bash
+  skuid watch -d path/to/directory
   ```
 
 #### Salesforce Platform
@@ -376,11 +387,17 @@ When pulling from the Salesforce platform, all pages are stored within a `skuidp
 
 When retrieving from Skuid Platform sites, the following is downloaded:
 
-- All Skuid pages in the `pages` directory
 - All [apps, and the routes within them](https://docs.skuid.com/latest/en/skuid-platform/deploying-apps-in-skuid-platform.html), in the `apps` directory
-- All [authentication providers](https://docs.skuid.com/latest/en/data/) in the `authproviders` directory
-- All [data sources](https://docs.skuid.com/latest/en/data/) in the `datasources` directory
+- All [authentication providers](https://docs.skuid.com/latest/en/skuid/metadata-objects/v1/authprovider.html) in the `authproviders` directory
+- All [component packs](https://docs.skuid.com/latest/en/skuid/components/original/build-component-packs.html) in the `componentpacks` directory
+- All [data services](https://docs.skuid.com/latest/en/data/private-data-service/#create-the-data-service) in the `dataservices` directory (Note: Data Services are only available if you have the "Private Data Service" feature enabled for your site. Contact your Skuid representative for more information.)
+- All [data sources](https://docs.skuid.com/latest/en/skuid/metadata-objects/v1/datasource.html) in the `datasources` directory
+- All [design systems](https://docs.skuid.com/latest/en/skuid/metadata-objects/v1/designsystem.html) in the `designsystems` directory
+- All [files](https://docs.skuid.com/latest/en/skuid/metadata-objects/v1/file.html) in the `files` directory
+- All [pages](https://docs.skuid.com/latest/en/skuid/metadata-objects/v1/page.html) in the `pages` directory
 - All [profiles](https://docs.skuid.com/latest/en/skuid-platform/user-and-permission-management.html#profiles) in the `profiles` directory
+- All [site settings](https://docs.skuid.com/latest/en/skuid/metadata-objects/v1/site.html) in the `site` directory (including a site's logo and/or favicon)
+- All [themes](https://docs.skuid.com/latest/en/skuid/metadata-objects/v1/theme.html) in the `themes` directory
 
 ### What Is Not Retrieved by skuid
 
@@ -391,7 +408,6 @@ When retrieving from Skuid Platform sites, the following is downloaded:
     - **You must re-enter any client ID and client secret pairs on all Skuid authentication providers in the target site**, even if those authentication providers already existed.
   - Users and user data for Skuid Platform
     - While user profiles are transferred, individual user accounts and their information are not. Users must be manually re-created—or [provisioned through single sign-on](https://docs.skuid.com/latest/en/skuid/single-sign-on/#user-provisioning-within-skuid-platform)—for at least the first deployment.
-  - Site Settings (offline mode, single sign-on configurations, security and frame embedding options, etc.)
 
 ## Use Cases
 
