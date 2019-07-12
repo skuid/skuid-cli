@@ -75,6 +75,14 @@ var deployCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
+		for _, service := range plan {
+			if service.Warnings != nil {
+				for _, warning := range service.Warnings {
+					fmt.Println(warning)
+				}
+			}
+		}
+
 		_, err = api.ExecuteDeployPlan(plan, targetDir, verbose)
 		if err != nil {
 			fmt.Println(text.PrettyError("Error executing deploy plan", err))
