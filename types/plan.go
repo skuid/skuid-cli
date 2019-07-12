@@ -12,6 +12,7 @@ type Plan struct {
 	URL      string   `json:"url"`
 	Type     string   `json:"type"`
 	Metadata Metadata `json:"metadata"`
+	Warnings []string `json:"warnings"`
 }
 
 type Metadata struct {
