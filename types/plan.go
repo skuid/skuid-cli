@@ -17,6 +17,7 @@ type Plan struct {
 
 type Metadata struct {
 	Apps           []string `json:"apps"`
+	AuthProviders  []string `json:"authproviders"`
 	ComponentPacks []string `json:"componentpacks"`
 	DataServices   []string `json:"dataservices"`
 	DataSources    []string `json:"datasources"`
