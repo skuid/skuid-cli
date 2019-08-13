@@ -14,7 +14,7 @@ import (
 	"net/http"
 	"path/filepath"
 
-	jsonpatch "github.com/evanphx/json-patch"
+	jsonpatch "github.com/skuid/json-patch"
 	"github.com/skuid/skuid-cli/platform"
 	"github.com/skuid/skuid-cli/text"
 	"github.com/skuid/skuid-cli/types"
@@ -267,6 +267,7 @@ func combineJSONFile(fileReader io.ReadCloser, path string) (io.ReadCloser, erro
 		return nil, err
 	}
 
+	//jsonpatch.SetAPI()
 	combined, err := jsonpatch.MergePatch(existingBytes, newBytes)
 	if err != nil {
 		return nil, err

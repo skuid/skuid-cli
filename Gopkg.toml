@@ -36,3 +36,7 @@
 [[constraint]]
   name = "github.com/spf13/viper"
   version = "1.0.2"
+
+[[constraint]]
+  name = "github.com/skuid/json-patch"
+  version = "4.5.2"
