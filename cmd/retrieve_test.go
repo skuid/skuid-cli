@@ -13,6 +13,53 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const existingProfileBody = `{
+	"enableSignupUi": false,
+	"name": "Admin",
+	"requireEmailVerificationOnSignup": true
+}`
+
+const messyProfileBody = `{
+	"signupUi": null,
+	"name": "Admin",
+	"permissionSet": {
+		"dataSourcePermissions": {
+			"Racer": {
+				"dataSourceObjectPermissions": null
+			}
+		},
+		"appPermissions": {
+			"Admin": {
+				"isDefault": false
+			},
+			"Racer": {
+				"isDefault": false
+			}
+		}
+	},
+	"enableSignupApi": false
+}`
+
+const mergedProfileBody = `{
+	"enableSignupApi": false,
+	"enableSignupUi": false,
+	"name": "Admin",
+	"permissionSet": {
+		"appPermissions": {
+			"Admin": {
+				"isDefault": false
+			},
+			"Racer": {
+				"isDefault": false
+			}
+		},
+		"dataSourcePermissions": {
+			"Racer": {}
+		}
+	},
+	"requireEmailVerificationOnSignup": true
+}`
+
 type RetrieveFile struct {
 	Name string
 	Body string
@@ -92,6 +139,21 @@ func TestRetrieve(t *testing.T) {
 			},
 			nil,
 		},
+		{
+			"retrieve merged profile",
+			"",
+			[]RetrieveFile{
+				{"profiles/myprofile.json", existingProfileBody},
+				{"profiles/myprofile.json", messyProfileBody},
+			},
+			[]RetrieveFile{
+				{filepath.FromSlash("profiles/myprofile.json"), mergedProfileBody},
+			},
+			[]string{
+				"profiles",
+			},
+			nil,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -120,31 +182,40 @@ func TestRetrieve(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			filesCreated := []RetrieveFile{}
-			directoriesCreated := []string{}
+			var filesMap = map[string]RetrieveFile{}
+			var directoriesCreated = []string{}
 
-			mockFileMaker := func(fileReader io.ReadCloser, path string) error {
+			var mockFileMaker = func(fileReader io.ReadCloser, path string) error {
 				body, err := ioutil.ReadAll(fileReader)
 				if err != nil {
 					t.Fatal(err)
 				}
-				filesCreated = append(filesCreated, RetrieveFile{
+				filesMap[path] = RetrieveFile{
 					Name: path,
 					Body: string(body),
-				})
+				}
 				return nil
 			}
 
-			mockDirectoryMaker := func(path string, fileMode os.FileMode) error {
+			var mockDirectoryMaker = func(path string, fileMode os.FileMode) error {
 				if !types.StringSliceContainsKey(directoriesCreated, path) {
 					directoriesCreated = append(directoriesCreated, path)
 				}
 				return nil
 			}
 
+			var mockExistingFileReader = func(path string) ([]byte, error) {
+				return []byte(existingProfileBody), nil
+			}
+
 			bufData := ioutil.NopCloser(bytes.NewReader(buf.Bytes()))
 
-			err = writeResultsToDisk([]*io.ReadCloser{&bufData}, mockFileMaker, mockDirectoryMaker)
+			err = writeResultsToDisk([]*io.ReadCloser{&bufData}, mockFileMaker, mockDirectoryMaker, mockExistingFileReader)
+
+			filesCreated := []RetrieveFile{}
+			for _, file := range filesMap {
+				filesCreated = append(filesCreated, file)
+			}
 			assert.Equal(t, tc.wantFiles, filesCreated)
 			assert.Equal(t, tc.wantDirectories, directoriesCreated)
 			if tc.wantError != nil {

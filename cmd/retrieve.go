@@ -14,7 +14,8 @@ import (
 	"net/http"
 	"path/filepath"
 
-	jsonpatch "github.com/skuid/json-patch"
+	"github.com/json-iterator/go"
+	"github.com/skuid/json-patch"
 	"github.com/skuid/skuid-cli/platform"
 	"github.com/skuid/skuid-cli/text"
 	"github.com/skuid/skuid-cli/types"
@@ -59,7 +60,7 @@ var retrieveCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		err = writeResultsToDisk(results, writeNewFile, createDirectory)
+		err = writeResultsToDisk(results, writeNewFile, createDirectory, readExistingFile)
 		if err != nil {
 			fmt.Println(text.PrettyError("Error writing results to disk", err))
 			os.Exit(1)
@@ -86,7 +87,7 @@ func getFriendlyURL(targetDir string) (string, error) {
 
 }
 
-func writeResultsToDisk(results []*io.ReadCloser, fileCreator FileCreator, directoryCreator DirectoryCreator) error {
+func writeResultsToDisk(results []*io.ReadCloser, fileCreator FileCreator, directoryCreator DirectoryCreator, existingFileReader FileReader) error {
 
 	// unzip the archive into the output directory
 	targetDirFriendly, err := getFriendlyURL(targetDir)
@@ -121,7 +122,7 @@ func writeResultsToDisk(results []*io.ReadCloser, fileCreator FileCreator, direc
 		}
 
 		// unzip the contents of our temp zip file
-		err = unzip(tmpFileName, targetDir, pathMap, fileCreator, directoryCreator)
+		err = unzip(tmpFileName, targetDir, pathMap, fileCreator, directoryCreator, existingFileReader)
 
 		// schedule cleanup of temp file
 		defer os.Remove(tmpFileName)
@@ -151,7 +152,7 @@ func createTemporaryZipFile(data *io.ReadCloser) (name string, err error) {
 }
 
 // Unzips a ZIP archive and recreates the folders and file structure within it locally
-func unzip(sourceFileLocation, targetLocation string, pathMap map[string]bool, fileCreator FileCreator, directoryCreator DirectoryCreator) error {
+func unzip(sourceFileLocation, targetLocation string, pathMap map[string]bool, fileCreator FileCreator, directoryCreator DirectoryCreator, existingFileReader FileReader)	 error {
 
 	reader, err := zip.OpenReader(sourceFileLocation)
 
@@ -173,13 +174,13 @@ func unzip(sourceFileLocation, targetLocation string, pathMap map[string]bool, f
 		if !fileAlreadyWritten {
 			pathMap[path] = true
 		}
-		readFileFromZipAndWriteToFilesystem(file, path, fileAlreadyWritten, fileCreator, directoryCreator)
+		readFileFromZipAndWriteToFilesystem(file, path, fileAlreadyWritten, fileCreator, directoryCreator, existingFileReader)
 	}
 
 	return nil
 }
 
-func readFileFromZipAndWriteToFilesystem(file *zip.File, fullPath string, fileAlreadyWritten bool, fileCreator FileCreator, directoryCreator DirectoryCreator) error {
+func readFileFromZipAndWriteToFilesystem(file *zip.File, fullPath string, fileAlreadyWritten bool, fileCreator FileCreator, directoryCreator DirectoryCreator, existingFileReader FileReader) error {
 
 	// If this file name contains a /, make sure that we create the directory it belongs in
 	if pathParts := strings.Split(fullPath, string(filepath.Separator)); len(pathParts) > 0 {
@@ -214,7 +215,7 @@ func readFileFromZipAndWriteToFilesystem(file *zip.File, fullPath string, fileAl
 		if verbose {
 			fmt.Println("Augmenting existing file with more data: " + file.Name)
 		}
-		fileReader, err = combineJSONFile(fileReader, fullPath)
+		fileReader, err = combineJSONFile(fileReader, existingFileReader, fullPath)
 		if err != nil {
 			return err
 		}
@@ -243,6 +244,7 @@ func createDirectory(path string, fileMode os.FileMode) error {
 
 type FileCreator func(fileReader io.ReadCloser, path string) error
 type DirectoryCreator func(path string, fileMode os.FileMode) error
+type FileReader func(path string) ([]byte, error)
 
 func writeNewFile(fileReader io.ReadCloser, path string) error {
 	targetFile, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
@@ -257,17 +259,25 @@ func writeNewFile(fileReader io.ReadCloser, path string) error {
 	return nil
 }
 
-func combineJSONFile(fileReader io.ReadCloser, path string) (io.ReadCloser, error) {
-	existingBytes, err := ioutil.ReadFile(path)
+func readExistingFile(path string) ([]byte, error) {
+	return ioutil.ReadFile(path)
+}
+
+func combineJSONFile(newFileReader io.ReadCloser, existingFileReader FileReader, path string) (io.ReadCloser, error) {
+	existingBytes, err := existingFileReader(path)
 	if err != nil {
 		return nil, err
 	}
-	newBytes, err := ioutil.ReadAll(fileReader)
+	newBytes, err := ioutil.ReadAll(newFileReader)
 	if err != nil {
 		return nil, err
 	}
 
-	//jsonpatch.SetAPI()
+	var jsonConfig = jsoniter.Config{
+		SortMapKeys: true,
+		DisallowUnknownFields: false,
+	}
+	jsonpatch.SetAPI(jsonConfig.Froze())
 	combined, err := jsonpatch.MergePatch(existingBytes, newBytes)
 	if err != nil {
 		return nil, err
