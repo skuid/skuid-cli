@@ -61,14 +61,6 @@
   revision = "b991c54814686e5075f3912b781e5e2eb507306c"
 
 [[projects]]
-  digest = "1:e716a02584d94519e2ccf7ac461c4028da736d41a58c1ed95e641c1603bdb056"
-  name = "github.com/json-iterator/go"
-  packages = ["."]
-  pruneopts = ""
-  revision = "27518f6661eba504be5a7a9a9f6d9460d892ade3"
-  version = "v1.1.7"
-
-[[projects]]
   digest = "1:d244eb7b2d8e9f4c9355d215d65159c176603874ba10bfb7cbe6dcbd212813f5"
   name = "github.com/magiconair/properties"
   packages = ["."]
@@ -131,6 +123,14 @@
   pruneopts = ""
   revision = "d8b41ca2397a9b5cfc26adb10edbbcde40187a87"
   version = "v1.0.6"
+
+[[projects]]
+  digest = "1:1ad824c0ca7e3f8c43ed47fa6e3b8ee64fcb34190f77fa015fc3cecb6803e51f"
+  name = "github.com/skuid/json-iterator-go"
+  packages = ["."]
+  pruneopts = ""
+  revision = "49f4c85187fa77477f14ac68ac416456671fa50a"
+  version = "v1.1.7"
 
 [[projects]]
   digest = "1:9af2f6f6b15ee4d8658ec728991916961d335569b71e817615b70db38d72aa5e"
@@ -239,8 +239,8 @@
   input-imports = [
     "github.com/beevik/etree",
     "github.com/jpmonette/goforce",
-    "github.com/json-iterator/go",
     "github.com/radovskyb/watcher",
+    "github.com/skuid/json-iterator-go",
     "github.com/skuid/json-patch",
     "github.com/spf13/cobra",
     "github.com/spf13/viper",

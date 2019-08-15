@@ -14,8 +14,8 @@ import (
 )
 
 const existingProfileBody = `{
-	"enableSignupUi": false,
 	"name": "Admin",
+	"enableSignupUi": false,
 	"requireEmailVerificationOnSignup": true
 }`
 
@@ -41,9 +41,9 @@ const messyProfileBody = `{
 }`
 
 const mergedProfileBody = `{
+	"name": "Admin",
 	"enableSignupApi": false,
 	"enableSignupUi": false,
-	"name": "Admin",
 	"permissionSet": {
 		"appPermissions": {
 			"Admin": {

@@ -14,7 +14,7 @@ import (
 	"net/http"
 	"path/filepath"
 
-	"github.com/json-iterator/go"
+	"github.com/skuid/json-iterator-go" // jsoniter. Fork of github.com/json-iterator/go
 	"github.com/skuid/json-patch"
 	"github.com/skuid/skuid-cli/platform"
 	"github.com/skuid/skuid-cli/text"
@@ -263,6 +263,26 @@ func readExistingFile(path string) ([]byte, error) {
 	return ioutil.ReadFile(path)
 }
 
+// Define custom json object key sorter for use in combineJSONFile() below.
+// The intent here is to always have deterministically sorted maps from merged JSON objects.
+type nameFirstKeySorter struct {}
+func (sorter *nameFirstKeySorter) Sort (keyA string, keyB string) bool {
+	if keyA == "name" {
+		return true
+	} else if keyB == "name" {
+		return false
+	} else {
+		return keyA < keyB
+	}
+}
+type nameFirstKeyExtension struct {
+	jsoniter.DummyExtension
+	sorter jsoniter.MapKeySorter
+}
+func (extension *nameFirstKeyExtension) CreateMapKeySorter() jsoniter.MapKeySorter {
+	return extension.sorter
+}
+
 func combineJSONFile(newFileReader io.ReadCloser, existingFileReader FileReader, path string) (io.ReadCloser, error) {
 	existingBytes, err := existingFileReader(path)
 	if err != nil {
@@ -273,11 +293,17 @@ func combineJSONFile(newFileReader io.ReadCloser, existingFileReader FileReader,
 		return nil, err
 	}
 
-	var jsonConfig = jsoniter.Config{
+	// Configure jsoniter to sort map keys alpha, unless key is "name", which goes first
+	jsonConfig := jsoniter.Config{
 		SortMapKeys: true,
 		DisallowUnknownFields: false,
-	}
-	jsonpatch.SetAPI(jsonConfig.Froze())
+	}.Froze()
+	jsonConfig.RegisterExtension(&nameFirstKeyExtension{
+		sorter: &nameFirstKeySorter{},
+	})
+	// Configure jsonpatch to use jsoniter with custom sorter for merging json
+	jsonpatch.SetAPI(jsonConfig)
+
 	combined, err := jsonpatch.MergePatch(existingBytes, newBytes)
 	if err != nil {
 		return nil, err
