@@ -18,14 +18,6 @@
   version = "v1.1.1"
 
 [[projects]]
-  digest = "1:4216202f4088a73e2982df875e2f0d1401137bbc248e57391e70547af167a18a"
-  name = "github.com/evanphx/json-patch"
-  packages = ["."]
-  pruneopts = ""
-  revision = "72bf35d0ff611848c1dc9df0f976c81192392fa5"
-  version = "v4.1.0"
-
-[[projects]]
   digest = "1:eb53021a8aa3f599d29c7102e65026242bdedce998a54837dc67f14b6a97c5fd"
   name = "github.com/fsnotify/fsnotify"
   packages = ["."]
@@ -85,12 +77,36 @@
   revision = "00c29f56e2386353d58c599509e8dc3801b0d716"
 
 [[projects]]
+  digest = "1:0c0ff2a89c1bb0d01887e1dac043ad7efbf3ec77482ef058ac423d13497e16fd"
+  name = "github.com/modern-go/concurrent"
+  packages = ["."]
+  pruneopts = ""
+  revision = "bacd9c7ef1dd9b15be4a9909b8ac7a4e313eec94"
+  version = "1.0.3"
+
+[[projects]]
+  digest = "1:e32bdbdb7c377a07a9a46378290059822efdce5c8d96fe71940d87cb4f918855"
+  name = "github.com/modern-go/reflect2"
+  packages = ["."]
+  pruneopts = ""
+  revision = "4b7aa43c6742a2c18fdef89dd197aaae7dac7ccd"
+  version = "1.0.1"
+
+[[projects]]
   digest = "1:d60cfeee185019d4fcd35e8c89c83aff576e4723b6100300bf67b05be961388f"
   name = "github.com/pelletier/go-toml"
   packages = ["."]
   pruneopts = ""
   revision = "acdc4509485b587f5e675510c4f2c63e90ff68a8"
   version = "v1.1.0"
+
+[[projects]]
+  digest = "1:1d7e1867c49a6dd9856598ef7c3123604ea3daabf5b83f303ff457bcbc410b1d"
+  name = "github.com/pkg/errors"
+  packages = ["."]
+  pruneopts = ""
+  revision = "ba968bfe8b2f7e042a574c888954fccecfa385b4"
+  version = "v0.8.1"
 
 [[projects]]
   digest = "1:256484dbbcd271f9ecebc6795b2df8cad4c458dd0f5fd82a8c2fa0c29f233411"
@@ -107,6 +123,25 @@
   pruneopts = ""
   revision = "d8b41ca2397a9b5cfc26adb10edbbcde40187a87"
   version = "v1.0.6"
+
+[[projects]]
+  digest = "1:1ad824c0ca7e3f8c43ed47fa6e3b8ee64fcb34190f77fa015fc3cecb6803e51f"
+  name = "github.com/skuid/json-iterator-go"
+  packages = ["."]
+  pruneopts = ""
+  revision = "49f4c85187fa77477f14ac68ac416456671fa50a"
+  version = "v1.1.7"
+
+[[projects]]
+  digest = "1:9af2f6f6b15ee4d8658ec728991916961d335569b71e817615b70db38d72aa5e"
+  name = "github.com/skuid/json-patch"
+  packages = [
+    ".",
+    "json",
+  ]
+  pruneopts = ""
+  revision = "01d74dd3febd266f3d5c47f6c06f580cd9185384"
+  version = "v4.5.2"
 
 [[projects]]
   digest = "1:d3e2e29bc7342053edc85e1ad751275694a96d58516f749cf3413db1a0eca2ba"
@@ -203,9 +238,10 @@
   analyzer-version = 1
   input-imports = [
     "github.com/beevik/etree",
-    "github.com/evanphx/json-patch",
     "github.com/jpmonette/goforce",
     "github.com/radovskyb/watcher",
+    "github.com/skuid/json-iterator-go",
+    "github.com/skuid/json-patch",
     "github.com/spf13/cobra",
     "github.com/spf13/viper",
     "github.com/stretchr/testify/assert",

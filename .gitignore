@@ -1,6 +1,7 @@
 skuidpages
 .env
 skuid
+!vendor/github.com/skuid
 skuid-cli
 skuid_darwin_amd64
 skuid_linux_amd64

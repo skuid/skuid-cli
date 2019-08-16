@@ -43,7 +43,7 @@ type RestApi struct {
 	Connection *RestConnection
 }
 
-var VERSION string = "0.4.2"
+var VERSION string = "0.4.3"
 
 // Login logs a given user into a target Skuid Platform site and returns a RestApi connection
 // that can be used to make HTTP requests
