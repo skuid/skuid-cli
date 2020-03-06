@@ -14,8 +14,8 @@ import (
 	"net/http"
 	"path/filepath"
 
-	"github.com/skuid/json-iterator-go" // jsoniter. Fork of github.com/json-iterator/go
-	"github.com/skuid/json-patch"
+	jsoniter "github.com/skuid/json-iterator-go" // jsoniter. Fork of github.com/json-iterator/go
+	jsonpatch "github.com/skuid/json-patch"
 	"github.com/skuid/skuid-cli/platform"
 	"github.com/skuid/skuid-cli/text"
 	"github.com/skuid/skuid-cli/types"

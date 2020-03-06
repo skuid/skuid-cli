@@ -398,6 +398,7 @@ When retrieving from Skuid Platform sites, the following is downloaded:
 - All [profiles](https://docs.skuid.com/latest/en/skuid-platform/user-and-permission-management.html#profiles) in the `profiles` directory
 - All [site settings](https://docs.skuid.com/latest/en/skuid/metadata-objects/v1/site.html) in the `site` directory (including a site's logo and/or favicon)
 - All [themes](https://docs.skuid.com/latest/en/skuid/metadata-objects/v1/theme.html) in the `themes` directory
+- All [variables] in the `variables` directory
 
 ### What Is Not Retrieved by skuid
 
