@@ -22,6 +22,7 @@ type Metadata struct {
 	DataServices   []string `json:"dataservices"`
 	DataSources    []string `json:"datasources"`
 	DesignSystems  []string `json:"designsystems"`
+	Variables      []string `json:"variables"`
 	Files          []string `json:"files"`
 	Pages          []string `json:"pages"`
 	Profiles       []string `json:"profiles"`
