@@ -21,7 +21,10 @@ _Note_: `skuid` CLI is open source, and we accept pull requests! If there is a f
   - You should feel comfortable using the `skuid` command with the necessary environment variables and flags.
 - If pulling and pushing pages with Skuid on Salesforce...
   - [Enable My Domain](https://help.salesforce.com/articleView?id=domain_name_overview.htm&type=5) for your Salesforce org
-  - Configure a [Salesforce connected app](https://help.salesforce.com/articleView?id=connected_app_overview.htm&type=5) and have both the _consumer key_ and the _consumer secret_ available
+  - Configure a [Salesforce connected app](https://help.salesforce.com/articleView?id=connected_app_overview.htm&type=5) 
+    - You must have **OAuth Settings enabled** and the `api` scope added. 
+    - For skuid CLI usage, you may input any callback URL—even the org's own URL.
+    - After setting up the connected app, have both the _consumer key_ and the _consumer secret_ ready.
 
 ## Installation
 
