@@ -216,8 +216,8 @@ func TestRetrieve(t *testing.T) {
 			for _, file := range filesMap {
 				filesCreated = append(filesCreated, file)
 			}
-			assert.Equal(t, tc.wantFiles, filesCreated)
-			assert.Equal(t, tc.wantDirectories, directoriesCreated)
+			assert.ElementsMatch(t, tc.wantFiles, filesCreated)
+			assert.ElementsMatch(t, tc.wantDirectories, directoriesCreated)
 			if tc.wantError != nil {
 				assert.Equal(t, tc.wantError, err)
 			} else {
