@@ -20,7 +20,7 @@ We now have [`skuid-sfdx`](https://github.com/skuid/skuid-sfdx), our open-source
 
 This plugin can push/pull Skuid pages to and from Salesforce orgs much like the current `skuid CLI`, with more features to come.
 
-In the future we'll be deprecating the Salesforce features of `skuid CLI`  in favor of `skuid-sfdx`. **Consider updating any relevant tooling and processes**. To learn more, [see the the `skuid-sfdx` repository](https://github.com/skuid/skuid-sfdx)
+In the future we'll be deprecating the Salesforce features of `skuid CLI`  in favor of `skuid-sfdx`. **Consider updating any relevant tooling and processes**. To learn more, [see the `skuid-sfdx` repository](https://github.com/skuid/skuid-sfdx)
 
 If you work primarily on **Skuid Platform**, then continue using the `skuid CLI`.
 
