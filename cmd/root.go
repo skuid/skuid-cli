@@ -60,8 +60,8 @@ func init() {
 	RootCmd.PersistentFlags().StringVarP(&username, "username", "u", os.Getenv("SKUID_UN"), "Skuid Platform / Salesforce Username")
 	RootCmd.PersistentFlags().StringVarP(&metadataServiceProxy, "metadataServiceProxy", "", os.Getenv("METADATA_SERVICE_PROXY"), "Proxy used to reach the metadata service")
 	RootCmd.PersistentFlags().StringVarP(&dataServiceProxy, "dataServiceProxy", "", os.Getenv("DATA_SERVICE_PROXY"), "Proxy used to reach the data service")
-	RootCmd.PersistentFlags().StringVarP(&variablename, "name", "n", "", "The display name for the variable to be set")
-	RootCmd.PersistentFlags().StringVarP(&variablevalue, "value", "a", "", "The value for the variable to be set")
+	RootCmd.PersistentFlags().StringVar(&variablename, "name", "", "The display name for the variable to be set")
+	RootCmd.PersistentFlags().StringVar(&variablevalue, "value", "", "The value for the variable to be set")
 	RootCmd.PersistentFlags().StringVar(&variabledataservice, "dataservice", "", "The name of the dataservice in which to set a value")
 	RootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Display all possible logging info")
 }

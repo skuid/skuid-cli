@@ -125,6 +125,14 @@
   version = "v1.0.6"
 
 [[projects]]
+  digest = "1:7f569d906bdd20d906b606415b7d794f798f91a62fcfb6a4daa6d50690fb7a3f"
+  name = "github.com/satori/go.uuid"
+  packages = ["."]
+  pruneopts = ""
+  revision = "f58768cc1a7a7e77a3bd49e98cdd21419399b6a3"
+  version = "v1.2.0"
+
+[[projects]]
   digest = "1:1ad824c0ca7e3f8c43ed47fa6e3b8ee64fcb34190f77fa015fc3cecb6803e51f"
   name = "github.com/skuid/json-iterator-go"
   packages = ["."]
@@ -240,6 +248,7 @@
     "github.com/beevik/etree",
     "github.com/jpmonette/goforce",
     "github.com/radovskyb/watcher",
+    "github.com/satori/go.uuid",
     "github.com/skuid/json-iterator-go",
     "github.com/skuid/json-patch",
     "github.com/spf13/cobra",
