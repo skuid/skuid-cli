@@ -13,6 +13,7 @@ import (
 	"github.com/skuid/skuid-cli/platform"
 	"github.com/skuid/skuid-cli/text"
 	"github.com/spf13/cobra"
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 type DataService struct {
@@ -42,6 +43,8 @@ type EnvSpecificConfig struct {
 	CreatedAt       time.Time `json:"created_at"`
 	UpdatedAt       time.Time `json:"updated_at"`
 }
+
+const fakeDefaultDataServiceId = "153b1f3e-e35a-4bb8-90a4-abbcc95fe15c"
 
 func getDataServices(api *platform.RestApi) (map[string]DataService, error) {
 	//searchterm := html.EscapeString(variabledataservice)
@@ -89,7 +92,7 @@ var getvarCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		escResult, err := getEscs(api)
+		escResult, err := getEscs(api, true)
 		if err != nil {
 			fmt.Println(text.PrettyError("Error getting variables from Skuid site", err))
 			os.Exit(1)
@@ -108,7 +111,7 @@ var getvarCmd = &cobra.Command{
 	},
 }
 
-func getEscs(api *platform.RestApi) ([]EnvSpecificConfig, error) {
+func getEscs(api *platform.RestApi, mapDsName bool) ([]EnvSpecificConfig, error) {
 	if verbose {
 		fmt.Println(text.VerboseSection("Getting Variables"))
 	}
@@ -128,13 +131,18 @@ func getEscs(api *platform.RestApi) ([]EnvSpecificConfig, error) {
 	var escs []EnvSpecificConfig
 	if err := json.NewDecoder(*result).Decode(&escs); err != nil { return nil, err }
 
-	dsmap, err := getDataServices(api)
-	if err != nil { return nil, err }
-	for i, esc := range escs {
-		if esc.DataServiceID != "" {
-			if ds, ok := dsmap[esc.DataServiceID]; ok {
-				esc.DataServiceName = ds.Name
-				escs[i] = esc
+	if mapDsName {
+		dsmap, err := getDataServices(api)
+		if err != nil { return nil, err }
+		for i, esc := range escs {
+			if esc.DataServiceID != "" {
+				if esc.DataServiceID == fakeDefaultDataServiceId {
+					esc.DataServiceName = "default"
+					escs[i] = esc
+				} else if ds, ok := dsmap[esc.DataServiceID]; ok {
+						esc.DataServiceName = ds.Name
+						escs[i] = esc
+				}
 			}
 		}
 	}
@@ -188,20 +196,28 @@ func setEsc(api *platform.RestApi) error {
 	if verbose {
 		fmt.Println(text.VerboseSection("Setting Variable"))
 	}
-	if variablename == "" || variablevalue == "" {
-		return errors.New("Variable name and value are required for this command.")
+	if variablename == "" {
+		return errors.New("Variable name is required for this command.")
 	}
+	if variablevalue == "" {
+		fmt.Println("Enter value:")
+		valbytes, err := terminal.ReadPassword(0)
+		if err != nil { return errors.New("Error reading value from prompt.") }
+		variablevalue = string(valbytes)
+	}
+	api.Connection.APIVersion = "1"
 
 	dataServiceId := ""
 	if variabledataservice != "" {
 		if _, err := uuid.FromString(variabledataservice); err == nil {
 			dataServiceId = variabledataservice
+		} else if variabledataservice == "default" {
+			dataServiceId = fakeDefaultDataServiceId
 		} else {
 			dataservices, err := getDataServices(api)
 			if err != nil {
 				return err
 			}
-
 			found := false
 			for _, ds := range dataservices {
 				if ds.Name == variabledataservice {
@@ -214,21 +230,46 @@ func setEsc(api *platform.RestApi) error {
 			}
 		}
 	}
-
-	body := "{\n"
-	body += "\"name\":\"" + variablename + "\",\n"
-	body += "\"value\":\"" + variablevalue + "\",\n"
+	body := map[string]interface{}{}
+	body["name"] = variablename
+	body["value"] = variablevalue
 	if dataServiceId != "" {
-		body += "\"data_service_id\":\"" + dataServiceId + "\",\n"
+		body["data_service_id"] = dataServiceId
 	}
-	body += "}\n"
 
+	verb := http.MethodPost
+	path := "/ui/variables"
+	existingEscs, err := getEscs(api, false)
+	if err != nil { return err }
+	for _, existing := range existingEscs {
+		if existing.Name == variablename && existing.DataServiceID == dataServiceId {
+			verb = http.MethodPut
+			path += "/"+existing.ID
+			row := body
+			row["id"] = existing.ID
+			body = map[string]interface{}{
+				"changes": map[string]interface{}{
+					"value": variablevalue,
+				},
+				"row": row,
+				"originals": map[string]interface{}{
+					existing.ID: map[string]interface{}{
+						"value": "*****",
+					},
+				},
+			}
+			break
+		}
+	}
+
+	bodybytes, err := json.Marshal(body)
+	payload := string(bodybytes) + "\n"
+	if err != nil { return err }
 	escStart := time.Now()
-	api.Connection.APIVersion = "1"
-	_, err := api.Connection.MakeRequest(
-		http.MethodPost,
-		"/ui/variables",
-		strings.NewReader(body),
+	_, err = api.Connection.MakeRequest(
+		verb,
+		path,
+		strings.NewReader(payload),
 		"application/json",
 	)
 	if err != nil {

@@ -214,6 +214,10 @@ func (conn *RestConnection) MakeRequest(method string, url string, payload io.Re
 		}
 	}
 
+	if resp.StatusCode == 204 { // No content
+		return nil, nil
+	}
+
 	if resp.StatusCode != 200 {
 		defer resp.Body.Close()
 		return nil, httperror.New(resp.Status, resp.Body)

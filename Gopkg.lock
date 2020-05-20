@@ -212,9 +212,20 @@
 
 [[projects]]
   branch = "master"
+  digest = "1:90f8aa620559abef3e8222064705e420dcb3498085b20782d128e5fa477b3a89"
+  name = "golang.org/x/crypto"
+  packages = ["ssh/terminal"]
+  pruneopts = ""
+  revision = "06a226fb4e3765ef3f48aa2852b401bc7b98e981"
+
+[[projects]]
+  branch = "master"
   digest = "1:e947dc04c62cf4cca2b3b137d3f266fb592f5de429b9e18c0c3018df0eb78c76"
   name = "golang.org/x/sys"
-  packages = ["unix"]
+  packages = [
+    "unix",
+    "windows",
+  ]
   pruneopts = ""
   revision = "79b0c6888797020a994db17c8510466c72fe75d9"
 
@@ -254,6 +265,7 @@
     "github.com/spf13/cobra",
     "github.com/spf13/viper",
     "github.com/stretchr/testify/assert",
+    "golang.org/x/crypto/ssh/terminal",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1
