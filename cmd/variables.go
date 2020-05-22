@@ -91,19 +91,12 @@ func findDataServiceId(api *platform.RestApi, name string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	dataServiceId := ""
-	found := false
 	for _, ds := range dataservices {
 		if ds.Name == name {
-			found = true
-			dataServiceId = ds.ID
-			break
+			return ds.ID, nil
 		}
 	}
-	if !found {
-		return "", errors.New("Could not find specified Data Service by name.")
-	}
-	return dataServiceId, nil
+	return "", errors.New("Could not find specified Data Service by name.")
 }
 
 var getvarCmd = &cobra.Command{
@@ -135,7 +128,7 @@ var getvarCmd = &cobra.Command{
 			os.Exit(1)
 		}
 		body := tablewriter.NewWriter(os.Stdout)
-		body.SetHeader([]string{"Name", "DataService"})
+		body.SetHeader([]string{"Name", "Data Service"})
 		for _, esc := range escResult {
 			body.Append([]string{esc.Name, esc.DataServiceName})
 		}
