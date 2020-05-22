@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/olekukonko/tablewriter"
 	"github.com/satori/go.uuid"
 	"github.com/skuid/skuid-cli/platform"
 	"github.com/skuid/skuid-cli/text"
@@ -46,9 +47,17 @@ type EnvSpecificConfig struct {
 
 const fakeDefaultDataServiceId = "153b1f3e-e35a-4bb8-90a4-abbcc95fe15c"
 
+func isDefaultDs(ds string) bool {
+	defaultDS := map[string]interface{}{
+		"":                       nil,
+		fakeDefaultDataServiceId: nil,
+		"default":                nil,
+	}
+	_, ok := defaultDS[ds]
+	return ok
+}
+
 func getDataServices(api *platform.RestApi) (map[string]DataService, error) {
-	//searchterm := html.EscapeString(variabledataservice)
-	//dspath := "/objects/dataservice?search="+searchterm+"&limit=1",
 	dspath := "/objects/dataservice"
 	dsStream, err := api.Connection.MakeRequest(
 		http.MethodGet,
@@ -57,11 +66,11 @@ func getDataServices(api *platform.RestApi) (map[string]DataService, error) {
 		"application/json",
 	)
 	if err != nil {
-		return nil, errors.New("Error requesting Data Service list from platform.")
+		return nil, errors.New("Error requesting Data Service list.")
 	}
 	var dataservices []DataService
 	if err = json.NewDecoder(*dsStream).Decode(&dataservices); err != nil {
-		return nil, errors.New("Could not parse Data Service from platform response.")
+		return nil, errors.New("Could not parse Data Service list response.")
 	}
 	dsmap := make(map[string]DataService, len(dataservices))
 	for _, ds := range dataservices {
@@ -70,12 +79,40 @@ func getDataServices(api *platform.RestApi) (map[string]DataService, error) {
 	return dsmap, nil
 }
 
+func findDataServiceId(api *platform.RestApi, name string) (string, error) {
+	if isDefaultDs(variabledataservice) {
+		return fakeDefaultDataServiceId, nil
+	}
+	if _, err := uuid.FromString(variabledataservice); err == nil {
+		return variabledataservice, nil
+	}
+	// Match the name with an existing Private Data Service
+	dataservices, err := getDataServices(api)
+	if err != nil {
+		return "", err
+	}
+	dataServiceId := ""
+	found := false
+	for _, ds := range dataservices {
+		if ds.Name == name {
+			found = true
+			dataServiceId = ds.ID
+			break
+		}
+	}
+	if !found {
+		return "", errors.New("Could not find specified Data Service by name.")
+	}
+	return dataServiceId, nil
+}
+
 var getvarCmd = &cobra.Command{
-	Use:   "getvariables",
-	Short: "Get a list of Skuid environment variables.",
-	Long:  "Get a list of existing Skuid environment variables.",
+	Use:   "variables",
+	Short: "Get a list of Skuid site environment variables.",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println(text.RunCommand("Get Variables"))
+		if verbose {
+			fmt.Println(text.RunCommand("Get Variables"))
+		}
 
 		api, err := platform.Login(
 			host,
@@ -97,17 +134,15 @@ var getvarCmd = &cobra.Command{
 			fmt.Println(text.PrettyError("Error getting variables from Skuid site", err))
 			os.Exit(1)
 		}
-		body := strings.Builder{}
-		body.WriteString("Name\tDataService\n")
+		body := tablewriter.NewWriter(os.Stdout)
+		body.SetHeader([]string{"Name", "DataService"})
 		for _, esc := range escResult {
-			body.WriteString(esc.Name + "\t" + esc.DataServiceName + "\n")
+			body.Append([]string{esc.Name, esc.DataServiceName})
 		}
 		if verbose {
-			successMessage := "Successfully retrieved variables from Skuid Site\n"
-			fmt.Println(successMessage + text.Separator() + body.String())
-		} else {
-			fmt.Println(body.String())
+			fmt.Println("Successfully retrieved variables from Skuid site")
 		}
+		body.Render()
 	},
 }
 
@@ -129,19 +164,23 @@ func getEscs(api *platform.RestApi, mapDsName bool) ([]EnvSpecificConfig, error)
 	}
 
 	var escs []EnvSpecificConfig
-	if err := json.NewDecoder(*result).Decode(&escs); err != nil { return nil, err }
+	if err := json.NewDecoder(*result).Decode(&escs); err != nil {
+		return nil, err
+	}
 
 	if mapDsName {
 		dsmap, err := getDataServices(api)
-		if err != nil { return nil, err }
+		if err != nil {
+			return nil, err
+		}
 		for i, esc := range escs {
 			if esc.DataServiceID != "" {
 				if esc.DataServiceID == fakeDefaultDataServiceId {
 					esc.DataServiceName = "default"
 					escs[i] = esc
 				} else if ds, ok := dsmap[esc.DataServiceID]; ok {
-						esc.DataServiceName = ds.Name
-						escs[i] = esc
+					esc.DataServiceName = ds.Name
+					escs[i] = esc
 				}
 			}
 		}
@@ -155,12 +194,12 @@ func getEscs(api *platform.RestApi, mapDsName bool) ([]EnvSpecificConfig, error)
 
 // setvarCmd represents the setvariable command
 var setvarCmd = &cobra.Command{
-	Use:   "setvariable",
-	Short: "Set a Skuid environment variable.",
-	Long:  "Set a Skuid envorinment variable. These can be used as credentials for a data source without revealing them.",
+	Use:   "set-variable",
+	Short: "Set a Skuid site environment variable",
 	Run: func(cmd *cobra.Command, args []string) {
-
-		fmt.Println(text.RunCommand("Set Variable"))
+		if verbose {
+			fmt.Println(text.RunCommand("Set Variable"))
+		}
 
 		api, err := platform.Login(
 			host,
@@ -171,7 +210,6 @@ var setvarCmd = &cobra.Command{
 			dataServiceProxy,
 			verbose,
 		)
-
 		if err != nil {
 			fmt.Println(text.PrettyError("Error logging in to Skuid site", err))
 			os.Exit(1)
@@ -202,33 +240,16 @@ func setEsc(api *platform.RestApi) error {
 	if variablevalue == "" {
 		fmt.Println("Enter value:")
 		valbytes, err := terminal.ReadPassword(0)
-		if err != nil { return errors.New("Error reading value from prompt.") }
+		if err != nil {
+			return errors.New("Error reading value from prompt.")
+		}
 		variablevalue = string(valbytes)
 	}
 	api.Connection.APIVersion = "1"
 
-	dataServiceId := ""
-	if variabledataservice != "" {
-		if _, err := uuid.FromString(variabledataservice); err == nil {
-			dataServiceId = variabledataservice
-		} else if variabledataservice == "default" {
-			dataServiceId = fakeDefaultDataServiceId
-		} else {
-			dataservices, err := getDataServices(api)
-			if err != nil {
-				return err
-			}
-			found := false
-			for _, ds := range dataservices {
-				if ds.Name == variabledataservice {
-					found = true
-					dataServiceId = ds.ID
-				}
-			}
-			if !found {
-				return errors.New("Could not find specified Data Service by name.")
-			}
-		}
+	dataServiceId, err := findDataServiceId(api, variabledataservice)
+	if err != nil {
+		return err
 	}
 	body := map[string]interface{}{}
 	body["name"] = variablename
@@ -240,11 +261,13 @@ func setEsc(api *platform.RestApi) error {
 	verb := http.MethodPost
 	path := "/ui/variables"
 	existingEscs, err := getEscs(api, false)
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 	for _, existing := range existingEscs {
 		if existing.Name == variablename && existing.DataServiceID == dataServiceId {
 			verb = http.MethodPut
-			path += "/"+existing.ID
+			path += "/" + existing.ID
 			row := body
 			row["id"] = existing.ID
 			body = map[string]interface{}{
@@ -264,7 +287,9 @@ func setEsc(api *platform.RestApi) error {
 
 	bodybytes, err := json.Marshal(body)
 	payload := string(bodybytes) + "\n"
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 	escStart := time.Now()
 	_, err = api.Connection.MakeRequest(
 		verb,
@@ -282,7 +307,102 @@ func setEsc(api *platform.RestApi) error {
 	return nil
 }
 
+var rmvarCmd = &cobra.Command{
+	Use:   "rm-variable",
+	Short: "Delete a Skuid site environment variable",
+	Run: func(cmd *cobra.Command, args []string) {
+		if verbose {
+			fmt.Println(text.RunCommand("Delete Variable"))
+		}
+
+		api, err := platform.Login(
+			host,
+			username,
+			password,
+			apiVersion,
+			metadataServiceProxy,
+			dataServiceProxy,
+			verbose,
+		)
+		if err != nil {
+			fmt.Println(text.PrettyError("Error logging in to Skuid site", err))
+			os.Exit(1)
+		}
+
+		variableStart := time.Now()
+		err = rmEsc(api)
+		if err != nil {
+			fmt.Println(text.PrettyError("Error deleting variable in Skuid site", err))
+			os.Exit(1)
+		}
+		successMessage := "Successfully deleted variable in Skuid Site"
+		if verbose {
+			fmt.Println(text.SuccessWithTime(successMessage, variableStart))
+		} else {
+			fmt.Println(successMessage + ".")
+		}
+	},
+}
+
+func rmEsc(api *platform.RestApi) error {
+	if verbose {
+		fmt.Println(text.VerboseSection("Deleting Variable"))
+	}
+	if variablename == "" {
+		return errors.New("Variable name is required for this command.")
+	}
+
+	api.Connection.APIVersion = "1"
+	dataServiceId, err := findDataServiceId(api, variabledataservice)
+	if err != nil {
+		return err
+	}
+
+	// Find ID of ESC to delete
+	escID := ""
+	existingEscs, err := getEscs(api, false)
+	if err != nil {
+		return err
+	}
+	for _, existing := range existingEscs {
+		if existing.Name == variablename && existing.DataServiceID == dataServiceId {
+			escID = existing.ID
+			break
+		}
+	}
+	if escID == "" {
+		return errors.New("Could not find specified variable to delete.")
+	}
+	path := "/ui/variables/" + escID
+
+	body := map[string]interface{}{
+		"data_service_id": dataServiceId,
+	}
+
+	bodybytes, err := json.Marshal(body)
+	payload := string(bodybytes) + "\n"
+	if err != nil {
+		return err
+	}
+	escStart := time.Now()
+	_, err = api.Connection.MakeRequest(
+		http.MethodDelete,
+		path,
+		strings.NewReader(payload),
+		"application/json",
+	)
+	if err != nil {
+		return err
+	}
+
+	if verbose {
+		fmt.Println(text.SuccessWithTime("Success deleting variable", escStart))
+	}
+	return nil
+}
+
 func init() {
 	RootCmd.AddCommand(setvarCmd)
 	RootCmd.AddCommand(getvarCmd)
+	RootCmd.AddCommand(rmvarCmd)
 }

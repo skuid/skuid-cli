@@ -31,7 +31,7 @@ var (
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
 	Use:     "skuid",
-	Short:   "A CLI for iterating with Skuid APIs",
+	Short:   "A CLI for interacting with Skuid APIs",
 	Long:    `Deploy and retrieve Skuid metadata to / from Skuid Platform or Skuid on Salesforce`,
 	Version: version.Name,
 }
@@ -62,7 +62,7 @@ func init() {
 	RootCmd.PersistentFlags().StringVarP(&dataServiceProxy, "dataServiceProxy", "", os.Getenv("DATA_SERVICE_PROXY"), "Proxy used to reach the data service")
 	RootCmd.PersistentFlags().StringVar(&variablename, "name", "", "The display name for the variable to be set")
 	RootCmd.PersistentFlags().StringVar(&variablevalue, "value", "", "The value for the variable to be set")
-	RootCmd.PersistentFlags().StringVar(&variabledataservice, "dataservice", "", "The name of the dataservice in which to set a value")
+	RootCmd.PersistentFlags().StringVar(&variabledataservice, "dataservice", "", "Optional, the name of a private data service in which the variable should be created. Leave blank to store in the default data service.")
 	RootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Display all possible logging info")
 }
 

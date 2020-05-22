@@ -69,6 +69,14 @@
   version = "v1.7.6"
 
 [[projects]]
+  digest = "1:59794624db141f0f0a893d110111b962984c9844cf565efa91c35bedb882c9ff"
+  name = "github.com/mattn/go-runewidth"
+  packages = ["."]
+  pruneopts = ""
+  revision = "14e809f6d78fcf9f48ff9b70981472b64c05f754"
+  version = "v0.0.9"
+
+[[projects]]
   branch = "master"
   digest = "1:59fa50d593e5673a0dfffa1852b66fd700c05b35e368680b4b89a68fdb2c1379"
   name = "github.com/mitchellh/mapstructure"
@@ -91,6 +99,14 @@
   pruneopts = ""
   revision = "4b7aa43c6742a2c18fdef89dd197aaae7dac7ccd"
   version = "1.0.1"
+
+[[projects]]
+  digest = "1:be76fb5b006046835859bbfd38adfc01574c672685fd5d4c6f0bce073ac16bfb"
+  name = "github.com/olekukonko/tablewriter"
+  packages = ["."]
+  pruneopts = ""
+  revision = "876dd0e0227ec99c0243b639b92139915b65331a"
+  version = "v0.0.4"
 
 [[projects]]
   digest = "1:d60cfeee185019d4fcd35e8c89c83aff576e4723b6100300bf67b05be961388f"
@@ -258,6 +274,7 @@
   input-imports = [
     "github.com/beevik/etree",
     "github.com/jpmonette/goforce",
+    "github.com/olekukonko/tablewriter",
     "github.com/radovskyb/watcher",
     "github.com/satori/go.uuid",
     "github.com/skuid/json-iterator-go",
