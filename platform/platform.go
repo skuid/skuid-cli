@@ -43,7 +43,7 @@ type RestApi struct {
 	Connection *RestConnection
 }
 
-var VERSION string = "0.4.4"
+var VERSION string = "0.4.5"
 
 // Login logs a given user into a target Skuid Platform site and returns a RestApi connection
 // that can be used to make HTTP requests
@@ -212,6 +212,10 @@ func (conn *RestConnection) MakeRequest(method string, url string, payload io.Re
 			}
 			return &newResp.Body, nil
 		}
+	}
+
+	if resp.StatusCode == 204 { // No content
+		return nil, nil
 	}
 
 	if resp.StatusCode != 200 {

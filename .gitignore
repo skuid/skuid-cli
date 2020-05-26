@@ -1,5 +1,6 @@
 skuidpages
 .env
+.envrc
 skuid
 !vendor/github.com/skuid
 skuid-cli
