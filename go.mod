@@ -9,7 +9,6 @@ require (
 	github.com/hashicorp/hcl v0.0.0-20180404174102-ef8a98b0bbce // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/jpmonette/goforce v0.0.0-20150815001009-b991c5481468
-	github.com/skuid/json-iterator-go v1.1.7
 	github.com/magiconair/properties v1.7.6 // indirect
 	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/mitchellh/mapstructure v0.0.0-20180220230111-00c29f56e238 // indirect
@@ -19,6 +18,7 @@ require (
 	github.com/pkg/errors v0.8.1 // indirect
 	github.com/radovskyb/watcher v1.0.6
 	github.com/satori/go.uuid v1.2.0
+	github.com/skuid/json-iterator-go v1.1.8
 	github.com/skuid/json-patch v4.5.2+incompatible
 	github.com/spf13/afero v1.1.0 // indirect
 	github.com/spf13/cast v1.2.0 // indirect

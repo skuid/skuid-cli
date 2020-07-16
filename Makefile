@@ -3,7 +3,7 @@ GO_PKGS = $$(go list ./... | grep -v vendor)
 REPOSITORY = 095427547185.dkr.ecr.us-west-2.amazonaws.com/skuid/skuid
 TAG = latest
 VOL_PATH=/go/src/github.com/skuid/skuid
-GO_VERSION=1.8
+GO_VERSION=1.14
 IMAGE ?= golang
 
 ARCH=amd64
