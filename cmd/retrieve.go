@@ -14,7 +14,7 @@ import (
 	"net/http"
 	"path/filepath"
 
-	jsoniter "github.com/skuid/json-iterator-go" // jsoniter. Fork of github.com/json-iterator/go
+	jsoniter "github.com/json-iterator/go" // jsoniter. Fork of github.com/json-iterator/go
 	jsonpatch "github.com/skuid/json-patch"
 	"github.com/skuid/skuid-cli/platform"
 	"github.com/skuid/skuid-cli/text"
@@ -152,7 +152,7 @@ func createTemporaryZipFile(data *io.ReadCloser) (name string, err error) {
 }
 
 // Unzips a ZIP archive and recreates the folders and file structure within it locally
-func unzip(sourceFileLocation, targetLocation string, pathMap map[string]bool, fileCreator FileCreator, directoryCreator DirectoryCreator, existingFileReader FileReader)	 error {
+func unzip(sourceFileLocation, targetLocation string, pathMap map[string]bool, fileCreator FileCreator, directoryCreator DirectoryCreator, existingFileReader FileReader) error {
 
 	reader, err := zip.OpenReader(sourceFileLocation)
 
@@ -265,8 +265,9 @@ func readExistingFile(path string) ([]byte, error) {
 
 // Define custom json object key sorter for use in combineJSONFile() below.
 // The intent here is to always have deterministically sorted maps from merged JSON objects.
-type nameFirstKeySorter struct {}
-func (sorter *nameFirstKeySorter) Sort (keyA string, keyB string) bool {
+type nameFirstKeySorter struct{}
+
+func (sorter *nameFirstKeySorter) Sort(keyA string, keyB string) bool {
 	if keyA == "name" {
 		return true
 	} else if keyB == "name" {
@@ -275,10 +276,12 @@ func (sorter *nameFirstKeySorter) Sort (keyA string, keyB string) bool {
 		return keyA < keyB
 	}
 }
+
 type nameFirstKeyExtension struct {
 	jsoniter.DummyExtension
 	sorter jsoniter.MapKeySorter
 }
+
 func (extension *nameFirstKeyExtension) CreateMapKeySorter() jsoniter.MapKeySorter {
 	return extension.sorter
 }
@@ -295,7 +298,7 @@ func combineJSONFile(newFileReader io.ReadCloser, existingFileReader FileReader,
 
 	// Configure jsoniter to sort map keys alpha, unless key is "name", which goes first
 	jsonConfig := jsoniter.Config{
-		SortMapKeys: true,
+		SortMapKeys:           true,
 		DisallowUnknownFields: false,
 	}.Froze()
 	jsonConfig.RegisterExtension(&nameFirstKeyExtension{
