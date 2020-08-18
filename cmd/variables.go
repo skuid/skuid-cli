@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/olekukonko/tablewriter"
-	"github.com/satori/go.uuid"
 	"github.com/skuid/skuid-cli/platform"
 	"github.com/skuid/skuid-cli/text"
 	"github.com/spf13/cobra"
@@ -300,102 +299,102 @@ func setEsc(api *platform.RestApi) error {
 	return nil
 }
 
-var rmvarCmd = &cobra.Command{
-	Use:   "rm-variable",
-	Short: "Delete a Skuid site environment variable",
-	Run: func(cmd *cobra.Command, args []string) {
-		if verbose {
-			fmt.Println(text.RunCommand("Delete Variable"))
-		}
+// var rmvarCmd = &cobra.Command{
+// 	Use:   "rm-variable",
+// 	Short: "Delete a Skuid site environment variable",
+// 	Run: func(cmd *cobra.Command, args []string) {
+// 		if verbose {
+// 			fmt.Println(text.RunCommand("Delete Variable"))
+// 		}
 
-		api, err := platform.Login(
-			host,
-			username,
-			password,
-			apiVersion,
-			metadataServiceProxy,
-			dataServiceProxy,
-			verbose,
-		)
-		if err != nil {
-			fmt.Println(text.PrettyError("Error logging in to Skuid site", err))
-			os.Exit(1)
-		}
+// 		api, err := platform.Login(
+// 			host,
+// 			username,
+// 			password,
+// 			apiVersion,
+// 			metadataServiceProxy,
+// 			dataServiceProxy,
+// 			verbose,
+// 		)
+// 		if err != nil {
+// 			fmt.Println(text.PrettyError("Error logging in to Skuid site", err))
+// 			os.Exit(1)
+// 		}
 
-		variableStart := time.Now()
-		err = rmEsc(api)
-		if err != nil {
-			fmt.Println(text.PrettyError("Error deleting variable in Skuid site", err))
-			os.Exit(1)
-		}
-		successMessage := "Successfully deleted variable in Skuid Site"
-		if verbose {
-			fmt.Println(text.SuccessWithTime(successMessage, variableStart))
-		} else {
-			fmt.Println(successMessage + ".")
-		}
-	},
-}
+// 		variableStart := time.Now()
+// 		err = rmEsc(api)
+// 		if err != nil {
+// 			fmt.Println(text.PrettyError("Error deleting variable in Skuid site", err))
+// 			os.Exit(1)
+// 		}
+// 		successMessage := "Successfully deleted variable in Skuid Site"
+// 		if verbose {
+// 			fmt.Println(text.SuccessWithTime(successMessage, variableStart))
+// 		} else {
+// 			fmt.Println(successMessage + ".")
+// 		}
+// 	},
+// }
 
-func rmEsc(api *platform.RestApi) error {
-	if verbose {
-		fmt.Println(text.VerboseSection("Deleting Variable"))
-	}
-	if variablename == "" {
-		return errors.New("Variable name is required for this command.")
-	}
+// func rmEsc(api *platform.RestApi) error {
+// 	if verbose {
+// 		fmt.Println(text.VerboseSection("Deleting Variable"))
+// 	}
+// 	if variablename == "" {
+// 		return errors.New("Variable name is required for this command.")
+// 	}
 
-	api.Connection.APIVersion = "1"
-	dataServiceId, err := findDataServiceId(api, variabledataservice)
-	if err != nil {
-		return err
-	}
+// 	api.Connection.APIVersion = "1"
+// 	dataServiceId, err := findDataServiceId(api, variabledataservice)
+// 	if err != nil {
+// 		return err
+// 	}
 
-	// Find ID of ESC to delete
-	escID := ""
-	existingEscs, err := getEscs(api, false)
-	if err != nil {
-		return err
-	}
-	for _, existing := range existingEscs {
-		if existing.Name == variablename && existing.DataServiceID == dataServiceId {
-			escID = existing.ID
-			break
-		}
-	}
-	if escID == "" {
-		return errors.New("Could not find specified variable to delete.")
-	}
-	path := "/ui/variables/" + escID
+// 	// Find ID of ESC to delete
+// 	escID := ""
+// 	existingEscs, err := getEscs(api, false)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	for _, existing := range existingEscs {
+// 		if existing.Name == variablename && existing.DataServiceID == dataServiceId {
+// 			escID = existing.ID
+// 			break
+// 		}
+// 	}
+// 	if escID == "" {
+// 		return errors.New("Could not find specified variable to delete.")
+// 	}
+// 	path := "/ui/variables/" + escID
 
-	body := map[string]interface{}{
-		"data_service_id": dataServiceId,
-	}
+// 	body := map[string]interface{}{
+// 		"data_service_id": dataServiceId,
+// 	}
 
-	bodybytes, err := json.Marshal(body)
-	payload := string(bodybytes) + "\n"
-	if err != nil {
-		return err
-	}
-	escStart := time.Now()
-	_, err = api.Connection.MakeRequest(
-		http.MethodDelete,
-		path,
-		strings.NewReader(payload),
-		"application/json",
-	)
-	if err != nil {
-		return err
-	}
+// 	bodybytes, err := json.Marshal(body)
+// 	payload := string(bodybytes) + "\n"
+// 	if err != nil {
+// 		return err
+// 	}
+// 	escStart := time.Now()
+// 	_, err = api.Connection.MakeRequest(
+// 		http.MethodDelete,
+// 		path,
+// 		strings.NewReader(payload),
+// 		"application/json",
+// 	)
+// 	if err != nil {
+// 		return err
+// 	}
 
-	if verbose {
-		fmt.Println(text.SuccessWithTime("Success deleting variable", escStart))
-	}
-	return nil
-}
+// 	if verbose {
+// 		fmt.Println(text.SuccessWithTime("Success deleting variable", escStart))
+// 	}
+// 	return nil
+// }
 
 func init() {
 	RootCmd.AddCommand(setvarCmd)
 	RootCmd.AddCommand(getvarCmd)
-	RootCmd.AddCommand(rmvarCmd)
+	//RootCmd.AddCommand(rmvarCmd)
 }
