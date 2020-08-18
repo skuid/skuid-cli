@@ -1,0 +1,26 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Launch file",
+            "type": "go",
+            "request": "launch",
+            "mode": "debug",
+            "program": "/Users/kennyoneal/go/src/github.com/skuid/skuid-cli/main.go",
+            "args": ["deploy", "--host", "https://test-subdomain.pliny.webserver:3000", "--username", "koneal", "--password", "Kenny1991!@", "--dir", "/Users/kennyoneal/Desktop/PLIN2557"]
+        },
+        
+        {
+            "name": "Launch",
+            "type": "go",
+            "request": "launch",
+            "mode": "debug",
+            "program": "${fileDirname}",
+            "env": {},
+            "args": ["retrieve --host https://automation-test-us-trial.skuid.ink/ --username autom8 --password #Skuid2018 --dir /Users/kennyoneal/Desktop/PLIN2557"]
+        }
+    ]
+}
