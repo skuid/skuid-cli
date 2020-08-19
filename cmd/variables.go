@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/olekukonko/tablewriter"
+	"github.com/satori/go.uuid"
 	"github.com/skuid/skuid-cli/platform"
 	"github.com/skuid/skuid-cli/text"
 	"github.com/spf13/cobra"
