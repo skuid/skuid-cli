@@ -21,7 +21,7 @@ require (
 	github.com/skuid/json-iterator-go v1.1.8
 	github.com/skuid/json-patch v4.5.2+incompatible
 	github.com/spf13/afero v1.1.0 // indirect
-	github.com/spf13/cast v1.2.0 // indirect
+	github.com/spf13/cast v1.3.1 // indirect
 	github.com/spf13/cobra v0.0.2
 	github.com/spf13/jwalterweatherman v0.0.0-20180109140146-7c0cea34c8ec // indirect
 	github.com/spf13/pflag v1.0.1 // indirect

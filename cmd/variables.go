@@ -397,5 +397,5 @@ func rmEsc(api *platform.RestApi) error {
 func init() {
 	RootCmd.AddCommand(setvarCmd)
 	RootCmd.AddCommand(getvarCmd)
-	RootCmd.AddCommand(rmvarCmd)
+	//RootCmd.AddCommand(rmvarCmd)
 }
