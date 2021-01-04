@@ -31,6 +31,10 @@ type Metadata struct {
 	Themes         []string `json:"themes"`
 }
 
+type RetrieveFilter struct {
+	AppName string `json:"appName"`
+}
+
 // GetMetadataTypeDirNames returns the directory names for a type
 func GetMetadataTypeDirNames() []string {
 	metadataType := reflect.TypeOf(Metadata{})

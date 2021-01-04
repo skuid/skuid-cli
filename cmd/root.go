@@ -15,6 +15,7 @@ var (
 	appClientSecret      string
 	apiVersion           string
 	host                 string
+	appName              string
 	module               string
 	page                 string
 	password             string
@@ -64,6 +65,7 @@ func init() {
 	RootCmd.PersistentFlags().StringVar(&variablevalue, "value", "", "The value for the variable to be set")
 	RootCmd.PersistentFlags().StringVar(&variabledataservice, "dataservice", "", "Optional, the name of a private data service in which the variable should be created. Leave blank to store in the default data service.")
 	RootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Display all possible logging info")
+	RootCmd.PersistentFlags().StringVarP(&appName, "app", "a", "", "Filter retrieve/deploy to a specific Skuid App")
 }
 
 // initConfig reads in config file and ENV variables if set.
