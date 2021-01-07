@@ -48,7 +48,7 @@ var retrieveCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		plan, err := getRetrievePlan(api)
+		plan, err := getRetrievePlan(api, appName)
 		if err != nil {
 			fmt.Println(text.PrettyError("Error getting retrieve plan", err))
 			os.Exit(1)
@@ -321,9 +321,19 @@ func combineJSONFile(newFileReader io.ReadCloser, existingFileReader FileReader,
 	return ioutil.NopCloser(bytes.NewReader(indented.Bytes())), nil
 }
 
-func getRetrievePlan(api *platform.RestApi) (map[string]types.Plan, error) {
+func getRetrievePlan(api *platform.RestApi, appName string) (map[string]types.Plan, error) {
 	if verbose {
 		fmt.Println(text.VerboseSection("Getting Retrieve Plan"))
+	}
+	var postBody io.Reader
+	if appName != "" {
+		retFilter, err := json.Marshal(types.RetrieveFilter{
+			AppName: appName,
+		})
+		if err != nil {
+			return nil, err
+		}
+		postBody = bytes.NewReader(retFilter)
 	}
 
 	planStart := time.Now()
@@ -331,7 +341,7 @@ func getRetrievePlan(api *platform.RestApi) (map[string]types.Plan, error) {
 	planResult, err := api.Connection.MakeRequest(
 		http.MethodPost,
 		"/metadata/retrieve/plan",
-		nil,
+		postBody,
 		"application/json",
 	)
 
