@@ -15,6 +15,7 @@ import (
 	"github.com/skuid/skuid-cli/text"
 	"github.com/skuid/skuid-cli/types"
 	"github.com/skuid/skuid-cli/ziputils"
+	"github.com/skuid/skuid-cli/version"
 )
 
 type OAuthResponse struct {
@@ -43,7 +44,7 @@ type RestApi struct {
 	Connection *RestConnection
 }
 
-var VERSION string = "0.4.5"
+var VERSION = version.Name
 
 // Login logs a given user into a target Skuid Platform site and returns a RestApi connection
 // that can be used to make HTTP requests
