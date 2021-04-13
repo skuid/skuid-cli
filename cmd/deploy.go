@@ -44,12 +44,20 @@ var deployCmd = &cobra.Command{
 		// If target directory is provided,
 		// switch to that target directory and later switch back.
 		if targetDir != "" {
-			os.Chdir(targetDir)
+			err := os.Chdir(targetDir)
+			if err != nil {
+				log.Fatal(err)
+			}
 			pwd, err := os.Getwd()
 			if err != nil {
 				log.Fatal(err)
 			}
-			defer os.Chdir(pwd)
+			defer func() {
+				err := os.Chdir(pwd)
+				if err != nil {
+					log.Fatal(err)
+				}
+			}()
 		}
 		targetDir = "."
 		targetDirFriendly, err = filepath.Abs(filepath.Dir(os.Args[0]))
