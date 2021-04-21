@@ -39,31 +39,41 @@ var deployCmd = &cobra.Command{
 
 		deployStart := time.Now()
 
-		var targetDirFriendly string
+		var currDir string
+
+		currentDirectory, err := os.Getwd()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		defer func() {
+			err := os.Chdir(currentDirectory)
+			if err != nil {
+				log.Fatal(err)
+			}
+		}()
 
 		// If target directory is provided,
 		// switch to that target directory and later switch back.
 		if targetDir != "" {
-			os.Chdir(targetDir)
-			pwd, err := os.Getwd()
+			err := os.Chdir(targetDir)
 			if err != nil {
 				log.Fatal(err)
 			}
-			defer os.Chdir(pwd)
 		}
-		targetDir = "."
-		targetDirFriendly, err = filepath.Abs(filepath.Dir(os.Args[0]))
+
+		currDir, err = filepath.Abs(filepath.Dir("."))
 		if err != nil {
 			log.Fatal(err)
 		}
 
 		if verbose {
-			fmt.Println("Deploying site from", targetDirFriendly)
+			fmt.Println("Deploying site from", currDir)
 		}
 
 		// Create a buffer to write our archive to.
 		bufPlan := new(bytes.Buffer)
-		err = ziputils.Archive(targetDir, bufPlan, nil)
+		err = ziputils.Archive(currDir, bufPlan, nil)
 		if err != nil {
 			fmt.Println(text.PrettyError("Error creating deployment ZIP archive", err))
 			os.Exit(1)
@@ -83,7 +93,7 @@ var deployCmd = &cobra.Command{
 			}
 		}
 
-		_, err = api.ExecuteDeployPlan(plan, targetDir, verbose)
+		_, err = api.ExecuteDeployPlan(plan, currDir, verbose)
 		if err != nil {
 			fmt.Println(text.PrettyError("Error executing deploy plan", err))
 			os.Exit(1)
