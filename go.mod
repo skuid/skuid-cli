@@ -15,7 +15,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/olekukonko/tablewriter v0.0.4
 	github.com/pelletier/go-toml v1.1.0 // indirect
-	github.com/pkg/errors v0.8.1 // indirect
+	github.com/pkg/errors v0.8.1
 	github.com/radovskyb/watcher v1.0.6
 	github.com/satori/go.uuid v1.2.0
 	github.com/skuid/json-iterator-go v1.1.8
