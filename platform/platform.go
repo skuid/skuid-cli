@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/pkg/errors"
 	"io"
 	"log"
 	"net/http"
@@ -14,8 +15,8 @@ import (
 	"github.com/skuid/skuid-cli/httperror"
 	"github.com/skuid/skuid-cli/text"
 	"github.com/skuid/skuid-cli/types"
-	"github.com/skuid/skuid-cli/ziputils"
 	"github.com/skuid/skuid-cli/version"
+	"github.com/skuid/skuid-cli/ziputils"
 )
 
 type OAuthResponse struct {
@@ -217,6 +218,10 @@ func (conn *RestConnection) MakeRequest(method string, url string, payload io.Re
 
 	if resp.StatusCode == 204 { // No content
 		return nil, nil
+	}
+
+	if resp.StatusCode == 504 || resp.StatusCode == 503 {
+		return nil, errors.Errorf("%v - %s", resp.StatusCode, resp.Status)
 	}
 
 	if resp.StatusCode != 200 {
