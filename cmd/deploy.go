@@ -62,7 +62,8 @@ var deployCmd = &cobra.Command{
 			}
 		}
 
-		currDir, err = filepath.Abs(filepath.Dir("."))
+		dotDir := "."
+		currDir, err = filepath.Abs(filepath.Dir(dotDir))
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -73,7 +74,7 @@ var deployCmd = &cobra.Command{
 
 		// Create a buffer to write our archive to.
 		bufPlan := new(bytes.Buffer)
-		err = ziputils.Archive(currDir, bufPlan, nil)
+		err = ziputils.Archive(".", bufPlan, nil)
 		if err != nil {
 			fmt.Println(text.PrettyError("Error creating deployment ZIP archive", err))
 			os.Exit(1)
@@ -93,7 +94,7 @@ var deployCmd = &cobra.Command{
 			}
 		}
 
-		_, err = api.ExecuteDeployPlan(plan, currDir, verbose)
+		_, err = api.ExecuteDeployPlan(plan, dotDir, verbose)
 		if err != nil {
 			fmt.Println(text.PrettyError("Error executing deploy plan", err))
 			os.Exit(1)
