@@ -15,6 +15,11 @@ type Plan struct {
 	Warnings []string `json:"warnings"`
 }
 
+type RetrieveRequest struct {
+	DoZip    bool     `json:"zip"`
+	Metadata Metadata `json:"metadata"`
+}
+
 type Metadata struct {
 	Apps           []string `json:"apps"`
 	AuthProviders  []string `json:"authproviders"`

@@ -1,18 +1,17 @@
 package cmd
 
 import (
+	"archive/zip"
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
-	"os"
-	"strings"
-	"time"
-
-	"archive/zip"
-	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"path/filepath"
+	"strings"
+	"time"
 
 	jsoniter "github.com/skuid/json-iterator-go" // jsoniter. Fork of github.com/json-iterator/go
 	jsonpatch "github.com/skuid/json-patch"
@@ -116,19 +115,23 @@ func writeResultsToDisk(results []*io.ReadCloser, fileCreator FileCreator, direc
 
 	for _, result := range results {
 
-		tmpFileName, err := createTemporaryZipFile(result)
-		if err != nil {
-			return err
-		}
+		if !nozip {
+			tmpFileName, err := createTemporaryZipFile(result)
+			if err != nil {
+				return err
+			}
 
-		// unzip the contents of our temp zip file
-		err = unzip(tmpFileName, targetDir, pathMap, fileCreator, directoryCreator, existingFileReader)
+			// unzip the contents of our temp zip file
+			err = unzip(tmpFileName, targetDir, pathMap, fileCreator, directoryCreator, existingFileReader)
 
-		// schedule cleanup of temp file
-		defer os.Remove(tmpFileName)
+			// schedule cleanup of temp file
+			defer os.Remove(tmpFileName)
 
-		if err != nil {
-			return err
+			if err != nil {
+				return err
+			}
+		} else {
+			fmt.Println("Hi")
 		}
 	}
 
@@ -368,7 +371,10 @@ func executeRetrievePlan(api *platform.RestApi, plans map[string]types.Plan) ([]
 	}
 	planResults := []*io.ReadCloser{}
 	for _, plan := range plans {
-		metadataBytes, err := json.Marshal(plan.Metadata)
+		metadataBytes, err := json.Marshal(types.RetrieveRequest{
+			Metadata: plan.Metadata,
+			DoZip: !nozip,
+		})
 		if err != nil {
 			return nil, err
 		}
