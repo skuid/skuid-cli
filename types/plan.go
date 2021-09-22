@@ -39,6 +39,10 @@ type Metadata struct {
 type RetrieveFilter struct {
 	AppName string `json:"appName"`
 }
+type DeployFilter struct {
+	AppName string `json:"appName"`
+	Plan    []byte `json:"plan"`
+}
 
 // GetMetadataTypeDirNames returns the directory names for a type
 func GetMetadataTypeDirNames() []string {

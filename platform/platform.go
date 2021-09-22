@@ -4,13 +4,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/pkg/errors"
 	"io"
 	"log"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/pkg/errors"
 
 	"github.com/skuid/skuid-cli/httperror"
 	"github.com/skuid/skuid-cli/text"
@@ -264,9 +265,12 @@ func (conn *RestConnection) MakeJWTRequest(method string, url string, payload io
 }
 
 // GetDeployPlan fetches a deploymnent plan from Skuid Platform API
-func (api *RestApi) GetDeployPlan(payload io.Reader, verbose bool) (map[string]types.Plan, error) {
+func (api *RestApi) GetDeployPlan(payload io.Reader, mimeType string, verbose bool) (map[string]types.Plan, error) {
 	if verbose {
 		fmt.Println(text.VerboseSection("Getting Deploy Plan"))
+	}
+	if mimeType == "" {
+		mimeType = "application/zip"
 	}
 
 	planStart := time.Now()
@@ -275,7 +279,7 @@ func (api *RestApi) GetDeployPlan(payload io.Reader, verbose bool) (map[string]t
 		http.MethodPost,
 		"/metadata/deploy/plan",
 		payload,
-		"application/zip",
+		mimeType,
 	)
 
 	if err != nil {
