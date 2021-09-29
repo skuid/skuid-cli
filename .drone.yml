@@ -1,0 +1,27 @@
+workspace:
+  base: /go
+  path: src/github.com/skuid/skuid-cli
+
+pipeline:
+  fetch:
+    image: alpine/git
+    commands:
+      - git fetch --tags
+  test:
+    image: golang:1.15-alpine
+    commands:
+      - apk add git
+      - go test -v ./...
+    environment:
+      CGO_ENABLED: '0'
+
+  release:
+    image: golang:1.15-alpine
+    commands:
+      - make release
+    environment:
+      CGO_ENABLED: '0'
+    tags:
+      - ${DRONE_TAG}
+    when:
+      event: tag
