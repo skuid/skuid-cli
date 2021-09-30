@@ -30,7 +30,8 @@ pipeline:
         from_secret: github_key
       files: /tmp/dist/*
     volumes:
-      - output:/tmp/dist
+      output:
+        path: /tmp/dist
     when:
       event: tag
 
