@@ -1,18 +1,13 @@
----
-kind: pipeline
-type: docker
-name: skuid-cli
-
 workspace:
   base: /go
   path: src/github.com/skuid/skuid-cli
 
-steps:
-  - name: fetch
+pipeline:
+  fetch:
     image: alpine/git
     commands:
       - git fetch --tags
-  - name: test
+  test:
     image: golang:1.15-alpine
     commands:
       - apk add git
@@ -20,29 +15,28 @@ steps:
     environment:
       CGO_ENABLED: '0'
 
-  - name: build
+  build:
     dockerfile: compose/Dockerfile
     environment:
       CGO_ENABLED: '0'
     volumes:
-      - name: output
-        path: /tmp/dist
+      - output:/tmp/dist
     when:
       event: tag
-  - name: release
+  release:
     image: plugins/github-release
     settings:
       api_key:
         from_secret: github_key
       files: /tmp/dist/*
     volumes:
-      - name: output
-        path: /tmp/dist
+      - output:/tmp/dist
     when:
       event: tag
+
 secrets:
   - source: github_key
     target: ssh_key
 volumes:
-  - name: output
+  output:
     temp: {}
