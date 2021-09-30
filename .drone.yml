@@ -11,19 +11,18 @@ volumes:
     temp: {}
 
 steps:
-  fetch:
+  - name: fetch
     image: alpine/git
     commands:
       - git fetch --tags
-  test:
+  - name: test
     image: golang:1.15-alpine
     commands:
       - apk add git
       - go test -v ./...
     environment:
       CGO_ENABLED: '0'
-
-  build:
+  - name: build
     dockerfile: compose/Dockerfile
     environment:
       CGO_ENABLED: '0'
@@ -32,7 +31,7 @@ steps:
         path: /tmp/dist
     when:
       event: tag
-  release:
+  - name: release
     image: plugins/github-release
     settings:
       api_key:
@@ -43,4 +42,3 @@ steps:
         path: /tmp/dist
     when:
       event: tag
-
