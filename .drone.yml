@@ -40,7 +40,9 @@ steps:
         path: /tmp/dist
     when:
       event: tag
-
+secrets:
+  - source: github_key
+    target: ssh_key
 volumes:
   - name: output
     temp: {}
