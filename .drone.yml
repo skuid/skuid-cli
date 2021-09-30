@@ -24,7 +24,12 @@ steps:
     environment:
       CGO_ENABLED: '0'
   - name: build
-    dockerfile: compose/Dockerfile
+    image: golang:1.15-alpine
+    commands:
+      - go mod download
+      - GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -o /tmp/dist/skuid_linux_amd64
+      - GOOS=darwin GOARCH=amd64 go build $(LDFLAGS) -o /tmp/dist/skuid_darwin_amd64
+      - GOOS=windows GOARCH=amd64 go build $(LDFLAGS) -o /tmp/dist/skuid_windows_amd64.exe
     environment:
       CGO_ENABLED: '0'
     volumes:
