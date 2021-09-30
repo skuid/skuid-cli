@@ -1,8 +1,16 @@
+---
+kind: pipeline
+type: docker
+
 workspace:
   base: /go
   path: src/github.com/skuid/skuid-cli
 
-pipeline:
+volumes:
+  - name: output
+    temp: {}
+
+steps:
   fetch:
     image: alpine/git
     commands:
@@ -36,6 +44,3 @@ pipeline:
     when:
       event: tag
 
-volumes:
-  - name: output
-    temp: {}
