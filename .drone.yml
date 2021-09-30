@@ -20,7 +20,8 @@ pipeline:
     environment:
       CGO_ENABLED: '0'
     volumes:
-      - output:/tmp/dist
+      - name: output
+        path: /tmp/dist
     when:
       event: tag
   release:
@@ -30,11 +31,11 @@ pipeline:
         from_secret: github_key
       files: /tmp/dist/*
     volumes:
-      output:
+      - name: output
         path: /tmp/dist
     when:
       event: tag
 
 volumes:
-  output:
+  - name: output
     temp: {}
