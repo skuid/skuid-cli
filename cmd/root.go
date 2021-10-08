@@ -27,6 +27,7 @@ var (
 	variablevalue        string
 	variabledataservice  string
 	verbose              bool
+	nozip                bool
 )
 
 // RootCmd represents the base command when called without any subcommands
@@ -66,6 +67,7 @@ func init() {
 	RootCmd.PersistentFlags().StringVar(&variabledataservice, "dataservice", "", "Optional, the name of a private data service in which the variable should be created. Leave blank to store in the default data service.")
 	RootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Display all possible logging info")
 	RootCmd.PersistentFlags().StringVarP(&appName, "app", "a", "", "Filter retrieve/deploy to a specific Skuid App")
+	RootCmd.PersistentFlags().BoolVarP(&nozip, "nozip", "z", false, "Ask for site not to be zipped")
 }
 
 // initConfig reads in config file and ENV variables if set.

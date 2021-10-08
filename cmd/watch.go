@@ -130,7 +130,7 @@ func deployModifiedFiles(api *platform.RestApi, modifiedFile string) {
 		fmt.Println("Getting deploy plan...")
 	}
 
-	plan, err := api.GetDeployPlan(bufPlan, verbose)
+	plan, err := api.GetDeployPlan(bufPlan, "application/zip", verbose)
 	if err != nil {
 		fmt.Println(text.PrettyError("Error getting deploy plan", err))
 		os.Exit(1)

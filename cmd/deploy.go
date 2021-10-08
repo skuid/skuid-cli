@@ -2,7 +2,9 @@ package cmd
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -10,6 +12,7 @@ import (
 
 	"github.com/skuid/skuid-cli/platform"
 	"github.com/skuid/skuid-cli/text"
+	"github.com/skuid/skuid-cli/types"
 	"github.com/skuid/skuid-cli/ziputils"
 	"github.com/spf13/cobra"
 )
@@ -80,7 +83,25 @@ var deployCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		plan, err := api.GetDeployPlan(bufPlan, verbose)
+		var deployPlan io.Reader
+		mimeType := "application/zip"
+		if appName != "" {
+			filter := types.DeployFilter{
+				AppName: appName,
+				Plan:    bufPlan.Bytes(),
+			}
+			deployBytes, err := json.Marshal(filter)
+			if err != nil {
+				fmt.Println(text.PrettyError("Error creating deployment plan payload", err))
+				os.Exit(1)
+			}
+			deployPlan = bytes.NewReader(deployBytes)
+			mimeType = "application/json"
+		} else {
+			deployPlan = bufPlan
+		}
+
+		plan, err := api.GetDeployPlan(deployPlan, mimeType, verbose)
 		if err != nil {
 			fmt.Println(text.PrettyError("Error getting deploy plan", err))
 			os.Exit(1)

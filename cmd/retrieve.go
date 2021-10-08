@@ -1,18 +1,17 @@
 package cmd
 
 import (
+	"archive/zip"
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
-	"os"
-	"strings"
-	"time"
-
-	"archive/zip"
-	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"path/filepath"
+	"strings"
+	"time"
 
 	jsoniter "github.com/skuid/json-iterator-go" // jsoniter. Fork of github.com/json-iterator/go
 	jsonpatch "github.com/skuid/json-patch"
@@ -116,20 +115,26 @@ func writeResultsToDisk(results []*io.ReadCloser, fileCreator FileCreator, direc
 
 	for _, result := range results {
 
-		tmpFileName, err := createTemporaryZipFile(result)
+		tmpFileName, err := createTemporaryFile(result)
 		if err != nil {
-			return err
+				return err
+			}
+		// schedule cleanup of temp file
+		defer os.Remove(tmpFileName)
+
+		if nozip {
+			err = moveTempFile(tmpFileName, targetDir, pathMap, fileCreator, directoryCreator, existingFileReader)
+			if err != nil {
+				return err
+			}
+			continue
 		}
 
 		// unzip the contents of our temp zip file
 		err = unzip(tmpFileName, targetDir, pathMap, fileCreator, directoryCreator, existingFileReader)
-
-		// schedule cleanup of temp file
-		defer os.Remove(tmpFileName)
-
 		if err != nil {
-			return err
-		}
+				return err
+			}
 	}
 
 	fmt.Printf("Results written to %s\n", targetDirFriendly)
@@ -137,7 +142,7 @@ func writeResultsToDisk(results []*io.ReadCloser, fileCreator FileCreator, direc
 	return nil
 }
 
-func createTemporaryZipFile(data *io.ReadCloser) (name string, err error) {
+func createTemporaryFile(data *io.ReadCloser) (name string, err error) {
 	tmpfile, err := ioutil.TempFile("", "skuid")
 	if err != nil {
 		return "", err
@@ -151,11 +156,56 @@ func createTemporaryZipFile(data *io.ReadCloser) (name string, err error) {
 	return tmpfile.Name(), nil
 }
 
+func moveTempFile(sourceFileLocation, targetLocation string, pathMap map[string]bool, fileCreator FileCreator, directoryCreator DirectoryCreator, existingFileReader FileReader) error {
+	// If we have a non-empty target directory, ensure it exists
+	if targetLocation != "" {
+		if err := directoryCreator(targetLocation, 0755); err != nil {
+			return err
+		}
+	}
+	fi, err := os.Open(sourceFileLocation)
+	if err != nil {
+		return err
+	}
+	defer fi.Close()
+	fstat, err := fi.Stat()
+	if err != nil {
+		return err
+	}
+	fileReader := ioutil.NopCloser(fi)
+
+	path := filepath.Join(targetLocation, filepath.FromSlash(fi.Name()))
+	_, fileAlreadyWritten := pathMap[path]
+	if !fileAlreadyWritten {
+		pathMap[path] = true
+	}
+	if fstat.IsDir() {
+		return directoryCreator(path, fstat.Mode())
+	}
+	if fileAlreadyWritten {
+		if verbose {
+			fmt.Println("Augmenting existing file with more data: " + fi.Name())
+		}
+		fileReader, err = combineJSONFile(fileReader, existingFileReader, path)
+		if err != nil {
+			return err
+		}
+	}
+	if verbose {
+		fmt.Println("Creating file: " + fi.Name())
+	}
+	err = fileCreator(fileReader, path)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // Unzips a ZIP archive and recreates the folders and file structure within it locally
 func unzip(sourceFileLocation, targetLocation string, pathMap map[string]bool, fileCreator FileCreator, directoryCreator DirectoryCreator, existingFileReader FileReader) error {
 
 	reader, err := zip.OpenReader(sourceFileLocation)
-
 	if err != nil {
 		return err
 	}
@@ -174,7 +224,10 @@ func unzip(sourceFileLocation, targetLocation string, pathMap map[string]bool, f
 		if !fileAlreadyWritten {
 			pathMap[path] = true
 		}
-		readFileFromZipAndWriteToFilesystem(file, path, fileAlreadyWritten, fileCreator, directoryCreator, existingFileReader)
+		err := readFileFromZipAndWriteToFilesystem(file, path, fileAlreadyWritten, fileCreator, directoryCreator, existingFileReader)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -368,7 +421,10 @@ func executeRetrievePlan(api *platform.RestApi, plans map[string]types.Plan) ([]
 	}
 	planResults := []*io.ReadCloser{}
 	for _, plan := range plans {
-		metadataBytes, err := json.Marshal(plan.Metadata)
+		metadataBytes, err := json.Marshal(types.RetrieveRequest{
+			Metadata: plan.Metadata,
+			DoZip: !nozip,
+		})
 		if err != nil {
 			return nil, err
 		}

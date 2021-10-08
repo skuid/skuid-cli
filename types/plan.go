@@ -15,6 +15,11 @@ type Plan struct {
 	Warnings []string `json:"warnings"`
 }
 
+type RetrieveRequest struct {
+	DoZip    bool     `json:"zip"`
+	Metadata Metadata `json:"metadata"`
+}
+
 type Metadata struct {
 	Apps           []string `json:"apps"`
 	AuthProviders  []string `json:"authproviders"`
@@ -33,6 +38,10 @@ type Metadata struct {
 
 type RetrieveFilter struct {
 	AppName string `json:"appName"`
+}
+type DeployFilter struct {
+	AppName string `json:"appName"`
+	Plan    []byte `json:"plan"`
 }
 
 // GetMetadataTypeDirNames returns the directory names for a type
