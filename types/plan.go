@@ -31,7 +31,7 @@ type Metadata struct {
 	Files          []string `json:"files"`
 	Pages          []string `json:"pages"`
 	PermissionSets []string `json:"permissionsets"`
-	Profiles       []string `json:"profiles"`
+	Profiles       []string `json:"sitepermissionsets"`
 	Site           []string `json:"site"`
 	Themes         []string `json:"themes"`
 }

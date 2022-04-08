@@ -9,8 +9,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/skuid/skuid-cli/types"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/skuid/skuid-cli/types"
 )
 
 const existingProfileBody = `{
@@ -143,14 +144,14 @@ func TestRetrieve(t *testing.T) {
 			"retrieve merged profile",
 			"",
 			[]RetrieveFile{
-				{"profiles/myprofile.json", existingProfileBody},
-				{"profiles/myprofile.json", messyProfileBody},
+				{"sitepermissionsets/myprofile.json", existingProfileBody},
+				{"sitepermissionsets/myprofile.json", messyProfileBody},
 			},
 			[]RetrieveFile{
-				{filepath.FromSlash("profiles/myprofile.json"), mergedProfileBody},
+				{filepath.FromSlash("sitepermissionsets/myprofile.json"), mergedProfileBody},
 			},
 			[]string{
-				"profiles",
+				"sitepermissionsets",
 			},
 			nil,
 		},

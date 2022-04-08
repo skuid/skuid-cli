@@ -20,12 +20,12 @@ func RunCommand(commandName string) string {
 
 // Separator creates some visual space
 func Separator() string {
-	return "------------------------------------------"
+	return strings.Repeat("-", 42)
 }
 
 // ErrorSeparator creates some visual space
 func ErrorSeparator() string {
-	return "******************************************"
+	return strings.Repeat("*", 42)
 }
 
 // PrettyError formats an error with a description and message
