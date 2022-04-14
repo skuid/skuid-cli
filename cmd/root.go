@@ -16,6 +16,7 @@ var (
 	apiVersion           string
 	host                 string
 	appName              string
+	pages                *[]string
 	module               string
 	page                 string
 	password             string
@@ -67,6 +68,7 @@ func init() {
 	RootCmd.PersistentFlags().StringVar(&variabledataservice, "dataservice", "", "Optional, the name of a private data service in which the variable should be created. Leave blank to store in the default data service.")
 	RootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Display all possible logging info")
 	RootCmd.PersistentFlags().StringVarP(&appName, "app", "a", "", "Filter retrieve/deploy to a specific Skuid App")
+	pages = RootCmd.PersistentFlags().StringSliceP("pages", "l", []string{}, "Filter retrieve to a specific list of Skuid pages")
 	RootCmd.PersistentFlags().BoolVarP(&nozip, "nozip", "z", false, "Ask for site not to be zipped")
 }
 

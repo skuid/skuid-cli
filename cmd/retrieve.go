@@ -47,7 +47,7 @@ var retrieveCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		plan, err := getRetrievePlan(api, appName)
+		plan, err := getRetrievePlan(api, appName, *pages)
 		if err != nil {
 			fmt.Println(text.PrettyError("Error getting retrieve plan", err))
 			os.Exit(1)
@@ -117,8 +117,8 @@ func writeResultsToDisk(results []*io.ReadCloser, fileCreator FileCreator, direc
 
 		tmpFileName, err := createTemporaryFile(result)
 		if err != nil {
-				return err
-			}
+			return err
+		}
 		// schedule cleanup of temp file
 		defer os.Remove(tmpFileName)
 
@@ -133,8 +133,8 @@ func writeResultsToDisk(results []*io.ReadCloser, fileCreator FileCreator, direc
 		// unzip the contents of our temp zip file
 		err = unzip(tmpFileName, targetDir, pathMap, fileCreator, directoryCreator, existingFileReader)
 		if err != nil {
-				return err
-			}
+			return err
+		}
 	}
 
 	fmt.Printf("Results written to %s\n", targetDirFriendly)
@@ -374,19 +374,25 @@ func combineJSONFile(newFileReader io.ReadCloser, existingFileReader FileReader,
 	return ioutil.NopCloser(bytes.NewReader(indented.Bytes())), nil
 }
 
-func getRetrievePlan(api *platform.RestApi, appName string) (map[string]types.Plan, error) {
+func getRetrievePlan(api *platform.RestApi, appName string, pages []string) (map[string]types.Plan, error) {
 	if verbose {
 		fmt.Println(text.VerboseSection("Getting Retrieve Plan"))
 	}
 	var postBody io.Reader
+	var retFilter types.RetrieveFilter
+	if len(pages) > 0 {
+		retFilter.Pages = pages
+	}
 	if appName != "" {
-		retFilter, err := json.Marshal(types.RetrieveFilter{
-			AppName: appName,
-		})
-		if err != nil {
+		retFilter.AppName = appName
+	}
+	if retFilter.Pages != nil || retFilter.AppName != "" {
+		if retFilterBytes, err := json.Marshal(retFilter); err != nil {
 			return nil, err
+		} else {
+			postBody = bytes.NewReader(retFilterBytes)
 		}
-		postBody = bytes.NewReader(retFilter)
+
 	}
 
 	planStart := time.Now()
@@ -423,7 +429,7 @@ func executeRetrievePlan(api *platform.RestApi, plans map[string]types.Plan) ([]
 	for _, plan := range plans {
 		metadataBytes, err := json.Marshal(types.RetrieveRequest{
 			Metadata: plan.Metadata,
-			DoZip: !nozip,
+			DoZip:    !nozip,
 		})
 		if err != nil {
 			return nil, err

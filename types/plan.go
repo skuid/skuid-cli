@@ -37,7 +37,8 @@ type Metadata struct {
 }
 
 type RetrieveFilter struct {
-	AppName string `json:"appName"`
+	AppName string   `json:"appName"`
+	Pages   []string `json:"pages"`
 }
 type DeployFilter struct {
 	AppName string `json:"appName"`
