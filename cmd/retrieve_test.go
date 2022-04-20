@@ -155,6 +155,21 @@ func TestRetrieve(t *testing.T) {
 			},
 			nil,
 		},
+		{
+			testDescription: "retrieve merged profile",
+			giveTargetDir:   "",
+			giveFiles: []RetrieveFile{
+				{"profiles/myprofile.json", existingProfileBody},
+				{"profiles/myprofile.json", messyProfileBody},
+			},
+			wantFiles: []RetrieveFile{
+				{filepath.FromSlash("profiles/myprofile.json"), mergedProfileBody},
+			},
+			wantDirectories: []string{
+				"profiles",
+			},
+			wantError: nil,
+		},
 	}
 
 	for _, tc := range testCases {
