@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/skuid/skuid-cli/types"
+	"github.com/skuid/tides/types"
 )
 
 // TestFile contains the information needed to create a test file
@@ -63,7 +63,7 @@ func Archive(inFilePath string, writer io.Writer, metadataFilter *types.Metadata
 				return false
 			}
 		}
-		return true 
+		return true
 	})
 }
 

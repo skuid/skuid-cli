@@ -1,4 +1,4 @@
-module github.com/skuid/skuid-cli
+module github.com/skuid/tides
 
 go 1.14
 

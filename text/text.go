@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/skuid/skuid-cli/version"
+	"github.com/skuid/tides/version"
 )
 
 // RunCommand outputs text to be shown at the beginning of each command

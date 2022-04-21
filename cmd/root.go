@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/skuid/skuid-cli/version"
+	"github.com/skuid/tides/version"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )

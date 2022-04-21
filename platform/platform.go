@@ -13,11 +13,11 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/skuid/skuid-cli/httperror"
-	"github.com/skuid/skuid-cli/text"
-	"github.com/skuid/skuid-cli/types"
-	"github.com/skuid/skuid-cli/version"
-	"github.com/skuid/skuid-cli/ziputils"
+	"github.com/skuid/tides/httperror"
+	"github.com/skuid/tides/text"
+	"github.com/skuid/tides/types"
+	"github.com/skuid/tides/version"
+	"github.com/skuid/tides/ziputils"
 )
 
 type OAuthResponse struct {

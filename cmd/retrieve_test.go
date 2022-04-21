@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/skuid/skuid-cli/types"
+	"github.com/skuid/tides/types"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -11,8 +11,8 @@ import (
 
 	"github.com/olekukonko/tablewriter"
 	"github.com/satori/go.uuid"
-	"github.com/skuid/skuid-cli/platform"
-	"github.com/skuid/skuid-cli/text"
+	"github.com/skuid/tides/platform"
+	"github.com/skuid/tides/text"
 	"github.com/spf13/cobra"
 	"golang.org/x/crypto/ssh/terminal"
 )

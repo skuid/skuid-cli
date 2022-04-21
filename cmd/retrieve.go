@@ -15,9 +15,9 @@ import (
 
 	jsoniter "github.com/skuid/json-iterator-go" // jsoniter. Fork of github.com/json-iterator/go
 	jsonpatch "github.com/skuid/json-patch"
-	"github.com/skuid/skuid-cli/platform"
-	"github.com/skuid/skuid-cli/text"
-	"github.com/skuid/skuid-cli/types"
+	"github.com/skuid/tides/platform"
+	"github.com/skuid/tides/text"
+	"github.com/skuid/tides/types"
 	"github.com/spf13/cobra"
 )
 
@@ -117,8 +117,8 @@ func writeResultsToDisk(results []*io.ReadCloser, fileCreator FileCreator, direc
 
 		tmpFileName, err := createTemporaryFile(result)
 		if err != nil {
-				return err
-			}
+			return err
+		}
 		// schedule cleanup of temp file
 		defer os.Remove(tmpFileName)
 
@@ -133,8 +133,8 @@ func writeResultsToDisk(results []*io.ReadCloser, fileCreator FileCreator, direc
 		// unzip the contents of our temp zip file
 		err = unzip(tmpFileName, targetDir, pathMap, fileCreator, directoryCreator, existingFileReader)
 		if err != nil {
-				return err
-			}
+			return err
+		}
 	}
 
 	fmt.Printf("Results written to %s\n", targetDirFriendly)
@@ -423,7 +423,7 @@ func executeRetrievePlan(api *platform.RestApi, plans map[string]types.Plan) ([]
 	for _, plan := range plans {
 		metadataBytes, err := json.Marshal(types.RetrieveRequest{
 			Metadata: plan.Metadata,
-			DoZip: !nozip,
+			DoZip:    !nozip,
 		})
 		if err != nil {
 			return nil, err

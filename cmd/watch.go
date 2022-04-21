@@ -10,9 +10,9 @@ import (
 	"time"
 
 	"github.com/radovskyb/watcher"
-	"github.com/skuid/skuid-cli/platform"
-	"github.com/skuid/skuid-cli/text"
-	"github.com/skuid/skuid-cli/ziputils"
+	"github.com/skuid/tides/platform"
+	"github.com/skuid/tides/text"
+	"github.com/skuid/tides/ziputils"
 	"github.com/spf13/cobra"
 )
 

@@ -10,10 +10,10 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/skuid/skuid-cli/platform"
-	"github.com/skuid/skuid-cli/text"
-	"github.com/skuid/skuid-cli/types"
-	"github.com/skuid/skuid-cli/ziputils"
+	"github.com/skuid/tides/platform"
+	"github.com/skuid/tides/text"
+	"github.com/skuid/tides/types"
+	"github.com/skuid/tides/ziputils"
 	"github.com/spf13/cobra"
 )
 
