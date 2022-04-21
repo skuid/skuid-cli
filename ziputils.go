@@ -1,4 +1,4 @@
-package ziputils
+package main
 
 import (
 	"archive/zip"
@@ -9,8 +9,6 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
-
-	"github.com/skuid/tides/types"
 )
 
 // TestFile contains the information needed to create a test file
@@ -54,7 +52,7 @@ func CreateTestZip(files []TestFile) (io.ReadCloser, error) {
 // the folder as its only item (with contents inside).
 //
 // If progress is not nil, it is called for each file added to the archive.
-func Archive(inFilePath string, writer io.Writer, metadataFilter *types.Metadata) error {
+func Archive(inFilePath string, writer io.Writer, metadataFilter *Metadata) error {
 	return archiveWithFilter(inFilePath, writer, func(relativePath string) bool {
 		// if there was a metadata filter, apply it.
 		if metadataFilter != nil {

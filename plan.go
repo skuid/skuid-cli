@@ -1,4 +1,4 @@
-package types
+package main
 
 import (
 	"path/filepath"
@@ -81,13 +81,13 @@ func (m Metadata) GetNamesForType(metadataType string) []string {
 	return nil
 }
 
-func fromWindowsPath(path string) string {
+func FromWindowsPath(path string) string {
 	return strings.Replace(path, "\\", string(filepath.Separator), -1)
 }
 
 // FilterMetadataItem returns true if the path meets the filter criteria, otherwise it returns false
 func (m Metadata) FilterMetadataItem(relativeFilePath string) bool {
-	cleanRelativeFilePath := fromWindowsPath(relativeFilePath)
+	cleanRelativeFilePath := FromWindowsPath(relativeFilePath)
 	directory := filepath.Dir(cleanRelativeFilePath)
 	baseName := filepath.Base(cleanRelativeFilePath)
 

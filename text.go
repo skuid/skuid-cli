@@ -1,18 +1,16 @@
-package text
+package main
 
 import (
 	"fmt"
 	"strings"
 	"time"
-
-	"github.com/skuid/tides/version"
 )
 
 // RunCommand outputs text to be shown at the beginning of each command
 func RunCommand(commandName string) string {
 	return joinError([]string{
 		Separator(),
-		fmt.Sprintf("Skuid CLI Version %v", version.Name),
+		fmt.Sprintf("Skuid CLI Version %v", VERSION_NAME),
 		fmt.Sprintf("Running Command: %v", commandName),
 		Separator(),
 	})

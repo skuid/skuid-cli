@@ -1,4 +1,4 @@
-package cmd
+package main_test
 
 import (
 	"archive/zip"
@@ -9,8 +9,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/skuid/tides/types"
 	"github.com/stretchr/testify/assert"
+
+	tides "github.com/skuid/tides"
 )
 
 const existingProfileBody = `{
@@ -158,7 +159,7 @@ func TestRetrieve(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.testDescription, func(t *testing.T) {
-			targetDir = tc.giveTargetDir
+			tides.ArgTargetDir = tc.giveTargetDir
 			// Create a buffer to write our archive to.
 			buf := new(bytes.Buffer)
 
@@ -198,7 +199,7 @@ func TestRetrieve(t *testing.T) {
 			}
 
 			var mockDirectoryMaker = func(path string, fileMode os.FileMode) error {
-				if !types.StringSliceContainsKey(directoriesCreated, path) {
+				if !tides.StringSliceContainsKey(directoriesCreated, path) {
 					directoriesCreated = append(directoriesCreated, path)
 				}
 				return nil
@@ -210,7 +211,7 @@ func TestRetrieve(t *testing.T) {
 
 			bufData := ioutil.NopCloser(bytes.NewReader(buf.Bytes()))
 
-			err = writeResultsToDisk([]*io.ReadCloser{&bufData}, mockFileMaker, mockDirectoryMaker, mockExistingFileReader)
+			err = tides.WriteResultsToDisk([]*io.ReadCloser{&bufData}, mockFileMaker, mockDirectoryMaker, mockExistingFileReader)
 
 			filesCreated := []RetrieveFile{}
 			for _, file := range filesMap {

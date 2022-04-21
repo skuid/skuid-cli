@@ -1,4 +1,4 @@
-package platform
+package main
 
 import (
 	"bytes"
@@ -12,12 +12,6 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-
-	"github.com/skuid/tides/httperror"
-	"github.com/skuid/tides/text"
-	"github.com/skuid/tides/types"
-	"github.com/skuid/tides/version"
-	"github.com/skuid/tides/ziputils"
 )
 
 type OAuthResponse struct {
@@ -29,7 +23,7 @@ type JWTResponse struct {
 	Token string `json:"token"`
 }
 
-type RestConnection struct {
+type PlatformRestConnection struct {
 	AccessToken          string
 	APIVersion           string
 	ClientId             string
@@ -42,15 +36,15 @@ type RestConnection struct {
 	DataServiceProxy     *url.URL
 }
 
-type RestApi struct {
-	Connection *RestConnection
+type PlatformRestApi struct {
+	Connection *PlatformRestConnection
 }
 
-var VERSION = version.Name
+var VERSION = VERSION_NAME
 
 // Login logs a given user into a target Skuid Platform site and returns a RestApi connection
 // that can be used to make HTTP requests
-func Login(host, username, password, apiVersion, metadataServiceProxy, dataServiceProxy string, verbose bool) (api *RestApi, err error) {
+func PlatformLogin(host, username, password, apiVersion, metadataServiceProxy, dataServiceProxy string, verbose bool) (api *PlatformRestApi, err error) {
 
 	if apiVersion == "" {
 		apiVersion = "2"
@@ -63,7 +57,7 @@ func Login(host, username, password, apiVersion, metadataServiceProxy, dataServi
 		fmt.Println("API Version: " + apiVersion)
 	}
 
-	conn := RestConnection{
+	conn := PlatformRestConnection{
 		Host:       host,
 		Username:   username,
 		Password:   password,
@@ -98,12 +92,12 @@ func Login(host, username, password, apiVersion, metadataServiceProxy, dataServi
 		return nil, err
 	}
 
-	api = &RestApi{
+	api = &PlatformRestApi{
 		Connection: &conn,
 	}
 
 	if verbose {
-		fmt.Println(text.SuccessWithTime("Login Success", loginStart))
+		fmt.Println(SuccessWithTime("Login Success", loginStart))
 		fmt.Println("Access Token: " + conn.AccessToken)
 	}
 
@@ -111,7 +105,7 @@ func Login(host, username, password, apiVersion, metadataServiceProxy, dataServi
 }
 
 // Refresh is used to obtain an OAuth2 access_token
-func (conn *RestConnection) Refresh() error {
+func (conn *PlatformRestConnection) Refresh() error {
 	urlValues := url.Values{}
 
 	urlValues.Set("grant_type", "password")
@@ -131,7 +125,7 @@ func (conn *RestConnection) Refresh() error {
 	if err != nil {
 		switch err.(type) {
 		case *url.Error:
-			return text.AugmentError("Could not connect to authorization endpoint", err)
+			return AugmentError("Could not connect to authorization endpoint", err)
 		default:
 			return err
 		}
@@ -140,13 +134,13 @@ func (conn *RestConnection) Refresh() error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
-		return httperror.New(resp.Status, resp.Body)
+		return NewHttpError(resp.Status, resp.Body)
 	}
 
 	result := OAuthResponse{}
 
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return httperror.New(resp.Status, resp.Body)
+		return NewHttpError(resp.Status, resp.Body)
 	}
 
 	conn.AccessToken = result.AccessToken
@@ -154,7 +148,7 @@ func (conn *RestConnection) Refresh() error {
 	return nil
 }
 
-func (conn *RestConnection) GetJWT() error {
+func (conn *PlatformRestConnection) GetJWT() error {
 	jwtResult, err := conn.MakeRequest(
 		http.MethodGet,
 		"/auth/token",
@@ -178,7 +172,7 @@ func (conn *RestConnection) GetJWT() error {
 }
 
 // MakeRequest Executes an HTTP request using a session token
-func (conn *RestConnection) MakeRequest(method string, url string, payload io.Reader, contentType string) (result *io.ReadCloser, err error) {
+func (conn *PlatformRestConnection) MakeRequest(method string, url string, payload io.Reader, contentType string) (result *io.ReadCloser, err error) {
 	endpoint := fmt.Sprintf("%s/api/v%s%s", conn.Host, conn.APIVersion, url)
 
 	req, err := http.NewRequest(method, endpoint, payload)
@@ -211,7 +205,7 @@ func (conn *RestConnection) MakeRequest(method string, url string, payload io.Re
 			}
 			if newResp.StatusCode != 200 {
 				defer newResp.Body.Close()
-				return nil, httperror.New(newResp.Status, newResp.Body)
+				return nil, NewHttpError(newResp.Status, newResp.Body)
 			}
 			return &newResp.Body, nil
 		}
@@ -227,14 +221,14 @@ func (conn *RestConnection) MakeRequest(method string, url string, payload io.Re
 
 	if resp.StatusCode != 200 {
 		defer resp.Body.Close()
-		return nil, httperror.New(resp.Status, resp.Body)
+		return nil, NewHttpError(resp.Status, resp.Body)
 	}
 
 	return &resp.Body, nil
 }
 
 // MakeJWTRequest Executes HTTP request using a jwt
-func (conn *RestConnection) MakeJWTRequest(method string, url string, payload io.Reader, contentType string) (result *io.ReadCloser, err error) {
+func (conn *PlatformRestConnection) MakeJWTRequest(method string, url string, payload io.Reader, contentType string) (result *io.ReadCloser, err error) {
 	endpoint := fmt.Sprintf("https://%s", url)
 	req, err := http.NewRequest(method, endpoint, payload)
 
@@ -258,16 +252,16 @@ func (conn *RestConnection) MakeJWTRequest(method string, url string, payload io
 
 	if resp.StatusCode != 200 {
 		defer resp.Body.Close()
-		return nil, httperror.New(resp.Status, resp.Body)
+		return nil, NewHttpError(resp.Status, resp.Body)
 	}
 
 	return &resp.Body, nil
 }
 
 // GetDeployPlan fetches a deploymnent plan from Skuid Platform API
-func (api *RestApi) GetDeployPlan(payload io.Reader, mimeType string, verbose bool) (map[string]types.Plan, error) {
+func (api *PlatformRestApi) GetDeployPlan(payload io.Reader, mimeType string, verbose bool) (map[string]Plan, error) {
 	if verbose {
-		fmt.Println(text.VerboseSection("Getting Deploy Plan"))
+		fmt.Println(VerboseSection("Getting Deploy Plan"))
 	}
 	if mimeType == "" {
 		mimeType = "application/zip"
@@ -287,12 +281,12 @@ func (api *RestApi) GetDeployPlan(payload io.Reader, mimeType string, verbose bo
 	}
 
 	if verbose {
-		fmt.Println(text.SuccessWithTime("Success Getting Deploy Plan", planStart))
+		fmt.Println(SuccessWithTime("Success Getting Deploy Plan", planStart))
 	}
 
 	defer (*planResult).Close()
 
-	var plans map[string]types.Plan
+	var plans map[string]Plan
 	if err := json.NewDecoder(*planResult).Decode(&plans); err != nil {
 		return nil, err
 	}
@@ -301,9 +295,9 @@ func (api *RestApi) GetDeployPlan(payload io.Reader, mimeType string, verbose bo
 }
 
 // ExecuteDeployPlan executes a map of plan items in a deployment plan
-func (api *RestApi) ExecuteDeployPlan(plans map[string]types.Plan, targetDir string, verbose bool) ([]*io.ReadCloser, error) {
+func (api *PlatformRestApi) ExecuteDeployPlan(plans map[string]Plan, targetDir string, verbose bool) ([]*io.ReadCloser, error) {
 	if verbose {
-		fmt.Println(text.VerboseSection("Executing Deploy Plan"))
+		fmt.Println(VerboseSection("Executing Deploy Plan"))
 	}
 	planResults := []*io.ReadCloser{}
 	for _, plan := range plans {
@@ -317,11 +311,11 @@ func (api *RestApi) ExecuteDeployPlan(plans map[string]types.Plan, targetDir str
 }
 
 // ExecutePlanItem executes a particular item in a deployment plan
-func (api *RestApi) ExecutePlanItem(plan types.Plan, targetDir string, verbose bool) (*io.ReadCloser, error) {
+func (api *PlatformRestApi) ExecutePlanItem(plan Plan, targetDir string, verbose bool) (*io.ReadCloser, error) {
 	// Create a buffer to write our archive to.
 	var planResult *io.ReadCloser
 	bufDeploy := new(bytes.Buffer)
-	err := ziputils.Archive(targetDir, bufDeploy, &plan.Metadata)
+	err := Archive(targetDir, bufDeploy, &plan.Metadata)
 	if err != nil {
 		log.Print("Error creating deployment ZIP archive")
 		log.Fatal(err)
@@ -361,7 +355,7 @@ func (api *RestApi) ExecutePlanItem(plan types.Plan, targetDir string, verbose b
 	}
 
 	if verbose {
-		fmt.Println(text.SuccessWithTime("Success Deploying to Source", deployStart))
+		fmt.Println(SuccessWithTime("Success Deploying to Source", deployStart))
 	}
 	defer (*planResult).Close()
 	return planResult, nil

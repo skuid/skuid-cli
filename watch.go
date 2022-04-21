@@ -1,4 +1,4 @@
-package cmd
+package main
 
 import (
 	"bytes"
@@ -10,9 +10,6 @@ import (
 	"time"
 
 	"github.com/radovskyb/watcher"
-	"github.com/skuid/tides/platform"
-	"github.com/skuid/tides/text"
-	"github.com/skuid/tides/ziputils"
 	"github.com/spf13/cobra"
 )
 
@@ -22,18 +19,18 @@ var watchCmd = &cobra.Command{
 	Long:  "Watches for changes to local Skuid metadata on your file system, and automatically deploys the changed files to a Skuid Platform Site.",
 	Run: func(cmd *cobra.Command, args []string) {
 
-		api, err := platform.Login(
-			host,
-			username,
-			password,
-			apiVersion,
-			metadataServiceProxy,
-			dataServiceProxy,
-			verbose,
+		api, err := PlatformLogin(
+			ArgHost,
+			ArgUsername,
+			ArgPassword,
+			ArgApiVersion,
+			ArgMetadataServiceProxy,
+			ArgDataServiceProxy,
+			ArgVerbose,
 		)
 
 		if err != nil {
-			fmt.Println(text.PrettyError("Error logging in to Skuid site", err))
+			fmt.Println(PrettyError("Error logging in to Skuid site", err))
 			os.Exit(1)
 		}
 
@@ -41,15 +38,15 @@ var watchCmd = &cobra.Command{
 
 		// If target directory is provided,
 		// switch to that target directory and later switch back.
-		if targetDir != "" {
-			os.Chdir(targetDir)
+		if ArgTargetDir != "" {
+			os.Chdir(ArgTargetDir)
 			pwd, err := os.Getwd()
 			if err != nil {
 				log.Fatal(err)
 			}
 			defer os.Chdir(pwd)
 		}
-		targetDir = "."
+		ArgTargetDir = "."
 		targetDirFriendly, err = filepath.Abs(filepath.Dir(os.Args[0]))
 
 		if err != nil {
@@ -68,7 +65,7 @@ var watchCmd = &cobra.Command{
 			for {
 				select {
 				case event := <-w.Event:
-					cleanRelativeFilePath := fromWindowsPath(strings.Split(event.Path, targetDirFriendly)[1])
+					cleanRelativeFilePath := FromWindowsPath(strings.Split(event.Path, targetDirFriendly)[1])
 					dirSplit := strings.Split(cleanRelativeFilePath, string(filepath.Separator))
 					metadataType, remainder := dirSplit[1], dirSplit[2]
 					var changedEntity string
@@ -90,13 +87,13 @@ var watchCmd = &cobra.Command{
 		}()
 
 		// Watch targetDir recursively for changes.
-		if err := w.AddRecursive(targetDir); err != nil {
+		if err := w.AddRecursive(ArgTargetDir); err != nil {
 			log.Fatalln(err)
 		}
 
 		// Print a list of all of the files and folders currently
 		// being watched and their paths.
-		if verbose {
+		if ArgVerbose {
 			fmt.Println("** Now watching the following files for changes... **")
 			for path, f := range w.WatchedFiles() {
 				fmt.Printf("%s: %s\n", path, f.Name())
@@ -112,37 +109,33 @@ var watchCmd = &cobra.Command{
 	},
 }
 
-func fromWindowsPath(path string) string {
-	return strings.Replace(path, "\\", string(filepath.Separator), -1)
-}
-
-func deployModifiedFiles(api *platform.RestApi, modifiedFile string) {
+func deployModifiedFiles(api *PlatformRestApi, modifiedFile string) {
 
 	// Create a buffer to write our archive to.
 	bufPlan := new(bytes.Buffer)
-	err := ziputils.ArchivePartial(targetDir, bufPlan, modifiedFile)
+	err := ArchivePartial(ArgTargetDir, bufPlan, modifiedFile)
 	if err != nil {
-		fmt.Println(text.PrettyError("Error creating deployment ZIP archive", err))
+		fmt.Println(PrettyError("Error creating deployment ZIP archive", err))
 		os.Exit(1)
 	}
 
-	if verbose {
+	if ArgVerbose {
 		fmt.Println("Getting deploy plan...")
 	}
 
-	plan, err := api.GetDeployPlan(bufPlan, "application/zip", verbose)
+	plan, err := api.GetDeployPlan(bufPlan, "application/zip", ArgVerbose)
 	if err != nil {
-		fmt.Println(text.PrettyError("Error getting deploy plan", err))
+		fmt.Println(PrettyError("Error getting deploy plan", err))
 		os.Exit(1)
 	}
 
-	if verbose {
+	if ArgVerbose {
 		fmt.Println("Retrieved deploy plan. Deploying...")
 	}
 
-	_, err = api.ExecuteDeployPlan(plan, targetDir, verbose)
+	_, err = api.ExecuteDeployPlan(plan, ArgTargetDir, ArgVerbose)
 	if err != nil {
-		fmt.Println(text.PrettyError("Error executing deploy plan", err))
+		fmt.Println(PrettyError("Error executing deploy plan", err))
 		os.Exit(1)
 	}
 

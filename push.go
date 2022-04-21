@@ -1,14 +1,11 @@
-package cmd
+package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"strconv"
 
-	"encoding/json"
-
-	"github.com/skuid/tides/force"
-	"github.com/skuid/tides/types"
 	"github.com/spf13/cobra"
 )
 
@@ -21,19 +18,19 @@ var pushCmd = &cobra.Command{
 	Long:  "Push Skuid Pages from a directory to Skuid.",
 	Run: func(cmd *cobra.Command, args []string) {
 
-		pageDefinitions, _ := types.ReadFiles(targetDir, module, f)
+		pageDefinitions, _ := ReadFiles(ArgTargetDir, ArgModule, f)
 
-		pagePost := &types.PagePost{Changes: pageDefinitions}
+		pagePost := &PagePost{Changes: pageDefinitions}
 
 		fmt.Println(fmt.Sprintf("Pushing %d pages.", len(pagePost.Changes)))
 
-		api, err := force.Login(
-			appClientID,
-			appClientSecret,
-			host,
-			username,
-			password,
-			apiVersion,
+		api, err := Login(
+			ArgAppClientID,
+			ArgAppClientSecret,
+			ArgHost,
+			ArgUsername,
+			ArgPassword,
+			ArgApiVersion,
 		)
 
 		if err != nil {
@@ -50,7 +47,7 @@ var pushCmd = &cobra.Command{
 
 		unquoted, _ := strconv.Unquote(string(result))
 
-		response := &types.PagePostResult{}
+		response := &PagePostResult{}
 
 		_ = json.Unmarshal([]byte(unquoted), response)
 

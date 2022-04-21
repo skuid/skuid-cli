@@ -1,15 +1,12 @@
-package cmd
+package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/url"
 	"os"
 	"strconv"
 
-	"encoding/json"
-
-	"github.com/skuid/tides/force"
-	"github.com/skuid/tides/types"
 	"github.com/spf13/cobra"
 )
 
@@ -23,13 +20,13 @@ var pullCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 
 		//login to the Force API
-		api, err := force.Login(
-			appClientID,
-			appClientSecret,
-			host,
-			username,
-			password,
-			apiVersion,
+		api, err := Login(
+			ArgAppClientID,
+			ArgAppClientSecret,
+			ArgHost,
+			ArgUsername,
+			ArgPassword,
+			ArgApiVersion,
 		)
 
 		if err != nil {
@@ -38,8 +35,8 @@ var pullCmd = &cobra.Command{
 		}
 
 		// Provide a default for targetDir
-		if targetDir == "" {
-			targetDir = "skuidpages"
+		if ArgTargetDir == "" {
+			ArgTargetDir = "skuidpages"
 		}
 
 		//build the module and name query paramaters
@@ -49,12 +46,12 @@ var pullCmd = &cobra.Command{
 			query.Add("nomodule", strconv.FormatBool(noModule))
 		}
 
-		if module != "" {
-			query.Add("module", module)
+		if ArgModule != "" {
+			query.Add("module", ArgModule)
 		}
 
-		if page != "" {
-			query.Add("page", page)
+		if ArgPage != "" {
+			query.Add("page", ArgPage)
 		}
 
 		//query the API for all pages in the requested module
@@ -65,7 +62,7 @@ var pullCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		var pages map[string]types.PullResponse
+		var pages map[string]PullResponse
 
 		//you have to unquote the string because what comes back
 		//is escaped json
@@ -83,14 +80,14 @@ var pullCmd = &cobra.Command{
 		for _, pageRecord := range pages {
 
 			//write the page in the at rest format
-			err = pageRecord.WriteAtRest(targetDir)
+			err = pageRecord.WriteAtRest(ArgTargetDir)
 			if err != nil {
 				fmt.Println(err.Error())
 				os.Exit(1)
 			}
 		}
 
-		fmt.Printf("Pages written to %s\n", targetDir)
+		fmt.Printf("Pages written to %s\n", ArgTargetDir)
 	},
 }
 

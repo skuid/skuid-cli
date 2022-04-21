@@ -529,7 +529,7 @@ Some possible error messages include:
     - If all the options appear correct, **delete the `apps` folder** on your local machine and attempt `skuid deploy` again. Recreate your apps manually on the destination Platform site.
 - `Error executing retrieve plan: Post https://<IP address>/api/v2/metadata/retrieve: dial tcp <IP address>: i/o timeout`
   - This error indicates an issue retrieving metadata from a **data service**. Verify the URLs/IP addresses of all data services listed in **Configure > Data Sources > Data Services** are correct, and ensure that they all can respond to Skuid's metadata requests.
-- `"{\"error\":\"You must provide a \\\"module\\\" URL Parameter containing the names of the Modules of Pages (comma-separated) AND/OR a \\\"page\\\" URL Parameter containing the names of the Pages (comma-separated) you would like to retrieve.\"}" json: cannot unmarshal string into Go value of type types.PullResponse`
+- `"{\"error\":\"You must provide a \\\"module\\\" URL Parameter containing the names of the Modules of Pages (comma-separated) AND/OR a \\\"page\\\" URL Parameter containing the names of the Pages (comma-separated) you would like to retrieve.\"}" json: cannot unmarshal string into Go value of type PullResponse`
   - Some versions of Skuid and the `skuid` CLI do not allow for pulling pages without specifying a module. For maximum compatibility, ensure you are on Skuid v11.2.12 and above, as well as `skuid` CLI 0.3.3 or above.
 
 ## skuid vs skuid-grunt

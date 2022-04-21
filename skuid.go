@@ -1,14 +1,13 @@
-package types
+package main
 
 import (
 	"bytes"
-	"fmt"
-	"os"
-	"strings"
-
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
+	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/beevik/etree"
 )

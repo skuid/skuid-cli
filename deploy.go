@@ -1,4 +1,4 @@
-package cmd
+package main
 
 import (
 	"bytes"
@@ -10,10 +10,6 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/skuid/tides/platform"
-	"github.com/skuid/tides/text"
-	"github.com/skuid/tides/types"
-	"github.com/skuid/tides/ziputils"
 	"github.com/spf13/cobra"
 )
 
@@ -23,20 +19,20 @@ var deployCmd = &cobra.Command{
 	Long:  "Deploy Skuid metadata stored within a local file system directory to a Skuid Platform Site.",
 	Run: func(cmd *cobra.Command, args []string) {
 
-		fmt.Println(text.RunCommand("Deploy Metadata"))
+		fmt.Println(RunCommand("Deploy Metadata"))
 
-		api, err := platform.Login(
-			host,
-			username,
-			password,
-			apiVersion,
-			metadataServiceProxy,
-			dataServiceProxy,
-			verbose,
+		api, err := PlatformLogin(
+			ArgHost,
+			ArgUsername,
+			ArgPassword,
+			ArgApiVersion,
+			ArgMetadataServiceProxy,
+			ArgDataServiceProxy,
+			ArgVerbose,
 		)
 
 		if err != nil {
-			fmt.Println(text.PrettyError("Error logging in to Skuid site", err))
+			fmt.Println(PrettyError("Error logging in to Skuid site", err))
 			os.Exit(1)
 		}
 
@@ -58,8 +54,8 @@ var deployCmd = &cobra.Command{
 
 		// If target directory is provided,
 		// switch to that target directory and later switch back.
-		if targetDir != "" {
-			err := os.Chdir(targetDir)
+		if ArgTargetDir != "" {
+			err := os.Chdir(ArgTargetDir)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -71,28 +67,28 @@ var deployCmd = &cobra.Command{
 			log.Fatal(err)
 		}
 
-		if verbose {
+		if ArgVerbose {
 			fmt.Println("Deploying site from", currDir)
 		}
 
 		// Create a buffer to write our archive to.
 		bufPlan := new(bytes.Buffer)
-		err = ziputils.Archive(".", bufPlan, nil)
+		err = Archive(".", bufPlan, nil)
 		if err != nil {
-			fmt.Println(text.PrettyError("Error creating deployment ZIP archive", err))
+			fmt.Println(PrettyError("Error creating deployment ZIP archive", err))
 			os.Exit(1)
 		}
 
 		var deployPlan io.Reader
 		mimeType := "application/zip"
-		if appName != "" {
-			filter := types.DeployFilter{
-				AppName: appName,
+		if ArgAppName != "" {
+			filter := DeployFilter{
+				AppName: ArgAppName,
 				Plan:    bufPlan.Bytes(),
 			}
 			deployBytes, err := json.Marshal(filter)
 			if err != nil {
-				fmt.Println(text.PrettyError("Error creating deployment plan payload", err))
+				fmt.Println(PrettyError("Error creating deployment plan payload", err))
 				os.Exit(1)
 			}
 			deployPlan = bytes.NewReader(deployBytes)
@@ -101,9 +97,9 @@ var deployCmd = &cobra.Command{
 			deployPlan = bufPlan
 		}
 
-		plan, err := api.GetDeployPlan(deployPlan, mimeType, verbose)
+		plan, err := api.GetDeployPlan(deployPlan, mimeType, ArgVerbose)
 		if err != nil {
-			fmt.Println(text.PrettyError("Error getting deploy plan", err))
+			fmt.Println(PrettyError("Error getting deploy plan", err))
 			os.Exit(1)
 		}
 
@@ -115,16 +111,16 @@ var deployCmd = &cobra.Command{
 			}
 		}
 
-		_, err = api.ExecuteDeployPlan(plan, dotDir, verbose)
+		_, err = api.ExecuteDeployPlan(plan, dotDir, ArgVerbose)
 		if err != nil {
-			fmt.Println(text.PrettyError("Error executing deploy plan", err))
+			fmt.Println(PrettyError("Error executing deploy plan", err))
 			os.Exit(1)
 		}
 
 		successMessage := "Successfully deployed metadata to Skuid Site"
 
-		if verbose {
-			fmt.Println(text.SuccessWithTime(successMessage, deployStart))
+		if ArgVerbose {
+			fmt.Println(SuccessWithTime(successMessage, deployStart))
 		} else {
 			fmt.Println(successMessage + ".")
 		}

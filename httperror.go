@@ -1,4 +1,4 @@
-package httperror
+package main
 
 import (
 	"encoding/json"
@@ -7,8 +7,8 @@ import (
 	"io/ioutil"
 )
 
-// New returns an error that formats as the given text.
-func New(status string, body io.Reader) error {
+// NewHttpError returns an error that formats as the given
+func NewHttpError(status string, body io.Reader) error {
 	var httpError HTTPError
 	bodyBytes, err := ioutil.ReadAll(body)
 	if err != nil {

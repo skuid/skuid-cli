@@ -1,4 +1,4 @@
-package cmd
+package main
 
 import (
 	"archive/zip"
@@ -15,9 +15,6 @@ import (
 
 	jsoniter "github.com/skuid/json-iterator-go" // jsoniter. Fork of github.com/json-iterator/go
 	jsonpatch "github.com/skuid/json-patch"
-	"github.com/skuid/tides/platform"
-	"github.com/skuid/tides/text"
-	"github.com/skuid/tides/types"
 	"github.com/spf13/cobra"
 )
 
@@ -28,46 +25,46 @@ var retrieveCmd = &cobra.Command{
 	Long:  "Retrieve Skuid metadata from a Skuid Platform Site and output it into a local directory.",
 	Run: func(cmd *cobra.Command, args []string) {
 
-		fmt.Println(text.RunCommand("Retrieve Metadata"))
+		fmt.Println(RunCommand("Retrieve Metadata"))
 
-		api, err := platform.Login(
-			host,
-			username,
-			password,
-			apiVersion,
-			metadataServiceProxy,
-			dataServiceProxy,
-			verbose,
+		api, err := PlatformLogin(
+			ArgHost,
+			ArgUsername,
+			ArgPassword,
+			ArgApiVersion,
+			ArgMetadataServiceProxy,
+			ArgDataServiceProxy,
+			ArgVerbose,
 		)
 
 		retrieveStart := time.Now()
 
 		if err != nil {
-			fmt.Println(text.PrettyError("Error logging in to Skuid site", err))
+			fmt.Println(PrettyError("Error logging in to Skuid site", err))
 			os.Exit(1)
 		}
 
-		plan, err := getRetrievePlan(api, appName)
+		plan, err := getRetrievePlan(api, ArgAppName)
 		if err != nil {
-			fmt.Println(text.PrettyError("Error getting retrieve plan", err))
+			fmt.Println(PrettyError("Error getting retrieve plan", err))
 			os.Exit(1)
 		}
 
 		results, err := executeRetrievePlan(api, plan)
 		if err != nil {
-			fmt.Println(text.PrettyError("Error executing retrieve plan", err))
+			fmt.Println(PrettyError("Error executing retrieve plan", err))
 			os.Exit(1)
 		}
 
-		err = writeResultsToDisk(results, writeNewFile, createDirectory, readExistingFile)
+		err = WriteResultsToDisk(results, writeNewFile, createDirectory, readExistingFile)
 		if err != nil {
-			fmt.Println(text.PrettyError("Error writing results to disk", err))
+			fmt.Println(PrettyError("Error writing results to disk", err))
 			os.Exit(1)
 		}
 
 		successMessage := "Successfully retrieved metadata from Skuid Site"
-		if verbose {
-			fmt.Println(text.SuccessWithTime(successMessage, retrieveStart))
+		if ArgVerbose {
+			fmt.Println(SuccessWithTime(successMessage, retrieveStart))
 		} else {
 			fmt.Println(successMessage + ".")
 		}
@@ -86,24 +83,24 @@ func getFriendlyURL(targetDir string) (string, error) {
 
 }
 
-func writeResultsToDisk(results []*io.ReadCloser, fileCreator FileCreator, directoryCreator DirectoryCreator, existingFileReader FileReader) error {
+func WriteResultsToDisk(results []*io.ReadCloser, fileCreator FileCreator, directoryCreator DirectoryCreator, existingFileReader FileReader) error {
 
 	// unzip the archive into the output directory
-	targetDirFriendly, err := getFriendlyURL(targetDir)
+	targetDirFriendly, err := getFriendlyURL(ArgTargetDir)
 	if err != nil {
 		return err
 	}
 
-	if verbose {
-		fmt.Println(text.VerboseSection("Writing results to " + targetDirFriendly))
+	if ArgVerbose {
+		fmt.Println(VerboseSection("Writing results to " + targetDirFriendly))
 	}
 
 	// Remove all of our metadata directories so we get a clean slate.
 	// We may want to improve this later when we do partial retrieves so that
 	// we don't clear out the whole directory every time we retrieve.
-	for _, dirName := range types.GetMetadataTypeDirNames() {
-		dirPath := filepath.Join(targetDir, dirName)
-		if verbose {
+	for _, dirName := range GetMetadataTypeDirNames() {
+		dirPath := filepath.Join(ArgTargetDir, dirName)
+		if ArgVerbose {
 			fmt.Println("Deleting Directory: " + dirPath)
 		}
 		os.RemoveAll(dirPath)
@@ -122,8 +119,8 @@ func writeResultsToDisk(results []*io.ReadCloser, fileCreator FileCreator, direc
 		// schedule cleanup of temp file
 		defer os.Remove(tmpFileName)
 
-		if nozip {
-			err = moveTempFile(tmpFileName, targetDir, pathMap, fileCreator, directoryCreator, existingFileReader)
+		if ArgNoZip {
+			err = moveTempFile(tmpFileName, ArgTargetDir, pathMap, fileCreator, directoryCreator, existingFileReader)
 			if err != nil {
 				return err
 			}
@@ -131,7 +128,7 @@ func writeResultsToDisk(results []*io.ReadCloser, fileCreator FileCreator, direc
 		}
 
 		// unzip the contents of our temp zip file
-		err = unzip(tmpFileName, targetDir, pathMap, fileCreator, directoryCreator, existingFileReader)
+		err = unzip(tmpFileName, ArgTargetDir, pathMap, fileCreator, directoryCreator, existingFileReader)
 		if err != nil {
 			return err
 		}
@@ -183,7 +180,7 @@ func moveTempFile(sourceFileLocation, targetLocation string, pathMap map[string]
 		return directoryCreator(path, fstat.Mode())
 	}
 	if fileAlreadyWritten {
-		if verbose {
+		if ArgVerbose {
 			fmt.Println("Augmenting existing file with more data: " + fi.Name())
 		}
 		fileReader, err = combineJSONFile(fileReader, existingFileReader, path)
@@ -191,7 +188,7 @@ func moveTempFile(sourceFileLocation, targetLocation string, pathMap map[string]
 			return err
 		}
 	}
-	if verbose {
+	if ArgVerbose {
 		fmt.Println("Creating file: " + fi.Name())
 	}
 	err = fileCreator(fileReader, path)
@@ -265,7 +262,7 @@ func readFileFromZipAndWriteToFilesystem(file *zip.File, fullPath string, fileAl
 	defer fileReader.Close()
 
 	if fileAlreadyWritten {
-		if verbose {
+		if ArgVerbose {
 			fmt.Println("Augmenting existing file with more data: " + file.Name)
 		}
 		fileReader, err = combineJSONFile(fileReader, existingFileReader, fullPath)
@@ -274,7 +271,7 @@ func readFileFromZipAndWriteToFilesystem(file *zip.File, fullPath string, fileAl
 		}
 
 	}
-	if verbose {
+	if ArgVerbose {
 		fmt.Println("Creating file: " + file.Name)
 	}
 	err = fileCreator(fileReader, fullPath)
@@ -287,7 +284,7 @@ func readFileFromZipAndWriteToFilesystem(file *zip.File, fullPath string, fileAl
 
 func createDirectory(path string, fileMode os.FileMode) error {
 	if _, err := os.Stat(path); err != nil {
-		if verbose {
+		if ArgVerbose {
 			fmt.Println("Creating intermediate directory: " + path)
 		}
 		return os.MkdirAll(path, fileMode)
@@ -374,13 +371,13 @@ func combineJSONFile(newFileReader io.ReadCloser, existingFileReader FileReader,
 	return ioutil.NopCloser(bytes.NewReader(indented.Bytes())), nil
 }
 
-func getRetrievePlan(api *platform.RestApi, appName string) (map[string]types.Plan, error) {
-	if verbose {
-		fmt.Println(text.VerboseSection("Getting Retrieve Plan"))
+func getRetrievePlan(api *PlatformRestApi, appName string) (map[string]Plan, error) {
+	if ArgVerbose {
+		fmt.Println(VerboseSection("Getting Retrieve Plan"))
 	}
 	var postBody io.Reader
 	if appName != "" {
-		retFilter, err := json.Marshal(types.RetrieveFilter{
+		retFilter, err := json.Marshal(RetrieveFilter{
 			AppName: appName,
 		})
 		if err != nil {
@@ -402,35 +399,35 @@ func getRetrievePlan(api *platform.RestApi, appName string) (map[string]types.Pl
 		return nil, err
 	}
 
-	if verbose {
-		fmt.Println(text.SuccessWithTime("Success Getting Retrieve Plan", planStart))
+	if ArgVerbose {
+		fmt.Println(SuccessWithTime("Success Getting Retrieve Plan", planStart))
 	}
 
 	defer (*planResult).Close()
 
-	var plans map[string]types.Plan
+	var plans map[string]Plan
 	if err := json.NewDecoder(*planResult).Decode(&plans); err != nil {
 		return nil, err
 	}
 	return plans, nil
 }
 
-func executeRetrievePlan(api *platform.RestApi, plans map[string]types.Plan) ([]*io.ReadCloser, error) {
-	if verbose {
-		fmt.Println(text.VerboseSection("Executing Retrieve Plan"))
+func executeRetrievePlan(api *PlatformRestApi, plans map[string]Plan) ([]*io.ReadCloser, error) {
+	if ArgVerbose {
+		fmt.Println(VerboseSection("Executing Retrieve Plan"))
 	}
 	planResults := []*io.ReadCloser{}
 	for _, plan := range plans {
-		metadataBytes, err := json.Marshal(types.RetrieveRequest{
+		metadataBytes, err := json.Marshal(RetrieveRequest{
 			Metadata: plan.Metadata,
-			DoZip:    !nozip,
+			DoZip:    !ArgNoZip,
 		})
 		if err != nil {
 			return nil, err
 		}
 		retrieveStart := time.Now()
 		if plan.Host == "" {
-			if verbose {
+			if ArgVerbose {
 				fmt.Println(fmt.Sprintf("Making Retrieve Request: URL: [%s] Type: [%s]", plan.URL, plan.Type))
 			}
 			planResult, err := api.Connection.MakeRequest(
@@ -445,7 +442,7 @@ func executeRetrievePlan(api *platform.RestApi, plans map[string]types.Plan) ([]
 			planResults = append(planResults, planResult)
 		} else {
 			url := fmt.Sprintf("%s:%s/api/v2%s", plan.Host, plan.Port, plan.URL)
-			if verbose {
+			if ArgVerbose {
 				fmt.Println(fmt.Sprintf("Making Retrieve Request: URL: [%s] Type: [%s]", url, plan.Type))
 			}
 			planResult, err := api.Connection.MakeJWTRequest(
@@ -460,8 +457,8 @@ func executeRetrievePlan(api *platform.RestApi, plans map[string]types.Plan) ([]
 			planResults = append(planResults, planResult)
 		}
 
-		if verbose {
-			fmt.Println(text.SuccessWithTime("Success Retrieving from Source", retrieveStart))
+		if ArgVerbose {
+			fmt.Println(SuccessWithTime("Success Retrieving from Source", retrieveStart))
 		}
 	}
 	return planResults, nil

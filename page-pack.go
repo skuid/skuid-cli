@@ -1,15 +1,12 @@
-package cmd
+package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"net/url"
 	"os"
 	"strconv"
 
-	"encoding/json"
-	"net/url"
-
-	"github.com/skuid/tides/force"
-	"github.com/skuid/tides/types"
 	"github.com/spf13/cobra"
 )
 
@@ -23,13 +20,13 @@ var pagePackCmd = &cobra.Command{
 	Long:  "Retrieves all Pages in a given Module and returns in a Page Pack, which is a JSON-serialized array of Page objects.",
 	Run: func(cmd *cobra.Command, args []string) {
 		//login to the Force API
-		api, err := force.Login(
-			appClientID,
-			appClientSecret,
-			host,
-			username,
-			password,
-			apiVersion,
+		api, err := Login(
+			ArgAppClientID,
+			ArgAppClientSecret,
+			ArgHost,
+			ArgUsername,
+			ArgPassword,
+			ArgApiVersion,
 		)
 
 		if err != nil {
@@ -51,7 +48,7 @@ var pagePackCmd = &cobra.Command{
 
 		unquoted, _ := strconv.Unquote(string(result))
 
-		pagePack := &types.PagePackResponse{}
+		pagePack := &PagePackResponse{}
 
 		err = json.Unmarshal([]byte(unquoted), pagePack)
 

@@ -1,4 +1,4 @@
-package version
+package main
 
 // Name of this version of Skuid CLI
-var Name = "unknown"
+const VERSION_NAME = "unknown"
