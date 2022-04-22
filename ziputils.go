@@ -2,9 +2,7 @@ package main
 
 import (
 	"archive/zip"
-	"bytes"
 	"io"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -17,34 +15,6 @@ type TestFile struct {
 	Body string
 }
 
-// CreateTestZip allows for creating temporary in memory zip files
-func CreateTestZip(files []TestFile) (io.ReadCloser, error) {
-	// Create a buffer to write our archive to.
-	buf := new(bytes.Buffer)
-
-	// Create a new zip archive.
-	zipWriter := zip.NewWriter(buf)
-
-	for _, file := range files {
-		zipFile, err := zipWriter.Create(file.Name)
-		if err != nil {
-			return nil, err
-		}
-		_, err = zipFile.Write([]byte(file.Body))
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	// Make sure to check the error on Close.
-	err := zipWriter.Close()
-	if err != nil {
-		return nil, err
-	}
-
-	return ioutil.NopCloser(buf), nil
-}
-
 // Archive compresses a file/directory to a writer
 //
 // If the path ends with a separator, then the contents of the folder at that path
@@ -53,7 +23,7 @@ func CreateTestZip(files []TestFile) (io.ReadCloser, error) {
 //
 // If progress is not nil, it is called for each file added to the archive.
 func Archive(inFilePath string, writer io.Writer, metadataFilter *Metadata) error {
-	return archiveWithFilter(inFilePath, writer, func(relativePath string) bool {
+	return ArchiveWithFilterFunc(inFilePath, writer, func(relativePath string) bool {
 		// if there was a metadata filter, apply it.
 		if metadataFilter != nil {
 			if !(*metadataFilter).FilterMetadataItem(relativePath) {
@@ -73,12 +43,12 @@ func Archive(inFilePath string, writer io.Writer, metadataFilter *Metadata) erro
 //
 // If progress is not nil, it is called for each file added to the archive.
 func ArchivePartial(inFilePath string, writer io.Writer, basePrefix string) error {
-	return archiveWithFilter(inFilePath, writer, func(relativePath string) bool {
+	return ArchiveWithFilterFunc(inFilePath, writer, func(relativePath string) bool {
 		return strings.HasPrefix(relativePath, basePrefix)
 	})
 }
 
-func archiveWithFilter(inFilePath string, writer io.Writer, filter func(string) bool) error {
+func ArchiveWithFilterFunc(inFilePath string, writer io.Writer, filter func(string) bool) error {
 	zipWriter := zip.NewWriter(writer)
 
 	basePath := filepath.Dir(inFilePath)

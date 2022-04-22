@@ -21,19 +21,19 @@ type RetrieveRequest struct {
 }
 
 type Metadata struct {
-	Apps           []string `json:"apps"`
-	AuthProviders  []string `json:"authproviders"`
-	ComponentPacks []string `json:"componentpacks"`
-	DataServices   []string `json:"dataservices"`
-	DataSources    []string `json:"datasources"`
-	DesignSystems  []string `json:"designsystems"`
-	Variables      []string `json:"variables"`
-	Files          []string `json:"files"`
-	Pages          []string `json:"pages"`
-	PermissionSets []string `json:"permissionsets"`
-	Profiles       []string `json:"profiles"`
-	Site           []string `json:"site"`
-	Themes         []string `json:"themes"`
+	Apps               []string `json:"apps"`
+	AuthProviders      []string `json:"authproviders"`
+	ComponentPacks     []string `json:"componentpacks"`
+	DataServices       []string `json:"dataservices"`
+	DataSources        []string `json:"datasources"`
+	DesignSystems      []string `json:"designsystems"`
+	Variables          []string `json:"variables"`
+	Files              []string `json:"files"`
+	Pages              []string `json:"pages"`
+	PermissionSets     []string `json:"permissionsets"`
+	SitePermissionSets []string `json:"sitepermissionsets"`
+	Site               []string `json:"site"`
+	Themes             []string `json:"themes"`
 }
 
 type RetrieveFilter struct {
