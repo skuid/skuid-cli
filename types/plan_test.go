@@ -23,7 +23,7 @@ func TestUnmarshalMetadata(t *testing.T) {
 				}
 			`),
 			expected: types.Metadata{
-				Profiles: []string{"A", "B", "C"},
+				SitePermissionSets: []string{"A", "B", "C"},
 			},
 		},
 		{
@@ -34,7 +34,7 @@ func TestUnmarshalMetadata(t *testing.T) {
 				}
 			`),
 			expected: types.Metadata{
-				Profiles: []string{"A", "B", "C"},
+				SitePermissionSets: []string{"A", "B", "C"},
 			},
 		},
 	} {

@@ -22,19 +22,19 @@ type RetrieveRequest struct {
 }
 
 type Metadata struct {
-	Apps           []string `json:"apps"`
-	AuthProviders  []string `json:"authproviders"`
-	ComponentPacks []string `json:"componentpacks"`
-	DataServices   []string `json:"dataservices"`
-	DataSources    []string `json:"datasources"`
-	DesignSystems  []string `json:"designsystems"`
-	Variables      []string `json:"variables"`
-	Files          []string `json:"files"`
-	Pages          []string `json:"pages"`
-	PermissionSets []string `json:"permissionsets"`
-	Profiles       []string `json:"sitepermissionsets"`
-	Site           []string `json:"site"`
-	Themes         []string `json:"themes"`
+	Apps               []string `json:"apps"`
+	AuthProviders      []string `json:"authproviders"`
+	ComponentPacks     []string `json:"componentpacks"`
+	DataServices       []string `json:"dataservices"`
+	DataSources        []string `json:"datasources"`
+	DesignSystems      []string `json:"designsystems"`
+	Variables          []string `json:"variables"`
+	Files              []string `json:"files"`
+	Pages              []string `json:"pages"`
+	PermissionSets     []string `json:"permissionsets"`
+	SitePermissionSets []string `json:"sitepermissionsets"`
+	Site               []string `json:"site"`
+	Themes             []string `json:"themes"`
 }
 
 // for backwards compatibility
@@ -71,7 +71,7 @@ func (m *Metadata) UnmarshalJSON(data []byte) error {
 		m.PermissionSets = old.PermissionSets
 		m.Site = old.Site
 		m.Themes = old.Themes
-		m.Profiles = old.Profiles
+		m.SitePermissionSets = old.Profiles
 	}
 
 	// unmarshal the current fields and join them
@@ -83,7 +83,7 @@ func (m *Metadata) UnmarshalJSON(data []byte) error {
 		return err
 	} else {
 		// just append
-		m.Profiles = append(m.Profiles, current.Profiles...)
+		m.SitePermissionSets = append(m.SitePermissionSets, current.Profiles...)
 	}
 
 	return nil
