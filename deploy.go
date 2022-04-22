@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io"
 	"log"
 	"os"
@@ -19,7 +18,7 @@ var deployCmd = &cobra.Command{
 	Long:  "Deploy Skuid metadata stored within a local file system directory to a Skuid Platform Site.",
 	Run: func(cmd *cobra.Command, args []string) {
 
-		fmt.Println(RunCommand("Deploy Metadata"))
+		Println(RunCommand("Deploy Metadata"))
 
 		api, err := PlatformLogin(
 			ArgHost,
@@ -32,7 +31,7 @@ var deployCmd = &cobra.Command{
 		)
 
 		if err != nil {
-			fmt.Println(PrettyError("Error logging in to Skuid site", err))
+			Println(PrettyError("Error logging in to Skuid site", err))
 			os.Exit(1)
 		}
 
@@ -68,14 +67,14 @@ var deployCmd = &cobra.Command{
 		}
 
 		if ArgVerbose {
-			fmt.Println("Deploying site from", currDir)
+			Println("Deploying site from", currDir)
 		}
 
 		// Create a buffer to write our archive to.
 		bufPlan := new(bytes.Buffer)
 		err = Archive(".", bufPlan, nil)
 		if err != nil {
-			fmt.Println(PrettyError("Error creating deployment ZIP archive", err))
+			Println(PrettyError("Error creating deployment ZIP archive", err))
 			os.Exit(1)
 		}
 
@@ -88,7 +87,7 @@ var deployCmd = &cobra.Command{
 			}
 			deployBytes, err := json.Marshal(filter)
 			if err != nil {
-				fmt.Println(PrettyError("Error creating deployment plan payload", err))
+				Println(PrettyError("Error creating deployment plan payload", err))
 				os.Exit(1)
 			}
 			deployPlan = bytes.NewReader(deployBytes)
@@ -99,30 +98,30 @@ var deployCmd = &cobra.Command{
 
 		plan, err := api.GetDeployPlan(deployPlan, mimeType, ArgVerbose)
 		if err != nil {
-			fmt.Println(PrettyError("Error getting deploy plan", err))
+			Println(PrettyError("Error getting deploy plan", err))
 			os.Exit(1)
 		}
 
 		for _, service := range plan {
 			if service.Warnings != nil {
 				for _, warning := range service.Warnings {
-					fmt.Println(warning)
+					Println(warning)
 				}
 			}
 		}
 
 		_, err = api.ExecuteDeployPlan(plan, dotDir, ArgVerbose)
 		if err != nil {
-			fmt.Println(PrettyError("Error executing deploy plan", err))
+			Println(PrettyError("Error executing deploy plan", err))
 			os.Exit(1)
 		}
 
 		successMessage := "Successfully deployed metadata to Skuid Site"
 
 		if ArgVerbose {
-			fmt.Println(SuccessWithTime(successMessage, deployStart))
+			Println(SuccessWithTime(successMessage, deployStart))
 		} else {
-			fmt.Println(successMessage + ".")
+			Println(successMessage + ".")
 		}
 
 	},

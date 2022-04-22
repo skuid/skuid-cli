@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 	"os"
 	"strings"
@@ -102,7 +101,7 @@ var getvarCmd = &cobra.Command{
 	Short: "Get a list of Skuid site environment variables.",
 	Run: func(cmd *cobra.Command, args []string) {
 		if ArgVerbose {
-			fmt.Println(RunCommand("Get Variables"))
+			Println(RunCommand("Get Variables"))
 		}
 
 		api, err := PlatformLogin(
@@ -116,13 +115,13 @@ var getvarCmd = &cobra.Command{
 		)
 
 		if err != nil {
-			fmt.Println(PrettyError("Error logging in to Skuid site", err))
+			Println(PrettyError("Error logging in to Skuid site", err))
 			os.Exit(1)
 		}
 
 		escResult, err := getEscs(api, true)
 		if err != nil {
-			fmt.Println(PrettyError("Error getting variables from Skuid site", err))
+			Println(PrettyError("Error getting variables from Skuid site", err))
 			os.Exit(1)
 		}
 		body := tablewriter.NewWriter(os.Stdout)
@@ -131,7 +130,7 @@ var getvarCmd = &cobra.Command{
 			body.Append([]string{esc.Name, esc.DataServiceName})
 		}
 		if ArgVerbose {
-			fmt.Println("Successfully retrieved variables from Skuid site")
+			Println("Successfully retrieved variables from Skuid site")
 		}
 		body.Render()
 	},
@@ -139,7 +138,7 @@ var getvarCmd = &cobra.Command{
 
 func getEscs(api *PlatformRestApi, mapDsName bool) ([]EnvSpecificConfig, error) {
 	if ArgVerbose {
-		fmt.Println(VerboseSection("Getting Variables"))
+		Println(VerboseSection("Getting Variables"))
 	}
 
 	escStart := time.Now()
@@ -178,7 +177,7 @@ func getEscs(api *PlatformRestApi, mapDsName bool) ([]EnvSpecificConfig, error) 
 	}
 
 	if ArgVerbose {
-		fmt.Println(SuccessWithTime("Success getting variable values", escStart))
+		Println(SuccessWithTime("Success getting variable values", escStart))
 	}
 	return escs, nil
 }
@@ -189,7 +188,7 @@ var setvarCmd = &cobra.Command{
 	Short: "Set a Skuid site environment variable",
 	Run: func(cmd *cobra.Command, args []string) {
 		if ArgVerbose {
-			fmt.Println(RunCommand("Set Variable"))
+			Println(RunCommand("Set Variable"))
 		}
 
 		api, err := PlatformLogin(
@@ -202,34 +201,34 @@ var setvarCmd = &cobra.Command{
 			ArgVerbose,
 		)
 		if err != nil {
-			fmt.Println(PrettyError("Error logging in to Skuid site", err))
+			Println(PrettyError("Error logging in to Skuid site", err))
 			os.Exit(1)
 		}
 
 		variableStart := time.Now()
 		err = setEsc(api)
 		if err != nil {
-			fmt.Println(PrettyError("Error setting variable in Skuid site", err))
+			Println(PrettyError("Error setting variable in Skuid site", err))
 			os.Exit(1)
 		}
 		successMessage := "Successfully set variable in Skuid Site"
 		if ArgVerbose {
-			fmt.Println(SuccessWithTime(successMessage, variableStart))
+			Println(SuccessWithTime(successMessage, variableStart))
 		} else {
-			fmt.Println(successMessage + ".")
+			Println(successMessage + ".")
 		}
 	},
 }
 
 func setEsc(api *PlatformRestApi) error {
 	if ArgVerbose {
-		fmt.Println(VerboseSection("Setting Variable"))
+		Println(VerboseSection("Setting Variable"))
 	}
 	if ArgVariableName == "" {
 		return errors.New("Variable name is required for this command.")
 	}
 	if ArgVariableValue == "" {
-		fmt.Println("Enter value:")
+		Println("Enter value:")
 		valbytes, err := terminal.ReadPassword(0)
 		if err != nil {
 			return errors.New("Error reading value from prompt.")
@@ -293,7 +292,7 @@ func setEsc(api *PlatformRestApi) error {
 	}
 
 	if ArgVerbose {
-		fmt.Println(SuccessWithTime("Success setting variable value", escStart))
+		Println(SuccessWithTime("Success setting variable value", escStart))
 	}
 	return nil
 }
@@ -303,7 +302,7 @@ var rmvarCmd = &cobra.Command{
 	Short: "Delete a Skuid site environment variable",
 	Run: func(cmd *cobra.Command, args []string) {
 		if ArgVerbose {
-			fmt.Println(RunCommand("Delete Variable"))
+			Println(RunCommand("Delete Variable"))
 		}
 
 		api, err := PlatformLogin(
@@ -316,28 +315,28 @@ var rmvarCmd = &cobra.Command{
 			ArgVerbose,
 		)
 		if err != nil {
-			fmt.Println(PrettyError("Error logging in to Skuid site", err))
+			Println(PrettyError("Error logging in to Skuid site", err))
 			os.Exit(1)
 		}
 
 		variableStart := time.Now()
 		err = rmEsc(api)
 		if err != nil {
-			fmt.Println(PrettyError("Error deleting variable in Skuid site", err))
+			Println(PrettyError("Error deleting variable in Skuid site", err))
 			os.Exit(1)
 		}
 		successMessage := "Successfully deleted variable in Skuid Site"
 		if ArgVerbose {
-			fmt.Println(SuccessWithTime(successMessage, variableStart))
+			Println(SuccessWithTime(successMessage, variableStart))
 		} else {
-			fmt.Println(successMessage + ".")
+			Println(successMessage + ".")
 		}
 	},
 }
 
 func rmEsc(api *PlatformRestApi) error {
 	if ArgVerbose {
-		fmt.Println(VerboseSection("Deleting Variable"))
+		Println(VerboseSection("Deleting Variable"))
 	}
 	if ArgVariableName == "" {
 		return errors.New("Variable name is required for this command.")
@@ -387,7 +386,7 @@ func rmEsc(api *PlatformRestApi) error {
 	}
 
 	if ArgVerbose {
-		fmt.Println(SuccessWithTime("Success deleting variable", escStart))
+		Println(SuccessWithTime("Success deleting variable", escStart))
 	}
 	return nil
 }

@@ -36,26 +36,28 @@ type PagePostResult struct {
 	Errors  []string `json:"upsertErrors,omitempty"`
 }
 
+// Create a file basename from the pull response
+// I have no idea why we were using a buffer before
 func (page *PullResponse) FileBasename() string {
-
-	var buf bytes.Buffer
-
 	if page.Module != "" {
-		buf.WriteString(page.Module)
-		buf.WriteString("_")
+		return fmt.Sprintf("%v_%v", page.Module, page.Name)
+	} else {
+		return page.Name
 	}
-
-	buf.WriteString(page.Name)
-
-	return buf.String()
 }
 
 func (page *PullResponse) WriteAtRest(path string) (err error) {
-	//if the desired directory isn't there, create it
-	if _, err := os.Stat(path); err != nil {
-		os.Mkdir(path, 0700)
+
+	// if the desired directory isn't there, create it
+	if _, err = os.Stat(path); err != nil {
+		err = os.Mkdir(path, 0700)
+		// if we can't make the directory return the error
+		if err != nil {
+			return err
+		}
 	}
-	//create a copy of the page to keep the Body out of the json
+
+	// create a copy of the page to keep the Body out of the json
 	clone := *page
 	clone.Body = ""
 	str, _ := json.MarshalIndent(clone, "", "    ")
@@ -69,7 +71,7 @@ func (page *PullResponse) WriteAtRest(path string) (err error) {
 	//write the body to the file
 	formatted, err := FormatXml(pageXml)
 	if err != nil {
-		fmt.Println(err.Error())
+		Println(err.Error())
 	}
 	err = ioutil.WriteFile(fmt.Sprintf("%s/%s.xml", path, page.FileBasename()), []byte(formatted), 0644)
 

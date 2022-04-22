@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -30,7 +29,7 @@ var watchCmd = &cobra.Command{
 		)
 
 		if err != nil {
-			fmt.Println(PrettyError("Error logging in to Skuid site", err))
+			Println(PrettyError("Error logging in to Skuid site", err))
 			os.Exit(1)
 		}
 
@@ -53,7 +52,7 @@ var watchCmd = &cobra.Command{
 			log.Fatal(err)
 		}
 
-		fmt.Println("Watching for changes to Skuid metadata files in directory: " + targetDirFriendly)
+		Println("Watching for changes to Skuid metadata files in directory: " + targetDirFriendly)
 
 		// Create our watcher
 		w := watcher.New()
@@ -76,7 +75,7 @@ var watchCmd = &cobra.Command{
 					} else {
 						changedEntity = filepath.Join(metadataType, strings.Split(remainder, ".")[0])
 					}
-					fmt.Println("Detected change to metadata type: " + changedEntity)
+					Println("Detected change to metadata type: " + changedEntity)
 					go deployModifiedFiles(api, changedEntity)
 				case err := <-w.Error:
 					log.Fatalln(err)
@@ -94,11 +93,11 @@ var watchCmd = &cobra.Command{
 		// Print a list of all of the files and folders currently
 		// being watched and their paths.
 		if ArgVerbose {
-			fmt.Println("** Now watching the following files for changes... **")
+			Println("** Now watching the following files for changes... **")
 			for path, f := range w.WatchedFiles() {
-				fmt.Printf("%s: %s\n", path, f.Name())
+				Printf("%s: %s\n", path, f.Name())
 			}
-			fmt.Println("Waiting for changes...")
+			Println("Waiting for changes...")
 		}
 
 		// Start the watching process - it'll check for changes every 100ms.
@@ -115,32 +114,32 @@ func deployModifiedFiles(api *PlatformRestApi, modifiedFile string) {
 	bufPlan := new(bytes.Buffer)
 	err := ArchivePartial(ArgTargetDir, bufPlan, modifiedFile)
 	if err != nil {
-		fmt.Println(PrettyError("Error creating deployment ZIP archive", err))
+		Println(PrettyError("Error creating deployment ZIP archive", err))
 		os.Exit(1)
 	}
 
 	if ArgVerbose {
-		fmt.Println("Getting deploy plan...")
+		Println("Getting deploy plan...")
 	}
 
 	plan, err := api.GetDeployPlan(bufPlan, "application/zip", ArgVerbose)
 	if err != nil {
-		fmt.Println(PrettyError("Error getting deploy plan", err))
+		Println(PrettyError("Error getting deploy plan", err))
 		os.Exit(1)
 	}
 
 	if ArgVerbose {
-		fmt.Println("Retrieved deploy plan. Deploying...")
+		Println("Retrieved deploy plan. Deploying...")
 	}
 
 	_, err = api.ExecuteDeployPlan(plan, ArgTargetDir, ArgVerbose)
 	if err != nil {
-		fmt.Println(PrettyError("Error executing deploy plan", err))
+		Println(PrettyError("Error executing deploy plan", err))
 		os.Exit(1)
 	}
 
 	successMessage := "Successfully deployed metadata to Skuid Site: " + modifiedFile
-	fmt.Println(successMessage)
+	Println(successMessage)
 }
 
 func init() {

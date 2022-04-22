@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/url"
 	"os"
 	"strconv"
@@ -30,7 +29,7 @@ var pagePackCmd = &cobra.Command{
 		)
 
 		if err != nil {
-			fmt.Println(err.Error())
+			Println(err.Error())
 			os.Exit(1)
 		}
 
@@ -42,7 +41,7 @@ var pagePackCmd = &cobra.Command{
 		result, err := api.Connection.Get("/skuid/api/v1/pages", query)
 
 		if err != nil {
-			fmt.Println(err.Error())
+			Println(err.Error())
 			os.Exit(1)
 		}
 
@@ -53,7 +52,7 @@ var pagePackCmd = &cobra.Command{
 		err = json.Unmarshal([]byte(unquoted), pagePack)
 
 		if err != nil {
-			fmt.Println(err.Error())
+			Println(err.Error())
 			os.Exit(1)
 		}
 

@@ -53,8 +53,8 @@ func PlatformLogin(host, username, password, apiVersion, metadataServiceProxy, d
 	loginStart := time.Now()
 
 	if verbose {
-		fmt.Println(fmt.Sprintf("Logging in to Skuid Platform as user: %v\n%v", username, host))
-		fmt.Println("API Version: " + apiVersion)
+		Println(fmt.Sprintf("Logging in to Skuid Platform as user: %v\n%v", username, host))
+		Println("API Version: " + apiVersion)
 	}
 
 	conn := PlatformRestConnection{
@@ -97,8 +97,8 @@ func PlatformLogin(host, username, password, apiVersion, metadataServiceProxy, d
 	}
 
 	if verbose {
-		fmt.Println(SuccessWithTime("Login Success", loginStart))
-		fmt.Println("Access Token: " + conn.AccessToken)
+		Println(SuccessWithTime("Login Success", loginStart))
+		Println("Access Token: " + conn.AccessToken)
 	}
 
 	return api, nil
@@ -261,7 +261,7 @@ func (conn *PlatformRestConnection) MakeJWTRequest(method string, url string, pa
 // GetDeployPlan fetches a deploymnent plan from Skuid Platform API
 func (api *PlatformRestApi) GetDeployPlan(payload io.Reader, mimeType string, verbose bool) (map[string]Plan, error) {
 	if verbose {
-		fmt.Println(VerboseSection("Getting Deploy Plan"))
+		Println(VerboseSection("Getting Deploy Plan"))
 	}
 	if mimeType == "" {
 		mimeType = "application/zip"
@@ -281,7 +281,7 @@ func (api *PlatformRestApi) GetDeployPlan(payload io.Reader, mimeType string, ve
 	}
 
 	if verbose {
-		fmt.Println(SuccessWithTime("Success Getting Deploy Plan", planStart))
+		Println(SuccessWithTime("Success Getting Deploy Plan", planStart))
 	}
 
 	defer (*planResult).Close()
@@ -297,7 +297,7 @@ func (api *PlatformRestApi) GetDeployPlan(payload io.Reader, mimeType string, ve
 // ExecuteDeployPlan executes a map of plan items in a deployment plan
 func (api *PlatformRestApi) ExecuteDeployPlan(plans map[string]Plan, targetDir string, verbose bool) ([]*io.ReadCloser, error) {
 	if verbose {
-		fmt.Println(VerboseSection("Executing Deploy Plan"))
+		Println(VerboseSection("Executing Deploy Plan"))
 	}
 	planResults := []*io.ReadCloser{}
 	for _, plan := range plans {
@@ -325,7 +325,7 @@ func (api *PlatformRestApi) ExecutePlanItem(plan Plan, targetDir string, verbose
 
 	if plan.Host == "" {
 		if verbose {
-			fmt.Println(fmt.Sprintf("Making Deploy Request: URL: [%s] Type: [%s]", plan.URL, plan.Type))
+			Println(fmt.Sprintf("Making Deploy Request: URL: [%s] Type: [%s]", plan.URL, plan.Type))
 		}
 		planResult, err = api.Connection.MakeRequest(
 			http.MethodPost,
@@ -340,7 +340,7 @@ func (api *PlatformRestApi) ExecutePlanItem(plan Plan, targetDir string, verbose
 
 		url := fmt.Sprintf("%s:%s/api/v2%s", plan.Host, plan.Port, plan.URL)
 		if verbose {
-			fmt.Println(fmt.Sprintf("Making Deploy Request: URL: [%s] Type: [%s]", url, plan.Type))
+			Println(fmt.Sprintf("Making Deploy Request: URL: [%s] Type: [%s]", url, plan.Type))
 		}
 		planResult, err = api.Connection.MakeJWTRequest(
 			http.MethodPost,
@@ -355,7 +355,7 @@ func (api *PlatformRestApi) ExecutePlanItem(plan Plan, targetDir string, verbose
 	}
 
 	if verbose {
-		fmt.Println(SuccessWithTime("Success Deploying to Source", deployStart))
+		Println(SuccessWithTime("Success Deploying to Source", deployStart))
 	}
 	defer (*planResult).Close()
 	return planResult, nil

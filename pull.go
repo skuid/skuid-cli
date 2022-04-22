@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/url"
 	"os"
 	"strconv"
@@ -30,7 +29,7 @@ var pullCmd = &cobra.Command{
 		)
 
 		if err != nil {
-			fmt.Println(err.Error())
+			Println(err.Error())
 			os.Exit(1)
 		}
 
@@ -58,7 +57,7 @@ var pullCmd = &cobra.Command{
 		result, err := api.Connection.Get("/skuid/api/v1/pages", query)
 
 		if err != nil {
-			fmt.Println(err.Error())
+			Println(err.Error())
 			os.Exit(1)
 		}
 
@@ -72,8 +71,8 @@ var pullCmd = &cobra.Command{
 		err = json.Unmarshal([]byte(unquoted), &pages)
 
 		if err != nil {
-			fmt.Println(string(result))
-			fmt.Println(err.Error())
+			Println(string(result))
+			Println(err.Error())
 			os.Exit(1)
 		}
 
@@ -82,12 +81,12 @@ var pullCmd = &cobra.Command{
 			//write the page in the at rest format
 			err = pageRecord.WriteAtRest(ArgTargetDir)
 			if err != nil {
-				fmt.Println(err.Error())
+				Println(err.Error())
 				os.Exit(1)
 			}
 		}
 
-		fmt.Printf("Pages written to %s\n", ArgTargetDir)
+		Printf("Pages written to %s\n", ArgTargetDir)
 	},
 }
 

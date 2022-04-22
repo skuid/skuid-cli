@@ -13,8 +13,7 @@ import (
 	"strings"
 	"time"
 
-	jsoniter "github.com/skuid/json-iterator-go" // jsoniter. Fork of github.com/json-iterator/go
-	jsonpatch "github.com/skuid/json-patch"
+	jsonpatch "github.com/evanphx/json-patch/v5" // jsoniter. Fork of github.com/json-iterator/go
 	"github.com/spf13/cobra"
 )
 
@@ -23,9 +22,9 @@ var retrieveCmd = &cobra.Command{
 	Use:   "retrieve",
 	Short: "Retrieve Skuid metadata from a Site into a local directory.",
 	Long:  "Retrieve Skuid metadata from a Skuid Platform Site and output it into a local directory.",
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(_ *cobra.Command, _ []string) (err error) {
 
-		fmt.Println(RunCommand("Retrieve Metadata"))
+		Println(RunCommand("Retrieve Metadata"))
 
 		api, err := PlatformLogin(
 			ArgHost,
@@ -40,34 +39,36 @@ var retrieveCmd = &cobra.Command{
 		retrieveStart := time.Now()
 
 		if err != nil {
-			fmt.Println(PrettyError("Error logging in to Skuid site", err))
-			os.Exit(1)
+			Println(PrettyError("Error logging in to Skuid site", err))
+			return
 		}
 
 		plan, err := getRetrievePlan(api, ArgAppName)
 		if err != nil {
-			fmt.Println(PrettyError("Error getting retrieve plan", err))
-			os.Exit(1)
+			Println(PrettyError("Error getting retrieve plan", err))
+			return
 		}
 
 		results, err := executeRetrievePlan(api, plan)
 		if err != nil {
-			fmt.Println(PrettyError("Error executing retrieve plan", err))
-			os.Exit(1)
+			Println(PrettyError("Error executing retrieve plan", err))
+			return
 		}
 
 		err = WriteResultsToDisk(results, writeNewFile, createDirectory, readExistingFile)
 		if err != nil {
-			fmt.Println(PrettyError("Error writing results to disk", err))
-			os.Exit(1)
+			Println(PrettyError("Error writing results to disk", err))
+			return
 		}
 
 		successMessage := "Successfully retrieved metadata from Skuid Site"
 		if ArgVerbose {
-			fmt.Println(SuccessWithTime(successMessage, retrieveStart))
+			Println(SuccessWithTime(successMessage, retrieveStart))
 		} else {
-			fmt.Println(successMessage + ".")
+			Println(successMessage + ".")
 		}
+
+		return
 	},
 }
 
@@ -92,7 +93,7 @@ func WriteResultsToDisk(results []*io.ReadCloser, fileCreator FileCreator, direc
 	}
 
 	if ArgVerbose {
-		fmt.Println(VerboseSection("Writing results to " + targetDirFriendly))
+		Println(VerboseSection("Writing results to " + targetDirFriendly))
 	}
 
 	// Remove all of our metadata directories so we get a clean slate.
@@ -101,7 +102,7 @@ func WriteResultsToDisk(results []*io.ReadCloser, fileCreator FileCreator, direc
 	for _, dirName := range GetMetadataTypeDirNames() {
 		dirPath := filepath.Join(ArgTargetDir, dirName)
 		if ArgVerbose {
-			fmt.Println("Deleting Directory: " + dirPath)
+			Println("Deleting Directory: " + dirPath)
 		}
 		os.RemoveAll(dirPath)
 	}
@@ -134,7 +135,7 @@ func WriteResultsToDisk(results []*io.ReadCloser, fileCreator FileCreator, direc
 		}
 	}
 
-	fmt.Printf("Results written to %s\n", targetDirFriendly)
+	Printf("Results written to %s\n", targetDirFriendly)
 
 	return nil
 }
@@ -181,7 +182,7 @@ func moveTempFile(sourceFileLocation, targetLocation string, pathMap map[string]
 	}
 	if fileAlreadyWritten {
 		if ArgVerbose {
-			fmt.Println("Augmenting existing file with more data: " + fi.Name())
+			Println("Augmenting existing file with more data: " + fi.Name())
 		}
 		fileReader, err = combineJSONFile(fileReader, existingFileReader, path)
 		if err != nil {
@@ -189,7 +190,7 @@ func moveTempFile(sourceFileLocation, targetLocation string, pathMap map[string]
 		}
 	}
 	if ArgVerbose {
-		fmt.Println("Creating file: " + fi.Name())
+		Println("Creating file: " + fi.Name())
 	}
 	err = fileCreator(fileReader, path)
 	if err != nil {
@@ -263,7 +264,7 @@ func readFileFromZipAndWriteToFilesystem(file *zip.File, fullPath string, fileAl
 
 	if fileAlreadyWritten {
 		if ArgVerbose {
-			fmt.Println("Augmenting existing file with more data: " + file.Name)
+			Println("Augmenting existing file with more data: " + file.Name)
 		}
 		fileReader, err = combineJSONFile(fileReader, existingFileReader, fullPath)
 		if err != nil {
@@ -272,7 +273,7 @@ func readFileFromZipAndWriteToFilesystem(file *zip.File, fullPath string, fileAl
 
 	}
 	if ArgVerbose {
-		fmt.Println("Creating file: " + file.Name)
+		Println("Creating file: " + file.Name)
 	}
 	err = fileCreator(fileReader, fullPath)
 	if err != nil {
@@ -285,7 +286,7 @@ func readFileFromZipAndWriteToFilesystem(file *zip.File, fullPath string, fileAl
 func createDirectory(path string, fileMode os.FileMode) error {
 	if _, err := os.Stat(path); err != nil {
 		if ArgVerbose {
-			fmt.Println("Creating intermediate directory: " + path)
+			Println("Creating intermediate directory: " + path)
 		}
 		return os.MkdirAll(path, fileMode)
 	}
@@ -313,67 +314,44 @@ func readExistingFile(path string) ([]byte, error) {
 	return ioutil.ReadFile(path)
 }
 
-// Define custom json object key sorter for use in combineJSONFile() below.
-// The intent here is to always have deterministically sorted maps from merged JSON objects.
-type nameFirstKeySorter struct{}
-
-func (sorter *nameFirstKeySorter) Sort(keyA string, keyB string) bool {
-	if keyA == "name" {
-		return true
-	} else if keyB == "name" {
-		return false
-	} else {
-		return keyA < keyB
-	}
-}
-
-type nameFirstKeyExtension struct {
-	jsoniter.DummyExtension
-	sorter jsoniter.MapKeySorter
-}
-
-func (extension *nameFirstKeyExtension) CreateMapKeySorter() jsoniter.MapKeySorter {
-	return extension.sorter
-}
-
-func combineJSONFile(newFileReader io.ReadCloser, existingFileReader FileReader, path string) (io.ReadCloser, error) {
+func combineJSONFile(newFileReader io.ReadCloser, existingFileReader FileReader, path string) (rc io.ReadCloser, err error) {
 	existingBytes, err := existingFileReader(path)
 	if err != nil {
-		return nil, err
+		return
 	}
+
 	newBytes, err := ioutil.ReadAll(newFileReader)
 	if err != nil {
-		return nil, err
+		return
 	}
 
-	// Configure jsoniter to sort map keys alpha, unless key is "name", which goes first
-	jsonConfig := jsoniter.Config{
-		SortMapKeys:           true,
-		DisallowUnknownFields: false,
-	}.Froze()
-	jsonConfig.RegisterExtension(&nameFirstKeyExtension{
-		sorter: &nameFirstKeySorter{},
-	})
-	// Configure jsonpatch to use jsoniter with custom sorter for merging json
-	jsonpatch.SetAPI(jsonConfig)
-
+	// merge the files together using the json patch library
 	combined, err := jsonpatch.MergePatch(existingBytes, newBytes)
 	if err != nil {
-		return nil, err
+		return
+	}
+
+	// sort all of the keys in the json. custom sort logic.
+	// this puts "name" first, then everything alphanumerically
+	sorted, err := ReSortJson(combined)
+	if err != nil {
+		return
 	}
 
 	var indented bytes.Buffer
-	err = json.Indent(&indented, combined, "", "\t")
+	err = json.Indent(&indented, sorted, "", "\t")
 	if err != nil {
-		return nil, err
+		return
 	}
 
-	return ioutil.NopCloser(bytes.NewReader(indented.Bytes())), nil
+	rc = ioutil.NopCloser(bytes.NewReader(indented.Bytes()))
+
+	return
 }
 
 func getRetrievePlan(api *PlatformRestApi, appName string) (map[string]Plan, error) {
 	if ArgVerbose {
-		fmt.Println(VerboseSection("Getting Retrieve Plan"))
+		Println(VerboseSection("Getting Retrieve Plan"))
 	}
 	var postBody io.Reader
 	if appName != "" {
@@ -400,7 +378,7 @@ func getRetrievePlan(api *PlatformRestApi, appName string) (map[string]Plan, err
 	}
 
 	if ArgVerbose {
-		fmt.Println(SuccessWithTime("Success Getting Retrieve Plan", planStart))
+		Println(SuccessWithTime("Success Getting Retrieve Plan", planStart))
 	}
 
 	defer (*planResult).Close()
@@ -414,7 +392,7 @@ func getRetrievePlan(api *PlatformRestApi, appName string) (map[string]Plan, err
 
 func executeRetrievePlan(api *PlatformRestApi, plans map[string]Plan) ([]*io.ReadCloser, error) {
 	if ArgVerbose {
-		fmt.Println(VerboseSection("Executing Retrieve Plan"))
+		Println(VerboseSection("Executing Retrieve Plan"))
 	}
 	planResults := []*io.ReadCloser{}
 	for _, plan := range plans {
@@ -428,7 +406,7 @@ func executeRetrievePlan(api *PlatformRestApi, plans map[string]Plan) ([]*io.Rea
 		retrieveStart := time.Now()
 		if plan.Host == "" {
 			if ArgVerbose {
-				fmt.Println(fmt.Sprintf("Making Retrieve Request: URL: [%s] Type: [%s]", plan.URL, plan.Type))
+				Println(fmt.Sprintf("Making Retrieve Request: URL: [%s] Type: [%s]", plan.URL, plan.Type))
 			}
 			planResult, err := api.Connection.MakeRequest(
 				http.MethodPost,
@@ -443,7 +421,7 @@ func executeRetrievePlan(api *PlatformRestApi, plans map[string]Plan) ([]*io.Rea
 		} else {
 			url := fmt.Sprintf("%s:%s/api/v2%s", plan.Host, plan.Port, plan.URL)
 			if ArgVerbose {
-				fmt.Println(fmt.Sprintf("Making Retrieve Request: URL: [%s] Type: [%s]", url, plan.Type))
+				Println(fmt.Sprintf("Making Retrieve Request: URL: [%s] Type: [%s]", url, plan.Type))
 			}
 			planResult, err := api.Connection.MakeJWTRequest(
 				http.MethodPost,
@@ -458,7 +436,7 @@ func executeRetrievePlan(api *PlatformRestApi, plans map[string]Plan) ([]*io.Rea
 		}
 
 		if ArgVerbose {
-			fmt.Println(SuccessWithTime("Success Retrieving from Source", retrieveStart))
+			Println(SuccessWithTime("Success Retrieving from Source", retrieveStart))
 		}
 	}
 	return planResults, nil

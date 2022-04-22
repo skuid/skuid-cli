@@ -23,12 +23,15 @@ setup:
 fmt:
 	go fmt $(GO_PKGS)
 
-build: fmt
+docker-build: fmt
 	docker run --rm \
 		-e GOOS=$(OS) \
 		-e GOARCH=$(ARCH) \
 		-v $$(pwd):$(VOL_PATH) -w $(VOL_PATH) $(IMAGE):$(GO_VERSION) \
 		go build -v -a -tags netgo -installsuffix netgo $(LDFLAGS)
+		
+build:
+	go build .
 
 vendored:
 	test $$(govendor list +e |wc -l | awk '{print $$1}') -lt 1
