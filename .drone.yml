@@ -36,8 +36,8 @@ steps:
     volumes:
       - name: output
         path: /tmp/dist
-    when:
-      event: [ tag ]
+    #when:
+      #event: [ tag ]
   - name: release
     image: plugins/github-release
     settings:
