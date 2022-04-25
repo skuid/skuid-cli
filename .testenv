@@ -1,6 +1,0 @@
-// loaded only on tests
-export PLINY_SUBDOMAIN=
-export PLINY_USER=
-export PLINY_PASSWORD=
-export GITHUB_USERNAME=
-export GITHUB_PERSONAL_ACCESS_TOKEN=
