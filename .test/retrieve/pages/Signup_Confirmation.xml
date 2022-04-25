@@ -1,0 +1,187 @@
+<skuidpage unsavedchangeswarning="no" hideeditbutton="true" personalizationmode="client" theme="Skuid Public">
+	<models>
+		<model id="copyright_year" query="true" createrowifnonefound="true" datasource="Ui-Only" processonclient="true" unloadwarningifunsavedchanges="false">
+			<fields>
+				<field id="year" displaytype="FORMULA" ogdisplaytype="TEXT" readonly="true" returntype="TEXT">
+					<formula>YEAR(NOW())</formula>
+				</field>
+			</fields>
+			<conditions/>
+			<actions/>
+		</model>
+	</models>
+	<components>
+		<wrapper uniqueid="sk-3PUOKx-42">
+			<components/>
+			<styles>
+				<styleitem type="background" bgtype="color">
+					<styles>
+						<styleitem property="background-color" value="#016b9b"/>
+					</styles>
+				</styleitem>
+				<styleitem type="border"/>
+				<styleitem type="size" height="custom">
+					<styles>
+						<styleitem property="min-height" value="8px"/>
+						<styleitem property="max-height" value="8px"/>
+						<styleitem property="overflow-y" value="auto"/>
+					</styles>
+				</styleitem>
+			</styles>
+		</wrapper>
+		<wrapper uniqueid="sk-3PUHBE-38">
+			<styles>
+				<styleitem type="background" bgtype="color">
+					<styles>
+						<styleitem property="background-color" value="white"/>
+					</styles>
+				</styleitem>
+			</styles>
+			<components>
+				<wrapper uniqueid="sk-3PmWgm-67">
+					<components/>
+					<styles>
+						<styleitem type="background"/>
+						<styleitem type="border"/>
+						<styleitem type="size" height="custom">
+							<styles>
+								<styleitem property="min-height" value="126px"/>
+								<styleitem property="max-height" value="126px"/>
+								<styleitem property="overflow-y" value="auto"/>
+							</styles>
+						</styleitem>
+					</styles>
+				</wrapper>
+				<grid uniqueid="sk-2SWfuq-54">
+					<divisions>
+						<division behavior="flex" minwidth="0px" ratio="1.5" verticalalign="top">
+							<components/>
+						</division>
+						<division behavior="flex" verticalalign="top" minwidth="300px" ratio="2">
+							<components>
+								<image source="url" uniqueid="sk-3OmqBv-100" datasource="SkuidLocal" behavior="none" model="Login_UI" url="/assets/images/skuidlogolarge.png">
+									<styles>
+										<styleitem type="itemsize" width="custom" height="custom">
+											<styles>
+												<styleitem property="width" value="216px"/>
+												<styleitem property="height" value="64px"/>
+											</styles>
+										</styleitem>
+										<styleitem type="border"/>
+										<styleitem property="margin" value="auto"/>
+									</styles>
+								</image>
+								<wizard deferstepcontentsrendering="false" buttonslocation="bottom" uniqueid="sk-2WTx4w-76">
+									<steps>
+										<step stepid="step1" steplabel="New User successfully created.">
+											<components>
+												<wrapper uniqueid="sk-3OknAc-78">
+													<components>
+														<template multiple="false" uniqueid="sk-cgKDI-76" cssclass="medium-title">
+															<contents>Your user account has been created!</contents>
+														</template>
+													</components>
+													<styles>
+														<styleitem type="background"/>
+														<styleitem type="border" margin="bottom,">
+															<styles>
+																<styleitem property="margin-bottom" value="12px"/>
+																<styleitem property="margin-top" value="42px"/>
+																<styleitem property="box-sizing" value="border-box"/>
+															</styles>
+														</styleitem>
+														<styleitem type="size"/>
+													</styles>
+												</wrapper>
+												<wrapper uniqueid="sk-3OknAc-78">
+													<components>
+														<template multiple="false" uniqueid="sk-cgKDI-76" cssclass="medium-note">
+															<contents>We'll send a message to your email address momentarily. Click the link it contains to verify your email address and set your password.</contents>
+														</template>
+													</components>
+													<styles>
+														<styleitem type="background"/>
+														<styleitem type="border" margin="bottom,">
+															<styles>
+																<styleitem property="margin-bottom" value="50px"/>
+																<styleitem property="box-sizing" value="border-box"/>
+															</styles>
+														</styleitem>
+														<styleitem type="size"/>
+													</styles>
+												</wrapper>
+												<wrapper uniqueid="sk-3OknAc-78">
+													<components>
+														<template multiple="false" uniqueid="sk-30M7YG-69" allowhtml="true" cssclass="small-note">
+															<contents>&lt;a href="/ui/login"&gt;Having Trouble? Click Here&lt;/a&gt;</contents>
+														</template>
+													</components>
+													<styles>
+														<styleitem type="background"/>
+														<styleitem type="border" margin="bottom,">
+															<styles>
+																<styleitem property="margin-bottom" value="160px"/>
+																<styleitem property="box-sizing" value="border-box"/>
+															</styles>
+														</styleitem>
+														<styleitem type="size"/>
+													</styles>
+												</wrapper>
+											</components>
+											<actions/>
+										</step>
+									</steps>
+								</wizard>
+							</components>
+						</division>
+						<division behavior="flex" verticalalign="top" minwidth="0px" ratio="1.5">
+							<components/>
+						</division>
+					</divisions>
+					<styles>
+						<styleitem type="background" bgtype="none"/>
+					</styles>
+				</grid>
+			</components>
+		</wrapper>
+		<wrapper uniqueid="sk-3PncY6-46">
+			<components>
+				<template multiple="false" uniqueid="sk-3Pn7C6-38" cssclass="footer-note" model="copyright_year">
+					<contents>© Copyright {{{year}}}  Skuid, Inc. All rights reserved. Skuid, Skuidify and the Skuid mark are registered trademarks of Skuid, Inc.</contents>
+				</template>
+			</components>
+			<styles>
+				<styleitem type="background"/>
+				<styleitem type="border" padding="top,">
+					<styles>
+						<styleitem property="padding-top" value="16px"/>
+						<styleitem property="padding-bottom" value="16px"/>
+						<styleitem property="padding-left" value="16px"/>
+						<styleitem property="padding-right" value="16px"/>
+						<styleitem property="box-sizing" value="border-box"/>
+					</styles>
+				</styleitem>
+				<styleitem type="size"/>
+			</styles>
+		</wrapper>
+	</components>
+	<resources>
+		<labels/>
+		<javascript/>
+		<css/>
+		<actionsequences/>
+	</resources>
+	<styles>
+		<styleitem type="background" bgtype="image" datasource="Ui-Only" bg-source="url" bg-url="/assets/images/brooklnbkg.jpg">
+			<styles>
+				<styleitem property="background-size" value="auto"/>
+				<styleitem property="background-attachment" value="scroll"/>
+				<styleitem property="background-position" value="center center"/>
+				<styleitem property="background-repeat" value="repeat"/>
+				<styleitem property="background-color" value="transparent"/>
+			</styles>
+		</styleitem>
+		<styleitem property="min-height" value="100vh"/>
+		<styleitem property="background-position" value="center top 300px"/>
+	</styles>
+</skuidpage>

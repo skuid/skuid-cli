@@ -1,0 +1,11 @@
+{
+	"name": "Settings_Files",
+	"apiVersion": "v2",
+	"composerSettings": null,
+	"isMasterPage": false,
+	"isPublic": false,
+	"maxAutoSaves": 25,
+	"module": "",
+	"type": "Desktop",
+	"uniqueId": "Settings_Files"
+}

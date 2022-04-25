@@ -8,25 +8,25 @@ import (
 	"net/http"
 	"net/url"
 
-	force "github.com/jpmonette/goforce"
+	salesforce "github.com/jpmonette/goforce"
 )
 
-type ForceRestConnection struct {
-	force.Connection
+type SalesforceRestConnection struct {
+	salesforce.Connection
 }
 
-type ForceRestApi struct {
-	Connection *ForceRestConnection
+type SalesforceRestApi struct {
+	Connection *SalesforceRestConnection
 }
 
-// Login is logging-in the User to the Salesforce organization
-func Login(consumerKey string, consumerSecret string, instanceUrl string, username string, password string, apiVersion string) (api *ForceRestApi, err error) {
+// SalesforceLogin is logging-in the User to the Salesforce organization
+func SalesforceLogin(consumerKey string, consumerSecret string, instanceUrl string, username string, password string, apiVersion string) (api *SalesforceRestApi, err error) {
 
 	if apiVersion == "" {
 		apiVersion = "39.0"
 	}
 
-	conn := ForceRestConnection{force.Connection{
+	conn := SalesforceRestConnection{salesforce.Connection{
 		ConsumerKey:    consumerKey,
 		ConsumerSecret: consumerSecret,
 		InstanceUrl:    instanceUrl,
@@ -41,23 +41,23 @@ func Login(consumerKey string, consumerSecret string, instanceUrl string, userna
 		return nil, err
 	}
 
-	api = &ForceRestApi{
+	api = &SalesforceRestApi{
 		Connection: &conn,
 	}
 
 	return api, nil
 }
 
-func (conn *ForceRestConnection) Get(url string, query url.Values) (result []byte, err error) {
+func (conn *SalesforceRestConnection) Get(url string, query url.Values) (result []byte, err error) {
 	return conn.MakeForceRequest("GET", url, nil, query)
 }
 
-func (conn *ForceRestConnection) Post(url string, payload interface{}) (result []byte, err error) {
+func (conn *SalesforceRestConnection) Post(url string, payload interface{}) (result []byte, err error) {
 	return conn.MakeForceRequest("POST", url, payload, nil)
 }
 
 // Executes an HTTP Request against the Skuid Pages REST API
-func (conn *ForceRestConnection) MakeForceRequest(method string, url string, payload interface{}, params url.Values) (result []byte, err error) {
+func (conn *SalesforceRestConnection) MakeForceRequest(method string, url string, payload interface{}, params url.Values) (result []byte, err error) {
 
 	endpoint := conn.InstanceUrl + "/services/apexrest" + url
 

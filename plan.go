@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -45,40 +46,51 @@ type DeployFilter struct {
 }
 
 // GetMetadataTypeDirNames returns the directory names for a type
-func GetMetadataTypeDirNames() []string {
+func GetMetadataTypeDirNames() (types []string) {
 	metadataType := reflect.TypeOf(Metadata{})
-	fieldCount := metadataType.NumField()
-	types := make([]string, fieldCount)
-	for i := 0; i < fieldCount; i++ {
+
+	for i := 0; i < metadataType.NumField(); i++ {
 		field := metadataType.Field(i)
 		types[i] = field.Tag.Get("json")
 	}
+
 	return types
 }
 
 // GetFieldNameForDirName returns the metadata field name for a given directory name
-func GetFieldNameForDirName(dirName string) string {
+func GetFieldNameForDirName(dirName string) (fieldName string, err error) {
 	metadataType := reflect.TypeOf(Metadata{})
-	fieldCount := metadataType.NumField()
-	for i := 0; i < fieldCount; i++ {
+
+	for i := 0; i < metadataType.NumField(); i++ {
 		field := metadataType.Field(i)
-		jsonTag := field.Tag.Get("json")
-		if jsonTag == dirName {
-			return field.Name
+		if field.Tag.Get("json") == dirName {
+			fieldName = field.Name
+			return
 		}
 	}
-	return ""
+
+	err = fmt.Errorf("Field for dir '%v' not found", dirName)
+
+	return
 }
 
 // GetNamesForType returns the item names provided in the metadata for a particular type
-func (m Metadata) GetNamesForType(metadataType string) []string {
-	fieldName := GetFieldNameForDirName(metadataType)
+func (m Metadata) GetNamesForType(metadataType string) (names []string, err error) {
+	fieldName, err := GetFieldNameForDirName(metadataType)
+	if err != nil {
+		return
+	}
+
 	value := reflect.ValueOf(m)
 	field := value.FieldByName(fieldName)
 	if field.IsValid() {
-		return field.Interface().([]string)
+		names = field.Interface().([]string)
+		return
 	}
-	return nil
+
+	err = fmt.Errorf("Names for type %v not found.", metadataType)
+
+	return
 }
 
 func FromWindowsPath(path string) string {
@@ -86,7 +98,7 @@ func FromWindowsPath(path string) string {
 }
 
 // FilterMetadataItem returns true if the path meets the filter criteria, otherwise it returns false
-func (m Metadata) FilterMetadataItem(relativeFilePath string) bool {
+func (m Metadata) FilterMetadataItem(relativeFilePath string) (keep bool) {
 	cleanRelativeFilePath := FromWindowsPath(relativeFilePath)
 	directory := filepath.Dir(cleanRelativeFilePath)
 	baseName := filepath.Base(cleanRelativeFilePath)
@@ -97,48 +109,47 @@ func (m Metadata) FilterMetadataItem(relativeFilePath string) bool {
 	filePathArray := append(subFolders, baseName)
 	filePath := strings.Join(filePathArray, string(filepath.Separator))
 
-	validMetadataNames := m.GetNamesForType(metadataType)
+	validMetadataNames, err := m.GetNamesForType(metadataType)
 	if validMetadataNames == nil || len(validMetadataNames) == 0 {
 		// If we don't have valid names for this directory, just skip this file
-		return false
+		return
 	}
-	// Most common case --- check for our metadata with .json stripped
-	if StringSliceContainsKey(validMetadataNames, strings.TrimSuffix(filePath, ".json")) {
-		return true
+
+	if err != nil {
+		VerboseError("FilterMetadataItem error", err)
+		return
 	}
-	// See if our filePath is in the valid metadata, if so, we're done
-	if StringSliceContainsKey(validMetadataNames, filePath) {
-		return true
+
+	if StringSliceContainsAnyKey(validMetadataNames, []string{
+		// Most common case --- check for our metadata with .json stripped
+		strings.TrimSuffix(filePath, ".json"),
+		// See if our filePath is in the valid metadata, if so, we're done
+		filePath,
+	}) {
+		keep = true
+		return
 	}
+
 	// Check for children of a component pack
 	if metadataType == "componentpacks" {
 		filePathParts := strings.Split(filePath, string(filepath.Separator))
 		if len(filePathParts) == 2 && StringSliceContainsKey(validMetadataNames, filePathParts[0]) {
-			return true
+			keep = true
+			return
 		}
 	}
 
-	// Check for our metadata with .xml stripped
-	if StringSliceContainsKey(validMetadataNames, strings.TrimSuffix(filePath, ".xml")) {
-		return true
+	if StringSliceContainsAnyKey(validMetadataNames, []string{
+		// Check for our metadata with .xml stripped
+		strings.TrimSuffix(filePath, ".xml"),
+		// Check for our metadata with .skuid.json stripped
+		strings.TrimSuffix(filePath, ".skuid.json"),
+		// Check for theme inline css
+		strings.TrimSuffix(filePath, ".inline.css"),
+	}) {
+		keep = true
+		return
 	}
-	// Check for our metadata with .skuid.json stripped
-	if StringSliceContainsKey(validMetadataNames, strings.TrimSuffix(filePath, ".skuid.json")) {
-		return true
-	}
-	// Check for theme inline css
-	if StringSliceContainsKey(validMetadataNames, strings.TrimSuffix(filePath, ".inline.css")) {
-		return true
-	}
-	return false
-}
 
-// StringSliceContainsKey returns true if a string is contained in a slice
-func StringSliceContainsKey(strings []string, key string) bool {
-	for _, item := range strings {
-		if item == key {
-			return true
-		}
-	}
-	return false
+	return
 }

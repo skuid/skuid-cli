@@ -1,0 +1,2915 @@
+<skuid__page personalizationmode="client" unsavedchangeswarning="yes" theme="Skuid Admin" title="{{^$Model.FeatureFlags.data.0.appPermSetsEnabled}}Profile{{/$Model.FeatureFlags.data.0.appPermSetsEnabled}}{{#$Model.FeatureFlags.data.0.appPermSetsEnabled}}Site permission set{{/$Model.FeatureFlags.data.0.appPermSetsEnabled}} {{#$Model.Profile.data}}: {{name}}{{/$Model.Profile.data}}">
+	<models>
+		<model id="stng__SiteEnv" label="SiteEnvironment" labelplural="SiteEnvironment" limit="20" query="false" createrowifnonefound="false" datasource="Ui-Only" processonclient="true">
+			<fields>
+				<field id="PLINY_WARDEN_HOST" displaytype="TEXT" label="PLINYWARDENHOST"/>
+				<field id="PLINY_WARDEN_PORT" displaytype="TEXT" label="PLINYWARDENPORT"/>
+				<field id="PLINY_WARDEN_VERSION" displaytype="TEXT" label="PLINYWARDENVERSION"/>
+			</fields>
+			<conditions/>
+			<actions/>
+		</model>
+		<model id="FeatureFlags" limit="20" query="true" createrowifnonefound="true" datasource="Ui-Only">
+			<fields>
+				<field id="NewField" displaytype="BOOLEAN" length="255" label="appPermSetsEnabled" ogdisplaytype="TEXT" picklistsource="manual" returntype="TEXT"/>
+			</fields>
+			<conditions/>
+			<actions/>
+		</model>
+		<model id="Profile" limit="1" query="true" createrowifnonefound="false" datasource="SkuidLocal" type="readwrite" namefield="name">
+			<fields>
+				<field id="name" label="Name" displaytype="STRING" accessible="true" filterable="true"/>
+				<field id="permission_set_id" label="Permission Set" displaytype="TEXT" accessible="true" filterable="true"/>
+				<field id="is_system" label="Is_system" displaytype="BOOLEAN" accessible="true" filterable="true"/>
+				<field id="enable_signup_api" label="Enable Signup API" displaytype="BOOLEAN" accessible="true" filterable="true" defaultvaluetype="fieldvalue" defaultValue="false"/>
+				<field id="enable_signup_ui" label="Enable Signup UI" displaytype="BOOLEAN" accessible="true" filterable="true" defaultvaluetype="fieldvalue" defaultValue="false"/>
+				<field id="signup_ui" displaytype="PICKLIST" label="Registration Pages" ogdisplaytype="TEXT" picklistsource="manual" returntype="TEXT" defaultvaluetype="fieldvalue" enclosevalueinquotes="true" defaultValue="default" helptext="What Skuid pages are used for this registration workflow? ">
+					<picklistentries>
+						<entry value="default" label="Default Pages"/>
+						<entry value="custom" label="Custom Skuid Pages"/>
+					</picklistentries>
+				</field>
+				<field id="signup_api_prefix" label="Profile registration slug" displaytype="TEXT" accessible="true" filterable="true" length="80" ogdisplaytype="STRING" defaultvaluetype="fieldvalue"/>
+				<field id="signup_api_url" label="Signup API URL" displaytype="FORMULA" returntype="TEXT" accessible="true" readonly="true" uionly="true">
+					<formula>IF({{enable_signup_api}} &amp;&amp; {{signup_api_prefix}}, "/api/v1/users/signup/" + {{signup_api_prefix}}, "(Not Enabled)")</formula>
+				</field>
+				<field id="signup_page_url" label="Signup URL" displaytype="FORMULA" returntype="TEXT" accessible="true" readonly="true" uionly="true">
+					<formula>IF({{enable_signup_ui}} &amp;&amp; {{signup_api_prefix}}, "/ui/signup/" + {{signup_api_prefix}}, "(Not Enabled)")</formula>
+				</field>
+				<field id="allowed_email_domains" label="Permitted email domains" displaytype="TEXTAREA" accessible="true" helptext="A comma-delimited list of allowed email domains for users created through the signup API. If none are provided, all email domains are allowed."/>
+				<field id="require_email_verification_on_signup" label="Require email verification on signup" displaytype="BOOLEAN" accessible="true" filterable="true" defaultvaluetype="fieldvalue" defaultValue="true"/>
+				<field id="signup_page_id" label="Custom Signup Page" displaytype="REFERENCE" accessible="true" filterable="true" required="false" datasource="SkuidLocal" rel="signup_page" keyfield="id" searchroute="/objects/page?search={{search}}&amp;fields=id,name" defaultvaluetype="fieldvalue"/>
+				<field id="signup_page.name" label="Signup Page Name" displaytype="TEXT" accessible="true" filterable="true" ogdisplaytype="STRING"/>
+				<field id="signup_confirmation_page_id" label="Custom Signup Confirmation Page" displaytype="REFERENCE" accessible="true" filterable="true" required="false" datasource="SkuidLocal" rel="signup_confirmation_page" keyfield="id" searchroute="/objects/page?search={{search}}&amp;fields=id,name" defaultvaluetype="fieldvalue"/>
+				<field id="signup_confirmation_page.name" label="Signup Confirmation Page Name" displaytype="TEXT" accessible="true" filterable="true" ogdisplaytype="STRING"/>
+				<field id="verify_page_id" label="Custom Verify Page" displaytype="REFERENCE" accessible="true" filterable="true" required="false" datasource="SkuidLocal" rel="verify_page" keyfield="id" searchroute="/objects/page?search={{search}}&amp;fields=id,name" defaultvaluetype="fieldvalue">
+					<batchfields/>
+				</field>
+				<field id="verify_page.name" label="Verify Page Name" displaytype="TEXT" accessible="true" filterable="true" ogdisplaytype="STRING"/>
+				<field id="signup_page_id" label="Signup Page Id" ispolymorphic="false" isnamepointing="false" displaytype="STRING" accessible="true" filterable="true"/>
+				<field id="signup_confirmation_page_id" label="Signup Confirmation Page Id" ispolymorphic="false" isnamepointing="false" displaytype="STRING" accessible="true" filterable="true"/>
+				<field id="verify_page_id" label="Verify Page Id" ispolymorphic="false" isnamepointing="false" displaytype="STRING" accessible="true" filterable="true"/>
+				<field id="SignupUrl" displaytype="FORMULA" label="Registration URL" uionly="true" ogdisplaytype="TEXT" readonly="true" returntype="TEXT" helptext="By default, this registration URL uses the {{^$Model.FeatureFlags.data.0.appPermSetsEnabled}}profile{{/$Model.FeatureFlags.data.0.appPermSetsEnabled}}{{#$Model.FeatureFlags.data.0.appPermSetsEnabled}}site permission set{{/$Model.FeatureFlags.data.0.appPermSetsEnabled}} registration slug created above.">
+					<formula>JOIN_TEXT("",{{$Site.CurrentSiteUrl}},{{signup_page_url}})</formula>
+				</field>
+				<field id="custom_signup_ui" uionly="true" displaytype="BOOLEAN"/>
+				<field id="created_at" label="Created At" ispolymorphic="false" isnamepointing="false" displaytype="DATETIME" accessible="true" filterable="true"/>
+				<field id="created_by_id" label="Created By Id" ispolymorphic="false" isnamepointing="false" displaytype="STRING" accessible="true" filterable="true"/>
+				<field id="id" label="Id" ispolymorphic="false" isnamepointing="false" displaytype="STRING" accessible="true" filterable="true"/>
+				<field id="updated_at" label="Updated At" ispolymorphic="false" isnamepointing="false" displaytype="DATETIME" accessible="true" filterable="true"/>
+				<field id="updated_by_id" label="Updated By Id" ispolymorphic="false" isnamepointing="false" displaytype="STRING" accessible="true" filterable="true"/>
+			</fields>
+			<idfields>
+				<field>id</field>
+			</idfields>
+			<conditions>
+				<condition type="param" value="id" sourcetype="param" sourceparam="id" operator="=" enclosevalueinquotes="true" novaluebehavior=""/>
+			</conditions>
+			<actions>
+				<action>
+					<actions>
+						<action type="setCondition" model="AppPermissions" condition="perm_set_id" value="{{permission_set_id}}"/>
+						<action type="setCondition" model="DataSourcePermissions" condition="perm_set_id" value="{{{permission_set_id}}}"/>
+						<action type="setCondition" model="NamedPermissions" condition="perm_set_id" value="{{permission_set_id}}"/>
+						<action type="branch" whenfinished="continue" model="Profile">
+							<formula>{{signup_ui}} === "custom" &amp;&amp; {{enable_signup_ui}} === true</formula>
+							<iftrueactions>
+								<action type="updateRow" fieldmodel="Profile" affectedrows="context">
+									<updates>
+										<update valuesource="fieldvalue" field="custom_signup_ui" enclosevalueinquotes="true" value="true"/>
+									</updates>
+								</action>
+								<action type="save">
+									<models>
+										<model>Profile</model>
+									</models>
+								</action>
+							</iftrueactions>
+						</action>
+						<action type="requeryModels" behavior="standard">
+							<models>
+								<model>AppPermissions</model>
+								<model>DataSourcePermissions</model>
+								<model>NamedPermissions</model>
+							</models>
+						</action>
+					</actions>
+					<events>
+						<event>models.loaded</event>
+					</events>
+				</action>
+				<action>
+					<actions>
+						<action type="branch" whenfinished="continue" model="Profile" label="If we don't have a signup api prefix yet">
+							<formula>ISBLANK({{signup_api_prefix}})</formula>
+							<iftrueactions>
+								<action type="updateRow" fieldmodel="Profile" affectedrows="context" enclosevalueinquotes="true">
+									<updates>
+										<update valuesource="formula" field="signup_api_prefix">
+											<formula>LOWER({{name}})</formula>
+										</update>
+									</updates>
+								</action>
+							</iftrueactions>
+						</action>
+						<action type="custom" snippet="regexFixString">
+							<onerroractions>
+								<action type="blockUI" message="There was an error enabling user registration" timeout="3000" styleSettingsVariant="dark"/>
+							</onerroractions>
+						</action>
+						<action type="save">
+							<models>
+								<model>Profile</model>
+							</models>
+						</action>
+					</actions>
+					<events>
+						<event>row.updated</event>
+					</events>
+					<fields>
+						<field>enable_signup_api</field>
+					</fields>
+				</action>
+				<action>
+					<actions>
+						<action type="branch" whenfinished="continue" model="Profile">
+							<formula>{{enable_signup_ui}} === true &amp;&amp; !ISBLANK({{signup_page_id}})</formula>
+							<iftrueactions>
+								<action type="updateRow" fieldmodel="Profile" affectedrows="context">
+									<updates>
+										<update valuesource="fieldvalue" field="signup_ui" enclosevalueinquotes="true" value="custom"/>
+									</updates>
+								</action>
+							</iftrueactions>
+						</action>
+						<action type="save">
+							<models>
+								<model>Profile</model>
+							</models>
+							<onerroractions>
+								<action type="blockUI" message="There was an error enabling custom registration pages" timeout="3000" styleSettingsVariant="dark"/>
+							</onerroractions>
+						</action>
+					</actions>
+					<events>
+						<event>models.loaded</event>
+						<event>row.updated</event>
+					</events>
+					<fields>
+						<field>enable_signup_ui</field>
+					</fields>
+				</action>
+				<action>
+					<actions>
+						<action type="branch" model="Profile" label="If registration page type is changed to customer then create the custom pages. " whenfinished="stop">
+							<formula>{{signup_ui}}==="custom"</formula>
+							<iftrueactions>
+								<action type="custom" snippet="skuid.settings.generateCustomSignupPages"/>
+								<action type="toggleRenderComponent" behavior="show" componentid="registration-wrapper-customSignupPages"/>
+								<action type="showToast" message="Custom registration pages created" duration="4" position="bl"/>
+							</iftrueactions>
+						</action>
+					</actions>
+					<events>
+						<event>row.updated</event>
+					</events>
+					<fields>
+						<field>signup_ui</field>
+					</fields>
+				</action>
+			</actions>
+			<methods>
+				<method type="query" verb="GET" endpoint="/objects/profile/{{id}}?fields=id,name,updated_by_id,updated_by.first_name,updated_by.last_name,updated_at,created_by_id,created_by.first_name,created_by.last_name,created_at,is_system,permission_set_id,enable_signup_api,signup_api_prefix,enable_signup_ui,signup_ui,allowed_email_domains,signup_page_id,signup_page.name,signup_confirmation_page_id,signup_confirmation_page.name,verify_page_id,verify_page.name,require_email_verification_on_signup" payloadcontenttype="JSON"/>
+				<method type="update" verb="PUT" endpoint="/objects/profile/{{id}}" successif="requestsucceeds" sendchanges="asjsoninbody" updateresponse="recordinbody"/>
+				<method type="delete" verb="DELETE" payloadcontenttype="JSON" endpoint="/objects/profile/{{id}}" successif="requestsucceeds"/>
+			</methods>
+		</model>
+		<model id="ProfileUserCount" query="true" datasource="SkuidLocal" verb="GET" payloadcontenttype="JSON" endpoint="objects/profile/{{profile_id}}/activeusercount">
+			<fields>
+				<field id="value" label="Value" ispolymorphic="false" isnamepointing="false" displaytype="DOUBLE" precision="1" scale="0" accessible="true" filterable="true"/>
+			</fields>
+			<conditions>
+				<condition type="param" value="id" sourcetype="param" sourceparam="profile_id" operator="=" mergefield="Id" novaluebehavior="deactivate" enclosevalueinquotes="true"/>
+			</conditions>
+			<actions/>
+		</model>
+		<model id="Named" limit="20" query="true" createrowifnonefound="false" datasource="SkuidLocal" type="readwrite" label="Site Permission" labelplural="Site Permissions" namefield="name">
+			<fields>
+				<field id="id" label="Id" displaytype="TEXT" accessible="true" filterable="true"/>
+				<field id="name" label="Name" displaytype="TEXT" accessible="true" filterable="true" readonly="true"/>
+				<field id="enabled" displaytype="BOOLEAN" label="Allowed" ogdisplaytype="TEXT"/>
+			</fields>
+			<idfields>
+				<field>id</field>
+			</idfields>
+			<conditions/>
+			<actions/>
+			<methods>
+				<method type="query" verb="GET" endpoint="/objects/namedpermission?fields=id,name" payloadcontenttype="JSON"/>
+				<method type="update" verb="PUT" successif="requestsucceeds" sendchanges="asjsoninbody" endpoint="/objects/namedpermission"/>
+			</methods>
+		</model>
+		<model id="DataSource" limit="20" query="false" createrowifnonefound="false" datasource="SkuidLocal" type="readwrite" label="Data Source" labelplural="Data Sources" namefield="name">
+			<fields>
+				<field id="name" label="Name" displaytype="TEXT" accessible="true" filterable="true" readonly="true"/>
+				<field id="type" label="Type" displaytype="TEXT" accessible="true" filterable="true" readonly="true"/>
+				<field id="url" label="URL" displaytype="TEXT" accessible="true" readonly="true"/>
+				<field id="id" label="Id" displaytype="TEXT" accessible="true" filterable="true"/>
+				<field id="version" label="Service Version" displaytype="TEXT" accessible="true" filterable="true"/>
+				<field id="enabled" displaytype="BOOLEAN" label="Allowed"/>
+				<field id="data_service_id" displaytype="TEXT" label="Data Service Id"/>
+				<field id="data_service.host" displaytype="TEXT" label="Data Service Host"/>
+				<field id="data_service.port" displaytype="TEXT" label="Data Service Port"/>
+				<field id="data_service.version" displaytype="TEXT" label="Version"/>
+				<field id="external_id" displaytype="TEXT" label="External Id"/>
+				<field id="IsSQLDataSource__ui" uionly="true" displaytype="FORMULA" readonly="true" returntype="BOOLEAN" defaultvaluetype="fieldvalue">
+					<formula>{{type}}=='PostgreSQL' || {{type}}=='MicrosoftSQL' || {{type}}=='MySQL' || {{type}}=='OracleDB' || {{type}}=='SQLite3' || {{type}}=='AmazonRedshift'</formula>
+				</field>
+				<field id="data_service_host" uionly="true" displaytype="FORMULA" readonly="true" returntype="TEXT" defaultvaluetype="fieldvalue">
+					<formula>IF(ISBLANK({{data_service_id}}),{{$Model.stng__SiteEnv.data.0.PLINY_WARDEN_HOST}},{{data_service.host}})</formula>
+				</field>
+				<field id="data_service_port" uionly="true" displaytype="FORMULA" readonly="true" returntype="TEXT" defaultvaluetype="fieldvalue">
+					<formula>IF(ISBLANK({{data_service_id}}),{{$Model.stng__SiteEnv.data.0.PLINY_WARDEN_PORT}},{{data_service.port}})</formula>
+				</field>
+				<field id="data_service_version" uionly="true" displaytype="FORMULA" readonly="true" returntype="TEXT" defaultvaluetype="fieldvalue">
+					<formula>IF(ISBLANK({{data_service_id}}),{{$Model.stng__SiteEnv.data.0.PLINY_WARDEN_VERSION}},{{data_service.version}})</formula>
+				</field>
+				<field id="external_key" uionly="true" displaytype="FORMULA" readonly="true" returntype="TEXT" defaultvaluetype="fieldvalue">
+					<formula>IF((ISBLANK({{data_service_version}})||{{data_service_version}}="0.2.0"||{{data_service_version}}="0.2.1"),{{external_id}},{{name}})</formula>
+				</field>
+				<field id="selected" displaytype="BOOLEAN" uionly="true" ogdisplaytype="TEXT" defaultvaluetype="fieldvalue" defaultValue="false" enclosevalueinquotes="false"/>
+			</fields>
+			<idfields>
+				<field>id</field>
+			</idfields>
+			<conditions>
+				<condition type="fieldvalue" value="" enclosevalueinquotes="true" sourcetype="param" sourceparam="search" state="filterableoff" inactive="true" name="search"/>
+			</conditions>
+			<actions>
+				<action>
+					<actions>
+						<action type="requeryModel" model="DataSourcePermissions" behavior="standard"/>
+					</actions>
+					<events>
+						<event>models.loaded</event>
+					</events>
+				</action>
+			</actions>
+			<methods>
+				<method type="query" verb="GET" endpoint="/objects/datasource?order=name&amp;fields=id,name,type,version,data_service_id,data_service.host,data_service.port,data_service.version,external_id,url{{#search}}&amp;search={{.}}{{/search}}" payloadcontenttype="JSON"/>
+				<method type="update" verb="PUT" successif="requestsucceeds" sendchanges="asjsoninbody" endpoint="/object/datasource"/>
+			</methods>
+		</model>
+		<model id="DataSourceInContext" limit="20" query="false" createrowifnonefound="false" datasource="SkuidLocal" type="readwrite" label="Data Source" labelplural="Data Sources" namefield="name" unloadwarningifunsavedchanges="false">
+			<fields>
+				<field id="name" label="Name" displaytype="TEXT" accessible="true" filterable="true" readonly="true"/>
+				<field id="type" label="Type" displaytype="TEXT" accessible="true" filterable="true" readonly="true"/>
+				<field id="id" label="Id" displaytype="TEXT" accessible="true" filterable="true"/>
+				<field id="enabled" displaytype="BOOLEAN" label="Allowed"/>
+				<field id="data_service.host" displaytype="TEXT" label="Data Service Host"/>
+				<field id="data_service.port" displaytype="TEXT" label="Data Service Port"/>
+				<field id="external_id" displaytype="TEXT" label="External Id"/>
+			</fields>
+			<idfields>
+				<field>id</field>
+			</idfields>
+			<conditions>
+				<condition sourcetype="param" sourceparam="dataSourceId" novaluebehavior="noquery" operator="=" type="fieldvalue" value="" enclosevalueinquotes="true" state="filterableoff" inactive="true" name="dataSourceId"/>
+			</conditions>
+			<actions/>
+			<methods>
+				<method type="query" verb="GET" endpoint="/objects/datasource/{{dataSourceId}}?fields=id,name,type,data_service_id,data_service.host,data_service.port,external_id"/>
+			</methods>
+		</model>
+		<model id="DataSourceObject" limit="20" query="false" createrowifnonefound="false" datasource="SkuidLocal" type="readwrite" label="Data Source Object" labelplural="Data Source Objects" namefield="name" unloadwarningifunsavedchanges="false">
+			<fields>
+				<field id="name" label="Name" displaytype="TEXT" accessible="true" filterable="true" readonly="true"/>
+				<field id="id" label="Id" displaytype="TEXT" accessible="true" filterable="true"/>
+				<field id="data_source_id" label="Data Source" displaytype="TEXT" accessible="true" filterable="true"/>
+				<field id="createable" displaytype="BOOLEAN" label="Create" ogdisplaytype="TEXT"/>
+				<field id="deleteable" displaytype="BOOLEAN" label="Delete" ogdisplaytype="TEXT"/>
+				<field id="queryable" displaytype="BOOLEAN" label="Read" ogdisplaytype="TEXT"/>
+				<field id="updateable" displaytype="BOOLEAN" label="Update" ogdisplaytype="TEXT"/>
+			</fields>
+			<idfields>
+				<field>id</field>
+			</idfields>
+			<conditions>
+				<condition sourcetype="param" sourceparam="dataSourceId" novaluebehavior="noquery" operator="=" type="fieldvalue" value="" enclosevalueinquotes="true" state="filterableoff" inactive="true" name="dataSourceId"/>
+			</conditions>
+			<actions/>
+			<methods>
+				<method type="query" verb="GET" endpoint="/objects/datasourceobject?fields=id,name,data_source_id&amp;scopes=inDataSource:{{dataSourceId}}"/>
+			</methods>
+		</model>
+		<model id="DataSourceObjectWarden" query="false" createrowifnonefound="false" datasource="SkuidDataService" label="Data Source Object" labelplural="Data Source Objects" type="readwrite" namefield="name" unloadwarningifunsavedchanges="false">
+			<methods>
+				<method type="query" verb="GET" endpoint="/api/v2/datasources/{{dataSourceId}}/entities?order=name" payloadcontenttype="JSON"/>
+			</methods>
+			<conditions>
+				<condition sourcetype="param" sourceparam="dataSourceId" novaluebehavior="noquery" operator="=" type="fieldvalue" value="" enclosevalueinquotes="true" state="filterableoff" inactive="true" name="dataSourceId"/>
+				<condition type="fieldvalue" name="dataServiceHost" value="" enclosevalueinquotes="true" field="" sourcetype="param" sourceparam="host" novaluebehavior="noquery" operator="=" inactive="true" state="filterableoff"/>
+				<condition type="fieldvalue" name="dataServicePort" value="" enclosevalueinquotes="true" field="" sourcetype="param" sourceparam="port" novaluebehavior="noquery" operator="=" inactive="true" state="filterableoff"/>
+			</conditions>
+			<fields>
+				<field id="id" displaytype="TEXT" readonly="true" label="Id"/>
+				<field id="name" displaytype="TEXT" label="Name" length="255" required="true"/>
+				<field id="custom_config" displaytype="TEXT" label="Custom Config"/>
+				<field id="data_source_id" displaytype="TEXT" label="Name" length="255" required="true"/>
+				<field id="schema" label="Schema" ispolymorphic="false" isnamepointing="false" displaytype="STRING" accessible="true" filterable="true" defaultvaluetype="fieldvalue"/>
+				<field id="is_selected" displaytype="BOOLEAN" uionly="true" ogdisplaytype="TEXT" defaultvaluetype="fieldvalue" defaultValue="false"/>
+			</fields>
+			<idfields>
+				<field>id</field>
+			</idfields>
+			<actions/>
+		</model>
+		<model id="DataSourceObjectPermissions" query="false" createrowifnonefound="false" datasource="SkuidLocal" verb="GET" endpoint="/objects/permission/datasourceobject?fields=id,data_source_object_id,permission_set_id,createable,deleteable,queryable,updateable&amp;scopes=inDataSource:{{dataSourceId}}&amp;where={permission_set_id: &quot;{{perm_set_id}}&quot; }" label="Data Source Object Access" labelplural="Data Source Object Access" payloadcontenttype="JSON" unloadwarningifunsavedchanges="false">
+			<fields>
+				<field id="id" label="Id" displaytype="TEXT" accessible="true" filterable="true"/>
+				<field id="data_source_object_id" label="Data_source_object_id" displaytype="TEXT" accessible="true" filterable="true"/>
+				<field id="permission_set_id" label="Permission_set_id" displaytype="TEXT" accessible="true" filterable="true"/>
+				<field id="createable" label="Create" displaytype="BOOLEAN" accessible="true" filterable="true"/>
+				<field id="deleteable" label="Delete" displaytype="BOOLEAN" accessible="true" filterable="true"/>
+				<field id="queryable" label="Read" displaytype="BOOLEAN" accessible="true" filterable="true"/>
+				<field id="updateable" label="Update" displaytype="BOOLEAN" accessible="true" filterable="true"/>
+			</fields>
+			<idfields>
+				<field>id</field>
+			</idfields>
+			<conditions>
+				<condition sourcetype="param" sourceparam="dataSourceId" novaluebehavior="noquery" operator="=" type="fieldvalue" value="" enclosevalueinquotes="true" state="filterableoff" inactive="true" name="dataSourceId"/>
+				<condition type="fieldvalue" value="" enclosevalueinquotes="true" sourcetype="param" sourceparam="perm_set_id" state="filterableoff" inactive="true" name="perm_set_id"/>
+			</conditions>
+			<actions>
+				<action>
+					<actions>
+						<action type="custom" snippet="buildPermissionCache"/>
+					</actions>
+					<events>
+						<event>models.loaded</event>
+						<event>models.cancelled</event>
+					</events>
+				</action>
+			</actions>
+		</model>
+		<model id="AppPermissions" query="false" createrowifnonefound="false" datasource="SkuidLocal" verb="GET" endpoint="/objects/permission/app?fields=id,app_id,permission_set_id,is_default&amp;where={permission_set_id:&quot;{{perm_set_id}}&quot;}" label="App Access" labelplural="App Access" payloadcontenttype="JSON" unloadwarningifunsavedchanges="false">
+			<fields>
+				<field id="id" label="Id" displaytype="TEXT" accessible="true" filterable="true"/>
+				<field id="app_id" label="App_id" displaytype="TEXT" accessible="true" filterable="true"/>
+				<field id="permission_set_id" label="Permission_set_id" displaytype="TEXT" accessible="true" filterable="true"/>
+				<field id="is_default" displaytype="BOOLEAN" label="Is_default" ogdisplaytype="TEXT"/>
+			</fields>
+			<idfields>
+				<field>id</field>
+			</idfields>
+			<conditions>
+				<condition type="fieldvalue" value="" enclosevalueinquotes="true" sourcetype="param" sourceparam="perm_set_id" state="filterableoff" inactive="true" name="perm_set_id"/>
+			</conditions>
+			<actions>
+				<action>
+					<actions>
+						<action type="custom" snippet="buildPermissionCache"/>
+					</actions>
+					<events>
+						<event>models.loaded</event>
+						<event>models.cancelled</event>
+					</events>
+				</action>
+			</actions>
+		</model>
+		<model id="App" limit="20" query="true" createrowifnonefound="false" datasource="SkuidLocal" type="readwrite" label="App" labelplural="Apps" namefield="name">
+			<fields>
+				<field id="id" label="Id" displaytype="TEXT" accessible="true" filterable="true"/>
+				<field id="name" label="Name" displaytype="TEXT" accessible="true" filterable="true" readonly="true"/>
+				<field id="enabled" displaytype="BOOLEAN" uionly="true" ogdisplaytype="TEXT" label="Allowed" defaultvaluetype="fieldvalue" readonly="false" returntype="BOOLEAN">
+					<formula>{{id}} === MODEL_LOOKUP("AppPermissions","app_id")</formula>
+				</field>
+				<field id="default" displaytype="BOOLEAN" uionly="true" ogdisplaytype="TEXT" label="Default App" defaultvaluetype="fieldvalue"/>
+			</fields>
+			<idfields>
+				<field>id</field>
+			</idfields>
+			<conditions>
+				<condition type="fieldvalue" value="" enclosevalueinquotes="true" sourcetype="param" sourceparam="search" state="filterableoff" inactive="true" name="search"/>
+			</conditions>
+			<actions>
+				<action>
+					<actions>
+						<action type="custom" snippet="uniqueTrueDefault">
+							<onerroractions/>
+						</action>
+					</actions>
+					<events>
+						<event>row.updated</event>
+					</events>
+					<fields>
+						<field>enabled</field>
+					</fields>
+				</action>
+				<action>
+					<actions>
+						<action type="branch" whenfinished="stop" model="App">
+							<formula>ISBLANK({{default}}) || {{default}} === false</formula>
+							<iftrueactions>
+								<action type="unblockUI"/>
+							</iftrueactions>
+						</action>
+						<action type="custom" snippet="uniqueDefault">
+							<onerroractions>
+								<action type="blockUI" message="There was an error setting the default app" timeout="3000" styleSettingsVariant="dark"/>
+							</onerroractions>
+						</action>
+					</actions>
+					<events>
+						<event>row.updated</event>
+					</events>
+					<fields>
+						<field>default</field>
+					</fields>
+				</action>
+			</actions>
+			<methods>
+				<method type="query" verb="GET" endpoint="/objects/app?order=name&amp;fields=id,name{{#search}}&amp;search={{.}}{{/search}}" payloadcontenttype="JSON"/>
+				<method type="update" verb="PUT" successif="requestsucceeds" sendchanges="asjsoninbody" endpoint="/objects/app?fields=id,name"/>
+			</methods>
+		</model>
+		<model id="DataSourcePermissions" query="false" createrowifnonefound="false" datasource="SkuidLocal" verb="GET" endpoint="/objects/permission/datasource?fields=id,data_source_id,permission_set_id&amp;where={permission_set_id: &quot;{{perm_set_id}}&quot; }" label="Data Source Access" labelplural="Data Source Access" payloadcontenttype="JSON" unloadwarningifunsavedchanges="false">
+			<fields>
+				<field id="id" label="Id" displaytype="TEXT" accessible="true" filterable="true"/>
+				<field id="data_source_id" label="Data_source_id" displaytype="TEXT" accessible="true" filterable="true"/>
+				<field id="permission_set_id" label="Permission_set_id" displaytype="TEXT" accessible="true" filterable="true"/>
+			</fields>
+			<idfields>
+				<field>id</field>
+			</idfields>
+			<conditions>
+				<condition type="fieldvalue" value="" enclosevalueinquotes="true" sourcetype="param" sourceparam="perm_set_id" state="filterableoff" inactive="true" name="perm_set_id"/>
+			</conditions>
+			<actions>
+				<action>
+					<actions>
+						<action type="custom" snippet="buildPermissionCache"/>
+					</actions>
+					<events>
+						<event>models.loaded</event>
+						<event>models.cancelled</event>
+					</events>
+				</action>
+			</actions>
+		</model>
+		<model id="NamedPermissions" query="false" createrowifnonefound="false" datasource="SkuidLocal" verb="GET" endpoint="/objects/permission/named?fields=id,permission,permission_set_id&amp;where={permission_set_id: &quot;{{perm_set_id}}&quot; }" label="Site Permission" labelplural="Site Permissions" payloadcontenttype="JSON" unloadwarningifunsavedchanges="false">
+			<fields>
+				<field id="id" label="Id" displaytype="TEXT" accessible="true" filterable="true"/>
+				<field id="permission" label="Permission" displaytype="STRING" accessible="true" filterable="true"/>
+				<field id="permission_set_id" label="Permission Set Id" displaytype="TEXT" accessible="true" filterable="true"/>
+			</fields>
+			<idfields>
+				<field>id</field>
+			</idfields>
+			<conditions>
+				<condition type="fieldvalue" value="" enclosevalueinquotes="true" sourcetype="param" sourceparam="perm_set_id" state="filterableoff" inactive="true" name="perm_set_id"/>
+			</conditions>
+			<actions>
+				<action>
+					<actions>
+						<action type="custom" snippet="buildPermissionCache"/>
+					</actions>
+					<events>
+						<event>models.loaded</event>
+					</events>
+				</action>
+			</actions>
+		</model>
+		<model id="ProfileClone" limit="20" query="false" createrowifnonefound="false" datasource="SkuidLocal" type="readwrite" namefield="name">
+			<fields>
+				<field id="id" label="Id" displaytype="TEXT" accessible="true" filterable="true"/>
+				<field id="name" label="Name" displaytype="STRING" accessible="true" filterable="true"/>
+				<field id="signup_api_prefix" label="Signup Api Prefix" ispolymorphic="false" isnamepointing="false" displaytype="STRING" accessible="true" filterable="true"/>
+			</fields>
+			<idfields>
+				<field>id</field>
+			</idfields>
+			<conditions>
+				<condition type="fieldvalue" value="" enclosevalueinquotes="true" sourcetype="param" sourceparam="id" state="filterableoff" inactive="true" name="id"/>
+			</conditions>
+			<actions>
+				<action>
+					<actions>
+						<action type="setCondition" model="stng__ProfileDuplicateCheck" condition="searchname" value="{{name}}" valuesource="fieldvalue"/>
+						<action type="requeryModel" model="stng__ProfileDuplicateCheck" behavior="standard">
+							<onerroractions>
+								<action type="blockUI" message="There was an error loading data" timeout="3000" styleSettingsVariant="dark"/>
+							</onerroractions>
+						</action>
+					</actions>
+					<events>
+						<event>row.updated</event>
+					</events>
+					<fields>
+						<field>name</field>
+					</fields>
+				</action>
+			</actions>
+			<methods>
+				<method type="insert" verb="POST" successif="requestsucceeds" sendchanges="asjsoninbody" insertresponse="recordinbody" endpoint="/objects/profile/clone/{{id}}"/>
+				<method type="query" verb="GET" endpoint="/objects/profile/{{id}}?fields=id,name,signup_api_prefix" payloadcontenttype="JSON"/>
+			</methods>
+		</model>
+		<model id="stng__ProfileDuplicateCheck" query="false" createrowifnonefound="false" datasource="SkuidLocal" label="Profile" labelplural="Profiles" namefield="name" verb="GET" payloadcontenttype="JSON" endpoint="/objects/profile?where={name: &quot;{{name}}&quot;}" unloadwarningifunsavedchanges="false">
+			<fields>
+				<field id="name" label="Name" displaytype="TEXT" accessible="true" filterable="true"/>
+				<field id="id" label="Id" displaytype="TEXT" readonly="true" accessible="true" filterable="true"/>
+			</fields>
+			<idfields/>
+			<conditions>
+				<condition type="fieldvalue" value="" enclosevalueinquotes="true" sourcetype="param" sourceparam="name" state="filterableoff" inactive="true" name="searchname"/>
+			</conditions>
+			<actions/>
+		</model>
+		<model id="RemoveSignupPagesUI" limit="20" query="true" createrowifnonefound="false" datasource="Ui-Only" processonclient="true">
+			<fields>
+				<field id="DeletePages" displaytype="BOOLEAN" label="Delete custom signup pages " ogdisplaytype="TEXT" helptext="By default, the actual Skuid pages will remain available for later use. If you want to completely remove the associated Skuid pages, check this box. "/>
+			</fields>
+			<conditions/>
+			<actions/>
+		</model>
+		<model id="Profile_UiOnly" query="true" createrowifnonefound="false" datasource="Ui-Only">
+			<fields>
+				<field id="all_apps_allowed" displaytype="BOOLEAN" length="255" ogdisplaytype="TEXT" precision="9" scale="2" defaultvaluetype="modelmerge" defaultValue="" model="Profile_UiOnly" enclosevalueinquotes="false" mergefield="initial_all_apps_allowed"/>
+				<field id="initial_all_apps_allowed" displaytype="FORMULA" length="255" ogdisplaytype="TEXT" readonly="true" returntype="BOOLEAN" defaultvaluetype="fieldvalue">
+					<formula>{{$Model.App.data.length}} === {{$Model.AppPermissions.data.length}}</formula>
+				</field>
+				<field id="all_datasources_allowed" displaytype="BOOLEAN" length="255" ogdisplaytype="TEXT" defaultvaluetype="modelmerge" defaultValue="" model="Profile_UiOnly" enclosevalueinquotes="false" mergefield="initial_all_datasources_allowed"/>
+				<field id="initial_all_datasources_allowed" displaytype="FORMULA" length="255" ogdisplaytype="TEXT" readonly="true" returntype="BOOLEAN" defaultvaluetype="fieldvalue">
+					<formula>{{$Model.DataSource.data.length}} === {{$Model.DataSourcePermissions.data.length}}</formula>
+				</field>
+			</fields>
+			<conditions/>
+			<actions>
+				<action>
+					<actions>
+						<action type="branch" whenfinished="stop" model="Profile_UiOnly">
+							<iftrueactions>
+								<action type="updateRow" fieldmodel="App" affectedrows="all">
+									<updates>
+										<update valuesource="fieldvalue" field="enabled" enclosevalueinquotes="false" value="true"/>
+									</updates>
+								</action>
+							</iftrueactions>
+							<formula>{{all_apps_allowed}} === true</formula>
+						</action>
+					</actions>
+					<events>
+						<event>row.updated</event>
+					</events>
+					<fields>
+						<field>all_apps_allowed</field>
+					</fields>
+				</action>
+				<action>
+					<actions>
+						<action type="branch" whenfinished="stop" model="Profile_UiOnly">
+							<formula>{{all_datasources_allowed}}</formula>
+							<iftrueactions>
+								<action type="updateRow" fieldmodel="DataSource" affectedrows="all">
+									<updates>
+										<update valuesource="fieldvalue" field="enabled" enclosevalueinquotes="false" value="true"/>
+									</updates>
+								</action>
+							</iftrueactions>
+						</action>
+					</actions>
+					<events>
+						<event>row.updated</event>
+					</events>
+					<fields>
+						<field>all_datasources_allowed</field>
+					</fields>
+				</action>
+			</actions>
+		</model>
+		<model id="ui_control" query="true" createrowifnonefound="true" datasource="Ui-Only">
+			<fields>
+				<field id="edit_dso_permissions" displaytype="BOOLEAN" length="255" ogdisplaytype="TEXT" defaultvaluetype="fieldvalue" defaultValue="false"/>
+				<field id="show_dso_search" displaytype="BOOLEAN" length="255" ogdisplaytype="TEXT" defaultvaluetype="fieldvalue" defaultValue="false"/>
+				<field id="hide_ds_list" displaytype="BOOLEAN" length="255" ogdisplaytype="TEXT" defaultvaluetype="fieldvalue" defaultValue="false"/>
+				<field id="ds_with_dso_list" displaytype="PICKLIST" length="255" ogdisplaytype="TEXT" picklistsource="rowsinmodel" returntype="TEXT" picklistmodel="SQL_Datasource_Picklist_ui" entryvalue="{{id}}" entrylabel="{{name}}" snippet="filterDSPicklistEntries"/>
+			</fields>
+			<conditions/>
+			<actions>
+				<action>
+					<actions>
+						<action type="branch" whenfinished="stop" model="ui_control" label="Don't continue if field is reset">
+							<formula>ISBLANK({{ds_with_dso_list}})</formula>
+							<iftrueactions>
+								<action type="unblockUI"/>
+							</iftrueactions>
+						</action>
+						<action type="blockUI" styleSettingsVariant="dark" message="Loading..." showPlaceholder="true"/>
+						<action type="updateRow" fieldmodel="ui_control" affectedrows="context">
+							<updates>
+								<update valuesource="fieldvalue" field="edit_dso_permissions" enclosevalueinquotes="false" value="false"/>
+							</updates>
+						</action>
+						<action type="setCondition" fieldmodel="DataSource" affectedrows="context" model="DataSource_WorkingModel" condition="id" value="{{ds_with_dso_list}}">
+							<updates>
+								<update valuesource="fieldvalue" field="selected" enclosevalueinquotes="false" value="true"/>
+							</updates>
+						</action>
+						<action type="requeryModel" model="DataSource_WorkingModel" behavior="standard"/>
+						<action type="setCondition" model="DataSourceInContext" condition="dataSourceId" value="{{$Model.DataSource_WorkingModel.data.0.id}}"/>
+						<action type="requeryModel" model="DataSourceInContext" behavior="standard">
+							<onerroractions>
+								<action type="blockUI" message="There was an error loading data" timeout="3000" styleSettingsVariant="dark"/>
+							</onerroractions>
+						</action>
+						<action type="setCondition" model="DataSourceObjectWarden" condition="dataSourceId" value="{{$Model.DataSource_WorkingModel.data.0.external_key}}"/>
+						<action type="setCondition" model="DataSourceObjectWarden" condition="dataServiceHost" value="{{$Model.DataSource_WorkingModel.data.0.data_service_host}}"/>
+						<action type="setCondition" model="DataSourceObjectWarden" condition="dataServicePort" value="{{$Model.DataSource_WorkingModel.data.0.data_service_port}}"/>
+						<action type="requeryModel" model="DataSourceObjectWarden" behavior="standard">
+							<onerroractions>
+								<action type="blockUI" message="There was an error loading data" timeout="3000" styleSettingsVariant="dark"/>
+							</onerroractions>
+						</action>
+						<action type="branch" whenfinished="continue" label="if DSO model has data, continue to load details for its first row">
+							<formula>{{$Model.DataSourceObjectWarden.data.length}} &gt; 0</formula>
+							<iftrueactions>
+								<action type="sortModel" client-side="true" model="DataSourceObjectWarden" method="asc" field="name"/>
+								<action type="runComponentAction" componentid="include-profile-datasources-DSO-tabledetail" action="loadNewPage" loadInBackground="true" pageName="Profile_DSO_PageInclude_v2" namespace="skuid" queryString="inc_entityId={{$Model.DataSourceObjectWarden.data.0.id}}&amp;inc_dataSourceId={{$Model.DataSourceInContext.data.0.id}}&amp;inc_profileid={{$Model.Profile.data.0.id}}&amp;origin=profile" showLoadingIndicator="false"/>
+								<action type="updateRow" fieldmodel="ui_control" affectedrows="context">
+									<updates>
+										<update valuesource="fieldvalue" field="edit_dso_permissions" enclosevalueinquotes="false" value="true"/>
+									</updates>
+								</action>
+								<action type="custom" snippet="highlightFirstRow">
+									<onerroractions/>
+								</action>
+							</iftrueactions>
+						</action>
+						<action type="unblockUI"/>
+						<action type="save">
+							<models>
+								<model>DataSourceObjectWarden</model>
+							</models>
+							<onerroractions>
+								<action type="blockUI" message="There was an error saving changes" timeout="3000" styleSettingsVariant="dark"/>
+							</onerroractions>
+						</action>
+					</actions>
+					<events>
+						<event>row.updated</event>
+					</events>
+					<fields>
+						<field>ds_with_dso_list</field>
+					</fields>
+				</action>
+			</actions>
+		</model>
+		<model id="DataSource_WorkingModel" query="false" createrowifnonefound="false" datasource="SkuidLocal" verb="GET" payloadcontenttype="JSON" endpoint="/objects/datasource?order=name&amp;fields=id,name,type,version,data_service_id,data_service.host,data_service.port,data_service.version,external_id,url" unloadwarningifunsavedchanges="false">
+			<fields>
+				<field id="id" label="Id" ispolymorphic="false" isnamepointing="false" displaytype="STRING" accessible="true" filterable="true"/>
+				<field id="external_id" label="External Id" ispolymorphic="false" isnamepointing="false" displaytype="STRING" accessible="true" filterable="true"/>
+				<field id="name" label="Name" ispolymorphic="false" isnamepointing="false" displaytype="STRING" accessible="true" filterable="true"/>
+				<field id="data_service.host" displaytype="TEXT" label="Data Service Host"/>
+				<field id="data_service.port" displaytype="TEXT" label="Data Service Port"/>
+				<field id="data_service.version" displaytype="TEXT" label="Version"/>
+				<field id="data_service_host" uionly="true" displaytype="FORMULA" readonly="true" returntype="TEXT" defaultvaluetype="fieldvalue">
+					<formula>IF(ISBLANK({{data_service_id}}),{{$Model.stng__SiteEnv.data.0.PLINY_WARDEN_HOST}},{{data_service.host}})</formula>
+				</field>
+				<field id="data_service_port" uionly="true" displaytype="FORMULA" readonly="true" returntype="TEXT" defaultvaluetype="fieldvalue">
+					<formula>IF(ISBLANK({{data_service_id}}),{{$Model.stng__SiteEnv.data.0.PLINY_WARDEN_PORT}},{{data_service.port}})</formula>
+				</field>
+				<field id="data_service_version" uionly="true" displaytype="FORMULA" readonly="true" returntype="TEXT" defaultvaluetype="fieldvalue">
+					<formula>IF(ISBLANK({{data_service_id}}),{{$Model.stng__SiteEnv.data.0.PLINY_WARDEN_VERSION}},{{data_service.version}})</formula>
+				</field>
+				<field id="external_key" uionly="true" displaytype="FORMULA" readonly="true" returntype="TEXT" defaultvaluetype="fieldvalue">
+					<formula>IF((ISBLANK({{data_service_version}})||{{data_service_version}}="0.2.0"||{{data_service_version}}="0.2.1"),{{external_id}},{{name}})</formula>
+				</field>
+			</fields>
+			<conditions>
+				<condition type="fieldvalue" value="" enclosevalueinquotes="true" sourcetype="fieldvalue" field="id" state="filterableoff" inactive="true" name="id"/>
+			</conditions>
+			<actions/>
+		</model>
+		<model id="SQL_Datasource_Picklist_ui" query="true" createrowifnonefound="false" datasource="Ui-Only">
+			<fields>
+				<field id="id" displaytype="TEXT" length="255" ogdisplaytype="TEXT" picklistsource="snippet" returntype="TEXT" snippet="filterDSPicklistEntries"/>
+				<field id="name" displaytype="TEXT" length="255"/>
+			</fields>
+			<conditions/>
+			<actions/>
+		</model>
+		<model id="Users" query="false" createrowifnonefound="false" datasource="SkuidLocal" verb="GET" payloadcontenttype="JSON" endpoint="/objects/user{{#profile_id}}?where={&quot;profile_id&quot;:&quot;{{profile_id}}&quot;}{{/profile_id}}" label="User" labelplural="Users" idfields="Id">
+			<fields>
+				<field id="first_name" label="First Name" ispolymorphic="false" isnamepointing="false" displaytype="STRING" accessible="true" filterable="true"/>
+				<field id="id" label="Id" ispolymorphic="false" isnamepointing="false" displaytype="STRING" accessible="true" filterable="true"/>
+				<field id="last_name" label="Last Name" ispolymorphic="false" isnamepointing="false" displaytype="STRING" accessible="true" filterable="true"/>
+				<field id="profile_id" label="Profile Id" ispolymorphic="false" isnamepointing="false" displaytype="STRING" accessible="true" filterable="true"/>
+			</fields>
+			<conditions>
+				<condition type="fieldvalue" value="" enclosevalueinquotes="true" sourcetype="param" sourceparam="profile_id" state="filterableoff" inactive="true" name="profile_id"/>
+			</conditions>
+			<actions/>
+		</model>
+	</models>
+	<pageregioncontents>
+		<pageregioncontent regionid="sk-2w1w-1416" uniqueid="sk-7rv-1493">
+			<components>
+				<skuid__wrapper uniqueid="sk-3jje-22094">
+					<components>
+						<skuid__wrapper uniqueid="sk-2Fu3-303695" styleSettingsVariant="b5342fe9-7125-4bf8-b20b-ade1825d7e72">
+							<components>
+								<skuid__grid uniqueid="grid-profile-header" flexDirection="row" justifyContent="space-around" alignItems="center" columnGutter="0" rowGutter="0">
+									<divisions>
+										<division minWidth="100%" ratio="1" alignSelf="auto" maxWidth="1440px">
+											<components>
+												<skuid__grid uniqueid="sk-19w6-42629" flexDirection="row" justifyContent="flex-start" alignItems="flex-start" columnGutter="2">
+													<divisions>
+														<division minWidth="0" ratio="1" alignSelf="auto">
+															<components>
+																<skuid__text contents="{{^$Model.FeatureFlags.data.0.appPermSetsEnabled}}Profile{{/$Model.FeatureFlags.data.0.appPermSetsEnabled}}{{#$Model.FeatureFlags.data.0.appPermSetsEnabled}}Site permission set{{/$Model.FeatureFlags.data.0.appPermSetsEnabled}}" uniqueid="sk-1wsN-42169" model="FeatureFlags" styleSettingsVariant="ef8d4ab0-3722-4e16-903c-ec582c9ca67f">
+																	<styles>
+																		<spacing bottom="1" styleSettingsVariant="ef8d4ab0-3722-4e16-903c-ec582c9ca67f"/>
+																	</styles>
+																</skuid__text>
+																<skuid__grid uniqueid="sk-39Ry-41854" flexDirection="row" justifyContent="flex-start" alignItems="center">
+																	<divisions>
+																		<division minWidth="0" ratio="0" alignSelf="auto">
+																			<components>
+																				<skuid__header title="{{name}}" uniqueid="sk-19w9-44164" model="Profile">
+																					<skuid__buttonSet>
+																						<groups/>
+																					</skuid__buttonSet>
+																					<styles>
+																						<spacing right="2"/>
+																					</styles>
+																				</skuid__header>
+																			</components>
+																		</division>
+																		<division alignSelf="auto" minWidth="0" ratio="1">
+																			<components>
+																				<skuid__buttonSet uniqueid="sk-39To-47202" model="ProfileUserCount" position="left">
+																					<groups>
+																						<skuid__buttonGroup uniqueId="sk-39To-47200">
+																							<buttons>
+																								<skuid__button label="{{value}} active users" uniqueId="sk-39To-47201" styleSettingsVariant="c5a0b776-647d-4cec-858c-482ff484acb0"/>
+																							</buttons>
+																						</skuid__buttonGroup>
+																					</groups>
+																				</skuid__buttonSet>
+																			</components>
+																		</division>
+																	</divisions>
+																	<styles>
+																		<spacing/>
+																	</styles>
+																	<background/>
+																</skuid__grid>
+															</components>
+														</division>
+														<division alignSelf="auto" ratio="0" minWidth="0">
+															<components>
+																<skuid__buttonSet model="Profile" uniqueid="buttonset-profiledetail-header-buttons">
+																	<groups>
+																		<skuid__buttonGroup uniqueId="sk-3_aO-40655" displayType="menu" iconPosition="right" icon="sk-webicon-ink:dots-vertical" styleSettingsVariant="a0f480fb-b5f6-42ca-af4e-a46635a70392">
+																			<buttons>
+																				<skuid__button label="Clone" uniqueId="button-profiledetail-header-clone">
+																					<actions>
+																						<action type="action-sequence" action-sequence-id="be2d66e8-e9ac-4d92-a7ee-639c8d1ad8f1"/>
+																					</actions>
+																					<renderConditions logictype="and"/>
+																					<enableConditions logictype="and">
+																						<condition type="fieldvalue" enclosevalueinquotes="false" fieldmodel="Profile" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasChanged" value="false" operator="="/>
+																						<condition type="fieldvalue" enclosevalueinquotes="false" fieldmodel="Named" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasChanged" value="false" operator="="/>
+																						<condition type="fieldvalue" enclosevalueinquotes="false" fieldmodel="DataSource" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasChanged" value="false" operator="="/>
+																						<condition type="fieldvalue" enclosevalueinquotes="false" fieldmodel="App" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasChanged" value="false" operator="="/>
+																					</enableConditions>
+																					<styleVariantConditions/>
+																					<hotkeys/>
+																				</skuid__button>
+																				<skuid__button label="Delete" uniqueId="button-profiledetail-header-delete">
+																					<actions>
+																						<action type="markRowsForDeletion" model="Profile" affectedrows="context"/>
+																						<action type="updateCondition" model="Users" behavior="set" condition="profile_id" valuesource="fieldvalue" value="{{id}}"/>
+																						<action type="requeryModels" behavior="standard">
+																							<models>
+																								<model>Users</model>
+																							</models>
+																						</action>
+																						<action type="branch" whenfinished="stop" label="If profile has existing users, don't continue with the deletion">
+																							<formula>
+{{$Model.Users.data.length}} &gt; 0</formula>
+																							<iftrueactions>
+																								<action type="cancel">
+																									<models>
+																										<model>Profile</model>
+																									</models>
+																								</action>
+																								<action type="showModal">
+																									<skuid__modal title="Cannot delete {{^$Model.FeatureFlags.data.0.appPermSetsEnabled}}profile{{/$Model.FeatureFlags.data.0.appPermSetsEnabled}}{{#$Model.FeatureFlags.data.0.appPermSetsEnabled}}site permission set{{/$Model.FeatureFlags.data.0.appPermSetsEnabled}}" width="640px">
+																										<components>
+																											<skuid__text contents="This {{^$Model.FeatureFlags.data.0.appPermSetsEnabled}}profile{{/$Model.FeatureFlags.data.0.appPermSetsEnabled}}{{#$Model.FeatureFlags.data.0.appPermSetsEnabled}}site permission set{{/$Model.FeatureFlags.data.0.appPermSetsEnabled}} is in use. You must assign a different {{^$Model.FeatureFlags.data.0.appPermSetsEnabled}}profile{{/$Model.FeatureFlags.data.0.appPermSetsEnabled}}{{#$Model.FeatureFlags.data.0.appPermSetsEnabled}}site permission set{{/$Model.FeatureFlags.data.0.appPermSetsEnabled}} to each user currently assigned to this one before it can be deleted." uniqueid="sk-2sI6-70682">
+																												<styles>
+																													<spacing bottom="3"/>
+																												</styles>
+																											</skuid__text>
+																											<skuid__text contents="Users assigned this {{^$Model.FeatureFlags.data.0.appPermSetsEnabled}}profile{{/$Model.FeatureFlags.data.0.appPermSetsEnabled}}{{#$Model.FeatureFlags.data.0.appPermSetsEnabled}}site permission set{{/$Model.FeatureFlags.data.0.appPermSetsEnabled}}:" uniqueid="sk-2sIC-71956">
+																												<styles>
+																													<spacing bottom="1.5"/>
+																												</styles>
+																											</skuid__text>
+																											<skuid__deck columnGutter=".75em" rowGutter=".75em" model="Users" showSaveCancel="false" verticalAlign="top" minWidth="350px" uniqueid="sk-2sII-73268" pageSize="50" styleSettingsVariant="4b2278fd-5ea7-4353-9f43-6334d402167e">
+																												<components>
+																													<skuid__text contents="&amp;bull;&amp;nbsp; &amp;nbsp;&lt;strong&gt;&lt;a href=&quot;/ns/skuid/ui/user/{{{id}}}&quot; target=&quot;_blank&quot;&gt;{{{first_name}}} {{{last_name}}}&lt;/a&gt;&lt;/strong&gt;" uniqueid="sk-2sIX-75762">
+																														<styles>
+																															<spacing left="1"/>
+																														</styles>
+																													</skuid__text>
+																												</components>
+																												<filtering enableSearch="false"/>
+																												<sorting enable="false"/>
+																											</skuid__deck>
+																										</components>
+																										<buttons>
+																											<skuid__button label="Okay" uniqueId="sk-2sPH-49021" styleSettingsVariant="primary">
+																												<actions>
+																													<action type="cancel">
+																														<models>
+																															<model>Profile</model>
+																														</models>
+																													</action>
+																													<action type="closeModals" closebehavior="close"/>
+																												</actions>
+																											</skuid__button>
+																										</buttons>
+																									</skuid__modal>
+																								</action>
+																							</iftrueactions>
+																						</action>
+																						<action type="showModal">
+																							<skuid__modal title="Delete {{^$Model.FeatureFlags.data.0.appPermSetsEnabled}}profile{{/$Model.FeatureFlags.data.0.appPermSetsEnabled}}{{#$Model.FeatureFlags.data.0.appPermSetsEnabled}}site permission set{{/$Model.FeatureFlags.data.0.appPermSetsEnabled}}" width="640px">
+																								<components>
+																									<skuid__wrapper uniqueid="sk-1mud-36047" styleSettingsVariant="7d5572d7-ec59-43f0-9d03-5259d1980637">
+																										<components>
+																											<skuid__grid uniqueid="sk-1sWh-27366" flexDirection="row" justifyContent="flex-start" alignItems="flex-start" columnGutter="2" rowGutter="0">
+																												<divisions>
+																													<division minWidth="32px" ratio="1" alignSelf="auto" maxWidth="32px">
+																														<components>
+																															<skuid__list model="Profile" uniqueid="sk-1sWk-29778" pageSize="Infinity" showPageSizeSelect="false" resetPaginationOnQuery="false" showLoadMore="false" showListHeader="false" showListFooter="false" styleSettingsVariant="cf06b573-0083-4902-aaf4-65950a97bf81">
+																																<columns>
+																																	<column uniqueid="sk-1sWk-29779" fillRatio="1">
+																																		<items>
+																																			<item displayType="icon" size="medium" fallback="sk-webicon-ink:user-role" styleSettingsVariant="circular"/>
+																																		</items>
+																																	</column>
+																																</columns>
+																																<rowActions/>
+																																<massActions/>
+																																<filtering enableSearch="false" instantSearch="false"/>
+																																<conditions>
+																																	<condition type="contextrow" field="Id" mergefield="Id" operator="="/>
+																																</conditions>
+																																<styles>
+																																	<spacing/>
+																																</styles>
+																															</skuid__list>
+																														</components>
+																													</division>
+																													<division alignSelf="auto" minWidth="100px" ratio="1">
+																														<components>
+																															<skuid__text contents="{{name}}" uniqueid="sk-1muQ-19873" styleSettingsVariant="bcf356fb-cd9b-4b49-adb6-299b154f243f" model="Profile">
+																																<styles>
+																																	<spacing bottom="1" styleSettingsVariant="bcf356fb-cd9b-4b49-adb6-299b154f243f"/>
+																																</styles>
+																															</skuid__text>
+																															<skuid__text contents="Created {{created_at}} by&amp;nbsp;{{created_by.name}}" uniqueid="sk-1muT-21127" styleSettingsVariant="ef8d4ab0-3722-4e16-903c-ec582c9ca67f" model="Profile">
+																																<styles>
+																																	<spacing bottom="0.5" styleSettingsVariant="ef8d4ab0-3722-4e16-903c-ec582c9ca67f"/>
+																																</styles>
+																															</skuid__text>
+																															<skuid__text contents="Updated {{updated_at}} by&amp;nbsp;{{updated_by.name}}" uniqueid="sk-2N92-44315" styleSettingsVariant="ef8d4ab0-3722-4e16-903c-ec582c9ca67f" model="Profile">
+																																<styles>
+																																	<spacing bottom="0.5" styleSettingsVariant="ef8d4ab0-3722-4e16-903c-ec582c9ca67f"/>
+																																</styles>
+																															</skuid__text>
+																														</components>
+																													</division>
+																												</divisions>
+																											</skuid__grid>
+																										</components>
+																										<background/>
+																										<styles>
+																											<spacing bottom="3" styleSettingsVariant="7d5572d7-ec59-43f0-9d03-5259d1980637"/>
+																										</styles>
+																									</skuid__wrapper>
+																									<skuid__text contents="Are you sure you want to permanently delete this {{^$Model.FeatureFlags.data.0.appPermSetsEnabled}}profile{{/$Model.FeatureFlags.data.0.appPermSetsEnabled}}{{#$Model.FeatureFlags.data.0.appPermSetsEnabled}}site permission set{{/$Model.FeatureFlags.data.0.appPermSetsEnabled}}? &lt;strong&gt;You can&amp;#39;t undo this&lt;/strong&gt;." uniqueid="sk-1ulC-23447">
+																										<renderConditions logictype="and"/>
+																										<styleVariantConditions/>
+																									</skuid__text>
+																								</components>
+																								<buttons>
+																									<skuid__button label="Yes, delete this {{^$Model.FeatureFlags.data.0.appPermSetsEnabled}}profile{{/$Model.FeatureFlags.data.0.appPermSetsEnabled}}{{#$Model.FeatureFlags.data.0.appPermSetsEnabled}}site permission set{{/$Model.FeatureFlags.data.0.appPermSetsEnabled}}" styleSettingsVariant="destructive" uniqueId="button-profile-header-delete-confirm">
+																										<actions>
+																											<action type="blockUI" styleSettingsVariant="dark" message="Deleting profile..."/>
+																											<action type="save">
+																												<models>
+																													<model>Profile</model>
+																												</models>
+																											</action>
+																											<action type="redirect" window="self" url="/ns/skuid/ui/settings#profiles"/>
+																											<action type="closeModals" closebehavior="close"/>
+																											<action type="unblockUI"/>
+																										</actions>
+																									</skuid__button>
+																									<skuid__button label="Cancel" uniqueId="button-profile-header-delete-cancel">
+																										<actions>
+																											<action type="cancel">
+																												<models>
+																													<model>Profile</model>
+																												</models>
+																											</action>
+																											<action type="closeAllPopups"/>
+																										</actions>
+																									</skuid__button>
+																								</buttons>
+																								<afterCloseActions>
+																									<action type="cancel">
+																										<models>
+																											<model>Profile</model>
+																										</models>
+																									</action>
+																								</afterCloseActions>
+																							</skuid__modal>
+																						</action>
+																					</actions>
+																					<renderConditions logictype="and">
+																						<renderCondition type="multiple" operator="not in" fieldmodel="Profile" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="name" fieldtargetobjects="SkuidLocal" value="" enclosevalueinquotes="true">
+																							<values>
+																								<value>Public</value>
+																								<value>Standard</value>
+																								<value>Admin</value>
+																							</values>
+																						</renderCondition>
+																					</renderConditions>
+																					<enableConditions logictype="and">
+																						<condition type="fieldvalue" enclosevalueinquotes="false" fieldmodel="Profile" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasChanged" value="false" operator="="/>
+																						<condition type="fieldvalue" enclosevalueinquotes="false" fieldmodel="Named" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasChanged" value="false" operator="="/>
+																						<condition type="fieldvalue" enclosevalueinquotes="false" fieldmodel="DataSource" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasChanged" value="false" operator="="/>
+																						<condition type="fieldvalue" enclosevalueinquotes="false" fieldmodel="App" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasChanged" value="false" operator="="/>
+																					</enableConditions>
+																					<styleVariantConditions/>
+																				</skuid__button>
+																			</buttons>
+																			<renderConditions logictype="and"/>
+																			<styleVariantConditions/>
+																		</skuid__buttonGroup>
+																	</groups>
+																	<renderConditions logictype="and">
+																		<renderCondition type="fieldvalue" operator="!=" enclosevalueinquotes="true" fieldmodel="Profile" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="name" fieldtargetobjects="SkuidLocal" value="Public"/>
+																	</renderConditions>
+																	<styleVariantConditions/>
+																</skuid__buttonSet>
+															</components>
+														</division>
+													</divisions>
+													<styles>
+														<spacing/>
+													</styles>
+													<background/>
+												</skuid__grid>
+											</components>
+										</division>
+									</divisions>
+									<renderConditions logictype="and"/>
+									<styleVariantConditions/>
+									<styles>
+										<spacing left="4" right="4" top="6" bottom="7"/>
+									</styles>
+									<background/>
+								</skuid__grid>
+							</components>
+							<background type="color" color="white"/>
+							<styles>
+								<spacing/>
+							</styles>
+						</skuid__wrapper>
+						<skuid__wrapper uniqueid="sk-2FuG-311263">
+							<components>
+								<skuid__grid uniqueid="sk-2FuH-312043" flexDirection="row" justifyContent="space-around" alignItems="flex-start" columnGutter="0" rowGutter="0">
+									<divisions>
+										<division alignSelf="auto" minWidth="100%" ratio="1" maxWidth="1440px">
+											<components>
+												<skuid__tabSet uniqueid="tabset-profile" styleSettingsVariant="badbfd15-514b-4205-a270-003838e8e954" rememberActiveTab="false">
+													<tabs>
+														<skuid__tabPanel name="General Settings" uniqueid="tabpanel-profile-general">
+															<components>
+																<skuid__wrapper uniqueid="sk-91H-2524" styleSettingsVariant="ca672dea-7a84-491e-8f05-d6cf6cab3cd8">
+																	<components>
+																		<skuid__grid uniqueid="sk-3Q2T-27066" flexDirection="row" justifyContent="flex-start" alignItems="flex-start" columnGutter="0" rowGutter="0">
+																			<divisions>
+																				<division minWidth="240px" ratio="1" alignSelf="auto" maxWidth="600px">
+																					<components>
+																						<skuid__wrapper uniqueid="sk-6zB-312153" styleSettingsVariant="c5a44cb4-0fb9-4631-a576-a20f998816e0">
+																							<components>
+																								<skuid__table model="Named" uniqueid="table-site-permissions" mode="edit" allowSortingByColumn="false" showSaveCancel="false" pageSize="Infinity" showPageSizeSelect="false" resetPaginationOnQuery="false" showListFooter="false" adaptiveColumns="true" styleSettingsVariant="7696934d-1a9e-4e54-9828-9dbc594ad961">
+																									<fields>
+																										<field type="COMBO" label="Site Permissions" uniqueid="field-site-permissions" template="{{name}}" readOnly="true"/>
+																										<field id="enabled" displayAs="SWITCH" uniqueid="field-enable-site-permissions">
+																											<renderConditions logictype="and" onhidedatabehavior="keep"/>
+																											<enableConditions logictype="and">
+																												<condition type="fieldvalue" operator="=" enclosevalueinquotes="false" fieldmodel="Profile" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="is_system" fieldtargetobjects="SkuidLocal" value="false"/>
+																											</enableConditions>
+																										</field>
+																									</fields>
+																									<filtering enableSearch="false" instantSearch="false" searchMethod="client" emptySearchBehavior="query"/>
+																									<rowActions/>
+																									<massActions/>
+																									<renderConditions logictype="and"/>
+																									<styleVariantConditions/>
+																									<exportProperties useTableColumns="true"/>
+																									<sorting enable="false"/>
+																								</skuid__table>
+																								<skuid__buttonSet uniqueid="sk-6zB-312159" position="left" model="Profile">
+																									<groups>
+																										<skuid__buttonGroup>
+																											<buttons>
+																												<skuid__button label="Save" styleSettingsVariant="primary">
+																													<actions>
+																														<action type="action-sequence" action-sequence-id="4993837b-2800-4866-97e8-805869f08677"/>
+																													</actions>
+																													<renderConditions logictype="or"/>
+																													<enableConditions logictype="and">
+																														<condition type="fieldvalue" enclosevalueinquotes="false" fieldmodel="Named" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasChanged" value="true" operator="="/>
+																													</enableConditions>
+																													<styleVariantConditions/>
+																												</skuid__button>
+																												<skuid__button label="Cancel">
+																													<actions>
+																														<action type="cancel">
+																															<models>
+																																<model>Profile</model>
+																																<model>Named</model>
+																																<model>DataSource</model>
+																																<model>App</model>
+																															</models>
+																														</action>
+																													</actions>
+																													<renderConditions logictype="and"/>
+																													<enableConditions logictype="and">
+																														<condition type="fieldvalue" enclosevalueinquotes="false" fieldmodel="Named" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasChanged" value="true" operator="="/>
+																													</enableConditions>
+																													<styleVariantConditions/>
+																												</skuid__button>
+																											</buttons>
+																										</skuid__buttonGroup>
+																									</groups>
+																									<styles>
+																										<spacing top="3"/>
+																									</styles>
+																								</skuid__buttonSet>
+																							</components>
+																							<background/>
+																							<renderConditions logictype="and"/>
+																							<styleVariantConditions/>
+																							<interactions/>
+																							<styles>
+																								<spacing/>
+																							</styles>
+																						</skuid__wrapper>
+																					</components>
+																				</division>
+																				<division alignSelf="auto" minWidth="100px" ratio="1">
+																					<components/>
+																				</division>
+																			</divisions>
+																			<background/>
+																		</skuid__grid>
+																	</components>
+																	<background/>
+																	<styles>
+																		<spacing/>
+																	</styles>
+																</skuid__wrapper>
+															</components>
+															<renderConditions logictype="and"/>
+														</skuid__tabPanel>
+														<skuid__tabPanel name="App Access" uniqueid="tabpanel-profile-apps">
+															<components>
+																<skuid__wrapper uniqueid="sk-2okz-130073" styleSettingsVariant="ca672dea-7a84-491e-8f05-d6cf6cab3cd8">
+																	<components>
+																		<skuid__grid uniqueid="sk-3Q40-52324" flexDirection="row" justifyContent="flex-start" alignItems="flex-start" columnGutter="0" rowGutter="0">
+																			<divisions>
+																				<division minWidth="240px" ratio="1" alignSelf="auto" maxWidth="600px">
+																					<components>
+																						<skuid__wrapper uniqueid="sk-91T-2903" styleSettingsVariant="c5a44cb4-0fb9-4631-a576-a20f998816e0">
+																							<components>
+																								<skuid__buttonSet uniqueid="sk-6ut-156895" model="Profile">
+																									<groups>
+																										<skuid__buttonGroup uniqueId="sk-3-ey-86733" displayType="detached">
+																											<buttons>
+																												<skuid__button label="Save" styleSettingsVariant="primary" uniqueId="button-profiledetail-apps-save-top">
+																													<actions>
+																														<action type="action-sequence" action-sequence-id="4993837b-2800-4866-97e8-805869f08677"/>
+																													</actions>
+																													<renderConditions logictype="or"/>
+																													<enableConditions logictype="and">
+																														<condition type="fieldvalue" enclosevalueinquotes="false" fieldmodel="App" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasChanged" value="true" operator="="/>
+																													</enableConditions>
+																													<styleVariantConditions/>
+																												</skuid__button>
+																												<skuid__button label="Cancel" uniqueId="button-profiledetail-apps-cancel-top">
+																													<actions>
+																														<action type="cancel">
+																															<models>
+																																<model>Profile</model>
+																																<model>Named</model>
+																																<model>DataSource</model>
+																																<model>App</model>
+																															</models>
+																														</action>
+																														<action type="updateRow" fieldmodel="Profile_UiOnly" affectedrows="context">
+																															<updates>
+																																<update valuesource="formula" field="all_apps_allowed" enclosevalueinquotes="false" value="false">
+																																	<formula>{{$Model.App.data.length}} === {{$Model.AppPermissions.data.length}}</formula>
+																																</update>
+																															</updates>
+																														</action>
+																														<action type="branch" whenfinished="stop" label="if there are ui-only field value changes, save model">
+																															<formula>{{$Model.App.hasChanged}}</formula>
+																															<iftrueactions>
+																																<action type="save">
+																																	<models>
+																																		<model>App</model>
+																																	</models>
+																																</action>
+																															</iftrueactions>
+																														</action>
+																													</actions>
+																													<renderConditions logictype="and"/>
+																													<enableConditions logictype="and">
+																														<condition type="fieldvalue" enclosevalueinquotes="false" fieldmodel="App" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasChanged" value="true" operator="="/>
+																													</enableConditions>
+																													<styleVariantConditions/>
+																												</skuid__button>
+																											</buttons>
+																											<renderConditions logictype="and">
+																												<renderCondition type="fieldvalue" operator="=" enclosevalueinquotes="false" fieldmodel="Profile_UiOnly" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="all_apps_allowed" value="true"/>
+																											</renderConditions>
+																											<styleVariantConditions/>
+																										</skuid__buttonGroup>
+																										<skuid__buttonGroup displayType="detached">
+																											<buttons>
+																												<skuid__button label="Allow all">
+																													<actions>
+																														<action type="updateRow" fieldmodel="Profile_UiOnly" affectedrows="context">
+																															<updates>
+																																<update valuesource="fieldvalue" field="all_apps_allowed" enclosevalueinquotes="false" value="true"/>
+																															</updates>
+																														</action>
+																													</actions>
+																													<renderConditions logictype="and"/>
+																													<enableConditions logictype="and">
+																														<condition type="fieldvalue" operator="=" enclosevalueinquotes="false" fieldmodel="Profile_UiOnly" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="all_apps_allowed" value="false"/>
+																													</enableConditions>
+																													<styleVariantConditions/>
+																												</skuid__button>
+																											</buttons>
+																										</skuid__buttonGroup>
+																									</groups>
+																									<styles>
+																										<spacing bottom="2"/>
+																									</styles>
+																									<renderConditions logictype="and"/>
+																									<styleVariantConditions/>
+																								</skuid__buttonSet>
+																								<skuid__table model="App" uniqueid="table-profile-apps" mode="edit" allowSortingByColumn="false" showSaveCancel="false" pageSize="25" resetPaginationOnQuery="true" showPageSizeSelect="true" showListFooter="true" adaptiveColumns="true" styleSettingsVariant="7696934d-1a9e-4e54-9828-9dbc594ad961">
+																									<fields>
+																										<field type="COMBO" label="App" uniqueid="field-profile-apps-name" template="{{name}}" redirectType="none" readOnly="true">
+																											<renderConditions logictype="and" onhidedatabehavior="keep"/>
+																											<enableConditions/>
+																										</field>
+																										<field id="enabled" displayAs="SWITCH" uniqueid="field-profile-apps-enabled" columnMaxWidth="160px" columnWidth="160px"/>
+																										<field id="default" uniqueid="field-profile-apps-default" displayAs="SWITCH">
+																											<renderConditions logictype="and" onhidedatabehavior="keep"/>
+																											<enableConditions logictype="and" message="The app has to be allowed first">
+																												<condition type="fieldvalue" operator="=" enclosevalueinquotes="false" fieldmodel="App" sourcetype="fieldvalue" field="enabled" fieldtargetobjects="SkuidLocal" value="true"/>
+																											</enableConditions>
+																											<styleVariantConditions/>
+																										</field>
+																									</fields>
+																									<filtering enableSearch="false" instantSearch="false" searchMethod="client" emptySearchBehavior="query" searchConditionName="search" searchPlaceholder="Search apps"/>
+																									<rowActions/>
+																									<massActions/>
+																									<renderConditions logictype="and"/>
+																									<exportProperties useTableColumns="true"/>
+																									<sorting enable="false"/>
+																								</skuid__table>
+																								<skuid__buttonSet uniqueid="sk-3-ex-84906" model="Profile" position="left">
+																									<groups>
+																										<skuid__buttonGroup>
+																											<buttons>
+																												<skuid__button label="Save" styleSettingsVariant="primary">
+																													<actions>
+																														<action type="action-sequence" action-sequence-id="4993837b-2800-4866-97e8-805869f08677"/>
+																													</actions>
+																													<renderConditions logictype="or"/>
+																													<enableConditions logictype="and">
+																														<condition type="fieldvalue" enclosevalueinquotes="false" fieldmodel="App" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasChanged" value="true" operator="="/>
+																													</enableConditions>
+																													<styleVariantConditions/>
+																												</skuid__button>
+																												<skuid__button label="Cancel">
+																													<actions>
+																														<action type="cancel">
+																															<models>
+																																<model>Profile</model>
+																																<model>Named</model>
+																																<model>DataSource</model>
+																																<model>App</model>
+																															</models>
+																														</action>
+																														<action type="updateRow" fieldmodel="Profile_UiOnly" affectedrows="context">
+																															<updates>
+																																<update valuesource="formula" field="all_apps_allowed" enclosevalueinquotes="false" value="false">
+																																	<formula>{{$Model.App.data.length}} === {{$Model.AppPermissions.data.length}}</formula>
+																																</update>
+																															</updates>
+																														</action>
+																														<action type="branch" whenfinished="stop" label="if there are ui-only field value changes, save model">
+																															<formula>{{$Model.App.hasChanged}}</formula>
+																															<iftrueactions>
+																																<action type="save">
+																																	<models>
+																																		<model>App</model>
+																																	</models>
+																																</action>
+																															</iftrueactions>
+																														</action>
+																													</actions>
+																													<renderConditions logictype="and"/>
+																													<enableConditions logictype="and">
+																														<condition type="fieldvalue" enclosevalueinquotes="false" fieldmodel="App" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasChanged" value="true" operator="="/>
+																													</enableConditions>
+																													<styleVariantConditions/>
+																												</skuid__button>
+																											</buttons>
+																											<renderConditions logictype="and"/>
+																											<styleVariantConditions/>
+																										</skuid__buttonGroup>
+																									</groups>
+																									<styles>
+																										<spacing top="3"/>
+																									</styles>
+																									<renderConditions logictype="and">
+																										<renderCondition type="fieldvalue" operator="!=" enclosevalueinquotes="false" fieldmodel="Profile_UiOnly" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="all_apps_allowed" value="true"/>
+																									</renderConditions>
+																									<styleVariantConditions/>
+																								</skuid__buttonSet>
+																							</components>
+																							<background/>
+																							<renderConditions logictype="and">
+																								<renderCondition type="fieldvalue" enclosevalueinquotes="true" fieldmodel="App" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasRows"/>
+																							</renderConditions>
+																						</skuid__wrapper>
+																					</components>
+																				</division>
+																			</divisions>
+																			<interactions/>
+																			<renderConditions logictype="and"/>
+																			<styleVariantConditions/>
+																			<background/>
+																		</skuid__grid>
+																		<skuid__wrapper uniqueid="wrapper-profile-apps-blankstate" styleSettingsVariant="7d5572d7-ec59-43f0-9d03-5259d1980637">
+																			<components>
+																				<skuid__grid uniqueid="sk-2tCP-28384" flexDirection="row" justifyContent="flex-start" alignItems="flex-start" columnGutter="0" rowGutter="0">
+																					<divisions>
+																						<division minWidth="4px" ratio="1" alignSelf="auto">
+																							<components/>
+																						</division>
+																						<division alignSelf="auto" minWidth="100px" ratio="1" maxWidth="400px">
+																							<components>
+																								<skuid__wrapper uniqueid="sk-JNG-13106">
+																									<components>
+																										<skuid__text contents="&lt;style type=&quot;text/css&quot;&gt;#sk-JNW-17696 {opacity: .2;}&#10;&lt;/style&gt;&#10;" uniqueid="sk-XM9-14762">
+																											<styles>
+																												<spacing/>
+																											</styles>
+																										</skuid__text>
+																										<skuid__text contents="&lt;div style=&quot;text-align: center;&quot;&gt;No apps have been created for this site.&lt;/div&gt;&#10;" uniqueid="sk-JNh-18188" styleSettingsVariant="medium">
+																											<styles>
+																												<spacing bottom="4" top="0.5"/>
+																											</styles>
+																											<renderConditions logictype="and"/>
+																										</skuid__text>
+																										<skuid__text contents="&lt;div style=&quot;text-align: center;&quot;&gt;After you have set up one or more apps, you&amp;#39;ll be able to give this profile access to them.&amp;nbsp;&lt;/div&gt;&#10;" uniqueid="sk-2tCZ-31090" styleSettingsVariant="3a6edd33-1e04-41cc-8dc9-a5c9c2a73607">
+																											<styles>
+																												<spacing bottom="4" top="0.5"/>
+																											</styles>
+																										</skuid__text>
+																									</components>
+																									<background/>
+																									<renderConditions logictype="and"/>
+																									<styles>
+																										<spacing top="6" bottom="6"/>
+																									</styles>
+																								</skuid__wrapper>
+																							</components>
+																						</division>
+																						<division alignSelf="auto" minWidth="4px" ratio="1">
+																							<components/>
+																						</division>
+																					</divisions>
+																					<interactions/>
+																					<styles>
+																						<spacing/>
+																					</styles>
+																				</skuid__grid>
+																			</components>
+																			<background/>
+																			<styles>
+																				<spacing top="5" bottom="4" left="3" right="3"/>
+																			</styles>
+																			<renderConditions logictype="and">
+																				<renderCondition fieldmodel="App" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasNoRows"/>
+																			</renderConditions>
+																		</skuid__wrapper>
+																	</components>
+																	<background/>
+																	<renderConditions logictype="and"/>
+																	<styles>
+																		<spacing/>
+																	</styles>
+																</skuid__wrapper>
+															</components>
+															<onInitialShowActions>
+																<action type="branch" whenfinished="stop">
+																	<formula>{{$Model.App.data.length}} === {{$Model.AppPermissions.data.length}}</formula>
+																	<iftrueactions>
+																		<action type="updateRow" fieldmodel="Profile_UiOnly" affectedrows="context">
+																			<updates>
+																				<update valuesource="fieldvalue" field="all_apps_allowed" enclosevalueinquotes="false" value="true"/>
+																			</updates>
+																		</action>
+																	</iftrueactions>
+																</action>
+															</onInitialShowActions>
+															<onShowActions>
+																<action type="branch" whenfinished="stop">
+																	<formula>{{$Model.App.data.length}} === {{$Model.AppPermissions.data.length}}</formula>
+																	<iftrueactions>
+																		<action type="updateRow" fieldmodel="Profile_UiOnly" affectedrows="context">
+																			<updates>
+																				<update valuesource="fieldvalue" field="all_apps_allowed" enclosevalueinquotes="false" value="true"/>
+																			</updates>
+																		</action>
+																	</iftrueactions>
+																</action>
+															</onShowActions>
+															<renderConditions logictype="and"/>
+														</skuid__tabPanel>
+														<skuid__tabPanel name="Data Source Access" uniqueid="tabpanel-profile-datasource">
+															<components>
+																<skuid__wrapper uniqueid="sk-1NgS-63592">
+																	<components>
+																		<skuid__grid uniqueid="sk-3Q4V-63277" flexDirection="row" justifyContent="flex-start" alignItems="flex-start" columnGutter="0" rowGutter="0">
+																			<divisions>
+																				<division minWidth="240px" ratio="1" alignSelf="auto" maxWidth="600px">
+																					<components>
+																						<skuid__wrapper uniqueid="sk-1NgS-63594" styleSettingsVariant="c5a44cb4-0fb9-4631-a576-a20f998816e0">
+																							<components>
+																								<skuid__buttonSet uniqueid="sk-6wf-260217" model="Profile">
+																									<groups>
+																										<skuid__buttonGroup displayType="detached">
+																											<buttons>
+																												<skuid__button uniqueid="button-profile-datasource-save-top" label="Save" styleSettingsVariant="primary">
+																													<actions>
+																														<action type="action-sequence" action-sequence-id="4993837b-2800-4866-97e8-805869f08677"/>
+																													</actions>
+																													<renderConditions logictype="or"/>
+																													<enableConditions logictype="and">
+																														<condition type="fieldvalue" enclosevalueinquotes="false" fieldmodel="DataSource" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasChanged" value="true" operator="="/>
+																													</enableConditions>
+																													<styleVariantConditions/>
+																												</skuid__button>
+																												<skuid__button uniqueid="button-profile-datasource-cancel-top" label="Cancel">
+																													<actions>
+																														<action type="cancel">
+																															<models>
+																																<model>Profile</model>
+																																<model>Named</model>
+																																<model>DataSource</model>
+																																<model>App</model>
+																															</models>
+																														</action>
+																														<action type="updateRow" fieldmodel="Profile_UiOnly" affectedrows="context">
+																															<updates>
+																																<update valuesource="formula" field="all_datasources_allowed" enclosevalueinquotes="false">
+																																	<formula>{{$Model.DataSource.data.length}} === {{$Model.DataSourcePermissions.data.length}}</formula>
+																																</update>
+																															</updates>
+																														</action>
+																													</actions>
+																													<renderConditions logictype="and"/>
+																													<enableConditions logictype="and">
+																														<condition type="fieldvalue" enclosevalueinquotes="false" fieldmodel="DataSource" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasChanged" value="true" operator="="/>
+																													</enableConditions>
+																													<styleVariantConditions/>
+																												</skuid__button>
+																											</buttons>
+																											<renderConditions logictype="and">
+																												<renderCondition type="fieldvalue" enclosevalueinquotes="false" fieldmodel="DataSource" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasChanged" value="true" operator="="/>
+																												<renderCondition type="fieldvalue" operator="=" enclosevalueinquotes="false" fieldmodel="Profile_UiOnly" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="all_datasources_allowed" value="true"/>
+																											</renderConditions>
+																											<styleVariantConditions/>
+																											<conditions/>
+																										</skuid__buttonGroup>
+																										<skuid__buttonGroup>
+																											<buttons>
+																												<skuid__button uniqueid="button-allow-all-datasources" label="Allow all">
+																													<actions>
+																														<action type="updateRow" fieldmodel="Profile_UiOnly" affectedrows="context">
+																															<updates>
+																																<update valuesource="fieldvalue" field="all_datasources_allowed" enclosevalueinquotes="false" value="true"/>
+																															</updates>
+																														</action>
+																													</actions>
+																													<renderConditions logictype="and"/>
+																													<enableConditions logictype="or">
+																														<condition type="fieldvalue" operator="=" enclosevalueinquotes="false" fieldmodel="Profile_UiOnly" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="all_datasources_allowed" value="false"/>
+																														<condition type="blank" operator="=" fieldmodel="Profile_UiOnly" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="all_datasources_allowed" value="null" enclosevalueinquotes="false"/>
+																													</enableConditions>
+																													<styleVariantConditions/>
+																												</skuid__button>
+																											</buttons>
+																										</skuid__buttonGroup>
+																									</groups>
+																									<styles>
+																										<spacing bottom="2"/>
+																									</styles>
+																								</skuid__buttonSet>
+																								<skuid__table model="DataSource" uniqueid="table-profile-datasources" mode="edit" allowSortingByColumn="false" showSaveCancel="false" pageSize="Infinity" showPageSizeSelect="true" resetPaginationOnQuery="true" showListFooter="true" showListHeader="true" adaptiveColumns="true" rowActionsOnLeft="false" styleSettingsVariant="7696934d-1a9e-4e54-9828-9dbc594ad961">
+																									<fields>
+																										<field type="COMBO" label="Data Source" uniqueid="field-profile-datasource-name" readOnly="true" template="{{name}}"/>
+																										<field id="enabled" displayAs="SWITCH" uniqueid="field-profile-datasource-enabled">
+																											<renderConditions logictype="and" onhidedatabehavior="keep"/>
+																											<enableConditions/>
+																										</field>
+																									</fields>
+																									<filtering enableSearch="false" instantSearch="false" searchMethod="client" emptySearchBehavior="query" searchConditionName="search" searchPlaceholder="Search data sources"/>
+																									<rowActions>
+																										<action type="multi" uniqueid="button-profile-datasources-dso-configure" icon="sk-webicon-ink:settings">
+																											<renderConditions logictype="and">
+																												<renderCondition type="fieldvalue" operator="=" enclosevalueinquotes="false" fieldmodel="DataSource" sourcetype="fieldvalue" field="IsSQLDataSource__ui" fieldtargetobjects="SkuidLocal" value="true"/>
+																												<renderCondition type="fieldvalue" operator="=" enclosevalueinquotes="false" fieldmodel="DataSource" sourcetype="fieldvalue" field="enabled" fieldtargetobjects="SkuidLocal" value="true"/>
+																											</renderConditions>
+																											<actions>
+																												<action type="action-sequence" action-sequence-id="4993837b-2800-4866-97e8-805869f08677">
+																													<models>
+																														<model>DataSource</model>
+																													</models>
+																													<onerroractions>
+																														<action type="blockUI" message="There was an error saving changes" timeout="3000" styleSettingsVariant="dark"/>
+																													</onerroractions>
+																												</action>
+																												<action type="updateRow" fieldmodel="ui_control" affectedrows="context">
+																													<updates>
+																														<update valuesource="fieldvalue" field="ds_with_dso_list" enclosevalueinquotes="true" value="{{id}}"/>
+																													</updates>
+																												</action>
+																											</actions>
+																											<tooltip position="top" compact="true" text="Configure permission for {{name}}'s Data Source Objects"/>
+																										</action>
+																									</rowActions>
+																									<massActions/>
+																									<renderConditions logictype="and"/>
+																									<styleVariantConditions/>
+																									<exportProperties useTableColumns="true"/>
+																									<sorting enable="false"/>
+																									<styles>
+																										<spacing/>
+																									</styles>
+																								</skuid__table>
+																								<skuid__buttonSet uniqueid="sk-N8B-68561" model="Profile" position="left">
+																									<groups>
+																										<skuid__buttonGroup displayType="detached">
+																											<buttons>
+																												<skuid__button uniqueid="button-datasources-save-bottom" label="Save" styleSettingsVariant="primary">
+																													<actions>
+																														<action type="action-sequence" action-sequence-id="4993837b-2800-4866-97e8-805869f08677"/>
+																													</actions>
+																													<renderConditions logictype="or"/>
+																													<enableConditions logictype="and">
+																														<condition type="fieldvalue" enclosevalueinquotes="false" fieldmodel="DataSource" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasChanged" value="true" operator="="/>
+																													</enableConditions>
+																													<styleVariantConditions/>
+																												</skuid__button>
+																												<skuid__button uniqueid="button-datasources-cancel-bottom" label="Cancel">
+																													<actions>
+																														<action type="cancel">
+																															<models>
+																																<model>Profile</model>
+																																<model>Named</model>
+																																<model>DataSource</model>
+																																<model>App</model>
+																															</models>
+																														</action>
+																														<action type="updateRow" fieldmodel="Profile_UiOnly" affectedrows="context">
+																															<updates>
+																																<update valuesource="formula" field="all_datasources_allowed" enclosevalueinquotes="false">
+																																	<formula>{{$Model.DataSource.data.length}} === {{$Model.DataSourcePermissions.data.length}}</formula>
+																																</update>
+																															</updates>
+																														</action>
+																													</actions>
+																													<renderConditions logictype="and"/>
+																													<enableConditions logictype="and">
+																														<condition type="fieldvalue" enclosevalueinquotes="false" fieldmodel="DataSource" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasChanged" value="true" operator="="/>
+																													</enableConditions>
+																													<styleVariantConditions/>
+																												</skuid__button>
+																											</buttons>
+																											<renderConditions logictype="and"/>
+																											<styleVariantConditions/>
+																										</skuid__buttonGroup>
+																									</groups>
+																									<styles>
+																										<spacing top="3"/>
+																									</styles>
+																									<renderConditions logictype="and">
+																										<renderCondition type="fieldvalue" operator="!=" enclosevalueinquotes="false" fieldmodel="Profile_UiOnly" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="all_datasources_allowed" value="true"/>
+																									</renderConditions>
+																									<styleVariantConditions/>
+																								</skuid__buttonSet>
+																							</components>
+																							<background/>
+																							<renderConditions logictype="and">
+																								<renderCondition type="fieldvalue" enclosevalueinquotes="true" fieldmodel="DataSource" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasRows"/>
+																								<renderCondition fieldmodel="DataSourceInContext" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasNoRows"/>
+																							</renderConditions>
+																							<interactions/>
+																							<styleVariantConditions/>
+																							<styles>
+																								<spacing/>
+																							</styles>
+																						</skuid__wrapper>
+																					</components>
+																				</division>
+																			</divisions>
+																			<renderConditions logictype="and"/>
+																			<styleVariantConditions/>
+																			<styles>
+																				<spacing/>
+																			</styles>
+																			<background/>
+																		</skuid__grid>
+																		<skuid__grid uniqueid="grid-profile-datasources-DSOselection" flexDirection="row" justifyContent="flex-start" alignItems="center" columnGutter="2" rowGutter="0">
+																			<divisions>
+																				<division minWidth="0px" ratio="0" alignSelf="auto">
+																					<components>
+																						<skuid__text contents="Data Source" uniqueid="sk-3JJC-29851"/>
+																					</components>
+																				</division>
+																				<division alignSelf="auto" minWidth="100px" ratio="0">
+																					<components>
+																						<skuid__form showErrorsInline="true" model="ui_control" uniqueid="form-profile-datasources-DSOselection" mode="edit" showSaveCancel="false">
+																							<columns>
+																								<column verticalAlign="top" ratio="1">
+																									<sections>
+																										<section title="New Section" showHeading="false">
+																											<fields>
+																												<skuid__field id="ds_with_dso_list" uniqueid="field-datasource-with-dso-list-dropdown" showHelp="true" label=" "/>
+																											</fields>
+																										</section>
+																									</sections>
+																								</column>
+																							</columns>
+																							<styles>
+																								<spacing top="-1"/>
+																							</styles>
+																						</skuid__form>
+																					</components>
+																				</division>
+																				<division alignSelf="auto" minWidth="100px" ratio="1">
+																					<components>
+																						<skuid__buttonSet uniqueid="sk-3Jpx-35979">
+																							<groups>
+																								<skuid__buttonGroup>
+																									<buttons>
+																										<skuid__button label="Back to all data sources" uniqueid="button-profile-datasource-DSOselection-backtolist" styleSettingsVariant="0e549b49-582f-44f6-a839-e3a2de781ca4">
+																											<actions>
+																												<action type="emptyModelData">
+																													<models>
+																														<model>DataSourceInContext</model>
+																														<model>DataSourceObjectWarden</model>
+																													</models>
+																												</action>
+																												<action type="updateRow" fieldmodel="ui_control" affectedrows="context">
+																													<updates>
+																														<update valuesource="blank" field="ds_with_dso_list" enclosevalueinquotes="true"/>
+																													</updates>
+																												</action>
+																											</actions>
+																										</skuid__button>
+																									</buttons>
+																								</skuid__buttonGroup>
+																							</groups>
+																							<styles>
+																								<spacing/>
+																							</styles>
+																						</skuid__buttonSet>
+																					</components>
+																				</division>
+																			</divisions>
+																			<renderConditions logictype="and">
+																				<renderCondition type="fieldvalue" enclosevalueinquotes="true" fieldmodel="DataSourceInContext" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasRows"/>
+																			</renderConditions>
+																			<styleVariantConditions/>
+																			<styles>
+																				<spacing bottom="3"/>
+																			</styles>
+																			<background/>
+																		</skuid__grid>
+																		<skuid__wrapper uniqueid="sk-1NgS-63599" height="custom" heightCustom="600px">
+																			<components>
+																				<skuid__grid uniqueid="sk-1cWh-27918" flexDirection="row" justifyContent="flex-start" alignItems="stretch" columnGutter="4" rowGutter="0" height="custom" heightCustom="calc(100vh - 300px)">
+																					<divisions>
+																						<division minWidth="320px" ratio="0" alignSelf="auto" maxWidth="320px">
+																							<components>
+																								<skuid__wrapper uniqueid="sk-1byh-35466" styleSettingsVariant="bf33363a-3a94-4331-aa35-129d2ca56060" minHeightCustom="80%" heightStrategy="fixed">
+																									<components>
+																										<skuid__wrapper uniqueid="sk-39gn-220077">
+																											<components>
+																												<skuid__grid uniqueid="sk-3Jke-28349" flexDirection="row" justifyContent="flex-start" alignItems="center" columnGutter="0" rowGutter="0">
+																													<divisions>
+																														<division minWidth="20px" ratio="1" alignSelf="auto">
+																															<components>
+																																<skuid__text contents="Data source objects" uniqueid="text_dso_menu_header" styleSettingsVariant="53193c74-b77c-429e-8fed-09b73deaa10c">
+																																	<renderConditions logictype="and"/>
+																																	<styleVariantConditions/>
+																																</skuid__text>
+																															</components>
+																														</division>
+																													</divisions>
+																													<styles>
+																														<spacing top="2" left="2" right="2"/>
+																													</styles>
+																													<interactions/>
+																													<renderConditions logictype="and">
+																														<renderCondition type="fieldvalue" enclosevalueinquotes="true" fieldmodel="DataSourceObjectWarden" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasRows"/>
+																													</renderConditions>
+																													<styleVariantConditions/>
+																													<background/>
+																												</skuid__grid>
+																												<skuid__filterSet model="DataSourceObjectWarden" uniqueid="filterset-profile-datasources-DSO-tablesearch" resetButtonBehavior="hide" layout="vertical">
+																													<filters/>
+																													<filtering enableSearch="true" instantSearch="true" instantFilters="true" searchMethod="client" emptySearchBehavior="query" searchPlaceholder="Search"/>
+																													<renderConditions logictype="and"/>
+																													<styleVariantConditions/>
+																													<styles>
+																														<spacing top="2" bottom="2" left="2" right="2"/>
+																													</styles>
+																													<positioning justifyContent="stretch"/>
+																													<sorting enable="false"/>
+																												</skuid__filterSet>
+																												<skuid__wrapper uniqueid="sk-2G0Q-28341" styleSettingsVariant="b5342fe9-7125-4bf8-b20b-ade1825d7e72">
+																													<components/>
+																													<background/>
+																													<renderConditions logictype="and"/>
+																													<styleVariantConditions/>
+																													<styles>
+																														<spacing top="1" styleSettingsVariant="b5342fe9-7125-4bf8-b20b-ade1825d7e72"/>
+																													</styles>
+																												</skuid__wrapper>
+																											</components>
+																											<styles>
+																												<spacing/>
+																											</styles>
+																											<background/>
+																											<renderConditions logictype="and">
+																												<renderCondition type="fieldvalue" enclosevalueinquotes="true" fieldmodel="DataSourceObjectWarden" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasRows"/>
+																											</renderConditions>
+																											<styleVariantConditions/>
+																										</skuid__wrapper>
+																										<skuid__wrapper uniqueid="sk-2AEU-48801" height="custom" heightCustom="calc(100vh - 441px)" overflowY="auto" maxHeightCustom="calc(100vh - 441px)" maxHeight="custom">
+																											<components>
+																												<skuid__text contents="&lt;div style=&quot;text-align: center;&quot;&gt;No data source objects available&lt;/div&gt;&#10;" uniqueid="sk-2G1O-96592" styleSettingsVariant="ef8d4ab0-3722-4e16-903c-ec582c9ca67f">
+																													<renderConditions logictype="and">
+																														<renderCondition fieldmodel="DataSourceObjectWarden" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasNoRows"/>
+																													</renderConditions>
+																													<styleVariantConditions/>
+																													<styles>
+																														<spacing top="4" bottom="4" left="3" right="3" styleSettingsVariant="ef8d4ab0-3722-4e16-903c-ec582c9ca67f"/>
+																													</styles>
+																												</skuid__text>
+																												<skuid__deck columnGutter="0" rowGutter="0" model="DataSourceObjectWarden" showSaveCancel="false" verticalAlign="top" minWidth="100%" uniqueid="deck-profile-datasources-DSO-tablelist" pageSize="Infinity" showPageSizeSelect="false" resetPaginationOnQuery="false" showLoadMore="false" showListHeader="false" showListFooter="true" setMaxWidth="auto">
+																													<components>
+																														<skuid__wrapper uniqueid="sk-2G4E-43314" styleSettingsVariant="9b0bf5a8-a94c-42e0-8aed-c9aec4ebcc15" minHeight="custom" minHeightCustom="46px">
+																															<components>
+																																<skuid__text contents="{{name}}" uniqueid="field-profile-datasources-DSO-tablelist-name" model="DataSourceObjectWarden">
+																																	<styleVariantConditions>
+																																		<rule logictype="and" styleSettingsVariantOverride="default">
+																																			<condition type="fieldvalue" operator="=" enclosevalueinquotes="false" fieldmodel="DataSourceObjectWarden" field="is_selected" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" value="false"/>
+																																		</rule>
+																																		<rule logictype="and" styleSettingsVariantOverride="4e169d0d-def8-4adb-9bb5-baca37505057">
+																																			<condition type="fieldvalue" operator="=" enclosevalueinquotes="false" fieldmodel="DataSourceObjectWarden" field="is_selected" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" value="true"/>
+																																		</rule>
+																																	</styleVariantConditions>
+																																	<conditions>
+																																		<condition type="contextrow" field="Id" mergefield="Id"/>
+																																	</conditions>
+																																	<renderConditions logictype="and"/>
+																																</skuid__text>
+																															</components>
+																															<background/>
+																															<styles>
+																																<spacing/>
+																															</styles>
+																															<renderConditions logictype="and"/>
+																															<styleVariantConditions>
+																																<rule logictype="and" styleSettingsVariantOverride="0288cf5a-1429-4c11-9c4f-012bc1c90460">
+																																	<condition type="fieldvalue" operator="=" enclosevalueinquotes="false" fieldmodel="DataSourceObjectWarden" field="is_selected" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" value="true"/>
+																																</rule>
+																															</styleVariantConditions>
+																														</skuid__wrapper>
+																													</components>
+																													<filtering enableSearch="false" instantSearch="false"/>
+																													<interactions>
+																														<interaction type="tap">
+																															<action type="updateRow" fieldmodel="DataSourceObjectWarden" affectedrows="all">
+																																<updates>
+																																	<update valuesource="fieldvalue" field="is_selected" value="false"/>
+																																</updates>
+																															</action>
+																															<action type="updateRow" fieldmodel="DataSourceObjectWarden" affectedrows="context">
+																																<updates>
+																																	<update valuesource="fieldvalue" field="is_selected" value="true"/>
+																																</updates>
+																															</action>
+																															<action type="runComponentAction" componentid="include-profile-datasources-DSO-tabledetail" action="loadNewPage" pageName="Profile_DSO_PageInclude_v2" namespace="skuid" queryString="inc_entityId={{id}}&amp;inc_dataSourceId={{$Model.DataSourceInContext.data.0.id}}&amp;inc_profileid={{$Model.Profile.data.0.id}}&amp;origin=profile" showLoadingIndicator="true"/>
+																															<action type="updateRow" fieldmodel="ui_control" affectedrows="context">
+																																<updates>
+																																	<update valuesource="fieldvalue" field="edit_dso_permissions" enclosevalueinquotes="false" value="true"/>
+																																</updates>
+																															</action>
+																															<action type="save">
+																																<models>
+																																	<model>DataSourceObjectWarden</model>
+																																</models>
+																															</action>
+																														</interaction>
+																													</interactions>
+																													<renderConditions logictype="and">
+																														<renderCondition type="fieldvalue" enclosevalueinquotes="true" fieldmodel="DataSourceObjectWarden" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasRows"/>
+																													</renderConditions>
+																													<styleVariantConditions/>
+																													<styles>
+																														<spacing bottom="2"/>
+																													</styles>
+																													<sorting enable="false"/>
+																												</skuid__deck>
+																											</components>
+																											<styles>
+																												<spacing/>
+																											</styles>
+																											<background/>
+																										</skuid__wrapper>
+																									</components>
+																									<background/>
+																									<styles>
+																										<spacing/>
+																									</styles>
+																								</skuid__wrapper>
+																							</components>
+																							<renderConditions logictype="and"/>
+																						</division>
+																						<division alignSelf="auto" minWidth="0" ratio="7">
+																							<components>
+																								<skuid__wrapper uniqueid="sk-1cWh-27931" styleSettingsVariant="bf33363a-3a94-4331-aa35-129d2ca56060" height="custom" minHeightCustom="calc(100vh - 300px)" heightCustom="calc(100vh - 323px)">
+																									<components>
+																										<skuid__wrapper uniqueid="sk-1cWh-27932">
+																											<components>
+																												<skuid__pageInclude includeType="skuid" uniqueid="include-profile-datasources-DSO-tabledetail" showLoadingIndicator="false">
+																													<renderConditions logictype="and"/>
+																												</skuid__pageInclude>
+																											</components>
+																											<background/>
+																											<renderConditions logictype="and"/>
+																											<styleVariantConditions/>
+																										</skuid__wrapper>
+																									</components>
+																									<background/>
+																									<renderConditions logictype="and"/>
+																									<styleVariantConditions/>
+																									<styles>
+																										<spacing/>
+																									</styles>
+																								</skuid__wrapper>
+																							</components>
+																							<renderConditions logictype="and">
+																								<renderCondition type="fieldvalue" operator="=" enclosevalueinquotes="false" fieldmodel="ui_control" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="edit_dso_permissions" value="true"/>
+																								<renderCondition type="fieldvalue" enclosevalueinquotes="true" fieldmodel="DataSourceObjectWarden" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasRows"/>
+																							</renderConditions>
+																						</division>
+																					</divisions>
+																					<renderConditions logictype="and"/>
+																					<styleVariantConditions/>
+																					<styles>
+																						<spacing/>
+																					</styles>
+																					<background/>
+																				</skuid__grid>
+																			</components>
+																			<background/>
+																			<renderConditions logictype="and">
+																				<renderCondition type="fieldvalue" enclosevalueinquotes="true" fieldmodel="DataSourceInContext" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasRows"/>
+																			</renderConditions>
+																			<styleVariantConditions/>
+																			<styles>
+																				<spacing/>
+																			</styles>
+																		</skuid__wrapper>
+																		<skuid__wrapper uniqueid="wrapper-profile-datasources-blankstate" styleSettingsVariant="7d5572d7-ec59-43f0-9d03-5259d1980637">
+																			<components>
+																				<skuid__grid uniqueid="sk-1NgS-63612" flexDirection="row" justifyContent="flex-start" alignItems="flex-start" columnGutter="0" rowGutter="0">
+																					<divisions>
+																						<division minWidth="4px" ratio="1" alignSelf="auto">
+																							<components/>
+																						</division>
+																						<division alignSelf="auto" minWidth="100px" ratio="1" maxWidth="400px">
+																							<components>
+																								<skuid__wrapper uniqueid="sk-1NgS-63613">
+																									<components>
+																										<skuid__text contents="&lt;style type=&quot;text/css&quot;&gt;#sk-JNW-17696 {opacity: .2;}&#10;&lt;/style&gt;&#10;" uniqueid="sk-1NgS-63614"/>
+																										<skuid__text contents="&lt;div style=&quot;text-align: center;&quot;&gt;There are no data sources created for this site.&amp;nbsp;&lt;/div&gt;&#10;" uniqueid="sk-1NgS-63615" styleSettingsVariant="medium">
+																											<styles>
+																												<spacing bottom="4" top="0.5"/>
+																											</styles>
+																										</skuid__text>
+																										<skuid__text contents="&lt;div style=&quot;text-align: center;&quot;&gt;Once you set up one or more data sources, you will be able to control access to them for this profile.&amp;nbsp;&lt;/div&gt;&#10;" uniqueid="sk-1NgS-63616" styleSettingsVariant="3a6edd33-1e04-41cc-8dc9-a5c9c2a73607">
+																											<styles>
+																												<spacing bottom="4" top="0.5"/>
+																											</styles>
+																										</skuid__text>
+																									</components>
+																									<background/>
+																									<renderConditions logictype="and"/>
+																									<styles>
+																										<spacing top="6" bottom="6"/>
+																									</styles>
+																								</skuid__wrapper>
+																							</components>
+																						</division>
+																						<division alignSelf="auto" minWidth="4px" ratio="1">
+																							<components/>
+																						</division>
+																					</divisions>
+																				</skuid__grid>
+																			</components>
+																			<background/>
+																			<styles>
+																				<spacing top="5" bottom="4" left="3" right="3"/>
+																			</styles>
+																			<renderConditions logictype="and">
+																				<renderCondition fieldmodel="DataSource" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasNoRows"/>
+																			</renderConditions>
+																		</skuid__wrapper>
+																	</components>
+																	<background/>
+																	<renderConditions logictype="and"/>
+																</skuid__wrapper>
+															</components>
+															<onInitialShowActions>
+																<action type="branch" whenfinished="stop">
+																	<formula>{{$Model.DataSource.data.length}} === {{$Model.DataSourcePermissions.data.length}}</formula>
+																	<iftrueactions>
+																		<action type="updateRow" fieldmodel="Profile_UiOnly" affectedrows="context">
+																			<updates>
+																				<update valuesource="fieldvalue" field="all_datasources_allowed" enclosevalueinquotes="false" value="true"/>
+																			</updates>
+																		</action>
+																	</iftrueactions>
+																</action>
+															</onInitialShowActions>
+															<onShowActions>
+																<action type="emptyModelData">
+																	<models>
+																		<model>DataSourceInContext</model>
+																	</models>
+																</action>
+																<action type="custom" snippet="SQL_ds_list"/>
+																<action type="branch" whenfinished="stop">
+																	<formula>{{$Model.DataSource.data.length}} === {{$Model.DataSourcePermissions.data.length}}</formula>
+																	<iftrueactions>
+																		<action type="updateRow" fieldmodel="Profile_UiOnly" affectedrows="context">
+																			<updates>
+																				<update valuesource="fieldvalue" field="all_datasources_allowed" enclosevalueinquotes="false" value="true"/>
+																			</updates>
+																		</action>
+																	</iftrueactions>
+																</action>
+															</onShowActions>
+															<renderConditions logictype="and"/>
+														</skuid__tabPanel>
+														<skuid__tabPanel name="User Signup" uniqueid="tabpanel-profile-signup">
+															<components>
+																<skuid__wrapper uniqueid="sk-91S-2799" styleSettingsVariant="ca672dea-7a84-491e-8f05-d6cf6cab3cd8">
+																	<components>
+																		<skuid__grid uniqueid="sk-2t_X-48118" flexDirection="row" justifyContent="flex-start" alignItems="flex-start" columnGutter="4" rowGutter="0">
+																			<divisions>
+																				<division minWidth="240px" ratio="1" alignSelf="auto" maxWidth="600px">
+																					<components>
+																						<skuid__wrapper uniqueid="sk-2t_a-50067" styleSettingsVariant="c5a44cb4-0fb9-4631-a576-a20f998816e0">
+																							<components>
+																								<skuid__grid uniqueid="sk-2t_j-51230" flexDirection="row" justifyContent="flex-start" alignItems="center" columnGutter="3" rowGutter="0">
+																									<divisions>
+																										<division minWidth="0" ratio="1" alignSelf="auto">
+																											<components>
+																												<skuid__text contents="Enable user registration for this {{^$Model.FeatureFlags.data.0.appPermSetsEnabled}}profile{{/$Model.FeatureFlags.data.0.appPermSetsEnabled}}{{#$Model.FeatureFlags.data.0.appPermSetsEnabled}}site permission set{{/$Model.FeatureFlags.data.0.appPermSetsEnabled}}&amp;nbsp;" uniqueid="sk-39WF-92627" styleSettingsVariant="bcf356fb-cd9b-4b49-adb6-299b154f243f">
+																													<styles>
+																														<spacing bottom=".5"/>
+																													</styles>
+																												</skuid__text>
+																												<skuid__text contents="Enable to allow custom user creation method from REST calls or any Skuid pages." uniqueid="sk-2u1R-41330" styleSettingsVariant="ef8d4ab0-3722-4e16-903c-ec582c9ca67f">
+																													<renderConditions logictype="and">
+																														<renderCondition type="fieldvalue" operator="=" enclosevalueinquotes="false" fieldmodel="Profile" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="enable_signup_api" fieldtargetobjects="SkuidLocal" value="false"/>
+																													</renderConditions>
+																													<styles>
+																														<spacing/>
+																													</styles>
+																												</skuid__text>
+																												<skuid__text contents="Enabled. Configure below." uniqueid="sk-2u29-41999" styleSettingsVariant="ef8d4ab0-3722-4e16-903c-ec582c9ca67f">
+																													<renderConditions logictype="and">
+																														<renderCondition type="fieldvalue" operator="=" enclosevalueinquotes="false" fieldmodel="Profile" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="enable_signup_api" fieldtargetobjects="SkuidLocal" value="true"/>
+																													</renderConditions>
+																												</skuid__text>
+																											</components>
+																										</division>
+																										<division alignSelf="auto" ratio="0" minWidth="0">
+																											<components>
+																												<skuid__form showErrorsInline="true" model="Profile" uniqueid="form-profile-signup-api-enable" mode="edit">
+																													<columns>
+																														<column verticalAlign="top" ratio="1">
+																															<sections>
+																																<section title="New Section" showHeading="false">
+																																	<fields>
+																																		<skuid__field id="enable_signup_api" uniqueid="field-profile-signup-api-enable" showHelp="true" label=" " displayAs="SWITCH"/>
+																																	</fields>
+																																</section>
+																															</sections>
+																														</column>
+																													</columns>
+																													<styles>
+																														<spacing top="-1"/>
+																													</styles>
+																												</skuid__form>
+																											</components>
+																										</division>
+																									</divisions>
+																									<background/>
+																								</skuid__grid>
+																								<skuid__wrapper uniqueid="sk-2t_f-50463">
+																									<components>
+																										<skuid__text contents="{{^$Model.FeatureFlags.data.0.appPermSetsEnabled}}Profile{{/$Model.FeatureFlags.data.0.appPermSetsEnabled}}{{#$Model.FeatureFlags.data.0.appPermSetsEnabled}}Site permission set{{/$Model.FeatureFlags.data.0.appPermSetsEnabled}} registration slug" uniqueid="sk-1xJV-47053" model="FeatureFlags" styleSettingsVariant="bcf356fb-cd9b-4b49-adb6-299b154f243f">
+																											<renderConditions logictype="and"/>
+																											<styleVariantConditions/>
+																											<styles>
+																												<spacing top="3" styleSettingsVariant="bcf356fb-cd9b-4b49-adb6-299b154f243f"/>
+																											</styles>
+																										</skuid__text>
+																										<skuid__form showErrorsInline="true" model="Profile" uniqueid="form-profile-signup-api-details" mode="edit">
+																											<styles>
+																												<spacing bottom="3"/>
+																											</styles>
+																											<renderConditions logictype="and"/>
+																											<columns>
+																												<column verticalAlign="top" ratio="1">
+																													<sections>
+																														<section title="User Signup API" showHeading="false">
+																															<fields>
+																																<skuid__field id="signup_api_prefix" readOnly="false" uniqueid="field-profile-signup-api-prefix" showHelp="false" label=" ">
+																																	<renderConditions logictype="and" onhidedatabehavior="keep"/>
+																																	<enableConditions logictype="and" message="Signup API is not enabled."/>
+																																</skuid__field>
+																																<skuid__field type="COMBO" uniqueid="template-profile-signup-api-fullendpoint" template="{{{$Site.CurrentSiteUrl}}}{{{signup_api_url}}}" readOnly="true" redirectType="none" window="blank" rootUrl="{{signup_api_url}}" label="Registration API endpoint"/>
+																																<skuid__field id="allowed_email_domains" uniqueid="field-profile-singup-api-allowed-emails" showHelp="belowlabel" displayRows="2">
+																																	<renderConditions logictype="and" onhidedatabehavior="keep"/>
+																																	<enableConditions logictype="and" message="Signup API is not enabled.">
+																																		<condition type="fieldvalue" operator="=" enclosevalueinquotes="false" fieldmodel="Profile" sourcetype="fieldvalue" field="enable_signup_api" fieldtargetobjects="SkuidLocal" value="true"/>
+																																	</enableConditions>
+																																</skuid__field>
+																																<skuid__field id="require_email_verification_on_signup" uniqueid="field-profile-signup-api-require-verification" showHelp="true">
+																																	<renderConditions logictype="and" onhidedatabehavior="keep"/>
+																																	<enableConditions logictype="and" message="Signup API is not enabled.">
+																																		<condition type="fieldvalue" operator="=" enclosevalueinquotes="false" fieldmodel="Profile" sourcetype="fieldvalue" field="enable_signup_api" fieldtargetobjects="SkuidLocal" value="true"/>
+																																	</enableConditions>
+																																</skuid__field>
+																															</fields>
+																														</section>
+																													</sections>
+																												</column>
+																											</columns>
+																										</skuid__form>
+																										<skuid__buttonSet uniqueid="sk-6uM-35736" position="left" model="Profile">
+																											<groups>
+																												<skuid__buttonGroup>
+																													<buttons>
+																														<skuid__button uniqueid="button-user-signup-api-save" label="Save" styleSettingsVariant="primary">
+																															<actions>
+																																<action type="action-sequence" action-sequence-id="4993837b-2800-4866-97e8-805869f08677"/>
+																															</actions>
+																															<renderConditions logictype="or"/>
+																															<enableConditions logictype="and">
+																																<condition type="fieldvalue" enclosevalueinquotes="false" fieldmodel="Profile" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasChanged" value="true" operator="="/>
+																															</enableConditions>
+																															<styleVariantConditions/>
+																														</skuid__button>
+																														<skuid__button uniqueid="button-user-signup-api-cancel" label="Cancel">
+																															<actions>
+																																<action type="cancel">
+																																	<models>
+																																		<model>Profile</model>
+																																		<model>Named</model>
+																																		<model>DataSource</model>
+																																		<model>App</model>
+																																	</models>
+																																</action>
+																															</actions>
+																															<renderConditions logictype="and"/>
+																															<enableConditions logictype="and">
+																																<condition type="fieldvalue" enclosevalueinquotes="false" fieldmodel="Profile" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasChanged" value="true" operator="="/>
+																															</enableConditions>
+																															<styleVariantConditions/>
+																														</skuid__button>
+																													</buttons>
+																												</skuid__buttonGroup>
+																											</groups>
+																											<renderConditions logictype="and"/>
+																											<styleVariantConditions/>
+																										</skuid__buttonSet>
+																									</components>
+																									<background/>
+																									<renderConditions logictype="and">
+																										<renderCondition type="fieldvalue" operator="=" enclosevalueinquotes="false" fieldmodel="Profile" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="enable_signup_api" fieldtargetobjects="SkuidLocal" value="true"/>
+																									</renderConditions>
+																									<styleVariantConditions/>
+																								</skuid__wrapper>
+																							</components>
+																							<background/>
+																							<styles>
+																								<spacing bottom="4" styleSettingsVariant="c5a44cb4-0fb9-4631-a576-a20f998816e0"/>
+																							</styles>
+																						</skuid__wrapper>
+																						<skuid__wrapper uniqueid="sk-2u3T-41563" styleSettingsVariant="c5a44cb4-0fb9-4631-a576-a20f998816e0">
+																							<components>
+																								<skuid__grid uniqueid="sk-2u3X-42022" flexDirection="row" justifyContent="flex-start" alignItems="center" columnGutter="3" rowGutter="0">
+																									<divisions>
+																										<division minWidth="100px" ratio="1">
+																											<components>
+																												<skuid__text contents="Custom registration pages" uniqueid="sk-39YO-121002" styleSettingsVariant="bcf356fb-cd9b-4b49-adb6-299b154f243f">
+																													<styles>
+																														<spacing bottom=".5"/>
+																													</styles>
+																												</skuid__text>
+																												<skuid__text contents="A customized registration page for the {{^$Model.FeatureFlags.data.0.appPermSetsEnabled}}profile{{/$Model.FeatureFlags.data.0.appPermSetsEnabled}}{{#$Model.FeatureFlags.data.0.appPermSetsEnabled}}site permission set{{/$Model.FeatureFlags.data.0.appPermSetsEnabled}} is optional&amp;mdash;but can create a better user experience." uniqueid="sk-2u3X-42024" styleSettingsVariant="ef8d4ab0-3722-4e16-903c-ec582c9ca67f" model="FeatureFlags">
+																													<renderConditions logictype="and">
+																														<renderCondition type="fieldvalue" operator="=" enclosevalueinquotes="false" fieldmodel="Profile" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="enable_signup_ui" fieldtargetobjects="SkuidLocal" value="false"/>
+																													</renderConditions>
+																												</skuid__text>
+																												<skuid__text contents="Enabled. Configure below." uniqueid="sk-2u3X-42025" styleSettingsVariant="ef8d4ab0-3722-4e16-903c-ec582c9ca67f">
+																													<renderConditions logictype="and">
+																														<renderCondition type="fieldvalue" operator="=" enclosevalueinquotes="false" fieldmodel="Profile" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="enable_signup_ui" fieldtargetobjects="SkuidLocal" value="true"/>
+																													</renderConditions>
+																												</skuid__text>
+																											</components>
+																										</division>
+																										<division alignSelf="auto" ratio="0" minWidth="16px">
+																											<components>
+																												<skuid__form showErrorsInline="true" model="Profile" uniqueid="form-profile-signup-pages-enable" mode="edit">
+																													<columns>
+																														<column verticalAlign="top" ratio="1">
+																															<sections>
+																																<section title="New Section" showHeading="false">
+																																	<fields>
+																																		<skuid__field id="enable_signup_ui" uniqueid="field-profile-signup-pages-enable" showHelp="true" label=" " displayAs="SWITCH">
+																																			<renderConditions logictype="and" onhidedatabehavior="keep"/>
+																																			<enableConditions logictype="and">
+																																				<condition type="fieldvalue" operator="=" enclosevalueinquotes="false" fieldmodel="Profile" sourcetype="fieldvalue" field="enable_signup_api" fieldtargetobjects="SkuidLocal" value="true"/>
+																																			</enableConditions>
+																																		</skuid__field>
+																																	</fields>
+																																</section>
+																															</sections>
+																														</column>
+																													</columns>
+																													<styles>
+																														<spacing top="-1"/>
+																													</styles>
+																												</skuid__form>
+																											</components>
+																										</division>
+																									</divisions>
+																									<background/>
+																								</skuid__grid>
+																								<skuid__wrapper uniqueid="sk-2u3t-46602">
+																									<components>
+																										<skuid__wrapper uniqueid="sk-2u4R-45585">
+																											<components>
+																												<skuid__grid uniqueid="sk-70b-460684" alignItems="flex-start" flexDirection="row" justifyContent="flex-start">
+																													<divisions>
+																														<division minWidth="100px" ratio="0">
+																															<components>
+																																<skuid__form showErrorsInline="true" model="Profile" uniqueid="field-profile-signup-pages-details-part1" mode="edit">
+																																	<styles>
+																																		<spacing bottom="2" top="0.5"/>
+																																	</styles>
+																																	<renderConditions logictype="and"/>
+																																	<styleVariantConditions/>
+																																	<columns>
+																																		<column verticalAlign="top" ratio="1">
+																																			<sections>
+																																				<section title="Signup Experience" showHeading="false">
+																																					<fields>
+																																						<skuid__field id="SignupUrl" showHelp="belowlabel" uniqueid="field-profile-signup-pages-signupurl"/>
+																																					</fields>
+																																				</section>
+																																			</sections>
+																																		</column>
+																																	</columns>
+																																</skuid__form>
+																															</components>
+																														</division>
+																														<division alignSelf="auto" minWidth="100px" ratio="1">
+																															<components>
+																																<skuid__buttonSet uniqueid="sk-2u5h-49864" model="Profile" position="left">
+																																	<groups>
+																																		<skuid__buttonGroup>
+																																			<buttons>
+																																				<skuid__button label="Preview" uniqueid="button-profile-signup-pages-preview">
+																																					<actions>
+																																						<action type="redirect" url="{{{signup_page_url}}}" window="blank"/>
+																																					</actions>
+																																					<renderConditions logictype="and"/>
+																																					<enableConditions/>
+																																					<styleVariantConditions/>
+																																					<hotkeys/>
+																																				</skuid__button>
+																																			</buttons>
+																																		</skuid__buttonGroup>
+																																	</groups>
+																																	<renderConditions logictype="and"/>
+																																	<styles>
+																																		<spacing bottom="3"/>
+																																	</styles>
+																																</skuid__buttonSet>
+																															</components>
+																														</division>
+																													</divisions>
+																													<styles>
+																														<spacing top="3"/>
+																													</styles>
+																													<background/>
+																												</skuid__grid>
+																												<skuid__form showErrorsInline="true" model="Profile" uniqueid="form-profile-signup-pages-details-part2" mode="edit">
+																													<styles>
+																														<spacing bottom="2"/>
+																													</styles>
+																													<renderConditions logictype="and"/>
+																													<styleVariantConditions/>
+																													<columns>
+																														<column verticalAlign="top" ratio="1">
+																															<sections>
+																																<section title="" showHeading="false">
+																																	<fields>
+																																		<skuid__field id="signup_ui" showHelp="belowlabel" displayAs="RADIO" uniqueid="field-profile-signup-pages-uimethod" radioLayout="column"/>
+																																	</fields>
+																																</section>
+																															</sections>
+																														</column>
+																													</columns>
+																												</skuid__form>
+																												<skuid__wrapper uniqueid="registration-wrapper-customSignupPages">
+																													<components>
+																														<skuid__form showErrorsInline="true" model="Profile" uniqueid="form-profile-signup-pages-details-part3" mode="edit">
+																															<styles>
+																																<spacing bottom="2" left="3"/>
+																															</styles>
+																															<renderConditions logictype="and"/>
+																															<styleVariantConditions/>
+																															<columns>
+																																<column verticalAlign="top" ratio="1">
+																																	<sections>
+																																		<section title="New Section" showHeading="false">
+																																			<renderConditions logictype="and">
+																																				<renderCondition type="blank" operator="!=" fieldmodel="Profile" sourcetype="fieldvalue" field="verify_page_id" fieldtargetobjects="SkuidLocal" value="null" enclosevalueinquotes="false"/>
+																																			</renderConditions>
+																																			<fields>
+																																				<skuid__field id="signup_page_id" uniqueid="field-profile-signup-pages-signup-page" pageSize="5" displayTemplate="{{name}}" searchTemplate="{{name}}" showHelp="true" label="Signup" tokenizeSearch="false">
+																																					<renderConditions logictype="and" onhidedatabehavior="keep"/>
+																																					<enableConditions logictype="and">
+																																						<condition type="fieldvalue" operator="=" enclosevalueinquotes="true" fieldmodel="Profile" sourcetype="fieldvalue" field="signup_ui" fieldtargetobjects="SkuidLocal" value="custom"/>
+																																					</enableConditions>
+																																					<styleVariantConditions/>
+																																				</skuid__field>
+																																				<skuid__field id="signup_confirmation_page_id" uniqueid="field-profile-signup-pages-confirmation-page" pageSize="5" displayTemplate="{{name}}" searchTemplate="{{name}}" showHelp="true" redirectType="none" label="Signup Confirmation" tokenizeSearch="false">
+																																					<filters/>
+																																					<renderConditions logictype="and" onhidedatabehavior="keep"/>
+																																					<enableConditions logictype="and">
+																																						<condition type="fieldvalue" operator="=" enclosevalueinquotes="true" fieldmodel="Profile" sourcetype="fieldvalue" field="signup_ui" fieldtargetobjects="SkuidLocal" value="custom"/>
+																																					</enableConditions>
+																																					<styleVariantConditions/>
+																																				</skuid__field>
+																																				<skuid__field id="verify_page_id" uniqueid="field-profile-signup-pages-verification-pages" pageSize="5" displayTemplate="{{name}}" searchTemplate="{{name}}" showHelp="true" label="Verification" tokenizeSearch="false">
+																																					<renderConditions logictype="and" onhidedatabehavior="keep"/>
+																																					<enableConditions logictype="and">
+																																						<condition type="fieldvalue" operator="=" enclosevalueinquotes="true" fieldmodel="Profile" sourcetype="fieldvalue" field="signup_ui" fieldtargetobjects="SkuidLocal" value="custom"/>
+																																					</enableConditions>
+																																					<styleVariantConditions/>
+																																				</skuid__field>
+																																			</fields>
+																																		</section>
+																																	</sections>
+																																</column>
+																															</columns>
+																														</skuid__form>
+																														<skuid__buttonSet uniqueid="sk-3P47-29649" model="Profile" position="left">
+																															<groups>
+																																<skuid__buttonGroup>
+																																	<buttons>
+																																		<skuid__button label="Remove custom signup pages" uniqueid="button-profile-signup-pages-remove">
+																																			<enableConditions logictype="and"/>
+																																			<actions>
+																																				<action type="emptyModelData">
+																																					<models>
+																																						<model>RemoveSignupPagesUI</model>
+																																					</models>
+																																				</action>
+																																				<action type="createRow" model="RemoveSignupPagesUI" appendorprepend="prepend" defaultmodefornewitems="edit" affectedrows="context"/>
+																																				<action type="showModal">
+																																					<skuid__modal title="Remove custom signup pages" width="640px">
+																																						<components>
+																																							<skuid__text contents="This {{^$Model.FeatureFlags.data.0.appPermSetsEnabled}}profile{{/$Model.FeatureFlags.data.0.appPermSetsEnabled}}{{#$Model.FeatureFlags.data.0.appPermSetsEnabled}}site permission set{{/$Model.FeatureFlags.data.0.appPermSetsEnabled}} will no longer use the custom signup pages that you created, and will return to using the default signup pages.&amp;nbsp;" uniqueid="sk-3P47-29651">
+																																								<conditions/>
+																																							</skuid__text>
+																																							<skuid__form showErrorsInline="true" model="RemoveSignupPagesUI" uniqueid="sk-3P47-29652">
+																																								<styles>
+																																									<spacing top="4"/>
+																																								</styles>
+																																								<columns>
+																																									<column verticalAlign="top" ratio="1">
+																																										<sections>
+																																											<section title="New Section" showHeading="false">
+																																												<fields>
+																																													<skuid__field id="DeletePages" uniqueid="field-delete-custom-signup-pages" showHelp="belowlabel"/>
+																																												</fields>
+																																											</section>
+																																										</sections>
+																																									</column>
+																																								</columns>
+																																							</skuid__form>
+																																						</components>
+																																						<buttons>
+																																							<skuid__button label="Remove" styleSettingsVariant="primary" uniqueid="button-confirm-remove-custom-signup-pages-save">
+																																								<actions>
+																																									<action type="blockUI" message="Removing custom signup pages..." styleSettingsVariant="dark"/>
+																																									<action type="custom" snippet="skuid.settings.removeCustomSignupPages">
+																																										<onerroractions>
+																																											<action type="blockUI" message="There was an error removing custom signup pages" timeout="3000" styleSettingsVariant="dark"/>
+																																										</onerroractions>
+																																									</action>
+																																									<action type="updateRow" fieldmodel="Profile">
+																																										<updates>
+																																											<update field="signup_ui" enclosevalueinquotes="true" value="default" valuesource="fieldvalue"/>
+																																										</updates>
+																																									</action>
+																																									<action type="save">
+																																										<models>
+																																											<model>Profile</model>
+																																										</models>
+																																									</action>
+																																									<action type="unblockUI"/>
+																																									<action type="closeAllPopups"/>
+																																								</actions>
+																																							</skuid__button>
+																																							<skuid__button label="Cancel" uniqueid="button-confirm-remove-custom-signup-pages-cancel">
+																																								<actions>
+																																									<action type="closeAllPopups"/>
+																																								</actions>
+																																							</skuid__button>
+																																						</buttons>
+																																					</skuid__modal>
+																																				</action>
+																																			</actions>
+																																			<styleVariantConditions/>
+																																		</skuid__button>
+																																	</buttons>
+																																</skuid__buttonGroup>
+																															</groups>
+																															<styles>
+																																<spacing top="2" left="3"/>
+																															</styles>
+																															<renderConditions logictype="and">
+																																<renderCondition type="blank" operator="!=" fieldmodel="Profile" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="signup_page_id" fieldtargetobjects="SkuidLocal" value="null" enclosevalueinquotes="false"/>
+																																<renderCondition type="fieldvalue" operator="=" enclosevalueinquotes="true" fieldmodel="Profile" sourcetype="fieldvalue" field="signup_ui" fieldtargetobjects="SkuidLocal" value="custom"/>
+																															</renderConditions>
+																															<styleVariantConditions/>
+																														</skuid__buttonSet>
+																													</components>
+																													<background/>
+																													<styles>
+																														<spacing/>
+																													</styles>
+																													<renderConditions logictype="and"/>
+																													<styleVariantConditions/>
+																													<interactions/>
+																												</skuid__wrapper>
+																											</components>
+																											<background/>
+																											<renderConditions logictype="and"/>
+																										</skuid__wrapper>
+																										<skuid__buttonSet uniqueid="sk-6-7-440450" position="left" model="Profile">
+																											<groups>
+																												<skuid__buttonGroup>
+																													<buttons>
+																														<skuid__button uniqueid="button-custom-signup-pages-save" label="Save" styleSettingsVariant="primary">
+																															<actions>
+																																<action type="action-sequence" action-sequence-id="4993837b-2800-4866-97e8-805869f08677"/>
+																															</actions>
+																															<renderConditions logictype="or"/>
+																															<enableConditions logictype="and">
+																																<condition type="fieldvalue" enclosevalueinquotes="false" fieldmodel="Profile" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasChanged" value="true" operator="="/>
+																															</enableConditions>
+																															<styleVariantConditions/>
+																														</skuid__button>
+																														<skuid__button uniqueid="button-custom-signup-pages-cancel" label="Cancel">
+																															<actions>
+																																<action type="cancel">
+																																	<models>
+																																		<model>Profile</model>
+																																		<model>Named</model>
+																																		<model>DataSource</model>
+																																		<model>App</model>
+																																	</models>
+																																</action>
+																															</actions>
+																															<renderConditions logictype="and"/>
+																															<enableConditions logictype="and">
+																																<condition type="fieldvalue" enclosevalueinquotes="false" fieldmodel="Profile" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasChanged" value="true" operator="="/>
+																															</enableConditions>
+																															<styleVariantConditions/>
+																														</skuid__button>
+																													</buttons>
+																												</skuid__buttonGroup>
+																											</groups>
+																											<renderConditions logictype="and"/>
+																											<styleVariantConditions/>
+																											<styles>
+																												<spacing top="4"/>
+																											</styles>
+																										</skuid__buttonSet>
+																									</components>
+																									<background/>
+																									<renderConditions logictype="and">
+																										<renderCondition type="fieldvalue" operator="=" enclosevalueinquotes="false" fieldmodel="Profile" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="enable_signup_ui" fieldtargetobjects="SkuidLocal" value="true"/>
+																									</renderConditions>
+																								</skuid__wrapper>
+																							</components>
+																							<background/>
+																							<renderConditions logictype="and">
+																								<renderCondition type="fieldvalue" operator="=" enclosevalueinquotes="false" fieldmodel="Profile" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="enable_signup_api" fieldtargetobjects="SkuidLocal" value="true"/>
+																								<renderCondition type="blank" operator="!=" fieldmodel="Profile" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="signup_api_prefix" fieldtargetobjects="SkuidLocal" value="null" enclosevalueinquotes="false"/>
+																							</renderConditions>
+																							<styleVariantConditions/>
+																							<styles>
+																								<spacing/>
+																							</styles>
+																						</skuid__wrapper>
+																					</components>
+																				</division>
+																				<division alignSelf="auto" minWidth="240px" ratio="1" maxWidth="600px">
+																					<components>
+																						<skuid__wrapper uniqueid="sk-3FxR-46558">
+																							<components>
+																								<skuid__text contents="&lt;b id=&quot;docs-internal-guid-8a431152-7fff-d3ab-fb5b-caf89debd502&quot;&gt;Why activate self-service registration&lt;/b&gt;" uniqueid="sk-11o4-58660" styleSettingsVariant="bcf356fb-cd9b-4b49-adb6-299b154f243f"/>
+																								<skuid__text contents="&lt;p&gt;This allows user accounts to be created without administrator intervention. You can create one self-registration method&amp;nbsp;for each {{^$Model.FeatureFlags.data.0.appPermSetsEnabled}}profile{{/$Model.FeatureFlags.data.0.appPermSetsEnabled}}{{#$Model.FeatureFlags.data.0.appPermSetsEnabled}}site permission set{{/$Model.FeatureFlags.data.0.appPermSetsEnabled}}.&amp;nbsp;&lt;br /&gt;&#10;&lt;br /&gt;&#10;&lt;a href=&quot;https://docs.skuid.com/platform/en/skuid-platform/user-and-permission-management.html#edit-profile-permissions&quot; target=&quot;_blank&quot;&gt;More about the User Registration&amp;nbsp;API&lt;/a&gt;&lt;/p&gt;&#10;" uniqueid="sk-11o9-84028" model="FeatureFlags">
+																									<styles>
+																										<spacing top=".5"/>
+																									</styles>
+																								</skuid__text>
+																							</components>
+																							<background/>
+																							<renderConditions logictype="and">
+																								<renderCondition type="fieldvalue" operator="=" enclosevalueinquotes="false" fieldmodel="Profile" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="enable_signup_api" fieldtargetobjects="SkuidLocal" value="false"/>
+																							</renderConditions>
+																							<styleVariantConditions/>
+																							<styles>
+																								<spacing/>
+																							</styles>
+																						</skuid__wrapper>
+																					</components>
+																					<renderConditions logictype="and"/>
+																				</division>
+																			</divisions>
+																			<styles>
+																				<spacing bottom="4"/>
+																			</styles>
+																			<background/>
+																		</skuid__grid>
+																	</components>
+																	<background/>
+																	<styles>
+																		<spacing/>
+																	</styles>
+																</skuid__wrapper>
+															</components>
+															<renderConditions logictype="and">
+																<renderCondition type="fieldvalue" operator="!=" enclosevalueinquotes="true" fieldmodel="Profile" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="name" fieldtargetobjects="SkuidLocal" value="Public"/>
+															</renderConditions>
+														</skuid__tabPanel>
+													</tabs>
+													<renderConditions logictype="and"/>
+													<styleVariantConditions/>
+												</skuid__tabSet>
+											</components>
+										</division>
+									</divisions>
+									<styles>
+										<spacing left="4" right="4"/>
+									</styles>
+									<background/>
+								</skuid__grid>
+							</components>
+							<background/>
+							<styles>
+								<spacing top="-5" bottom="4"/>
+							</styles>
+						</skuid__wrapper>
+					</components>
+					<background datasource="SkuidLocal" source="resource" size="auto" color="white"/>
+					<renderConditions logictype="and"/>
+					<styleVariantConditions/>
+					<styles>
+						<spacing/>
+					</styles>
+				</skuid__wrapper>
+			</components>
+		</pageregioncontent>
+	</pageregioncontents>
+	<components/>
+	<resources>
+		<labels/>
+		<javascript>
+			<jsitem location="staticresource" namespace="skuid" filepath="js/skuidPages/dataSourceConfig.js" scope="api"/>
+			<jsitem location="inlinesnippet" name="buildPermissionCache" cachelocation="false">(function(){
+var params = arguments[0],
+	$ = skuid.$,
+	model = params.model;
+
+var cache = {};
+var fk = "";
+var targetModel = "";
+var propertyMap = {};
+
+switch(model.id){
+	case "DataSourcePermissions":
+		fk = "data_source_id";
+		targetModel = "DataSource";
+		break;
+	case "AppPermissions":
+		fk = "app_id";
+		targetModel = "App";
+		propertyMap = {
+			is_default: "default"
+		};
+		break;
+	case "NamedPermissions":
+		fk = "permission";
+		targetModel = "Named";
+		break;
+	case "DataSourceObjectPermissions":
+		fk = "data_source_object_id";
+		targetModel = "DataSourceObject";
+		propertyMap = {
+			queryable: "queryable",
+			createable: "createable",
+			updateable: "updateable",
+			deleteable: "deleteable",
+		}
+		break;
+}
+
+if(!fk) return;
+
+var target = skuid.$M(targetModel);
+
+$.each(model.data, function(index, data){
+	var id = data[fk];
+	cache[id] = {};
+	$.each(propertyMap,function(db_key,object_key){
+		cache[id][object_key] = data[db_key];
+	});
+});
+
+var rowsToUpdate = {};
+$.each(target.getRows(), function(index, row){
+	rowsToUpdate[row.id] = {enabled: (typeof cache[row.id] === "object")};
+	$.each(propertyMap,function(db_key,object_key){
+		rowsToUpdate[row.id][object_key] = cache[row.id] &amp;&amp; cache[row.id][object_key];
+	});
+});
+
+target.updateRows(rowsToUpdate);
+// This is a bit hacky, but it resets the model to an "unchanged state" without resetting our data.
+target.hasChanged = false;
+target.originals = $.extend({},target.changes);
+target.changes = {};
+target.cancel();
+
+})(arguments[0]);
+</jsitem>
+			<jsitem location="inlinesnippet" name="saveProfileAppAndDatasourceScheme" cachelocation="false">var params = arguments[0],
+	$ = skuid.$;
+
+var dataSourcePermissions = skuid.$M("DataSource");
+var appPermissions = skuid.$M("App");
+var namedPermissions = skuid.$M("Named");
+var profile = skuid.$M("Profile").getFirstRow();
+
+var state = {
+	name: profile.name,
+    appPermissions: {},
+    dataSourcePermissions: {},
+    namedPermissions: {}
+};
+
+$.each(dataSourcePermissions.getRows(), function(index, row){
+	if (row.enabled) {
+        state.dataSourcePermissions[row.name] = true;
+	}
+});
+
+$.each(appPermissions.getRows(), function(index, row){
+    if (row.enabled) {
+        state.appPermissions[row.name] = {};
+        state.appPermissions[row.name].isDefault = row.default ? row.default : false;
+    }
+});
+if (profile.is_system) {
+	state.namedPermissions = null;
+} else {
+    $.each(namedPermissions.getRows(), function(index, row){
+		if (row.enabled) {
+        	state.namedPermissions[row.id] = true;
+		}
+    });    
+}
+
+return $.ajax({
+    url: "/api/v1/profile/edit",
+    type: "PUT",
+    data: JSON.stringify(state),
+    contentType: "application/json"
+});
+</jsitem>
+			<jsitem location="inlinesnippet" name="uniqueTrueDefault" cachelocation="false">var params = arguments[0],
+	$ = skuid.$,
+    model = params.model,
+    row = params.row,
+    rowsToUpdate = {},
+    hasDefault = false;
+
+	// Figure out if one of our apps is marked as default.
+	$.each( model.getRows(), function(){
+		if(this.id === row.id &amp;&amp; !row.enabled) {
+			rowsToUpdate[row.id] = { default: false };
+		} else if (this.default === true) {
+			hasDefault = true;
+		}
+	});
+
+	// If we need to add a default, add it to the first one we encounter.
+	if (!hasDefault) {
+		$.each( model.getRows(), function(){
+			if(this.enabled === true) {
+				rowsToUpdate[this.id] = { default: true };
+				return false;
+			}
+		});
+	}
+
+	model.updateRows( rowsToUpdate );
+</jsitem>
+			<jsitem location="inlinesnippet" name="radioRender" cachelocation="false">var field = arguments[0],
+    value = arguments[1],
+    model = field.model,
+    fieldRow = field.row,
+    $ = skuid.$;
+
+    $('&lt;input type="radio"&gt;')
+      // For some reason the Skuid theme
+      // does not apply the 20px width to anything but checkboxes
+      .css("width", "20px")
+      .prop("name", "fakeRadioButton")
+      .prop("checked", value)
+      .on("change", function() {
+        var rowsToUpdate = {};
+        model.getRows().forEach(function(row){
+          rowsToUpdate[model.getRowId(row)] = { default: fieldRow === row };
+        });
+        model.updateRows( rowsToUpdate, { initiatorId: field._GUID } );
+      })
+      .appendTo(field.element);
+      </jsitem>
+			<jsitem location="inlinesnippet" name="saveError" cachelocation="false">var params = arguments[0],
+	$ = skuid.$,
+	response = params.responseJSON,
+	editor = params.editor;
+
+editor.handleMessages([{ message: response.message, severity: "ERROR" }]);</jsitem>
+			<jsitem location="inlinesnippet" name="skuid.settings.generateCustomSignupPages" cachelocation="false">var params = arguments[0],
+  $ = skuid.$,
+  model = skuid.$M("Profile"),
+  row = model.getFirstRow(),
+  profileName = model.getFieldValue(row, "name", true),
+  signupApiPath = model.getFieldValue(row, "signup_api_prefix", true);
+  
+$.blockUI({
+    message: "Generating custom signup pages...",
+    styleSettingsVariant: "dark"
+});
+
+return skuid.ajax.direct({
+    url: "/api/v1/pages/create-custom-signup-pages?" + skuid.utils.param({
+      "profileName": profileName,
+      "signupApiPath": signupApiPath,
+    }),
+    method: "POST",
+}).then(function(response) {
+    var signupPageId = response.body.signupPageId;
+    var confirmationPageId = response.body.confirmationPageId;
+    var verifyPageId = response.body.verifyPageId;
+
+    model.updateRow(row, {
+        "signup_page_id": signupPageId,
+        "signup_page": {
+            "name": profileName + "_Signup",
+            "id": signupPageId,
+        },
+        "signup_confirmation_page_id": confirmationPageId,
+        "signup_confirmation_page": {
+            "name": profileName + "_SignupConfirmation",
+            "id": confirmationPageId,
+        },
+        "verify_page_id": verifyPageId,
+        "verify_page": {
+            "name": profileName + "_Verify",
+            "id": verifyPageId,
+        },
+    });
+
+    return model.save();
+}).then(function() {
+    $.unblockUI();
+}).catch(function(err) {
+  var message = skuid.utils.isString(err) ? err : err.message; 
+  $.blockUI({
+     message: "There was an error creating custom signup pages: " + message,
+     styleSettingsVariant: "dark",
+     timeout: 5000
+  });
+});
+</jsitem>
+			<jsitem location="inlinesnippet" name="skuid.settings.removeCustomSignupPages" cachelocation="false">
+var model = skuid.$M("Profile"),
+    row = model.getFirstRow(),
+    SettingsModel = skuid.$M("RemoveSignupPagesUI"),
+    profileName = model.getFieldValue(row, "name", true),
+    DeletePages = SettingsModel.getFirstRow().DeletePages === true;
+
+model.updateRow(row, {
+   "signup_page_id": null,
+   "signup_confirmation_page_id": null,
+   "verify_page_id": null,
+   "signup_ui": null,
+});
+
+return model.save().then(function() {
+    if (DeletePages) {
+        return skuid.ajax.direct({
+            url: "/api/v1/pages/delete-custom-signup-pages?profileName=" + profileName,
+            method: "POST",
+        });
+    } else {
+        return skuid.utils.resolve();
+    }
+}).catch(function(error) {
+    $.blockUI({
+        message: "There was an error removing custom signup pages for this Profile: " + error.message,
+        styleSettingsVariant: "dark",
+    });
+});</jsitem>
+			<jsitem location="inlinesnippet" cachelocation="false" name="uniqueDefault">var field = arguments[0],
+    value = arguments[1],
+    model = field.model,
+    fieldRow = field.row,
+    $ = skuid.$;
+
+var rowsToUpdate = {};
+model.getRows().forEach(function(row){
+  rowsToUpdate[model.getRowId(row)] = { default: fieldRow === row };
+});
+model.updateRows( rowsToUpdate, { initiatorId: field._GUID } );</jsitem>
+			<jsitem location="inlinesnippet" name="SQL_ds_list" cachelocation="false">var params = arguments[0],
+	$ = skuid.$;
+
+var allDS = skuid.model.getModel('DataSource').getRows();
+var model = skuid.model.getModel('SQL_Datasource_Picklist_ui');
+var sqlDS = [];
+
+model.emptyData();
+$.each(allDS, function(i, row) {
+    
+    if (row.IsSQLDataSource__ui &amp;&amp; row.enabled) {
+        sqlDS.push(row);
+    }
+});
+
+model.adoptRows(sqlDS);
+</jsitem>
+			<jsitem location="inlinesnippet" name="highlightFirstRow" cachelocation="false">var params = arguments[0],
+	$ = skuid.$;
+
+var dsoModel = skuid.model.getModel('DataSourceObjectWarden');
+dsoModel.updateRow(dsoModel.getFirstRow(), {is_selected: true});
+</jsitem>
+			<jsitem location="inlinesnippet" name="regexFixString" cachelocation="false">var params = arguments[0],
+	$ = skuid.$;
+params.model.updateRow(params.row, { signup_api_prefix: params.row.signup_api_prefix.replace(/[^a-zA-Z0-9 ]/g, "") } );</jsitem>
+			<jsitem location="inlinesnippet" name="checkForFeatureFlags" cachelocation="false">var params = arguments[0],
+   $ = skuid.$;
+  
+var model = skuid.$M("FeatureFlags")
+model.updateRow(model.getFirstRow(),{
+   appPermSetsEnabled: skuid.platform.hasFeature("Permission Sets"),
+});</jsitem>
+		</javascript>
+		<actionsequences uniqueid="sk-3eXJ-317">
+			<actionsequence id="0306b8c2-7cfe-415f-9205-ceaa6c5bbbbe" label="Get Data Service and Load Models" type="event-triggered" event-scope="component" event-name="page.rendered">
+				<description/>
+				<actions>
+					<action type="custom" snippet="skuid.settings.dataSources.populateDefaultDataService"/>
+					<action type="requeryModels" behavior="standard">
+						<models>
+							<model>Profile</model>
+							<model>DataSource</model>
+						</models>
+					</action>
+					<action type="custom" snippet="checkForFeatureFlags"/>
+					<action type="createRow" model="Profile_UiOnly" appendorprepend="prepend" defaultmodefornewitems="edit" affectedrows="context"/>
+				</actions>
+				<inputs/>
+			</actionsequence>
+			<actionsequence id="8042924b-5c8f-425e-9745-fdc0cfc1addd" label="Navigation Control" type="event-triggered" event-scope="component" event-name="page.rendered">
+				<description/>
+				<actions>
+					<action type="updateRow" fieldmodel="NavUiControl" affectedrows="context">
+						<updates>
+							<update valuesource="fieldvalue" field="GlobalNavController" enclosevalueinquotes="true" value="SETTINGS"/>
+						</updates>
+					</action>
+				</actions>
+			</actionsequence>
+			<actionsequence id="4993837b-2800-4866-97e8-805869f08677" label="Save Changes" type="reusable">
+				<actions>
+					<action type="custom" snippet="saveProfileAppAndDatasourceScheme">
+						<onerroractions>
+							<action type="blockUI" styleSettingsVariant="dark" message="There was an error saving changes" timeout="3000"/>
+						</onerroractions>
+					</action>
+					<action type="save">
+						<models>
+							<model>Profile</model>
+						</models>
+						<onerroractions>
+							<action type="blockUI" styleSettingsVariant="dark" message="There was an error saving profile changes" timeout="3000"/>
+						</onerroractions>
+					</action>
+					<action type="requeryModels" behavior="standard">
+						<models>
+							<model>AppPermissions</model>
+							<model>DataSourcePermissions</model>
+							<model>NamedPermissions</model>
+						</models>
+					</action>
+					<action type="updateRow" fieldmodel="Profile_UiOnly" affectedrows="context">
+						<updates>
+							<update valuesource="formula" field="all_apps_allowed" enclosevalueinquotes="false">
+								<formula>{{$Model.App.data.length}} === {{$Model.AppPermissions.data.length}}</formula>
+							</update>
+							<update valuesource="formula" field="all_datasources_allowed" enclosevalueinquotes="false">
+								<formula>{{$Model.DataSource.data.length}} === {{$Model.DataSourcePermissions.data.length}}</formula>
+							</update>
+						</updates>
+					</action>
+					<action type="custom" snippet="SQL_ds_list">
+						<onerroractions>
+							<action type="blockUI" message="There was an error loading data" timeout="3000" styleSettingsVariant="dark"/>
+						</onerroractions>
+					</action>
+					<action type="unblockUI"/>
+				</actions>
+				<description>Save changes to profile settings and all profile permissions</description>
+			</actionsequence>
+			<actionsequence id="be2d66e8-e9ac-4d92-a7ee-639c8d1ad8f1" label="Clone profile" type="reusable">
+				<description/>
+				<actions>
+					<action type="updateCondition" model="ProfileClone" condition="id" value="{{$Model.Profile.data.0.id}}" behavior="set"/>
+					<action type="emptyModelData">
+						<models>
+							<model>ProfileClone</model>
+						</models>
+					</action>
+					<action type="createRow" model="ProfileClone" appendorprepend="prepend" defaultmodefornewitems="edit" affectedrows="context">
+						<defaults>
+							<default valuesource="formula" field="name" enclosevalueinquotes="true">
+								<formula>JOIN_TEXT("",{{$Model.Profile.data.0.name}},"__clone")</formula>
+							</default>
+						</defaults>
+					</action>
+					<action type="showModal">
+						<skuid__modal title="Create new {{^$Model.FeatureFlags.data.0.appPermSetsEnabled}}profile{{/$Model.FeatureFlags.data.0.appPermSetsEnabled}}{{#$Model.FeatureFlags.data.0.appPermSetsEnabled}}site permission set{{/$Model.FeatureFlags.data.0.appPermSetsEnabled}}" width="640px">
+							<components>
+								<skuid__messageArea uniqueid="sk-83E-32547">
+									<group>
+										<skuid__messageBlock title="{{^$Model.FeatureFlags.data.0.appPermSetsEnabled}}Profile{{/$Model.FeatureFlags.data.0.appPermSetsEnabled}}{{#$Model.FeatureFlags.data.0.appPermSetsEnabled}}Site permission set{{/$Model.FeatureFlags.data.0.appPermSetsEnabled}} name cannot be changed later" description="Once created, this {{^$Model.FeatureFlags.data.0.appPermSetsEnabled}}profile{{/$Model.FeatureFlags.data.0.appPermSetsEnabled}}{{#$Model.FeatureFlags.data.0.appPermSetsEnabled}}site permission set{{/$Model.FeatureFlags.data.0.appPermSetsEnabled}} name will not be editable. Instead, clone the {{^$Model.FeatureFlags.data.0.appPermSetsEnabled}}profile{{/$Model.FeatureFlags.data.0.appPermSetsEnabled}}{{#$Model.FeatureFlags.data.0.appPermSetsEnabled}}site permission set{{/$Model.FeatureFlags.data.0.appPermSetsEnabled}} again and delete the previous {{^$Model.FeatureFlags.data.0.appPermSetsEnabled}}profile{{/$Model.FeatureFlags.data.0.appPermSetsEnabled}}{{#$Model.FeatureFlags.data.0.appPermSetsEnabled}}site permission set{{/$Model.FeatureFlags.data.0.appPermSetsEnabled}} if this {{^$Model.FeatureFlags.data.0.appPermSetsEnabled}}profile{{/$Model.FeatureFlags.data.0.appPermSetsEnabled}}{{#$Model.FeatureFlags.data.0.appPermSetsEnabled}}site permission set{{/$Model.FeatureFlags.data.0.appPermSetsEnabled}} name needs to be changed">
+											<renderConditions logictype="and">
+												<renderCondition type="blank" operator="!=" fieldmodel="ProfileClone" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="name" fieldtargetobjects="SkuidLocal" value="null" enclosevalueinquotes="false"/>
+											</renderConditions>
+										</skuid__messageBlock>
+										<skuid__messageBlock title="Name is already in use" description="Enter a different {{^$Model.FeatureFlags.data.0.appPermSetsEnabled}}profile{{/$Model.FeatureFlags.data.0.appPermSetsEnabled}}{{#$Model.FeatureFlags.data.0.appPermSetsEnabled}}site permission set{{/$Model.FeatureFlags.data.0.appPermSetsEnabled}} name" styleSettingsVariant="errorStrong">
+											<renderConditions logictype="and">
+												<renderCondition type="fieldvalue" enclosevalueinquotes="true" fieldmodel="stng__ProfileDuplicateCheck" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasRows"/>
+											</renderConditions>
+										</skuid__messageBlock>
+									</group>
+									<styles>
+										<spacing bottom="3"/>
+									</styles>
+								</skuid__messageArea>
+								<skuid__form showErrorsInline="true" model="ProfileClone" uniqueid="form-profile-header-clone" mode="edit">
+									<columns>
+										<column verticalAlign="top" ratio="1">
+											<sections>
+												<section showHeading="false">
+													<fields>
+														<skuid__field id="name" uniqueid="field-profile-header-clone-name" label="Name "/>
+													</fields>
+												</section>
+											</sections>
+										</column>
+									</columns>
+								</skuid__form>
+							</components>
+							<buttons>
+								<skuid__button label="Clone" uniqueid="button-profile-header-clone-save" styleSettingsVariant="primary">
+									<actions>
+										<action type="save">
+											<models>
+												<model>ProfileClone</model>
+											</models>
+											<onerroractions>
+												<action type="blockUI" styleSettingsVariant="dark" message="There was an error saving changes {{insertResults.0.errors.0.message}}" timeout="3000"/>
+											</onerroractions>
+										</action>
+										<action type="showToast" duration="4" message="New profile created" position="bl"/>
+										<action type="redirect" url="/ns/skuid/ui/profile/{{$Model.ProfileClone.data.0.id}}" window="self"/>
+									</actions>
+									<renderConditions logictype="and"/>
+									<enableConditions logictype="and">
+										<condition fieldmodel="stng__ProfileDuplicateCheck" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasNoRows"/>
+									</enableConditions>
+									<styleVariantConditions/>
+								</skuid__button>
+								<skuid__button label="Cancel" uniqueid="button-profile-header-clone-cancel">
+									<actions>
+										<action type="cancel">
+											<models>
+												<model>ProfileClone</model>
+											</models>
+										</action>
+										<action type="emptyModelData">
+											<models>
+												<model>ProfileClone</model>
+											</models>
+										</action>
+										<action type="closeAllPopups"/>
+									</actions>
+								</skuid__button>
+							</buttons>
+						</skuid__modal>
+					</action>
+				</actions>
+			</actionsequence>
+		</actionsequences>
+	</resources>
+</skuid__page>

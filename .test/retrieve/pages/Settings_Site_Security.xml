@@ -1,0 +1,717 @@
+<skuid__page personalizationmode="client" unsavedchangeswarning="yes" showsidebar="true" showheader="true" theme="Skuid Admin" title="Site Security">
+	<models>
+		<model id="stng__ContentSecurityPolicy" limit="20" query="true" createrowifnonefound="false" datasource="SkuidLocal" type="readwrite" label="Policy" labelplural="Policies">
+			<fields>
+				<field id="uri" displaytype="TEXT" required="true" uionly="false" label="Trusted URL" ogdisplaytype="TEXT" helptext="Url including protocol and port"/>
+				<field id="type" displaytype="TEXT" required="true" uionly="false" label="Policy Type" ogdisplaytype="TEXT" picklistsource="manual" defaultvaluetype="fieldvalue" readonly="false" defaultValue="frame-ancestors">
+					<picklistentries>
+						<entry value="frame-ancestors" label="frame-ancestors"/>
+					</picklistentries>
+				</field>
+				<field id="is_active" displaytype="BOOLEAN" label="Is Active?" ogdisplaytype="TEXT" required="false" uionly="false"/>
+				<field id="id" displaytype="TEXT"/>
+				<field id="created_at" label="Created At" ispolymorphic="false" isnamepointing="false" displaytype="DATETIME" accessible="true" filterable="true"/>
+				<field id="updated_at" label="Updated At" ispolymorphic="false" isnamepointing="false" displaytype="DATETIME" accessible="true" filterable="true"/>
+			</fields>
+			<conditions/>
+			<actions/>
+			<methods>
+				<method type="query" verb="GET" endpoint="/objects/csp"/>
+				<method type="insert" verb="POST" successif="requestsucceeds" sendchanges="asjsoninbody" insertresponse="recordinbody" endpoint="/objects/csp"/>
+				<method type="update" verb="PUT" successif="requestsucceeds" sendchanges="asjsoninbody" endpoint="/objects/csp/{{id}}"/>
+				<method type="delete" verb="DELETE" endpoint="/objects/csp/{{id}}" successif="requestsucceeds"/>
+			</methods>
+		</model>
+		<model id="stng__Preferences" limit="20" query="true" createrowifnonefound="false" datasource="SkuidLocal" type="readwrite">
+			<fields>
+				<field id="id" label="Id" displaytype="TEXT" accessible="true" filterable="true"/>
+				<field id="session_timeout_minutes" displaytype="PICKLIST" label="Activity Session Timeout" helptext="How long a user's session will last, from last session activity, before the user must log in again." ogdisplaytype="TEXT" picklistsource="manual" defaultvaluetype="fieldvalue" defaultValue="30" required="true" returntype="TEXT">
+					<picklistentries>
+						<entry value="5" label="5 Minutes"/>
+						<entry value="15" label="15 Minutes"/>
+						<entry value="30" label="30 Minutes"/>
+						<entry value="60" label="1 Hour"/>
+						<entry value="120" label="2 Hours"/>
+						<entry value="240" label="4 Hours"/>
+						<entry value="480" label="8 Hours"/>
+						<entry value="720" label="12 Hours"/>
+						<entry value="1440" label="24 Hours"/>
+					</picklistentries>
+				</field>
+				<field id="absolute_timeout_minutes" displaytype="PICKLIST" label="Absolute Session Timeout" helptext="How long a user's session will last, from login time, regardless of activity, before the user must log in again." ogdisplaytype="TEXT" picklistsource="manual" defaultvaluetype="fieldvalue" defaultValue="720" required="true" returntype="TEXT">
+					<picklistentries>
+						<entry value="15" label="15 Minutes"/>
+						<entry value="30" label="30 Minutes"/>
+						<entry value="60" label="1 Hour"/>
+						<entry value="120" label="2 Hours"/>
+						<entry value="240" label="4 Hours"/>
+						<entry value="480" label="8 Hours"/>
+						<entry value="720" label="12 Hours"/>
+						<entry value="1440" label="24 Hours"/>
+					</picklistentries>
+				</field>
+				<field id="hobo_sessions" label="Roaming Sessions" ispolymorphic="false" isnamepointing="false" displaytype="BOOLEAN" accessible="true" filterable="true" helptext="Allows a user's session to remain active even if their browser and IP address change.  Warning: While providing more convenience for enterprise networks or VPN usage, roaming sessions are more vulnerable to session hijacking."/>
+				<field id="ip_allowlist" label="Trusted IP List" ispolymorphic="false" isnamepointing="false" displaytype="TEXT" accessible="true" filterable="true" ogdisplaytype="TEXT" readonly="false" returntype="TEXT" defaultvaluetype="fieldvalue"/>
+				<field id="password_token_expiration_minutes" label="Token Expiration" ispolymorphic="false" isnamepointing="false" displaytype="PICKLIST" precision="2" scale="0" accessible="true" filterable="true" ogdisplaytype="TEXT" picklistsource="manual" returntype="TEXT" helptext="How long a password reset token will be valid from the time it is generated." required="false" defaultvaluetype="fieldvalue" defaultValue="720" enclosevalueinquotes="true">
+					<picklistentries>
+						<entry value="720" label="12 hours (default)"/>
+						<entry value="1440" label="24 hours"/>
+						<entry value="2880" label="48 hours"/>
+						<entry value="4320" label="72 hours"/>
+					</picklistentries>
+				</field>
+			</fields>
+			<conditions/>
+			<actions>
+				<action>
+					<actions>
+						<action type="updateRow" fieldmodel="stng__Preferences" affectedrows="context">
+							<updates>
+								<update valuesource="formula" field="absolute_timeout_minutes" enclosevalueinquotes="true" value="15">
+									<formula>IF({{session_timeout_minutes}} &gt;= {{absolute_timeout_minutes}},{{session_timeout_minutes}},{{absolute_timeout_minutes}})</formula>
+								</update>
+							</updates>
+						</action>
+					</actions>
+					<events>
+						<event>row.updated</event>
+					</events>
+					<fields>
+						<field>session_timeout_minutes</field>
+					</fields>
+				</action>
+				<action>
+					<actions>
+						<action type="updateRow" fieldmodel="stng__Preferences" affectedrows="context">
+							<updates>
+								<update valuesource="formula" field="session_timeout_minutes" enclosevalueinquotes="true" value="15">
+									<formula>IF({{session_timeout_minutes}} &gt;= {{absolute_timeout_minutes}},{{absolute_timeout_minutes}},{{session_timeout_minutes}})</formula>
+								</update>
+							</updates>
+						</action>
+					</actions>
+					<events>
+						<event>row.updated</event>
+					</events>
+					<fields>
+						<field>absolute_timeout_minutes</field>
+					</fields>
+				</action>
+			</actions>
+			<methods>
+				<method type="query" verb="GET" endpoint="/objects/preferences" payloadcontenttype="JSON"/>
+				<method type="update" verb="PUT" successif="requestsucceeds" sendchanges="asjsoninbody" endpoint="/objects/preferences/{{id}}"/>
+			</methods>
+		</model>
+		<model limit="20" query="true" createrowifnonefound="false" datasource="Ui-Only" id="ui__ipAddresses" processonclient="true" unloadwarningifunsavedchanges="true">
+			<fields>
+				<field id="ipAddress" displaytype="TEXT" label="Trusted IP addresses" length="255"/>
+			</fields>
+			<conditions/>
+			<actions/>
+		</model>
+	</models>
+	<components>
+		<skuid__wrapper uniqueid="sk-1lbK-9078">
+			<components>
+				<skuid__text contents="Trusted Login IP List" uniqueid="sk-3u0F-20575" styleSettingsVariant="014b3346-10ed-4578-aa1a-cae68a21cc80">
+					<styles>
+						<spacing bottom="4" styleSettingsVariant="014b3346-10ed-4578-aa1a-cae68a21cc80"/>
+					</styles>
+				</skuid__text>
+				<skuid__wrapper uniqueid="wrapper-sitesecurity-iplimit" styleSettingsVariant="c5a44cb4-0fb9-4631-a576-a20f998816e0">
+					<components>
+						<skuid__grid uniqueid="sk-U_S-33766" flexDirection="row" justifyContent="flex-start" alignItems="flex-start" columnGutter="0" rowGutter="0">
+							<divisions>
+								<division ratio="1" alignSelf="auto" maxWidth="600px">
+									<components>
+										<skuid__text contents="&lt;p&gt;&lt;b id=&quot;docs-internal-guid-666284e5-7fff-ba86-7d80-5c7a8b431d5d&quot;&gt;IP addresses from which users can access this site&lt;/b&gt;&lt;br /&gt;&#10;&lt;br /&gt;&#10;Unless specific IP addresses are trusted, users can login from any IP address. Once a list of trusted IPs is created, users can only log in from the addresses on that list.&amp;nbsp;&lt;br /&gt;&#10;&lt;br /&gt;&#10;CIDR addresses must be formatted as address/prefix:&lt;/p&gt;&#10;&#10;&lt;ul&gt;&#10;&#9;&lt;li&gt;the address must be a valid IPv4 or IPv6 address&lt;/li&gt;&#10;&#9;&lt;li&gt;the prefix must be a decimal representation of the subnet mask.&amp;nbsp;&lt;/li&gt;&#10;&lt;/ul&gt;&#10;&#10;&lt;p&gt;Examples.&amp;nbsp;&amp;nbsp;&amp;nbsp;192.168.100.14/24&amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp;or&amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp;2001:db8::/48&lt;/p&gt;&#10;" uniqueid="sk-26WN-13178">
+											<styles>
+												<spacing/>
+											</styles>
+										</skuid__text>
+										<skuid__table uniqueid="table-sitesecurity-iplimit" mode="edit" model="ui__ipAddresses" allowSortingByColumn="false" showSaveCancel="false" pageSize="Infinity" showPageSizeSelect="false" resetPaginationOnQuery="false" showListFooter="false" styleSettingsVariant="6f64b91d-8879-45c0-b55b-59b914d9f401" rowActionsOnLeft="true">
+											<fields>
+												<field id="ipAddress" uniqueid="field-sitesecurity-IPLimit-address"/>
+											</fields>
+											<filtering enableSearch="false" instantSearch="false" searchMethod="client"/>
+											<rowActions>
+												<action type="multi" uniqueid="button-sitesecurity-iplimit-table-delete" icon="sk-webicon-ink:circle-close-outline">
+													<actions>
+														<action type="markRowsForDeletion" model="ui__ipAddresses" affectedrows="context"/>
+														<action type="showModal">
+															<skuid__modal title="Delete IP Address" width="640px">
+																<components>
+																	<skuid__wrapper uniqueid="sk-1mud-36047" styleSettingsVariant="cfa0c754-42be-41a9-9c55-4ac58e443fcc">
+																		<components>
+																			<skuid__wrapper uniqueid="sk-1mvC-41739">
+																				<components>
+																					<skuid__grid uniqueid="sk-1sWh-27366" flexDirection="row" justifyContent="flex-start" alignItems="flex-start" columnGutter="2" rowGutter="0">
+																						<divisions>
+																							<division minWidth="32px" ratio="1" alignSelf="auto" maxWidth="32px">
+																								<components>
+																									<skuid__list uniqueid="sk-1sWk-29778" pageSize="Infinity" showPageSizeSelect="false" resetPaginationOnQuery="false" showLoadMore="false" showListHeader="false" showListFooter="false" styleSettingsVariant="cf06b573-0083-4902-aaf4-65950a97bf81" model="ui__ipAddresses">
+																										<columns>
+																											<column uniqueid="sk-1sWk-29779" fillRatio="1">
+																												<items>
+																													<item displayType="icon" size="medium" styleSettingsVariant="circular" fallback="sk-webicon-ink:link"/>
+																												</items>
+																											</column>
+																										</columns>
+																										<rowActions/>
+																										<massActions/>
+																										<filtering enableSearch="false" instantSearch="false"/>
+																										<conditions>
+																											<condition type="contextrow" field="Id" mergefield="Id" operator="="/>
+																										</conditions>
+																										<styles>
+																											<spacing/>
+																										</styles>
+																									</skuid__list>
+																								</components>
+																							</division>
+																							<division alignSelf="auto" minWidth="100px" ratio="1">
+																								<components>
+																									<skuid__text contents="{{ipAddress}}" uniqueid="sk-1muQ-19873" styleSettingsVariant="4e169d0d-def8-4adb-9bb5-baca37505057" model="ui__ipAddresses">
+																										<styles>
+																											<spacing bottom="1"/>
+																										</styles>
+																									</skuid__text>
+																								</components>
+																							</division>
+																						</divisions>
+																					</skuid__grid>
+																				</components>
+																				<background/>
+																				<styles>
+																					<spacing top="2" bottom="2" left="3" right="2"/>
+																				</styles>
+																			</skuid__wrapper>
+																		</components>
+																		<background/>
+																		<styles>
+																			<spacing bottom="3" top="1.5"/>
+																		</styles>
+																	</skuid__wrapper>
+																	<skuid__text contents="Are you sure you want to permanently delete this IP address? &lt;strong&gt;You can&amp;#39;t undo this&lt;/strong&gt;." uniqueid="sk-1ulC-23447">
+																		<styles>
+																			<spacing bottom="2"/>
+																		</styles>
+																		<renderConditions logictype="and"/>
+																		<styleVariantConditions/>
+																	</skuid__text>
+																</components>
+																<buttons>
+																	<skuid__button label="Yes, delete this IP address" styleSettingsVariant="destructive" uniqueid="button-sitesecuiryt-iplimit-table-delete-confirm">
+																		<actions>
+																			<action type="abandonRows" model="ui__ipAddresses" affectedrows="context"/>
+																			<action type="custom" snippet="makeIpAllowlist"/>
+																			<action type="save">
+																				<models>
+																					<model>stng__Preferences</model>
+																				</models>
+																			</action>
+																			<action type="save">
+																				<models>
+																					<model>ui__ipAddresses</model>
+																				</models>
+																			</action>
+																			<action type="closeAllPopups"/>
+																			<action type="showToast" duration="4" styleSettingsVariant="default" message="IP adress deleted"/>
+																		</actions>
+																	</skuid__button>
+																	<skuid__button label="Cancel" uniqueid="button-sitesecurity-iplimit-table-delete-cancel">
+																		<actions>
+																			<action type="unmarkRowsForDeletion" model="ui__ipAddresses" affectedrows="context">
+																				<models>
+																					<model>ui__ipAddresses</model>
+																				</models>
+																			</action>
+																			<action type="save">
+																				<models>
+																					<model>ui__ipAddresses</model>
+																				</models>
+																			</action>
+																			<action type="closeAllPopups"/>
+																		</actions>
+																	</skuid__button>
+																</buttons>
+																<afterCloseActions>
+																	<action type="unmarkRowsForDeletion" model="ui__ipAddresses" affectedrows="context">
+																		<models>
+																			<model>ui__ipAddresses</model>
+																		</models>
+																	</action>
+																	<action type="save">
+																		<models>
+																			<model>ui__ipAddresses</model>
+																		</models>
+																	</action>
+																</afterCloseActions>
+															</skuid__modal>
+														</action>
+													</actions>
+													<tooltip position="top" text="Delete"/>
+													<renderConditions logictype="and">
+														<renderCondition type="blank" operator="!=" fieldmodel="ui__ipAddresses" sourcetype="fieldvalue" value="null" enclosevalueinquotes="false" field="ipAddress"/>
+													</renderConditions>
+												</action>
+											</rowActions>
+											<massActions/>
+											<actions/>
+											<renderConditions logictype="and">
+												<renderCondition type="fieldvalue" enclosevalueinquotes="true" fieldmodel="ui__ipAddresses" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasRows"/>
+											</renderConditions>
+											<styleVariantConditions/>
+											<styles>
+												<spacing top="2" styleSettingsVariant="6f64b91d-8879-45c0-b55b-59b914d9f401"/>
+											</styles>
+											<exportProperties useTableColumns="true"/>
+											<sorting enable="false"/>
+										</skuid__table>
+										<skuid__buttonSet uniqueid="sk-V9h-10020" position="left">
+											<groups>
+												<skuid__buttonGroup displayType="detached">
+													<buttons>
+														<skuid__button label="Add address" uniqueid="button-sitesecurity-iplimit-add">
+															<actions>
+																<action type="createRow" model="ui__ipAddresses" appendorprepend="append" defaultmodefornewitems="edit" affectedrows="context"/>
+															</actions>
+															<hotkeys/>
+															<renderConditions logictype="and"/>
+															<enableConditions logictype="and"/>
+														</skuid__button>
+													</buttons>
+												</skuid__buttonGroup>
+											</groups>
+											<styles>
+												<spacing top="2"/>
+											</styles>
+										</skuid__buttonSet>
+										<skuid__buttonSet uniqueid="sk-U_S-33774" position="left">
+											<groups>
+												<skuid__buttonGroup>
+													<buttons>
+														<skuid__button label="Save" uniqueid="button-sitesecurity-iplimit-save" styleSettingsVariant="primary">
+															<actions>
+																<action type="custom" snippet="makeIpAllowlist"/>
+																<action type="save">
+																	<models>
+																		<model>stng__Preferences</model>
+																	</models>
+																	<onerroractions>
+																		<action type="showToast" message="There was an error:    {{insertResults.0.errors.0.message}}" timeout="3000" duration="4" styleSettingsVariant="error"/>
+																	</onerroractions>
+																</action>
+																<action type="save">
+																	<models>
+																		<model>ui__ipAddresses</model>
+																	</models>
+																	<onerroractions>
+																		<action type="showToast" message="There was an error:  {{insertResults.0.errors.0.message}}" timeout="3000" duration="4" styleSettingsVariant="error"/>
+																	</onerroractions>
+																</action>
+																<action type="showToast" message="IP address saved" duration="4" styleSettingsVariant="default"/>
+															</actions>
+															<tooltip position="top"/>
+															<hotkeys>
+																<hotkey modifiers="ctrl,meta" key="s" ignoretextinputs="true"/>
+															</hotkeys>
+															<renderConditions logictype="and"/>
+															<enableConditions logictype="and">
+																<condition type="fieldvalue" enclosevalueinquotes="false" fieldmodel="ui__ipAddresses" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasChanged" value="true" operator="="/>
+															</enableConditions>
+														</skuid__button>
+														<skuid__button label="Cancel" uniqueid="button-sitesecurity-iplimit-cancel">
+															<actions>
+																<action type="cancel">
+																	<models>
+																		<model>ui__ipAddresses</model>
+																	</models>
+																</action>
+															</actions>
+															<hotkeys/>
+															<renderConditions logictype="and"/>
+															<enableConditions logictype="and">
+																<condition type="fieldvalue" enclosevalueinquotes="false" fieldmodel="ui__ipAddresses" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasChanged" value="true" operator="="/>
+															</enableConditions>
+														</skuid__button>
+													</buttons>
+												</skuid__buttonGroup>
+											</groups>
+											<styles>
+												<spacing top="4"/>
+											</styles>
+										</skuid__buttonSet>
+									</components>
+								</division>
+								<division alignSelf="auto" minWidth="100px" ratio="1">
+									<components/>
+								</division>
+							</divisions>
+						</skuid__grid>
+					</components>
+					<background/>
+					<styles>
+						<spacing bottom="7" styleSettingsVariant="c5a44cb4-0fb9-4631-a576-a20f998816e0"/>
+					</styles>
+				</skuid__wrapper>
+			</components>
+			<background/>
+			<renderConditions logictype="and">
+				<renderCondition value="Trusted IP List" sourcetype="feature" enclosevalueinquotes="false" fieldmodel="stng__Preferences" operator="=" type="fieldvalue"/>
+			</renderConditions>
+			<styles>
+				<spacing/>
+			</styles>
+		</skuid__wrapper>
+		<skuid__text contents="Session and Token Options" uniqueid="sk-3u0L-23588" styleSettingsVariant="014b3346-10ed-4578-aa1a-cae68a21cc80">
+			<styles>
+				<spacing bottom="4" styleSettingsVariant="014b3346-10ed-4578-aa1a-cae68a21cc80"/>
+			</styles>
+		</skuid__text>
+		<skuid__wrapper uniqueid="sk-Uv_-4769" styleSettingsVariant="c5a44cb4-0fb9-4631-a576-a20f998816e0">
+			<components>
+				<skuid__grid uniqueid="sk-Uv_-4770" flexDirection="row" justifyContent="flex-start" alignItems="flex-start" columnGutter="0" rowGutter="0">
+					<divisions>
+						<division minWidth="100px" ratio="1" alignSelf="auto" maxWidth="600px">
+							<components>
+								<skuid__form showErrorsInline="true" model="stng__Preferences" uniqueid="form-sitesecurity-session" mode="edit">
+									<columns>
+										<column verticalAlign="top" ratio="1">
+											<sections>
+												<section title="New Section" showHeading="false">
+													<fields>
+														<skuid__field id="session_timeout_minutes" uniqueid="field-sitesecurity-session-timeout" showHelp="belowlabel"/>
+														<skuid__field id="absolute_timeout_minutes" uniqueid="field-sitesecurity-absolute-timeout" showHelp="belowlabel"/>
+														<skuid__field id="hobo_sessions" uniqueid="field-sitesecurity-session-roaming" showHelp="belowlabel" displayAs="SWITCH"/>
+														<skuid__field id="password_token_expiration_minutes" uniqueid="field-sitesecurity-session-tokenexpiration" showHelp="belowlabel" label="Expiration time for password reset tokens"/>
+													</fields>
+												</section>
+											</sections>
+										</column>
+									</columns>
+								</skuid__form>
+								<skuid__buttonSet uniqueid="sk-Uv_-4778" position="left">
+									<groups>
+										<skuid__buttonGroup>
+											<buttons>
+												<skuid__button label="Save" uniqueid="button-sitesecurity-session-save" styleSettingsVariant="primary">
+													<actions>
+														<action type="save">
+															<models>
+																<model>stng__Preferences</model>
+															</models>
+														</action>
+														<action type="showToast" duration="4" styleSettingsVariant="default" message="Changes saved"/>
+													</actions>
+													<tooltip position="top"/>
+													<hotkeys>
+														<hotkey modifiers="ctrl,meta" key="s" ignoretextinputs="true"/>
+													</hotkeys>
+													<renderConditions logictype="and"/>
+													<enableConditions logictype="and">
+														<condition type="fieldvalue" enclosevalueinquotes="false" fieldmodel="stng__Preferences" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasChanged" value="true" operator="="/>
+													</enableConditions>
+												</skuid__button>
+												<skuid__button label="Cancel" uniqueid="button-sitesecurity-session-cancel">
+													<actions>
+														<action type="cancel">
+															<models>
+																<model>stng__Preferences</model>
+															</models>
+														</action>
+													</actions>
+													<hotkeys/>
+													<renderConditions logictype="and"/>
+													<enableConditions logictype="and">
+														<condition type="fieldvalue" enclosevalueinquotes="false" fieldmodel="stng__Preferences" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasChanged" value="true" operator="="/>
+													</enableConditions>
+												</skuid__button>
+											</buttons>
+										</skuid__buttonGroup>
+									</groups>
+									<styles>
+										<spacing top="4"/>
+									</styles>
+								</skuid__buttonSet>
+							</components>
+						</division>
+						<division alignSelf="auto" minWidth="100px" ratio="1">
+							<components/>
+						</division>
+					</divisions>
+					<styles>
+						<spacing/>
+					</styles>
+				</skuid__grid>
+			</components>
+			<background/>
+			<styles>
+				<spacing bottom="7" styleSettingsVariant="c5a44cb4-0fb9-4631-a576-a20f998816e0"/>
+			</styles>
+		</skuid__wrapper>
+		<skuid__text contents="Embedding Skuid Into External Sites" uniqueid="sk-3u0Z-26736" styleSettingsVariant="014b3346-10ed-4578-aa1a-cae68a21cc80">
+			<styles>
+				<spacing bottom="4" styleSettingsVariant="014b3346-10ed-4578-aa1a-cae68a21cc80"/>
+			</styles>
+		</skuid__text>
+		<skuid__wrapper uniqueid="sk-3t6O-1674" styleSettingsVariant="c5a44cb4-0fb9-4631-a576-a20f998816e0">
+			<components>
+				<skuid__grid uniqueid="sk-Ux7-8612" flexDirection="row" justifyContent="flex-start" alignItems="flex-start" columnGutter="0" rowGutter="0">
+					<divisions>
+						<division ratio="1" alignSelf="auto" maxWidth="600px">
+							<components>
+								<skuid__text contents="The &lt;strong&gt;base URL&lt;/strong&gt; for external sites that are permitted to embed this Skuid site within their pages.&amp;nbsp;&lt;br /&gt;&#10;&lt;br /&gt;&#10;Example: for a site hosted at &lt;strong&gt;https://www.tacocats.com/happycats/eatingtacos.html&lt;/strong&gt;, the base URL is &lt;strong&gt;https://www.tacocats.com&lt;/strong&gt;" uniqueid="sk-Uwk-7217" allowHtmlInBuilder="true"/>
+								<skuid__messageArea uniqueid="sk-3u0q-33355">
+									<group>
+										<skuid__messageBlock description="Some older browsers may only recognize the first trusted URI. " allowHTML="false" styleSettingsVariant="primaryStrong">
+											<renderConditions logictype="and"/>
+										</skuid__messageBlock>
+									</group>
+									<styles>
+										<spacing top="3" bottom="2"/>
+									</styles>
+									<renderConditions logictype="and">
+										<renderCondition type="fieldvalue" enclosevalueinquotes="true" fieldmodel="stng__ContentSecurityPolicy" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasRows"/>
+									</renderConditions>
+								</skuid__messageArea>
+								<skuid__table uniqueid="table-sitesecurity-embedding" mode="edit" model="stng__ContentSecurityPolicy" showSaveCancel="false" allowSortingByColumn="false" pageSize="Infinity" showPageSizeSelect="false" resetPaginationOnQuery="false" showListFooter="false" styleSettingsVariant="6f64b91d-8879-45c0-b55b-59b914d9f401" rowActionsOnLeft="true">
+									<fields>
+										<field id="uri" uniqueid="field-sitesecurity-embedding-uri"/>
+										<field id="is_active" uniqueid="field-sitesecurity-embedding-active" columnWidth="20%" label="Active" displayAs="SWITCH"/>
+									</fields>
+									<filtering enableSearch="false" instantSearch="false"/>
+									<rowActions>
+										<action type="multi" uniqueid="button-sitesecurity-embedding-delete" icon="sk-webicon-ink:circle-close-outline">
+											<actions>
+												<action type="markRowsForDeletion" model="stng__ContentSecurityPolicy" affectedrows="context"/>
+												<action type="showModal">
+													<skuid__modal title="Delete Trusted URL" width="640px">
+														<components>
+															<skuid__wrapper uniqueid="sk-1mud-36047" styleSettingsVariant="7d5572d7-ec59-43f0-9d03-5259d1980637">
+																<components>
+																	<skuid__grid uniqueid="sk-1sWh-27366" flexDirection="row" justifyContent="flex-start" alignItems="flex-start" columnGutter="2" rowGutter="0">
+																		<divisions>
+																			<division minWidth="32px" ratio="1" alignSelf="auto" maxWidth="32px">
+																				<components>
+																					<skuid__list uniqueid="sk-1sWk-29778" pageSize="Infinity" showPageSizeSelect="false" resetPaginationOnQuery="false" showLoadMore="false" showListHeader="false" showListFooter="false" styleSettingsVariant="cf06b573-0083-4902-aaf4-65950a97bf81" model="stng__ContentSecurityPolicy">
+																						<columns>
+																							<column uniqueid="sk-1sWk-29779" fillRatio="1">
+																								<items>
+																									<item displayType="icon" size="medium" styleSettingsVariant="circular" fallback="sk-webicon-ink:link"/>
+																								</items>
+																							</column>
+																						</columns>
+																						<rowActions/>
+																						<massActions/>
+																						<filtering enableSearch="false" instantSearch="false"/>
+																						<conditions>
+																							<condition type="contextrow" field="Id" mergefield="Id" operator="="/>
+																						</conditions>
+																						<styles>
+																							<spacing/>
+																						</styles>
+																					</skuid__list>
+																				</components>
+																			</division>
+																			<division alignSelf="auto" minWidth="100px" ratio="1">
+																				<components>
+																					<skuid__text contents="{{uri}}" uniqueid="sk-1muQ-19873" styleSettingsVariant="bcf356fb-cd9b-4b49-adb6-299b154f243f" model="stng__ContentSecurityPolicy">
+																						<styles>
+																							<spacing bottom="1" styleSettingsVariant="bcf356fb-cd9b-4b49-adb6-299b154f243f"/>
+																						</styles>
+																					</skuid__text>
+																					<skuid__text contents="Created {{created_at}}&amp;nbsp;" uniqueid="sk-1muT-21127" styleSettingsVariant="7c7f8594-184f-4d52-b33c-1f4dc6fb806a" model="stng__ContentSecurityPolicy">
+																						<styles>
+																							<spacing bottom=".5"/>
+																						</styles>
+																					</skuid__text>
+																					<skuid__text contents="Updated {{updated_at}}&amp;nbsp;" uniqueid="sk-2R-P-13800" styleSettingsVariant="7c7f8594-184f-4d52-b33c-1f4dc6fb806a" model="stng__ContentSecurityPolicy"></skuid__text>
+																				</components>
+																			</division>
+																		</divisions>
+																	</skuid__grid>
+																</components>
+																<background/>
+																<styles>
+																	<spacing bottom="3" styleSettingsVariant="7d5572d7-ec59-43f0-9d03-5259d1980637"/>
+																</styles>
+															</skuid__wrapper>
+															<skuid__text contents="Are you sure you want to permanently delete this trusted URL? &lt;strong&gt;You can&amp;#39;t undo this&lt;/strong&gt;." uniqueid="sk-1ulC-23447">
+																<renderConditions logictype="and"/>
+																<styleVariantConditions/>
+															</skuid__text>
+														</components>
+														<buttons>
+															<skuid__button label="Yes, delete this URL" styleSettingsVariant="destructive" uniqueid="button-sitesecurity-embedding-delete-confirm">
+																<actions>
+																	<action type="save">
+																		<models>
+																			<model>stng__ContentSecurityPolicy</model>
+																		</models>
+																	</action>
+																	<action type="closeTopmostPopup"/>
+																	<action type="showToast" duration="4" styleSettingsVariant="default" message="URL deleted"/>
+																</actions>
+															</skuid__button>
+															<skuid__button label="Cancel" uniqueid="button-sitesecurity-embedding-delete-cancel">
+																<actions>
+																	<action type="cancel">
+																		<models>
+																			<model>stng__ContentSecurityPolicy</model>
+																		</models>
+																	</action>
+																	<action type="closeTopmostPopup"/>
+																</actions>
+															</skuid__button>
+														</buttons>
+														<afterCloseActions>
+															<action type="cancel">
+																<models>
+																	<model>stng__ContentSecurityPolicy</model>
+																</models>
+															</action>
+														</afterCloseActions>
+													</skuid__modal>
+												</action>
+											</actions>
+											<tooltip position="top" text="Delete"/>
+											<renderConditions logictype="and">
+												<renderCondition type="blank" operator="!=" fieldmodel="stng__ContentSecurityPolicy" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="uri" value="null" enclosevalueinquotes="false" fieldtargetobjects="SkuidLocal"/>
+											</renderConditions>
+										</action>
+									</rowActions>
+									<massActions/>
+									<renderConditions logictype="and">
+										<renderCondition type="fieldvalue" enclosevalueinquotes="true" fieldmodel="stng__ContentSecurityPolicy" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasRows"/>
+									</renderConditions>
+									<styles>
+										<spacing top="2" styleSettingsVariant="6f64b91d-8879-45c0-b55b-59b914d9f401"/>
+									</styles>
+									<exportProperties useTableColumns="true"/>
+									<sorting enable="false"/>
+									<styleVariantConditions/>
+								</skuid__table>
+								<skuid__buttonSet uniqueid="sk-V9T-7898" position="left">
+									<groups>
+										<skuid__buttonGroup displayType="detached">
+											<buttons>
+												<skuid__button label="Add site" uniqueid="button-sitesecurity-embedding-add">
+													<actions>
+														<action type="createRow" model="stng__ContentSecurityPolicy" appendorprepend="append" defaultmodefornewitems="edit" affectedrows="context"/>
+													</actions>
+													<hotkeys/>
+													<renderConditions logictype="and"/>
+													<enableConditions logictype="and"/>
+												</skuid__button>
+											</buttons>
+										</skuid__buttonGroup>
+									</groups>
+									<styles>
+										<spacing top="2"/>
+									</styles>
+								</skuid__buttonSet>
+								<skuid__buttonSet uniqueid="sk-Uyj-22065" position="left">
+									<groups>
+										<skuid__buttonGroup>
+											<buttons>
+												<skuid__button label="Save" uniqueid="button-sitesecurity-embedding-save" styleSettingsVariant="primary">
+													<actions>
+														<action type="save">
+															<models>
+																<model>stng__ContentSecurityPolicy</model>
+															</models>
+															<onerroractions>
+																<action type="showToast" message="There was an error:  {{insertResults.0.errors.0.message}}" timeout="3000" duration="4" styleSettingsVariant="error"/>
+															</onerroractions>
+														</action>
+														<action type="showToast" duration="4" styleSettingsVariant="default" message="Changes saved"/>
+													</actions>
+													<renderConditions logictype="and"/>
+													<enableConditions logictype="and">
+														<condition type="fieldvalue" enclosevalueinquotes="false" fieldmodel="stng__ContentSecurityPolicy" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasChanged" value="true" operator="="/>
+													</enableConditions>
+													<hotkeys>
+														<hotkey modifiers="ctrl" key="s"/>
+													</hotkeys>
+												</skuid__button>
+												<skuid__button label="Cancel" uniqueid="button-sitesecurity-embedding-cancel">
+													<actions>
+														<action type="cancel">
+															<models>
+																<model>stng__ContentSecurityPolicy</model>
+															</models>
+														</action>
+													</actions>
+													<hotkeys/>
+													<renderConditions logictype="and"/>
+													<enableConditions logictype="and">
+														<condition type="fieldvalue" enclosevalueinquotes="false" fieldmodel="stng__ContentSecurityPolicy" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasChanged" value="true" operator="="/>
+													</enableConditions>
+												</skuid__button>
+											</buttons>
+										</skuid__buttonGroup>
+									</groups>
+									<styles>
+										<spacing top="4"/>
+									</styles>
+								</skuid__buttonSet>
+							</components>
+						</division>
+						<division alignSelf="auto" minWidth="100px" ratio="1">
+							<components/>
+						</division>
+					</divisions>
+				</skuid__grid>
+			</components>
+			<background/>
+			<styles>
+				<spacing/>
+			</styles>
+		</skuid__wrapper>
+	</components>
+	<resources>
+		<labels/>
+		<javascript>
+			<jsitem location="inlinesnippet" name="makeIpAllowlist" cachelocation="false">var $ = skuid.$;
+
+var ipRows = skuid.$M('ui__ipAddresses').getRows();
+var preferencesModel = skuid.$M('stng__Preferences');
+var ipArray = [];
+
+$.each(ipRows, function(i, row) {
+    ipArray.push(row.ipAddress);
+});
+
+var ipArrayString = JSON.stringify(ipArray);
+
+preferencesModel.updateRow(preferencesModel.getFirstRow(), { 'ip_allowlist': ipArrayString });
+</jsitem>
+			<jsitem location="inlinesnippet" cachelocation="false" name="parseIpAllowlist">var $ = skuid.$;
+
+var ipAddressesModel = skuid.$M("ui__ipAddresses");
+var ip_allowlist = skuid.$M("stng__Preferences").getFirstRow()["ip_allowlist"];
+var updates = [];
+
+$.each(ip_allowlist, function(i, ip) {
+    updates.push({ "ipAddress": ip });
+});
+
+ipAddressesModel.adoptRows(updates, true);
+</jsitem>
+		</javascript>
+		<css/>
+		<actionsequences uniqueid="sk-3pAKRu-434">
+			<actionsequence id="79191a31-0fc8-4ec1-af41-d31941f20234" label="On Load UI models" type="event-triggered" event-scope="component" event-name="page.rendered" uniqueid="sk-1UT9-358">
+				<description>Build the necessary UI only models on page load</description>
+				<actions>
+					<action type="custom" snippet="parseIpAllowlist"/>
+				</actions>
+			</actionsequence>
+		</actionsequences>
+	</resources>
+	<styles>
+		<styleitem type="background" bgtype="none"/>
+	</styles>
+</skuid__page>

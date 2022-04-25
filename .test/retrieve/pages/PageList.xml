@@ -1,0 +1,2775 @@
+<skuid__page personalizationmode="client" unsavedchangeswarning="yes" theme="Skuid Admin" title="Pages">
+	<models>
+		<model id="ui_control" query="true" createrowifnonefound="true" datasource="Ui-Only">
+			<fields>
+				<field id="sortby" displaytype="PICKLIST" ogdisplaytype="TEXT" picklistsource="manual" returntype="TEXT" defaultvaluetype="fieldvalue" defaultValue="-updated_at">
+					<picklistentries>
+						<entry value="name" label="Name A-Z"/>
+						<entry value="-updated_at" label="Last Updated"/>
+					</picklistentries>
+				</field>
+			</fields>
+			<conditions/>
+			<actions>
+				<action>
+					<actions>
+						<action type="setCondition" model="pgs__pagedata" condition="sortby" value="{{sortby}}"/>
+						<action type="requeryModel" model="pgs__pagedata" behavior="standard"/>
+					</actions>
+					<events>
+						<event>row.updated</event>
+					</events>
+					<fields>
+						<field>sortby</field>
+						<field>sortorder</field>
+					</fields>
+				</action>
+			</actions>
+		</model>
+		<model id="pgs_Ui_Control" query="true" processonclient="true" datasource="SkuidLocal" label="Page" labelplural="Pages" namefield="name" verb="GET" payloadcontenttype="JSON" endpoint="/objects/page?fields=id,name" limitmethod="simple" simplerecordslimitparameter="limit" limit="2" unloadwarningifunsavedchanges="false">
+			<fields>
+				<field id="id" label="Id" ispolymorphic="false" isnamepointing="false" displaytype="STRING" accessible="true" filterable="true"/>
+				<field id="name" label="Name" ispolymorphic="false" isnamepointing="false" displaytype="STRING" accessible="true" filterable="true"/>
+			</fields>
+			<idfields>
+				<field>id</field>
+			</idfields>
+			<conditions logic=""/>
+			<actions/>
+			<methods/>
+		</model>
+		<model id="pgs__pagedata" query="false" processonclient="true" type="readwrite" datasource="SkuidLocal" label="Page" labelplural="Pages" namefield="name" unloadwarningifunsavedchanges="false">
+			<fields>
+				<field id="api_version" label="Skuid API Version" displaytype="TEXT"/>
+				<field id="id" label="Id" readonly="true" displaytype="TEXT"/>
+				<field id="name" label="Name" displaytype="TEXT" length="255" required="true"/>
+				<field id="is_master_page" label="Is Master Page" displaytype="BOOLEAN"/>
+				<field id="updated_at" label="Last Modified" displaytype="DATETIME"/>
+				<field id="created_at" label="Created" displaytype="DATETIME"/>
+				<field id="created_by_id" label="Created By" displaytype="TEXT" accessible="true" filterable="true"/>
+				<field id="master_page_id" label="Master Page" displaytype="TEXT" accessible="true" filterable="true" digits=""/>
+				<field id="updated_by_id" label="Last Modified By" displaytype="TEXT" accessible="true" filterable="true"/>
+				<field id="created_by.name" label="Created By" displaytype="TEXT" accessible="true" filterable="true"/>
+				<field id="updated_by.name" label="Last Modified By" displaytype="TEXT" accessible="true" filterable="true"/>
+				<field id="updated_by" label="Updated By" ispolymorphic="false" isnamepointing="false" displaytype="OBJECT" rel="updated_by" ref="updated_by" accessible="true" filterable="true"/>
+				<field displaytype="FORMULA" id="pretty_update_date" ogdisplaytype="TEXT" readonly="true" returntype="TEXT" uionly="true" defaultvaluetype="fieldvalue">
+					<formula>
+					IF({{created_at}}={{updated_at}},
+					JOIN_TEXT( " ","Created", DATE_DIFF({{updated_at}}) ),
+					JOIN_TEXT( " ","Updated", DATE_DIFF({{updated_at}}) )
+					)</formula>
+				</field>
+				<field id="max_auto_saves" label="Max Auto Saves" displaytype="INTEGER"/>
+				<field id="composer_settings" label="Composer Settings" displaytype="TEXT"/>
+				<field id="status" label="Status" ispolymorphic="false" isnamepointing="false" displaytype="STRING" accessible="true" filterable="true"/>
+			</fields>
+			<idfields>
+				<field>id</field>
+			</idfields>
+			<conditions logic="">
+				<condition type="modelmerge" value="" sourcetype="param" sourceparam="sortby" operator="=" model="ui_control" enclosevalueinquotes="true" mergefield="sortby" novaluebehavior="deactivate" state="filterableon" inactive="false" name="sortby"/>
+				<condition type="fieldvalue" value="" enclosevalueinquotes="true" sourcetype="param" sourceparam="search" state="filterableoff" inactive="true" name="search"/>
+				<condition type="fieldvalue" value="" enclosevalueinquotes="true" sourcetype="param" sourceparam="apiVersion" state="filterableoff" inactive="true" name="apiVersion"/>
+				<condition type="fieldvalue" enclosevalueinquotes="true" sourcetype="param" sourceparam="master" state="filterableoff" inactive="true" name="isMaster"/>
+				<condition type="fieldvalue" value="" sourcetype="param" sourceparam="createdByMe" state="filterableoff" inactive="true" name="createdByMe" operator="=" userinfotype="userid" enclosevalueinquotes="true"/>
+				<condition type="fieldvalue" value="" enclosevalueinquotes="true" sourcetype="param" sourceparam="updatedByMe" state="filterableoff" inactive="true" name="updatedByMe"/>
+				<condition type="fieldvalue" value="true" enclosevalueinquotes="true" sourcetype="param" sourceparam="inMigration" state="filterableoff" inactive="true" name="inMigration"/>
+			</conditions>
+			<actions>
+				<action>
+					<actions>
+						<action type="requeryModels" behavior="standard">
+							<models>
+								<model>pgs_Ui_Control</model>
+								<model>pgs__pagedata</model>
+							</models>
+						</action>
+					</actions>
+					<events>
+						<event>models.saved</event>
+					</events>
+				</action>
+				<action>
+					<actions>
+						<action type="branch" whenfinished="continue" label="create row if not exist">
+							<formula>{{$Model.pgs__FiltersApplied_UI.data.length}}==0</formula>
+							<iftrueactions>
+								<action type="createRow" model="pgs__FiltersApplied_UI" appendorprepend="prepend" defaultmodefornewitems="edit" affectedrows="context"/>
+							</iftrueactions>
+						</action>
+						<action type="updateRow" fieldmodel="pgs__FiltersApplied_UI" affectedrows="context">
+							<updates>
+								<update valuesource="fieldvalue" field="isMasterFilter" enclosevalueinquotes="false" value="true">
+									<formula>IF({{$Model.pgs__pagedata.conditions.3.value}})</formula>
+								</update>
+							</updates>
+						</action>
+					</actions>
+					<events>
+						<event>condition.valueChanged</event>
+					</events>
+					<conditions>
+						<condition>isMaster</condition>
+					</conditions>
+				</action>
+				<action>
+					<actions>
+						<action type="updateRow" fieldmodel="pgs__FiltersApplied_UI" affectedrows="context">
+							<updates>
+								<update valuesource="blank" field="isMasterFilter" enclosevalueinquotes="false"/>
+							</updates>
+						</action>
+					</actions>
+					<events>
+						<event>condition.deactivated</event>
+					</events>
+					<conditions>
+						<condition>isMaster</condition>
+					</conditions>
+				</action>
+				<action>
+					<actions>
+						<action type="branch" whenfinished="continue" label="create row if none exists">
+							<formula>{{$Model.pgs__FiltersApplied_UI.data.length}}==0</formula>
+							<iftrueactions>
+								<action type="createRow" model="pgs__FiltersApplied_UI" appendorprepend="prepend" defaultmodefornewitems="edit" affectedrows="context"/>
+							</iftrueactions>
+						</action>
+						<action type="updateRow" fieldmodel="pgs__FiltersApplied_UI" affectedrows="context">
+							<updates>
+								<update valuesource="formula" field="apiVersionFilter" enclosevalueinquotes="true">
+									<formula>{{$Model.pgs__pagedata.conditions.2.value}}</formula>
+								</update>
+							</updates>
+						</action>
+					</actions>
+					<events>
+						<event>condition.valueChanged</event>
+					</events>
+					<conditions>
+						<condition>apiVersion</condition>
+					</conditions>
+				</action>
+				<action>
+					<actions>
+						<action type="updateRow" fieldmodel="pgs__FiltersApplied_UI" affectedrows="context">
+							<updates>
+								<update valuesource="blank" field="apiVersionFilter" enclosevalueinquotes="true"/>
+							</updates>
+						</action>
+					</actions>
+					<events>
+						<event>condition.deactivated</event>
+					</events>
+					<conditions>
+						<condition>apiVersion</condition>
+					</conditions>
+				</action>
+				<action>
+					<actions>
+						<action type="branch" whenfinished="continue" label="create row if none exists">
+							<formula>{{$Model.pgs__FiltersApplied_UI.data.length}}==0</formula>
+							<iftrueactions>
+								<action type="createRow" model="pgs__FiltersApplied_UI" appendorprepend="prepend" defaultmodefornewitems="edit" affectedrows="context"/>
+							</iftrueactions>
+						</action>
+						<action type="updateRow" fieldmodel="pgs__FiltersApplied_UI" affectedrows="context">
+							<updates>
+								<update valuesource="fieldvalue" field="createdByMeFilter" enclosevalueinquotes="false" value="true"/>
+							</updates>
+						</action>
+					</actions>
+					<events>
+						<event>condition.valueChanged</event>
+					</events>
+					<conditions>
+						<condition>createdByMe</condition>
+					</conditions>
+				</action>
+				<action>
+					<actions>
+						<action type="updateRow" fieldmodel="pgs__FiltersApplied_UI" affectedrows="context">
+							<updates>
+								<update valuesource="blank" field="createdByMeFilter" enclosevalueinquotes="false"/>
+							</updates>
+						</action>
+					</actions>
+					<events>
+						<event>condition.deactivated</event>
+					</events>
+					<conditions>
+						<condition>createdByMe</condition>
+					</conditions>
+				</action>
+				<action>
+					<actions>
+						<action type="branch" whenfinished="continue" label="create row if no row exists">
+							<formula>{{$Model.pgs__FiltersApplied_UI.data.length}}==0</formula>
+							<iftrueactions>
+								<action type="createRow" model="pgs__FiltersApplied_UI" appendorprepend="prepend" defaultmodefornewitems="edit" affectedrows="context"/>
+							</iftrueactions>
+						</action>
+						<action type="updateRow" fieldmodel="pgs__FiltersApplied_UI" affectedrows="context">
+							<updates>
+								<update valuesource="fieldvalue" field="updatedByMeFilter" enclosevalueinquotes="false" value="true"/>
+							</updates>
+						</action>
+					</actions>
+					<events>
+						<event>condition.valueChanged</event>
+					</events>
+					<conditions>
+						<condition>updatedByMe</condition>
+					</conditions>
+				</action>
+				<action>
+					<actions>
+						<action type="updateRow" fieldmodel="pgs__FiltersApplied_UI" affectedrows="context">
+							<updates>
+								<update valuesource="blank" field="updatedByMeFilter" enclosevalueinquotes="false"/>
+							</updates>
+						</action>
+					</actions>
+					<events>
+						<event>condition.deactivated</event>
+					</events>
+					<conditions>
+						<condition>updatedByMe</condition>
+					</conditions>
+				</action>
+				<action>
+					<actions>
+						<action type="branch" whenfinished="continue" label="create row if not exist">
+							<formula>{{$Model.pgs__FiltersApplied_UI.data.length}}==0</formula>
+							<iftrueactions>
+								<action type="createRow" model="pgs__FiltersApplied_UI" appendorprepend="prepend" defaultmodefornewitems="edit" affectedrows="context"/>
+							</iftrueactions>
+						</action>
+						<action type="updateRow" fieldmodel="pgs__FiltersApplied_UI" affectedrows="context">
+							<updates>
+								<update valuesource="fieldvalue" field="inMigrationFilter" enclosevalueinquotes="false" value="true"/>
+							</updates>
+						</action>
+					</actions>
+					<events>
+						<event>condition.activated</event>
+					</events>
+					<conditions>
+						<condition>inMigration</condition>
+					</conditions>
+				</action>
+				<action>
+					<actions>
+						<action type="updateRow" fieldmodel="pgs__FiltersApplied_UI" affectedrows="context">
+							<updates>
+								<update valuesource="blank" field="inMigrationFilter" enclosevalueinquotes="false"/>
+							</updates>
+						</action>
+					</actions>
+					<events>
+						<event>condition.deactivated</event>
+					</events>
+					<conditions>
+						<condition>inMigration</condition>
+					</conditions>
+				</action>
+			</actions>
+			<methods>
+				<method type="query" verb="GET" payloadcontenttype="JSON" limitmethod="simple" simplerecordslimitparameter="limit" limit="20" paginationmethod="simple" offsetparameter="offset" endpoint="/objects/page?order={{sortby}}&amp;fields=id,name,api_version,is_master_page,master_page_id,max_auto_saves,composer_settings,created_at,updated_at,created_by_id,created_by.first_name,created_by.last_name,updated_by_id,updated_by.first_name,updated_by.last_name,status{{#search}}&amp;search={{.}}{{/search}}&amp;where={ {{#updatedByMe}}&quot;page.updated_by_id&quot;:&quot;{{updatedByMe}}&quot;{{#createdByMe}},{{/createdByMe}}{{^createdByMe}}{{#master}},{{/master}}{{^master}}{{#apiVersion}},{{/apiVersion}}{{^apiVersion}}{{#inMigration}},{{/inMigration}}{{/apiVersion}}{{/master}}{{/createdByMe}}{{/updatedByMe}}{{#createdByMe}}&quot;page.created_by_id&quot;:&quot;{{createdByMe}}&quot;{{#master}},{{/master}}{{^master}}{{#apiVersion}},{{/apiVersion}}{{^apiVersion}}{{#inMigration}},{{/inMigration}}{{/apiVersion}}{{/master}}{{/createdByMe}}{{#master}}&quot;is_master_page&quot;:&quot;{{master}}&quot;{{#apiVersion}},{{/apiVersion}}{{^apiVersion}}{{#inMigration}},{{/inMigration}}{{/apiVersion}}{{/master}}{{#apiVersion}}&quot;api_version&quot;:&quot;{{apiVersion}}&quot;{{#inMigration}},{{/inMigration}}{{/apiVersion}}{{#inMigration}}&quot;status&quot;:&quot;migration_in_progress&quot;{{/inMigration}} }"/>
+				<method type="insert" verb="POST" successif="requestsucceeds" sendchanges="asjsoninbody" insertresponse="recordinbody" endpoint="/objects/page"/>
+				<method type="update" verb="PATCH" successif="requestsucceeds" sendchanges="asjsoninbody" endpoint="/objects/page/{{id}}"/>
+				<method type="delete" verb="DELETE" endpoint="/objects/page/{{id}}" successif="requestsucceeds"/>
+			</methods>
+		</model>
+		<model id="pgs__SelectedPage" query="false" processonclient="true" type="readwrite" datasource="SkuidLocal" label="Page" labelplural="Pages" namefield="name" unloadwarningifunsavedchanges="false">
+			<fields>
+				<field id="api_version" label="Skuid API Version" displaytype="TEXT"/>
+				<field id="id" label="Id" displaytype="TEXT" accessible="true" filterable="true"/>
+				<field id="name" label="Name" displaytype="TEXT" length="255" required="true"/>
+				<field id="content" displaytype="TEXT"/>
+				<field id="created_by_id" displaytype="TEXT"/>
+				<field id="created_by.name" displaytype="TEXT"/>
+				<field id="created_at" displaytype="DATETIME"/>
+				<field id="updated_by_id" displaytype="TEXT"/>
+				<field id="updated_by.name"/>
+				<field id="updated_at" displaytype="DATETIME"/>
+			</fields>
+			<idfields>
+				<field>id</field>
+			</idfields>
+			<conditions>
+				<condition type="fieldvalue" value="" enclosevalueinquotes="true" sourcetype="param" sourceparam="selectedpageid" state="filterableoff" inactive="true" name="selectedpageid"/>
+			</conditions>
+			<actions/>
+			<methods>
+				<method type="query" verb="GET" endpoint="/objects/page/{{selectedpageid}}?fields=name,created_by_id,created_by.first_name,created_by.last_name,created_by_id,created_at,updated_at,id,updated_by_id,updated_by.first_name,updated_by.last_name,content,api_version"/>
+				<method type="update" verb="PUT" successif="requestsucceeds" sendchanges="asjsoninbody" endpoint="/objects/page/{{id}}"/>
+			</methods>
+		</model>
+		<model id="pgs__SelectedPageVersions" query="false" createrowifnonefound="false" sobject="skuid__Page_Version__c" orderby="CreatedDate DESC" datasource="SkuidLocal" verb="GET" endpoint="/objects/pageversion?where={page_id: &quot;{{selectedpageid}}&quot;{{IsNotAutoSave}}}" label="Page Revision" labelplural="Page Revisions" namefield="description" payloadcontenttype="JSON" unloadwarningifunsavedchanges="false">
+			<fields>
+				<field id="id" label="Id" displaytype="TEXT" accessible="true" createable="false" editable="false" filterable="true"/>
+				<field id="created_at" label="Created Date" displaytype="DATETIME" accessible="true" filterable="true"/>
+				<field id="created_by_id" label="Created By" displaytype="TEXT" accessible="true" filterable="true"/>
+				<field id="updated_at" label="Updated At" displaytype="DATETIME" accessible="true" filterable="true"/>
+				<field id="updated_by_id" label="Updated By" displaytype="TEXT" accessible="true" filterable="true"/>
+				<field id="updated_by.name" displaytype="TEXT"/>
+				<field id="api_version" label="Skuid API Version" displaytype="TEXT"/>
+				<field id="description" label="Description" displaytype="TEXT" accessible="true" filterable="true"/>
+				<field id="is_autosave" label="Is Auto Save" displaytype="BOOLEAN" accessible="true" filterable="true"/>
+			</fields>
+			<idfields>
+				<field>id</field>
+			</idfields>
+			<conditions>
+				<condition type="fieldvalue" value="" enclosevalueinquotes="true" field="skuid__Page__c" state="filterableoff" inactive="true" name="selectedpageid" sourceparam="selectedpageid" sourcetype="param"/>
+				<condition type="fieldvalue" value=",is_autosave: false" enclosevalueinquotes="false" field="skuid__IsAutoSave__c" state="filterableoff" inactive="true" name="IsNotAutoSave" sourceparam="IsNotAutoSave" sourcetype="param"/>
+			</conditions>
+			<actions/>
+		</model>
+		<model id="pgs__PageVersionToRestore" query="false" createrowifnonefound="false" sobject="skuid__Page_Version__c" orderby="" datasource="SkuidLocal" verb="GET" endpoint="/objects/pageversion/{{id}}" namefield="description" payloadcontenttype="JSON" unloadwarningifunsavedchanges="false">
+			<fields>
+				<field id="content" label="Content" displaytype="STRING" accessible="true" filterable="true"/>
+				<field id="description" label="Description" displaytype="STRING" accessible="true" filterable="true"/>
+				<field id="api_version" label="Skuid API Version" displaytype="TEXT"/>
+				<field id="id" label="Id" displaytype="TEXT" accessible="true" createable="false" editable="false" filterable="true"/>
+				<field id="is_autosave" label="Is Auto-Save" displaytype="BOOLEAN" accessible="true" filterable="true"/>
+			</fields>
+			<idfields>
+				<field>id</field>
+			</idfields>
+			<conditions>
+				<condition type="fieldvalue" value="" enclosevalueinquotes="true" field="Id" state="filterableoff" inactive="true" name="PageIdToRestore" sourceparam="id" sourcetype="param"/>
+			</conditions>
+			<actions/>
+		</model>
+		<model id="master__MasterPages" query="false" createrowifnonefound="false" datasource="SkuidLocal" verb="GET" payloadcontenttype="JSON" endpoint="/objects/page?order=name&amp;where={ &quot;is_master_page&quot;:true{{#apiVersion}},&quot;api_version&quot;:&quot;{{apiVersion}}&quot;{{/apiVersion}} }&amp;fields=id,name,api_version&amp;whereNotIn={&quot;name&quot;:[&quot;SkuidCoreMaster&quot;,&quot;SkuidComposerMaster&quot;,&quot;SkuidCoreMasterV2&quot;,&quot;SkuidPublicMaster&quot;]}" unloadwarningifunsavedchanges="false">
+			<fields>
+				<field id="name" label="Name" ispolymorphic="false" isnamepointing="false" displaytype="STRING" accessible="true" filterable="true"/>
+				<field id="id" label="Id" ispolymorphic="false" isnamepointing="false" displaytype="STRING" accessible="true" filterable="true"/>
+				<field id="api_version" label="Api Version" ispolymorphic="false" isnamepointing="false" displaytype="STRING" accessible="true" filterable="true"/>
+			</fields>
+			<conditions>
+				<condition type="fieldvalue" value="" enclosevalueinquotes="true" sourcetype="param" sourceparam="apiVersion" state="filterableoff" inactive="true" name="apiVersion"/>
+			</conditions>
+			<actions/>
+		</model>
+		<model id="pgs__NewPage" limit="1" query="false" processonclient="true" createrowifnonefound="false" type="readwrite" datasource="SkuidLocal" unloadwarningifunsavedchanges="true" label="Page" labelplural="Pages" namefield="name">
+			<fields>
+				<field id="id" label="Id" readonly="true"/>
+				<field id="name" label="Name" displaytype="TEXT"/>
+				<field id="content" label="Content" displaytype="TEXT"/>
+				<field id="master_page_id" label="Master Page" displaytype="PICKLIST" accessible="true" filterable="true" required="false" ogdisplaytype="TEXT" datasource="SkuidLocal" rel="page" keyfield="id" searchroute="/objects/page?search={{search}}&amp;where={&quot;is_master_page&quot;:true}&amp;fields=id,name" defaultvaluetype="fieldvalue" picklistsource="rowsinmodel" returntype="TEXT" picklistmodel="master__MasterPages" entryvalue="{{id}}" entrylabel="{{name}}{{#$Model.FeatureFlags.data.0.v1Enabled}} ({{api_version}}){{/$Model.FeatureFlags.data.0.v1Enabled}}">
+					<batchfields/>
+				</field>
+				<field id="api_version" label="Skuid API Version" displaytype="PICKLIST" length="10" picklistsource="snippet" snippet="skuid.getPageAPIVersionPicklistEntries" required="false" returntype="TEXT" defaultvaluetype="fieldvalue" defaultValue="v1" helptext="help"/>
+				<field id="skuid__Initial_State__c" uionly="true" displaytype="PICKLIST" label="Starting point" picklistsource="manual" returntype="TEXT" defaultvaluetype="fieldvalue">
+					<picklistentries>
+						<entry value="masterpage" label="Use a master page"/>
+						<entry value="from-xml" label="Paste XML from a prebuilt page"/>
+						<entry value="from-xml-file" label="Upload XML file"/>
+					</picklistentries>
+				</field>
+				<field id="skuid__Page_XML__c" uionly="true" displaytype="TEXTAREA" label="Page XML" length="163840"/>
+				<field id="ui_controller_apply_master_page" displaytype="MULTIPICKLIST" uionly="true" ogdisplaytype="TEXT" picklistsource="manual" returntype="TEXT">
+					<picklistentries>
+						<entry value="masterpage" label="Apply master page"/>
+					</picklistentries>
+				</field>
+				<field displaytype="MULTIPICKLIST" id="ui_controller_xml_options" uionly="true" ogdisplaytype="TEXT" picklistsource="manual" returntype="TEXT">
+					<picklistentries>
+						<entry value="show_xml_options" label="Create from XML"/>
+					</picklistentries>
+				</field>
+				<field id="ui_controller_upload_xml" displaytype="PICKLIST" ogdisplaytype="TEXT" picklistsource="manual" returntype="TEXT" uionly="true">
+					<picklistentries>
+						<entry value="import_xml" label="Import XML file"/>
+					</picklistentries>
+				</field>
+				<field id="ui_controller_paste_xml" displaytype="PICKLIST" uionly="true" ogdisplaytype="TEXT" picklistsource="manual" returntype="TEXT">
+					<picklistentries>
+						<entry value="paste_xml" label="Paste XML"/>
+					</picklistentries>
+				</field>
+				<field displaytype="TEXT" uionly="true" readonly="false" length="255" id="ui_xml_file_name"/>
+			</fields>
+			<idfields>
+				<field>id</field>
+			</idfields>
+			<methods>
+				<method type="query" verb="GET" endpoint="/objects/page"/>
+				<method type="insert" verb="POST" successif="requestsucceeds" sendchanges="asjsoninbody" insertresponse="recordinbody" endpoint="/objects/page"/>
+				<method type="update" verb="PUT" successif="requestsucceeds" sendchanges="asjsoninbody" endpoint="/objects/page/{{id}}"/>
+				<method type="delete" verb="DELETE" endpoint="/objects/page/{{id}}" successif="requestsucceeds"/>
+			</methods>
+			<conditions/>
+			<actions>
+				<action>
+					<actions>
+						<action type="custom" snippet="skuid.newPage.writeXMLToPageRecord"/>
+					</actions>
+					<events>
+						<event>row.updated</event>
+					</events>
+					<fields>
+						<field>api_version</field>
+						<field>master_page_id</field>
+						<field>skuid__Initial_State__c</field>
+						<field>skuid__Page_XML__c</field>
+					</fields>
+				</action>
+				<action>
+					<actions>
+						<action type="custom" snippet="skuid.newPage.reassignDataSources"/>
+						<action type="branch" whenfinished="stop" label="if page XML isn't blank" model="pgs__NewPage">
+							<formula>!ISBLANK({{skuid__Page_XML__c}})</formula>
+							<iftrueactions>
+								<action type="updateRow" fieldmodel="pgs__NewPage" affectedrows="context">
+									<updates>
+										<update valuesource="formula" field="api_version" enclosevalueinquotes="true">
+											<formula>IF(STARTS_WITH({{skuid__Page_XML__c}},"&lt;skuid__page"), "v2","v1")</formula>
+										</update>
+									</updates>
+								</action>
+							</iftrueactions>
+						</action>
+					</actions>
+					<events>
+						<event>row.updated</event>
+					</events>
+					<fields>
+						<field>skuid__Page_XML__c</field>
+					</fields>
+				</action>
+				<action>
+					<actions>
+						<action type="updateCondition" model="pgs__NewPage_DuplicateCheck" condition="searchname" value="{{{name}}}" behavior="set" valuesource="fieldvalue"/>
+						<action type="requeryModels" behavior="standard">
+							<models>
+								<model>pgs__NewPage_DuplicateCheck</model>
+							</models>
+						</action>
+					</actions>
+					<events>
+						<event>row.updated</event>
+					</events>
+					<fields>
+						<field>name</field>
+					</fields>
+				</action>
+				<action>
+					<actions>
+						<action type="branch" whenfinished="stop" model="pgs__NewPage">
+							<formula>{{ui_controller_apply_master_page}} === "masterpage"</formula>
+							<iftrueactions>
+								<action type="updateRow" fieldmodel="pgs__NewPage" affectedrows="context">
+									<updates>
+										<update valuesource="fieldvalue" field="skuid__Initial_State__c" enclosevalueinquotes="true" value="masterpage"/>
+									</updates>
+								</action>
+							</iftrueactions>
+						</action>
+						<action type="updateRow" fieldmodel="pgs__NewPage" affectedrows="context">
+							<updates>
+								<update valuesource="blank" field="master_page_id" enclosevalueinquotes="true"/>
+							</updates>
+						</action>
+					</actions>
+					<events>
+						<event>row.updated</event>
+					</events>
+					<fields>
+						<field>ui_controller_apply_master_page</field>
+					</fields>
+				</action>
+				<action>
+					<actions>
+						<action type="branch" whenfinished="stop" model="pgs__NewPage" label="if master page field isn't blank">
+							<formula>!ISBLANK({{master_page_id}})</formula>
+							<iftrueactions>
+								<action type="updateRow" fieldmodel="pgs__NewPage" affectedrows="context">
+									<updates>
+										<update valuesource="formula" field="api_version" enclosevalueinquotes="true">
+											<formula>MODEL_LOOKUP("master__MasterPages","api_version","id",{{master_page_id}})</formula>
+										</update>
+									</updates>
+								</action>
+							</iftrueactions>
+						</action>
+					</actions>
+					<events>
+						<event>row.updated</event>
+					</events>
+					<fields>
+						<field>master_page_id</field>
+					</fields>
+				</action>
+				<action>
+					<actions>
+						<action type="branch" whenfinished="stop" model="pgs__NewPage">
+							<formula>{{ui_controller_paste_xml}} === "paste_xml"</formula>
+							<iftrueactions>
+								<action type="updateRow" fieldmodel="pgs__NewPage" affectedrows="context">
+									<updates>
+										<update valuesource="fieldvalue" field="skuid__Initial_State__c" enclosevalueinquotes="true" value="from-xml"/>
+										<update valuesource="blank" field="ui_controller_upload_xml" enclosevalueinquotes="true" value="import_xml"/>
+										<update valuesource="blank" field="ui_xml_file_name" enclosevalueinquotes="true"/>
+										<update valuesource="blank" field="skuid__Page_XML__c" enclosevalueinquotes="true"/>
+									</updates>
+								</action>
+							</iftrueactions>
+						</action>
+					</actions>
+					<events>
+						<event>row.updated</event>
+					</events>
+					<fields>
+						<field>ui_controller_paste_xml</field>
+					</fields>
+				</action>
+				<action>
+					<actions>
+						<action type="branch" whenfinished="stop" model="pgs__NewPage">
+							<formula>{{ui_controller_upload_xml}} === "import_xml"</formula>
+							<iftrueactions>
+								<action type="updateRow" fieldmodel="pgs__NewPage" affectedrows="context">
+									<updates>
+										<update valuesource="fieldvalue" field="skuid__Initial_State__c" enclosevalueinquotes="true" value="from-xml-file"/>
+										<update valuesource="blank" field="ui_controller_paste_xml" enclosevalueinquotes="true" value="paste_xml"/>
+										<update valuesource="blank" field="skuid__Page_XML__c" enclosevalueinquotes="true"/>
+									</updates>
+								</action>
+							</iftrueactions>
+						</action>
+					</actions>
+					<events>
+						<event>row.updated</event>
+					</events>
+					<fields>
+						<field>ui_controller_upload_xml</field>
+					</fields>
+				</action>
+				<action>
+					<actions>
+						<action type="branch" whenfinished="stop" model="pgs__NewPage">
+							<formula>{{ui_controller_xml_options}} === "show_xml_options"</formula>
+							<iftrueactions>
+								<action type="updateRow" fieldmodel="pgs__NewPage" affectedrows="context">
+									<updates>
+										<update valuesource="fieldvalue" field="skuid__Initial_State__c" enclosevalueinquotes="true" value="from-xml-file"/>
+										<update valuesource="fieldvalue" field="ui_controller_upload_xml" enclosevalueinquotes="true" value="import_xml"/>
+									</updates>
+								</action>
+							</iftrueactions>
+						</action>
+						<action type="updateRow" fieldmodel="pgs__NewPage" affectedrows="context">
+							<updates>
+								<update valuesource="blank" field="skuid__Initial_State__c" enclosevalueinquotes="true"/>
+								<update valuesource="blank" field="ui_controller_upload_xml" enclosevalueinquotes="true" value="masterpage"/>
+								<update valuesource="blank" field="ui_controller_paste_xml" enclosevalueinquotes="true" value="import_xml"/>
+								<update valuesource="blank" field="skuid__Page_XML__c" enclosevalueinquotes="true"/>
+								<update valuesource="blank" field="ui_xml_file_name" enclosevalueinquotes="true"/>
+							</updates>
+						</action>
+					</actions>
+					<events>
+						<event>row.updated</event>
+					</events>
+					<fields>
+						<field>ui_controller_xml_options</field>
+					</fields>
+				</action>
+			</actions>
+		</model>
+		<model id="master__DataSources" query="false" createrowifnonefound="false" datasource="SkuidLocal" label="Data Source" labelplural="Data Sources" namefield="name" verb="GET" endpoint="/objects/datasource?order=name&amp;fields=id,name,type,is_active,url,use_proxy{{#type}}&amp;where={{#decodeUrl}}%7B%22type%22%3A%22{{.}}%22%7D{{/decodeUrl}}{{/type}}" payloadcontenttype="JSON" unloadwarningifunsavedchanges="false">
+			<conditions>
+				<condition type="fieldvalue" value="" enclosevalueinquotes="true" field="type" state="filterableoff" inactive="true" name="type" sourcetype="param" sourceparam="type"/>
+			</conditions>
+			<fields>
+				<field id="id" displaytype="TEXT" readonly="true" label="Id"/>
+				<field id="name" displaytype="TEXT" label="Name" length="255" required="true"/>
+				<field id="type" displaytype="PICKLIST" label="Data Source Type" picklistsource="rowsinmodel" picklistmodel="stng__DataSourceTypes" entryvalue="{{{value}}}" entrylabel="{{{label}}}" defaultvaluetype="fieldvalue"/>
+				<field id="is_active" displaytype="BOOLEAN" defaultValue="true" label="Is Active"/>
+				<field id="url" displaytype="TEXT" label="URL / Endpoint"/>
+				<field id="use_proxy" displaytype="BOOLEAN" label="Use Proxy"/>
+			</fields>
+			<idfields>
+				<field>id</field>
+			</idfields>
+			<actions/>
+		</model>
+		<model id="master__DataSourceReassign" query="true" createrowifnonefound="false" datasource="Ui-Only" processonclient="true">
+			<fields>
+				<field displaytype="TEXT" id="currentName" label="Current (invalid) data source"/>
+				<field id="newName" displaytype="PICKLIST" label="Replacement data source" ogdisplaytype="TEXT" picklistsource="rowsinmodel" defaultvaluetype="fieldvalue" picklistmodel="master__DataSources" entryvalue="{{{name}}}" entrylabel="{{name}}">
+					<picklistentries/>
+				</field>
+			</fields>
+			<conditions/>
+			<actions/>
+		</model>
+		<model id="pgs__NewPage_DuplicateCheck" query="false" createrowifnonefound="false" datasource="SkuidLocal" verb="GET" payloadcontenttype="JSON" endpoint="/objects/page?where={name: &quot;{{name}}&quot;}" unloadwarningifunsavedchanges="false">
+			<fields>
+				<field id="id" label="Id" ispolymorphic="false" isnamepointing="false" displaytype="STRING" accessible="true" filterable="true"/>
+				<field id="name" label="Name" ispolymorphic="false" isnamepointing="false" displaytype="STRING" accessible="true" filterable="true"/>
+			</fields>
+			<conditions>
+				<condition type="fieldvalue" value="" enclosevalueinquotes="true" sourcetype="param" sourceparam="name" state="filterableoff" inactive="true" name="searchname"/>
+			</conditions>
+			<actions/>
+		</model>
+		<model id="Routes" limit="20" query="false" createrowifnonefound="false" datasource="SkuidLocal" type="readwrite" namefield="route" unloadwarningifunsavedchanges="false">
+			<fields>
+				<field id="page_id" label="Page" displaytype="REFERENCE" precision="10" scale="0" accessible="true" filterable="true" required="true" datasource="SkuidLocal" rel="page" keyfield="id" searchroute="/objects/page?search={{search}}&amp;fields=id,name" ogdisplaytype="REFERENCE">
+					<batchfields/>
+				</field>
+				<field id="route" label="Route" displaytype="TEXT" accessible="true" filterable="true" required="true"/>
+				<field id="app_id" label="App" displaytype="REFERENCE" precision="10" scale="0" accessible="true" filterable="true" required="true" datasource="SkuidLocal" rel="app" keyfield="id" searchroute="/objects/app?search={{search}}&amp;fields=id,name" ogdisplaytype="REFERENCE"/>
+				<field id="fq_route" label="Fully-Qualified Route" displaytype="TEXT" accessible="true" filterable="true" readonly="true"/>
+				<field id="id" label="Id" displaytype="UUID" precision="10" scale="0" accessible="true" filterable="true"/>
+			</fields>
+			<idfields>
+				<field>id</field>
+			</idfields>
+			<conditions>
+				<condition type="fieldvalue" value="" sourcetype="param" sourceparam="page_id" operator="=" enclosevalueinquotes="true" state="filterableoff" inactive="true" name="page_id"/>
+			</conditions>
+			<actions/>
+			<methods>
+				<method type="query" verb="GET" endpoint="/objects/route?order=route&amp;where={page_id:&quot;{{page_id}}&quot;}&amp;fields=organization.name,app_id,id,route,app.name,page_id,page.name,fq_route" payloadcontenttype="JSON"/>
+				<method type="update" verb="PUT" successif="requestsucceeds" sendchanges="asjsoninbody" endpoint="/objects/route/{{id}}">
+					<requestBodyFields/>
+				</method>
+				<method type="delete" verb="DELETE" endpoint="/objects/route/{{id}}" successif="requestsucceeds"/>
+			</methods>
+		</model>
+		<model id="ClonePageData" limit="20" query="false" createrowifnonefound="false" datasource="SkuidLocal" type="readwrite" label="Page" labelplural="Pages" namefield="name">
+			<fields>
+				<field id="name" label="New Page Name" displaytype="TEXT" accessible="true" filterable="true" createable="true" editable="true" ogdisplaytype="STRING"/>
+				<field id="max_auto_saves" label="Max Auto Saves" displaytype="DOUBLE" precision="2" scale="0" accessible="true" filterable="true"/>
+				<field id="theme_id" label="Theme Id" displaytype="TEXT" accessible="true" createable="true" filterable="true" ogdisplaytype="STRING" precision="0" scale="0" defaultvaluetype="fieldvalue"/>
+				<field id="is_master_page" label="Is Master Page" displaytype="BOOLEAN" accessible="true" filterable="true" defaultvaluetype="fieldvalue"/>
+				<field id="master_page_id" label="Master Page Id" displaytype="TEXT" accessible="true" createable="true" filterable="true"/>
+				<field id="api_version" label="Skuid API Version" displaytype="TEXT"/>
+				<field id="content" label="Content" displaytype="TEXTAREA" accessible="true" filterable="true" ogdisplaytype="STRING"/>
+				<field id="composer_settings" displaytype="TEXTAREA" ogdisplaytype="TEXT" label="Composer Settings"/>
+			</fields>
+			<conditions/>
+			<idfields>
+				<field>id</field>
+			</idfields>
+			<actions>
+				<action>
+					<actions>
+						<action type="updateCondition" model="pgs__NewPage_DuplicateCheck" condition="searchname" value="{{{name}}}" behavior="set"/>
+						<action type="requeryModels" behavior="standard">
+							<models>
+								<model>pgs__NewPage_DuplicateCheck</model>
+							</models>
+						</action>
+					</actions>
+					<events>
+						<event>row.created</event>
+						<event>row.updated</event>
+					</events>
+					<fields>
+						<field>name</field>
+					</fields>
+				</action>
+			</actions>
+			<methods>
+				<method type="insert" verb="POST" successif="requestsucceeds" sendchanges="asjsoninbody" insertresponse="recordinbody" endpoint="/objects/page"/>
+			</methods>
+		</model>
+		<model id="ClonePageData_Source" query="false" createrowifnonefound="false" datasource="SkuidLocal" label="Page" labelplural="Pages" namefield="name" verb="GET" payloadcontenttype="JSON" endpoint="/objects/page/{{selectedpageid}}?fields=name,content,api_version,composer_settings,max_auto_saves,api_version,is_master_page,master_page_id,master_page.name">
+			<fields>
+				<field id="name" label="New Page Name" displaytype="TEXT" accessible="true" filterable="true" createable="true" editable="true" ogdisplaytype="STRING"/>
+				<field id="max_auto_saves" label="Max Auto Saves" displaytype="DOUBLE" precision="2" scale="0" accessible="true" filterable="true"/>
+				<field id="theme_id" label="Theme Id" displaytype="TEXT" accessible="true" createable="true" filterable="true" ogdisplaytype="STRING" precision="0" scale="0" defaultvaluetype="fieldvalue"/>
+				<field id="is_master_page" label="Is Master Page" displaytype="BOOLEAN" accessible="true" filterable="true" defaultvaluetype="fieldvalue"/>
+				<field id="master_page_id" label="Master Page Id" displaytype="TEXT" accessible="true" createable="true" filterable="true"/>
+				<field id="api_version" label="Skuid API Version" displaytype="TEXT"/>
+				<field id="content" label="Content" displaytype="TEXTAREA" accessible="true" filterable="true" ogdisplaytype="STRING"/>
+				<field id="composer_settings" displaytype="TEXTAREA" ogdisplaytype="TEXT" label="Composer Settings"/>
+				<field id="master_page.name" label="Name" ispolymorphic="false" isnamepointing="false" displaytype="STRING" accessible="true" filterable="true"/>
+			</fields>
+			<conditions>
+				<condition type="fieldvalue" value="" enclosevalueinquotes="true" sourcetype="param" sourceparam="selectedpageid" state="filterableoff" inactive="true" name="selectedPageId"/>
+			</conditions>
+			<idfields>
+				<field>id</field>
+			</idfields>
+			<actions/>
+			<methods>
+				<method type="insert" verb="POST" successif="requestsucceeds" sendchanges="asjsoninbody" insertresponse="recordinbody" endpoint="/objects/page"/>
+			</methods>
+		</model>
+		<model id="pgs__FiltersApplied_UI" query="true" datasource="Ui-Only" createrowifnonefound="false">
+			<fields>
+				<field id="apiVersionFilter" displaytype="TEXT" length="255"/>
+				<field id="isMasterFilter" displaytype="BOOLEAN" length="255" ogdisplaytype="TEXT"/>
+				<field id="createdByMeFilter" displaytype="BOOLEAN" length="255" ogdisplaytype="TEXT"/>
+				<field id="updatedByMeFilter" displaytype="BOOLEAN" length="255" ogdisplaytype="TEXT"/>
+				<field id="inMigrationFilter" displaytype="BOOLEAN" length="255" ogdisplaytype="TEXT" defaultvaluetype="fieldvalue"/>
+			</fields>
+			<conditions/>
+			<actions>
+				<action>
+					<actions>
+						<action type="branch" whenfinished="stop" model="pgs__FiltersApplied_UI" label="Clear model if no filters are applied">
+							<formula>{{apiVersionFilter}}==null and {{createdByMeFilter}}==null and {{isMasterFilter}}==null and {{updatedByMeFilter}}==null and {{inMigrationFilter}}==null</formula>
+							<iftrueactions>
+								<action type="emptyModelData">
+									<models>
+										<model>pgs__FiltersApplied_UI</model>
+									</models>
+								</action>
+							</iftrueactions>
+						</action>
+					</actions>
+					<events>
+						<event>row.updated</event>
+					</events>
+				</action>
+			</actions>
+		</model>
+		<model id="FeatureFlags" query="true" datasource="Ui-Only" createrowifnonefound="true">
+			<fields>
+				<field id="v1Enabled" displaytype="BOOLEAN" length="255" ogdisplaytype="TEXT" defaultvaluetype="fieldvalue" readonly="false"/>
+			</fields>
+			<conditions/>
+			<actions/>
+		</model>
+		<model id="MigrationPageData" limit="20" query="false" createrowifnonefound="false" datasource="SkuidLocal" type="readwrite" label="Page" labelplural="Pages" namefield="name">
+			<fields>
+				<field id="name" label="New Page Name" displaytype="TEXT" accessible="true" filterable="true" createable="true" editable="true" ogdisplaytype="STRING"/>
+				<field id="content" label="Content" displaytype="TEXTAREA" accessible="true" filterable="true" ogdisplaytype="STRING"/>
+				<field id="api_version" label="Skuid API Version" displaytype="TEXT"/>
+				<field id="is_master_page" label="Is Master Page" displaytype="BOOLEAN" accessible="true" filterable="true" defaultvaluetype="fieldvalue"/>
+				<field id="master_page_id" label="Master Page Id" displaytype="PICKLIST" accessible="true" createable="true" filterable="true" ogdisplaytype="TEXT" picklistsource="rowsinmodel" returntype="TEXT" picklistmodel="master__MasterPages" entryvalue="{{id}}" entrylabel="{{name}}"/>
+				<field id="max_auto_saves" label="Max Auto Saves" displaytype="DOUBLE" precision="2" scale="0" accessible="true" filterable="true"/>
+				<field id="composer_settings" displaytype="TEXTAREA" ogdisplaytype="TEXT" label="Composer Settings"/>
+				<field id="status" label="Status" ispolymorphic="false" isnamepointing="false" displaytype="STRING" accessible="true" filterable="true"/>
+				<field id="design_system_to_use" displaytype="PICKLIST" uionly="true" length="255" ogdisplaytype="TEXT" picklistsource="snippet" returntype="TEXT" label="Design system" defaultvaluetype="fieldvalue" snippet="skuid.core.getUserFacingThemePicklistOptions_v2"/>
+				<field id="is_child_page_ui_only" displaytype="BOOLEAN" ogdisplaytype="TEXT" defaultvaluetype="fieldvalue" helptext="A flag to indicate whether the page is a child page, so we can enforce that users select a new master page for the page being migrated" uionly="true"/>
+				<field id="step1_dont_show_again" displaytype="BOOLEAN" uionly="true" label="Don't show this step again" length="255" ogdisplaytype="TEXT" defaultvaluetype="fieldvalue"/>
+				<field id="original_master_page_name" displaytype="TEXT" helptext="(If a child page) The name of the original master page before beginning the migration process" uionly="true"/>
+			</fields>
+			<conditions/>
+			<idfields>
+				<field>id</field>
+			</idfields>
+			<actions>
+				<action>
+					<actions>
+						<action type="updateCondition" model="pgs__NewPage_DuplicateCheck" condition="searchname" value="{{{name}}}" behavior="set"/>
+						<action type="requeryModels" behavior="standard">
+							<models>
+								<model>pgs__NewPage_DuplicateCheck</model>
+							</models>
+						</action>
+					</actions>
+					<events>
+						<event>row.created</event>
+						<event>row.updated</event>
+					</events>
+					<fields>
+						<field>name</field>
+					</fields>
+				</action>
+				<action>
+					<actions>
+						<action type="custom" snippet="skuid.pageList.migration.populateSettingsFromUserPreferences"/>
+					</actions>
+					<events>
+						<event>row.created</event>
+					</events>
+				</action>
+			</actions>
+			<methods>
+				<method type="insert" verb="POST" successif="requestsucceeds" sendchanges="asjsoninbody" insertresponse="recordinbody" endpoint="/objects/page"/>
+			</methods>
+		</model>
+	</models>
+	<pageregioncontents>
+		<pageregioncontent regionid="sk-2w1w-1416" uniqueid="sk-3ZJP-1454">
+			<components>
+				<skuid__wrapper uniqueid="sk-3qcq-586" styleSettingsVariant="b5342fe9-7125-4bf8-b20b-ade1825d7e72">
+					<components>
+						<skuid__grid uniqueid="sk-1dHH-11148" flexDirection="row" justifyContent="flex-start" alignItems="flex-start" columnGutter="0" rowGutter="0">
+							<divisions>
+								<division alignSelf="auto" minWidth="0px" ratio="1">
+									<components/>
+								</division>
+								<division ratio="1" alignSelf="auto" maxWidth="1440px" minWidth="100%">
+									<components>
+										<skuid__grid uniqueid="sk-1dHx-11680" flexDirection="row" justifyContent="flex-start" alignItems="center" columnGutter="0" rowGutter="0">
+											<divisions>
+												<division minWidth="100px" ratio="1" alignSelf="auto">
+													<components>
+														<skuid__header title="{{Model.labelPlural}}" uniqueid="sk-3qd8-653" model="pgs__pagedata">
+															<renderConditions logictype="and"/>
+															<skuid__buttonSet>
+																<groups/>
+															</skuid__buttonSet>
+														</skuid__header>
+													</components>
+												</division>
+												<division alignSelf="auto" minWidth="100px" ratio="1">
+													<components>
+														<skuid__buttonSet uniqueid="sk-1dH_-14201">
+															<groups>
+																<skuid__buttonGroup>
+																	<buttons>
+																		<skuid__button label="Create" uniqueId="button-pages-create" styleSettingsVariant="primary">
+																			<actions>
+																				<action type="action-sequence" action-sequence-id="82793f2e-b6b1-40dd-93ac-5cc0d7192b5d"/>
+																			</actions>
+																			<tooltip position="top" compact="false"/>
+																			<hotkeys>
+																				<hotkey modifiers="ctrl,meta" key="n"/>
+																			</hotkeys>
+																			<renderConditions logictype="and">
+																				<renderCondition type="fieldvalue" enclosevalueinquotes="true" fieldmodel="pgs_Ui_Control" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasRows"/>
+																			</renderConditions>
+																		</skuid__button>
+																	</buttons>
+																</skuid__buttonGroup>
+															</groups>
+														</skuid__buttonSet>
+													</components>
+												</division>
+											</divisions>
+											<styles>
+												<spacing top="4" bottom="4"/>
+											</styles>
+											<background/>
+										</skuid__grid>
+									</components>
+								</division>
+								<division alignSelf="auto" minWidth="0px" ratio="1">
+									<components/>
+								</division>
+							</divisions>
+							<styles>
+								<spacing left="4" right="4"/>
+							</styles>
+							<background/>
+						</skuid__grid>
+					</components>
+					<background/>
+					<renderConditions logictype="and"/>
+					<styles>
+						<spacing/>
+					</styles>
+				</skuid__wrapper>
+				<skuid__grid uniqueid="grid-pagecontent" flexDirection="row" justifyContent="flex-start" alignItems="flex-start" columnGutter="0" rowGutter="0">
+					<divisions>
+						<division minWidth="24px" ratio="1" alignSelf="auto">
+							<components/>
+						</division>
+						<division alignSelf="auto" minWidth="100%" ratio="1" maxWidth="1440px">
+							<components>
+								<skuid__grid uniqueid="grid-filterset" flexDirection="row" justifyContent="flex-start" alignItems="center" columnGutter="0" rowGutter="0" fullWidth="true">
+									<divisions>
+										<division minWidth="1px" ratio="1" alignSelf="auto">
+											<components/>
+										</division>
+										<division alignSelf="auto" minWidth="0px" ratio="0">
+											<components>
+												<skuid__text contents="&lt;div style=&quot;text-align: right;&quot;&gt;Order by:&lt;/div&gt;&#10;" uniqueid="sk-1fhw-25322">
+													<styles>
+														<spacing right="2"/>
+													</styles>
+												</skuid__text>
+											</components>
+										</division>
+										<division alignSelf="auto" minWidth="204px" ratio="0">
+											<components>
+												<skuid__form showErrorsInline="true" model="ui_control" uniqueid="form-pages-orderby" mode="edit">
+													<styles>
+														<spacing right="3" top="-1"/>
+													</styles>
+													<columns>
+														<column verticalAlign="top" ratio="1">
+															<sections>
+																<section title="New Section" showHeading="false">
+																	<fields>
+																		<skuid__field id="sortby" showHelp="true" label=" "/>
+																	</fields>
+																</section>
+															</sections>
+														</column>
+													</columns>
+												</skuid__form>
+											</components>
+										</division>
+										<division alignSelf="auto" ratio="0" maxWidth="124px">
+											<components>
+												<skuid__filterSet model="pgs__pagedata" uniqueid="filterset-pages" resetButtonBehavior="hide">
+													<filters>
+														<skuid__filter type="toggle" conditionSource="manual" filterMethod="server" labelMode="manual" createFilterOffOption="false" uniqueid="filter-type" label="Master Page">
+															<renderConditions logictype="and"/>
+															<styleVariantConditions/>
+															<positioning/>
+															<effects>
+																<effect action="set" value="true" condition="isMaster"/>
+															</effects>
+														</skuid__filter>
+														<skuid__filter uniqueid="filter-createdbyme" type="toggle" conditionSource="manual" labelMode="manual" label="Created by me">
+															<effects>
+																<effect action="set" value="{{$User.userId}}" condition="createdByMe"/>
+															</effects>
+														</skuid__filter>
+														<skuid__filter uniqueid="filter-updatedbyme" type="toggle" conditionSource="manual" labelMode="manual" label="Updated by me">
+															<effects>
+																<effect action="set" value="{{$User.userId}}" condition="updatedByMe"/>
+															</effects>
+														</skuid__filter>
+													</filters>
+													<filtering enableSearch="false" instantSearch="true" instantFilters="true" searchMethod="server" emptySearchBehavior="query" searchConditionName="search" searchPlaceholder="Search"/>
+													<styles>
+														<spacing right="3"/>
+													</styles>
+													<positioning justifyContent="space-between" alignItems="flex-end"/>
+													<renderConditions logictype="and">
+														<rendercondition value="EnableV1" sourcetype="feature" enclosevalueinquotes="false" operator="!=" fieldmodel="NavUiControl"/>
+													</renderConditions>
+													<styleVariantConditions/>
+													<sorting enable="false"/>
+												</skuid__filterSet>
+												<skuid__filterSet model="pgs__pagedata" uniqueid="apiVersion-filterset" resetButtonBehavior="hide">
+													<filters>
+														<skuid__filter type="toggle" conditionSource="manual" filterMethod="server" labelMode="manual" createFilterOffOption="false" uniqueid="sk-3Ycx-24518" label="Master Page">
+															<renderConditions logictype="and"/>
+															<styleVariantConditions/>
+															<positioning/>
+															<effects>
+																<effect action="set" value="true" condition="isMaster"/>
+															</effects>
+														</skuid__filter>
+														<skuid__filter uniqueId="sk-2hcM-71561" type="toggle" conditionSource="manual" labelMode="manual" label="Migration in progress">
+															<effects>
+																<effect action="activate" value="" condition="inMigration"/>
+															</effects>
+														</skuid__filter>
+														<skuid__filter uniqueid="sk-3Ycx-24519" type="select" conditionSource="manual" labelMode="manual" label="Version" createFilterOffOption="true" filterOffOptionLabel="All versions">
+															<sources>
+																<source type="manual" effectsbehavior="justdefault">
+																	<options>
+																		<option label="v1" type="complex">
+																			<effects>
+																				<effect action="set" value="v1" condition="apiVersion"/>
+																			</effects>
+																		</option>
+																		<option label="v2" type="complex">
+																			<effects>
+																				<effect action="set" value="v2" condition="apiVersion"/>
+																			</effects>
+																		</option>
+																	</options>
+																</source>
+															</sources>
+															<positioning/>
+														</skuid__filter>
+														<skuid__filter uniqueid="sk-3Ycx-24520" type="toggle" conditionSource="manual" labelMode="manual" label="Created by me">
+															<effects>
+																<effect action="set" value="{{$User.userId}}" condition="createdByMe"/>
+															</effects>
+														</skuid__filter>
+														<skuid__filter uniqueid="sk-3Ycx-24521" type="toggle" conditionSource="manual" labelMode="manual" label="Updated by me">
+															<effects>
+																<effect action="set" value="{{$User.userId}}" condition="updatedByMe"/>
+															</effects>
+														</skuid__filter>
+													</filters>
+													<filtering enableSearch="false" instantSearch="true" instantFilters="true" searchMethod="server" emptySearchBehavior="query" searchConditionName="search" searchPlaceholder="Search"/>
+													<positioning justifyContent="space-between" alignItems="flex-end"/>
+													<renderConditions logictype="and">
+														<rendercondition value="EnableV1" sourcetype="feature" enclosevalueinquotes="false" operator="=" fieldmodel="NavUiControl"/>
+													</renderConditions>
+													<styleVariantConditions/>
+													<sorting enable="false"/>
+													<styles>
+														<spacing right="3"/>
+													</styles>
+												</skuid__filterSet>
+											</components>
+										</division>
+										<division alignSelf="auto" ratio="0">
+											<components>
+												<skuid__filterSet model="pgs__pagedata" uniqueid="filterset-pages-search" resetButtonBehavior="hide">
+													<filters/>
+													<filtering enableSearch="true" instantSearch="true" instantFilters="true" searchMethod="server" emptySearchBehavior="query" searchConditionName="search" searchPlaceholder="Search"/>
+													<styles/>
+													<positioning justifyContent="space-between" alignItems="flex-end"/>
+													<sorting enable="false"/>
+													<styles>
+														<spacing/>
+													</styles>
+												</skuid__filterSet>
+											</components>
+										</division>
+									</divisions>
+									<styles>
+										<spacing top="3" bottom="2"/>
+									</styles>
+									<renderConditions logictype="and">
+										<renderCondition type="fieldvalue" enclosevalueinquotes="true" fieldmodel="pgs_Ui_Control" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasRows"/>
+									</renderConditions>
+									<interactions/>
+									<background/>
+								</skuid__grid>
+								<skuid__grid uniqueid="sk-2vN1-29474" flexDirection="row" justifyContent="flex-start" alignItems="center" columnGutter="1">
+									<divisions>
+										<division ratio="1" alignSelf="auto">
+											<components/>
+										</division>
+										<division alignSelf="auto" ratio="0">
+											<components>
+												<skuid__buttonSet model="pgs__FiltersApplied_UI" uniqueid="sk-2vNB-35451">
+													<groups>
+														<skuid__buttonGroup uniqueId="sk-2vNB-35449">
+															<buttons>
+																<skuid__button label="Master Page" uniqueid="button-reset-filter-type" styleSettingsVariant="blue-pill-badge" icon="sk-webicon-ink:circle-close-outline" iconPosition="right">
+																	<actions>
+																		<action type="blockUI" styleSettingsVariant="dark" message="Resetting filter.." showPlaceholder="true"/>
+																		<action type="deactivateCondition" model="pgs__pagedata" condition="isMaster" rememberInPersonalization="true"/>
+																		<action type="requeryModels" behavior="standard">
+																			<onerroractions>
+																				<action type="blockUI" message="There was an error" timeout="3000"/>
+																			</onerroractions>
+																			<models>
+																				<model>pgs__pagedata</model>
+																			</models>
+																		</action>
+																		<action type="unblockUI"/>
+																	</actions>
+																	<renderConditions logictype="and"/>
+																	<enableConditions/>
+																	<styleVariantConditions/>
+																</skuid__button>
+															</buttons>
+														</skuid__buttonGroup>
+													</groups>
+												</skuid__buttonSet>
+											</components>
+											<renderConditions logictype="and">
+												<renderCondition type="blank" operator="!=" fieldmodel="pgs__FiltersApplied_UI" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="isMasterFilter" value="null" enclosevalueinquotes="false"/>
+												<renderCondition type="fieldvalue" enclosevalueinquotes="true" fieldmodel="pgs__FiltersApplied_UI" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasRows"/>
+											</renderConditions>
+										</division>
+										<division alignSelf="auto" ratio="0">
+											<components>
+												<skuid__buttonSet model="pgs__FiltersApplied_UI" uniqueid="sk-2vNL-40283">
+													<groups>
+														<skuid__buttonGroup uniqueId="sk-2vNL-40281">
+															<buttons>
+																<skuid__button label="API Version: {{apiVersionFilter}}" uniqueid="button-reset-filter-api-version" styleSettingsVariant="blue-pill-badge" icon="sk-webicon-ink:circle-close-outline" iconPosition="right">
+																	<actions>
+																		<action type="blockUI" styleSettingsVariant="dark" message="Resetting filter.." showPlaceholder="true"/>
+																		<action type="deactivateCondition" model="pgs__pagedata" condition="apiVersion" rememberInPersonalization="true"/>
+																		<action type="requeryModels" behavior="standard">
+																			<onerroractions>
+																				<action type="blockUI" message="There was an error" timeout="3000"/>
+																			</onerroractions>
+																			<models>
+																				<model>pgs__pagedata</model>
+																			</models>
+																		</action>
+																		<action type="unblockUI"/>
+																	</actions>
+																</skuid__button>
+															</buttons>
+														</skuid__buttonGroup>
+													</groups>
+												</skuid__buttonSet>
+											</components>
+											<renderConditions logictype="and">
+												<renderCondition type="blank" operator="!=" fieldmodel="pgs__FiltersApplied_UI" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="apiVersionFilter" value="null" enclosevalueinquotes="false"/>
+												<renderCondition type="fieldvalue" enclosevalueinquotes="true" fieldmodel="pgs__FiltersApplied_UI" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasRows"/>
+											</renderConditions>
+										</division>
+										<division alignSelf="auto" ratio="0">
+											<components>
+												<skuid__buttonSet uniqueid="sk-2jE8-26905">
+													<groups>
+														<skuid__buttonGroup uniqueId="sk-2jE8-26903" displayType="detached">
+															<buttons>
+																<skuid__button label="Migration in progress" uniqueId="sk-2jE8-26904" styleSettingsVariant="blue-pill-badge" icon="sk-webicon-ink:circle-close-outline" iconPosition="right">
+																	<actions>
+																		<action type="blockUI" styleSettingsVariant="dark" message="Resetting filter.." showPlaceholder="true"/>
+																		<action type="deactivateCondition" model="pgs__pagedata" condition="inMigration" rememberInPersonalization="true"/>
+																		<action type="requeryModels" behavior="standard">
+																			<onerroractions>
+																				<action type="blockUI" message="There was an error" timeout="3000"/>
+																			</onerroractions>
+																			<models>
+																				<model>pgs__pagedata</model>
+																			</models>
+																		</action>
+																		<action type="unblockUI"/>
+																	</actions>
+																</skuid__button>
+															</buttons>
+														</skuid__buttonGroup>
+													</groups>
+												</skuid__buttonSet>
+											</components>
+											<renderConditions logictype="and">
+												<renderCondition type="fieldvalue" operator="=" enclosevalueinquotes="false" fieldmodel="pgs__FiltersApplied_UI" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="inMigrationFilter" value="true"/>
+												<renderCondition type="fieldvalue" enclosevalueinquotes="true" fieldmodel="pgs__FiltersApplied_UI" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasRows"/>
+											</renderConditions>
+										</division>
+										<division alignSelf="auto" ratio="0">
+											<components>
+												<skuid__buttonSet model="pgs__FiltersApplied_UI" uniqueid="sk-2vNS-43334">
+													<groups>
+														<skuid__buttonGroup uniqueId="sk-2vNS-43332">
+															<buttons>
+																<skuid__button label="Created by me" uniqueid="button-reset-filter-createdbyme" styleSettingsVariant="blue-pill-badge" icon="sk-webicon-ink:circle-close-outline" iconPosition="right">
+																	<actions>
+																		<action type="blockUI" styleSettingsVariant="dark" message="Resetting filter.." showPlaceholder="true"/>
+																		<action type="deactivateCondition" model="pgs__pagedata" condition="createdByMe" rememberInPersonalization="true"/>
+																		<action type="requeryModels" behavior="standard">
+																			<onerroractions>
+																				<action type="blockUI" message="There was an error" timeout="3000"/>
+																			</onerroractions>
+																			<models>
+																				<model>pgs__pagedata</model>
+																			</models>
+																		</action>
+																		<action type="unblockUI"/>
+																	</actions>
+																</skuid__button>
+															</buttons>
+														</skuid__buttonGroup>
+													</groups>
+												</skuid__buttonSet>
+											</components>
+											<renderConditions logictype="and">
+												<renderCondition type="fieldvalue" operator="=" fieldmodel="pgs__FiltersApplied_UI" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="createdByMeFilter" value="true" enclosevalueinquotes="false"/>
+												<renderCondition type="fieldvalue" enclosevalueinquotes="true" fieldmodel="pgs__FiltersApplied_UI" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasRows"/>
+											</renderConditions>
+										</division>
+										<division alignSelf="auto" ratio="0">
+											<components>
+												<skuid__buttonSet model="pgs__FiltersApplied_UI" uniqueid="sk-2vNW-44806">
+													<groups>
+														<skuid__buttonGroup uniqueId="sk-2vNW-44804">
+															<buttons>
+																<skuid__button label="Updated by me" uniqueid="button-reset-filter-updatedbyme" styleSettingsVariant="blue-pill-badge" icon="sk-webicon-ink:circle-close-outline" iconPosition="right">
+																	<actions>
+																		<action type="blockUI" styleSettingsVariant="dark" message="Resetting filter.." showPlaceholder="true"/>
+																		<action type="deactivateCondition" model="pgs__pagedata" condition="updatedByMe" rememberInPersonalization="true"/>
+																		<action type="requeryModel" model="pgs__pagedata" behavior="standard">
+																			<onerroractions>
+																				<action type="blockUI" message="There was an error" timeout="3000"/>
+																			</onerroractions>
+																		</action>
+																		<action type="unblockUI"/>
+																	</actions>
+																</skuid__button>
+															</buttons>
+														</skuid__buttonGroup>
+													</groups>
+												</skuid__buttonSet>
+											</components>
+											<renderConditions logictype="and">
+												<renderCondition type="fieldvalue" enclosevalueinquotes="true" fieldmodel="pgs__FiltersApplied_UI" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasRows"/>
+												<renderCondition type="blank" operator="!=" fieldmodel="pgs__FiltersApplied_UI" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="updatedByMeFilter" value="null" enclosevalueinquotes="false"/>
+											</renderConditions>
+										</division>
+										<division alignSelf="auto" ratio="0">
+											<components>
+												<skuid__buttonSet model="pgs__FiltersApplied_UI" uniqueid="sk-2vS4-69057">
+													<groups>
+														<skuid__buttonGroup uniqueId="sk-2vS4-69055">
+															<buttons>
+																<skuid__button label="Clear Filters" uniqueid="button-reset-all-filters" styleSettingsVariant="803b8f80-948e-46cc-840f-bc4b952464c3">
+																	<actions>
+																		<action type="blockUI" styleSettingsVariant="dark" message="Resetting all filters.." showPlaceholder="true"/>
+																		<action type="deactivateCondition" model="pgs__pagedata" condition="apiVersion" rememberInPersonalization="true"/>
+																		<action type="deactivateCondition" model="pgs__pagedata" condition="isMaster" rememberInPersonalization="true"/>
+																		<action type="deactivateCondition" model="pgs__pagedata" condition="createdByMe" rememberInPersonalization="true"/>
+																		<action type="deactivateCondition" model="pgs__pagedata" condition="updatedByMe" rememberInPersonalization="true"/>
+																		<action type="deactivateCondition" model="pgs__pagedata" condition="inMigration" rememberInPersonalization="true"/>
+																		<action type="requeryModels" behavior="standard">
+																			<models>
+																				<model>pgs__pagedata</model>
+																			</models>
+																		</action>
+																		<action type="emptyModelData">
+																			<models>
+																				<model>pgs__FiltersApplied_UI</model>
+																			</models>
+																		</action>
+																		<action type="unblockUI"/>
+																	</actions>
+																</skuid__button>
+															</buttons>
+														</skuid__buttonGroup>
+													</groups>
+													<styles>
+														<spacing left="1"/>
+													</styles>
+												</skuid__buttonSet>
+											</components>
+										</division>
+									</divisions>
+									<styles>
+										<spacing bottom="2"/>
+									</styles>
+									<renderConditions logictype="and">
+										<renderCondition type="fieldvalue" enclosevalueinquotes="true" fieldmodel="pgs__FiltersApplied_UI" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasRows"/>
+									</renderConditions>
+									<styleVariantConditions/>
+									<background/>
+								</skuid__grid>
+								<skuid__wrapper uniqueid="wrapper-list">
+									<components>
+										<skuid__deck rowGutter=".75em" model="pgs__pagedata" showSaveCancel="false" verticalAlign="top" minWidth="100%" uniqueid="deck-pages" pageSize="25" setMaxWidth="auto" styleSettingsVariant="912f1204-83d0-465c-870b-9afff7e35e9f">
+											<components>
+												<skuid__grid uniqueid="sk-eGv-9954" flexDirection="row" justifyContent="flex-start" alignItems="center" columnGutter="2" rowGutter="0">
+													<divisions>
+														<division minWidth="0" ratio="2" alignSelf="auto">
+															<components>
+																<skuid__grid uniqueid="sk-2qRD-43730" flexDirection="row" justifyContent="flex-start" alignItems="center">
+																	<divisions>
+																		<division minWidth="0" ratio="0" alignSelf="auto">
+																			<components>
+																				<skuid__image source="url" uniqueid="sk-1cUI-24118" datasource="SkuidLocal" url="/assets/images/icon-purple-page.svg" heightStrategy="fixed" height="" heightCustom="32px" imageHeight="32px" model="NavUiControl" imageWidth="auto">
+																					<styles>
+																						<spacing right="2"/>
+																					</styles>
+																				</skuid__image>
+																			</components>
+																		</division>
+																		<division alignSelf="auto" minWidth="0" ratio="1">
+																			<components>
+																				<skuid__text contents="{{name}}" uniqueid="field-page-name" model="pgs__pagedata" styleSettingsVariant="bcf356fb-cd9b-4b49-adb6-299b154f243f">
+																					<conditions>
+																						<condition type="contextrow" field="id" mergefield="id" operator="="/>
+																					</conditions>
+																					<styles>
+																						<spacing/>
+																					</styles>
+																				</skuid__text>
+																			</components>
+																		</division>
+																	</divisions>
+																</skuid__grid>
+															</components>
+														</division>
+														<division alignSelf="auto" minWidth="0" ratio="1">
+															<components>
+																<skuid__grid uniqueid="sk-2jGV-23727" flexDirection="row" justifyContent="flex-start" alignItems="flex-start">
+																	<divisions>
+																		<division minWidth="24px" ratio="0" alignSelf="center">
+																			<components>
+																				<skuid__text contents="{{api_version}}" uniqueid="field-pages-version-active" styleSettingsVariant="ef8d4ab0-3722-4e16-903c-ec582c9ca67f" model="pgs__pagedata">
+																					<renderConditions logictype="and">
+																						<rendercondition value="EnableV1" sourcetype="feature" enclosevalueinquotes="false" operator="=" fieldmodel="NavUiControl"/>
+																					</renderConditions>
+																					<styleVariantConditions/>
+																					<conditions>
+																						<condition type="contextrow" field="id" mergefield="id" operator="="/>
+																					</conditions>
+																				</skuid__text>
+																			</components>
+																		</division>
+																		<division alignSelf="center" ratio="0">
+																			<components>
+																				<skuid__wrapper uniqueid="sk-2jGe-26133">
+																					<components>
+																						<skuid__buttonSet uniqueid="sk-3ORR-28423">
+																							<groups>
+																								<skuid__buttonGroup uniqueId="sk-3ORR-28421">
+																									<buttons>
+																										<skuid__button label="Migration in progress" uniqueId="sk-3ORR-28422" styleSettingsVariant="e8c51cda-0c9b-430f-9525-54595dfc438b"/>
+																									</buttons>
+																								</skuid__buttonGroup>
+																							</groups>
+																						</skuid__buttonSet>
+																					</components>
+																					<background/>
+																					<renderConditions logictype="and">
+																						<renderCondition type="fieldvalue" operator="=" enclosevalueinquotes="true" fieldmodel="pgs__pagedata" sourcetype="fieldvalue" field="status" fieldtargetobjects="SkuidLocal" value="migration_in_progress"/>
+																					</renderConditions>
+																					<styleVariantConditions/>
+																				</skuid__wrapper>
+																			</components>
+																		</division>
+																	</divisions>
+																</skuid__grid>
+															</components>
+														</division>
+														<division alignSelf="auto" minWidth="0" ratio="1">
+															<components>
+																<skuid__grid uniqueid="sk-eId-14848" flexDirection="row" justifyContent="flex-start" alignItems="center" columnGutter="1.5" rowGutter="0">
+																	<divisions>
+																		<division ratio="0" alignSelf="auto" minWidth="0">
+																			<components>
+																				<skuid__image source="url" uniqueid="sk-10XF-14145" datasource="SkuidLocal" height="" heightCustom="20px" model="pgs__pagedata" url="/api/v1/me/{{updated_by.id}}/avatar/small" styleSettingsVariant="e84637e9-e395-4b14-9707-36f937394df8" heightStrategy="fixed" imageHeight="24px" imageWidth="auto">
+																					<conditions>
+																						<condition type="contextrow" field="id" mergefield="id" operator="="/>
+																					</conditions>
+																					<renderConditions logictype="and"/>
+																					<styleVariantConditions/>
+																					<interactions/>
+																					<styles>
+																						<spacing/>
+																					</styles>
+																				</skuid__image>
+																			</components>
+																		</division>
+																		<division alignSelf="auto" minWidth="0" ratio="0">
+																			<components>
+																				<skuid__text contents="{{updated_by.name}}" uniqueid="field-page-updatedby" model="pgs__pagedata" styleSettingsVariant="bcf356fb-cd9b-4b49-adb6-299b154f243f">
+																					<renderConditions logictype="and"/>
+																					<styleVariantConditions/>
+																					<conditions>
+																						<condition type="contextrow" field="id" mergefield="id" operator="="/>
+																					</conditions>
+																				</skuid__text>
+																				<skuid__text contents="{{pretty_update_date}}" uniqueid="field-pages-updatedDate" model="pgs__pagedata" styleSettingsVariant="ef8d4ab0-3722-4e16-903c-ec582c9ca67f">
+																					<conditions>
+																						<condition type="contextrow" field="id" mergefield="id" operator="="/>
+																					</conditions>
+																					<renderConditions logictype="and"/>
+																					<styleVariantConditions/>
+																				</skuid__text>
+																			</components>
+																		</division>
+																	</divisions>
+																</skuid__grid>
+															</components>
+														</division>
+														<division alignSelf="auto" ratio="0" minWidth="96px" maxWidth="96px">
+															<components>
+																<skuid__wrapper uniqueid="sk-eHn-11281">
+																	<components>
+																		<skuid__buttonSet uniqueid="sk-2qRn-67043">
+																			<groups>
+																				<skuid__buttonGroup uniqueId="sk-2qRn-67041">
+																					<buttons>
+																						<skuid__button label="Master" uniqueId="sk-2qRn-67042" styleSettingsVariant="c5a0b776-647d-4cec-858c-482ff484acb0"/>
+																					</buttons>
+																				</skuid__buttonGroup>
+																			</groups>
+																		</skuid__buttonSet>
+																	</components>
+																	<background/>
+																	<renderConditions logictype="and">
+																		<renderCondition type="fieldvalue" operator="=" enclosevalueinquotes="false" fieldmodel="pgs__pagedata" sourcetype="fieldvalue" field="is_master_page" fieldtargetobjects="SkuidLocal" value="true"/>
+																	</renderConditions>
+																</skuid__wrapper>
+															</components>
+														</division>
+														<division alignSelf="auto" minWidth="0" ratio="0">
+															<components>
+																<skuid__buttonSet model="pgs__pagedata" uniqueid="sk-eH9-16627">
+																	<groups>
+																		<skuid__buttonGroup displayType="menu" horizontalAlignment="left" uniqueId="button-pages-menuoptions" iconPosition="right" icon="sk-webicon-ink:dots-vertical" styleSettingsVariant="a0f480fb-b5f6-42ca-af4e-a46635a70392">
+																			<buttons>
+																				<skuid__button label="Migrate to v2" uniqueId="sk-2JLm-46208">
+																					<renderConditions logictype="and">
+																						<renderCondition type="fieldvalue" operator="=" enclosevalueinquotes="true" fieldmodel="pgs__pagedata" sourcetype="fieldvalue" field="api_version" fieldtargetobjects="SkuidLocal" value="v1"/>
+																					</renderConditions>
+																					<enableConditions/>
+																					<styleVariantConditions/>
+																					<actions>
+																						<action type="updateCondition" model="ClonePageData_Source" behavior="set" condition="selectedPageId" valuesource="fieldvalue" value="{{id}}"/>
+																						<action type="requeryModels" behavior="standard">
+																							<models>
+																								<model>ClonePageData_Source</model>
+																							</models>
+																						</action>
+																						<action type="updateCondition" model="master__MasterPages" behavior="set" condition="apiVersion" valuesource="fieldvalue" value="v2"/>
+																						<action type="requeryModels" behavior="standard">
+																							<models>
+																								<model>master__MasterPages</model>
+																							</models>
+																							<onerroractions/>
+																						</action>
+																						<action type="emptyModelData">
+																							<models>
+																								<model>MigrationPageData</model>
+																							</models>
+																						</action>
+																						<action type="createRow" model="MigrationPageData" appendorprepend="prepend" defaultmodefornewitems="edit" affectedrows="context">
+																							<defaults>
+																								<default valuesource="modelmerge" field="content" enclosevalueinquotes="true" sourcemodel="ClonePageData_Source" sourcefield="content"/>
+																								<default valuesource="modelmerge" field="composer_settings" enclosevalueinquotes="true" sourcemodel="ClonePageData_Source" sourcefield="composer_settings"/>
+																								<default valuesource="modelmerge" field="max_auto_saves" enclosevalueinquotes="false" sourcemodel="ClonePageData_Source" sourcefield="max_auto_saves"/>
+																								<default valuesource="modelmerge" field="api_version" enclosevalueinquotes="true" sourcemodel="ClonePageData_Source" sourcefield="api_version"/>
+																								<default valuesource="modelmerge" field="is_master_page" enclosevalueinquotes="false" sourcemodel="ClonePageData_Source" sourcefield="is_master_page"/>
+																								<default valuesource="formula" field="is_child_page_ui_only" enclosevalueinquotes="false">
+																									<formula>NOT(ISBLANK({{$Model.ClonePageData_Source.data.0.master_page_id}}))</formula>
+																								</default>
+																								<default valuesource="formula" field="name" enclosevalueinquotes="true">
+																									<formula>{{$Model.ClonePageData_Source.data.0.name}} +  "_v2"</formula>
+																								</default>
+																								<default valuesource="formula" field="original_master_page_name" enclosevalueinquotes="true">
+																									<formula>{{$Model.ClonePageData_Source.data.0.master_page.name}}</formula>
+																								</default>
+																							</defaults>
+																						</action>
+																						<action type="showModal">
+																							<skuid__modal title="Page migration" width="568px" showFooter="false" styleSettingsVariant="9c54fc61-6857-4f90-8d09-722dfe82ce42">
+																								<components>
+																									<skuid__wizard uniqueid="migration-wizard" hideStepLabels="true" styleSettingsVariant="444037fc-67d5-4173-9895-ab1d52462032" showStepIndicators="false">
+																										<steps>
+																											<step stepId="step1" stepLabel="Step 1" alignButtons="separate">
+																												<components>
+																													<skuid__wrapper uniqueid="sk-2hyJ-40603">
+																														<components>
+																															<skuid__wrapper uniqueid="sk-2hyJ-40604" overflowY="visible">
+																																<components>
+																																	<skuid__text contents="What to expect during migration" uniqueid="sk-2hyw-31172" styleSettingsVariant="bcf356fb-cd9b-4b49-adb6-299b154f243f">
+																																		<styles>
+																																			<spacing bottom="1" styleSettingsVariant="bcf356fb-cd9b-4b49-adb6-299b154f243f"/>
+																																		</styles>
+																																	</skuid__text>
+																																	<skuid__text contents="When Skuid moved to API v2, we improved our design toolkit in ways we couldn&amp;#39;t before. However, we know it can be time consuming to migrate all of your v1 pages to v2 manually.&lt;br /&gt;&#10;&lt;br /&gt;&#10;This migration utility is intended to ease that transition:" uniqueid="sk-2hz0-33804">
+																																		<styles>
+																																			<spacing/>
+																																		</styles>
+																																	</skuid__text>
+																																	<skuid__text contents="&lt;ul style=&quot;padding-left: 16px;&quot;&gt;&#10;&#9;&lt;li style=&quot;margin-bottom:16px;&quot;&gt;It will create a v2 page based on your v1 page, converting as much as it can automatically.&lt;/li&gt;&#10;&#9;&lt;li style=&quot;margin-bottom:16px;&quot;&gt;Features that work differently--or require manual updates--will be flagged in a task list within the Composer.&lt;/li&gt;&#10;&#9;&lt;li style=&quot;margin-bottom:16px;&quot;&gt;You can revisit and resolve those migration tasks as your time allows.&lt;/li&gt;&#10;&#9;&lt;li style=&quot;margin-bottom:16px;&quot;&gt;Your v1 page will remain unchanged, and it will continue to exist until you delete it yourself.&lt;/li&gt;&#10;&lt;/ul&gt;&#10;" uniqueid="sk-2hzC-35162" allowHtmlInBuilder="true">
+																																		<styles>
+																																			<spacing top="3" bottom="3"/>
+																																		</styles>
+																																	</skuid__text>
+																																	<skuid__text contents="Once all the migration tasks on this v2 page are complete, deploy it in place of your v1 page." uniqueid="sk-2h_3-30624">
+																																		<styles>
+																																			<spacing/>
+																																		</styles>
+																																	</skuid__text>
+																																	<skuid__grid uniqueid="sk-3vVK-37617" flexDirection="row" justifyContent="flex-start" alignItems="flex-start">
+																																		<divisions>
+																																			<division ratio="0" alignSelf="center" minWidth="24px">
+																																				<components>
+																																					<skuid__form showErrorsInline="true" model="MigrationPageData" uniqueid="sk-3vUY-33402" mode="edit" labelPlacement="beside" minLabelWidth="" flexRatioLabel="0" minValueWidth="12px" flexRatioValue="2">
+																																						<columns>
+																																							<column>
+																																								<sections>
+																																									<section title="New Section" showHeading="false">
+																																										<fields>
+																																											<skuid__field id="step1_dont_show_again" uniqueId="sk-3vUf-35886" label=" "/>
+																																										</fields>
+																																									</section>
+																																								</sections>
+																																							</column>
+																																						</columns>
+																																						<styles>
+																																							<spacing/>
+																																						</styles>
+																																					</skuid__form>
+																																				</components>
+																																			</division>
+																																			<division alignSelf="center" ratio="0" minWidth="100px">
+																																				<components>
+																																					<skuid__text contents="{{$Model.MigrationPageData.fieldsMap.step1_dont_show_again.label}}" uniqueid="sk-3vVN-39794" styleSettingsVariant="4e169d0d-def8-4adb-9bb5-baca37505057">
+																																						<styles>
+																																							<spacing/>
+																																						</styles>
+																																					</skuid__text>
+																																				</components>
+																																			</division>
+																																		</divisions>
+																																		<interactions/>
+																																		<styles>
+																																			<spacing top="3"/>
+																																		</styles>
+																																		<background/>
+																																	</skuid__grid>
+																																</components>
+																																<background/>
+																																<styles>
+																																	<spacing bottom="3" left="3" right="3"/>
+																																</styles>
+																															</skuid__wrapper>
+																														</components>
+																														<background/>
+																														<styles>
+																															<spacing/>
+																														</styles>
+																													</skuid__wrapper>
+																												</components>
+																												<buttons>
+																													<button label="Previous">
+																														<renderConditions logictype="and"/>
+																														<enableConditions logictype="and">
+																															<condition type="blank" operator="=" fieldmodel="pgs__pagedata" sourcetype="userinfo" sourceuserinfotype="userid" value="null" enclosevalueinquotes="false"/>
+																														</enableConditions>
+																														<styleVariantConditions/>
+																													</button>
+																													<button label="Next" styleSettingsVariant="primary">
+																														<actions>
+																															<action type="runComponentAction" componentid="migration-wizard" action="navigateToStep" stepId="step2"/>
+																														</actions>
+																														<renderConditions logictype="and"/>
+																														<enableConditions/>
+																														<styleVariantConditions/>
+																													</button>
+																												</buttons>
+																											</step>
+																											<step stepId="step2" stepLabel="Step 2" alignButtons="separate">
+																												<components>
+																													<skuid__wrapper uniqueid="sk-2hxm-28747">
+																														<components>
+																															<skuid__wrapper uniqueid="sk-2hxu-30696">
+																																<components>
+																																	<skuid__messageArea uniqueid="sk-O2i-37764">
+																																		<group>
+																																			<skuid__messageBlock model="MigrationPageData" title="This name is already in use." description="Please enter a different name." allowHTML="false" styleSettingsVariant="errorStrong"/>
+																																		</group>
+																																		<renderConditions logictype="and">
+																																			<renderCondition type="fieldvalue" enclosevalueinquotes="true" fieldmodel="pgs__NewPage_DuplicateCheck" sourcetype="modelproperty" sourceproperty="hasRows"/>
+																																		</renderConditions>
+																																		<styles>
+																																			<spacing bottom="3"/>
+																																		</styles>
+																																	</skuid__messageArea>
+																																	<skuid__text contents="Please resolve the following items:" uniqueid="sk-2hxy-33442" styleSettingsVariant="bcf356fb-cd9b-4b49-adb6-299b154f243f"/>
+																																	<skuid__wrapper uniqueid="sk-O5J-55457">
+																																		<components>
+																																			<skuid__text contents="Page name" uniqueid="sk-O5Q-57507" styleSettingsVariant="bcf356fb-cd9b-4b49-adb6-299b154f243f">
+																																				<styles>
+																																					<spacing bottom="1" styleSettingsVariant="bcf356fb-cd9b-4b49-adb6-299b154f243f"/>
+																																				</styles>
+																																			</skuid__text>
+																																			<skuid__text contents="Enter a unique name for the newly migrated page." uniqueid="sk-O5T-58681" styleSettingsVariant="ef8d4ab0-3722-4e16-903c-ec582c9ca67f">
+																																				<styles>
+																																					<spacing bottom="1" styleSettingsVariant="ef8d4ab0-3722-4e16-903c-ec582c9ca67f"/>
+																																				</styles>
+																																			</skuid__text>
+																																			<skuid__form showErrorsInline="true" model="MigrationPageData" uniqueid="sk-O32-41541" mode="edit">
+																																				<columns>
+																																					<column>
+																																						<sections>
+																																							<section title="New Section" showHeading="false">
+																																								<fields>
+																																									<skuid__field id="name" uniqueId="sk-O36-43845" label=" "/>
+																																								</fields>
+																																							</section>
+																																						</sections>
+																																					</column>
+																																				</columns>
+																																				<styles>
+																																					<spacing top="-1"/>
+																																				</styles>
+																																			</skuid__form>
+																																		</components>
+																																		<styles>
+																																			<spacing top="3"/>
+																																		</styles>
+																																		<background/>
+																																	</skuid__wrapper>
+																																	<skuid__wrapper uniqueid="sk-2hy3-35792">
+																																		<components>
+																																			<skuid__text contents="Design system" uniqueid="sk-2hy1-35154" styleSettingsVariant="bcf356fb-cd9b-4b49-adb6-299b154f243f">
+																																				<styles>
+																																					<spacing bottom="1" styleSettingsVariant="bcf356fb-cd9b-4b49-adb6-299b154f243f"/>
+																																				</styles>
+																																			</skuid__text>
+																																			<skuid__text contents="A page&amp;rsquo;s visual design is now set through a &lt;em&gt;design system&lt;/em&gt; instead of a theme. If you&amp;rsquo;ve recreated your theme as a design system, select it below. Otherwise choose a different one. If needed, you can change the page&amp;#39;s design system in the Composer later." uniqueid="sk-2hyD-39155" styleSettingsVariant="ef8d4ab0-3722-4e16-903c-ec582c9ca67f">
+																																				<styles>
+																																					<spacing bottom="1" styleSettingsVariant="ef8d4ab0-3722-4e16-903c-ec582c9ca67f"/>
+																																				</styles>
+																																			</skuid__text>
+																																			<skuid__form showErrorsInline="true" model="MigrationPageData" uniqueid="sk-2h_N-31891" mode="edit">
+																																				<columns>
+																																					<column>
+																																						<sections>
+																																							<section title="New Section" showHeading="false">
+																																								<fields>
+																																									<skuid__field id="design_system_to_use" uniqueId="sk-2h_S-34264" label=" "/>
+																																								</fields>
+																																							</section>
+																																						</sections>
+																																					</column>
+																																				</columns>
+																																				<styles>
+																																					<spacing top="-1"/>
+																																				</styles>
+																																			</skuid__form>
+																																		</components>
+																																		<styles>
+																																			<spacing top="3"/>
+																																		</styles>
+																																		<background/>
+																																		<renderConditions logictype="and">
+																																			<renderCondition type="fieldvalue" operator="!=" enclosevalueinquotes="false" fieldmodel="MigrationPageData" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="is_child_page_ui_only" fieldtargetobjects="SkuidLocal" value="true"/>
+																																		</renderConditions>
+																																		<styleVariantConditions/>
+																																	</skuid__wrapper>
+																																	<skuid__wrapper uniqueid="sk-2i6D-34417">
+																																		<components>
+																																			<skuid__text contents="Master page" uniqueid="sk-2i6D-34418" styleSettingsVariant="bcf356fb-cd9b-4b49-adb6-299b154f243f">
+																																				<styles>
+																																					<spacing bottom="1" styleSettingsVariant="bcf356fb-cd9b-4b49-adb6-299b154f243f"/>
+																																				</styles>
+																																			</skuid__text>
+																																			<skuid__text contents="This is a child page that was coupled with the &lt;strong&gt;{{original_master_page_name}}&lt;/strong&gt; v1 master page.&amp;nbsp;Migrate that master page first and return to migrate this page later.&lt;br /&gt;&#10;&lt;br /&gt;&#10;If you have already done so, select the migrated master page below.&amp;nbsp;" uniqueid="sk-2i6D-34419" model="MigrationPageData" styleSettingsVariant="ef8d4ab0-3722-4e16-903c-ec582c9ca67f">
+																																				<styles>
+																																					<spacing bottom="1" styleSettingsVariant="ef8d4ab0-3722-4e16-903c-ec582c9ca67f"/>
+																																				</styles>
+																																			</skuid__text>
+																																			<skuid__form showErrorsInline="true" model="MigrationPageData" uniqueid="sk-2i6D-34420" mode="edit">
+																																				<columns>
+																																					<column>
+																																						<sections>
+																																							<section title="New Section" showHeading="false">
+																																								<fields>
+																																									<skuid__field id="master_page_id" uniqueId="sk-2i6V-38854" label=" " addNoneOption="true" noneLabel="Select a master page"/>
+																																								</fields>
+																																							</section>
+																																						</sections>
+																																					</column>
+																																				</columns>
+																																				<styles>
+																																					<spacing top="-1"/>
+																																				</styles>
+																																			</skuid__form>
+																																		</components>
+																																		<styles>
+																																			<spacing top="3"/>
+																																		</styles>
+																																		<background/>
+																																		<renderConditions logictype="and">
+																																			<renderCondition type="fieldvalue" operator="=" enclosevalueinquotes="false" fieldmodel="MigrationPageData" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="is_child_page_ui_only" fieldtargetobjects="SkuidLocal" value="true"/>
+																																		</renderConditions>
+																																		<styleVariantConditions/>
+																																	</skuid__wrapper>
+																																</components>
+																																<styles>
+																																	<spacing left="3" right="3" bottom="3"/>
+																																</styles>
+																																<background/>
+																															</skuid__wrapper>
+																														</components>
+																														<background/>
+																													</skuid__wrapper>
+																												</components>
+																												<buttons>
+																													<button label="Previous">
+																														<actions>
+																															<action type="runComponentAction" componentid="migration-wizard" action="navigateToStep" stepId="step1"/>
+																														</actions>
+																													</button>
+																													<button label="Migrate" styleSettingsVariant="primary">
+																														<actions>
+																															<action type="blockUI" styleSettingsVariant="dark" message="Converting page"/>
+																															<action type="custom" snippet="skuid.page.migrateAPIVersion">
+																																<onerroractions>
+																																	<action type="action-sequence" action-sequence-id="2de61af9-dbd7-4a91-aa2c-6f3e853e3f6d"/>
+																																	<action type="unblockUI"/>
+																																	<action type="blockUI" message="There was an error running the migration" timeout="3000" styleSettingsVariant="dark"/>
+																																</onerroractions>
+																															</action>
+																															<action type="save" rollbackonanyerror="false">
+																																<models>
+																																	<model>MigrationPageData</model>
+																																</models>
+																																<onerroractions>
+																																	<action type="action-sequence" action-sequence-id="2de61af9-dbd7-4a91-aa2c-6f3e853e3f6d"/>
+																																	<action type="unblockUI"/>
+																																	<action type="blockUI" message="There was an error running the migration" timeout="3000" styleSettingsVariant="dark"/>
+																																</onerroractions>
+																															</action>
+																															<action type="custom" snippet="skuid.pageList.migration.saveUserPreferences">
+																																<onerroractions>
+																																	<action type="unblockUI"/>
+																																	<action type="blockUI" message="Unable to store migration preferences" timeout="4000" subtext="The migration was completed, but Skuid was unable to store your migration preferences for the next migration" styleSettingsVariant="dark"/>
+																																</onerroractions>
+																															</action>
+																															<action type="unblockUI"/>
+																															<action type="requeryModels" behavior="standard">
+																																<models>
+																																	<model>pgs__pagedata</model>
+																																</models>
+																															</action>
+																															<action type="runComponentAction" componentid="migration-wizard" action="navigateToStep" stepId="step3"/>
+																														</actions>
+																														<renderConditions logictype="and"/>
+																														<enableConditions logictype="custom" logic="1 AND 2 AND 3 AND (4 OR 5)" message="Resolve all items to continue.">
+																															<condition type="blank" operator="!=" fieldmodel="MigrationPageData" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="name" fieldtargetobjects="SkuidLocal" value="null" enclosevalueinquotes="false"/>
+																															<condition fieldmodel="pgs__NewPage_DuplicateCheck" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasNoRows"/>
+																															<condition type="blank" operator="!=" fieldmodel="MigrationPageData" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="design_system_to_use" fieldtargetobjects="SkuidLocal" value="null" enclosevalueinquotes="false"/>
+																															<condition type="fieldvalue" operator="!=" enclosevalueinquotes="false" fieldmodel="MigrationPageData" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="is_child_page_ui_only" fieldtargetobjects="SkuidLocal" value="true"/>
+																															<condition type="blank" operator="!=" fieldmodel="MigrationPageData" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="master_page_id" fieldtargetobjects="SkuidLocal" value="null" enclosevalueinquotes="false"/>
+																														</enableConditions>
+																														<styleVariantConditions/>
+																													</button>
+																												</buttons>
+																											</step>
+																											<step stepId="step3" stepLabel="Step 3" alignButtons="separate">
+																												<components>
+																													<skuid__wrapper uniqueid="sk-2i__-46312">
+																														<components>
+																															<skuid__wrapper uniqueid="sk-2i__-46313">
+																																<components>
+																																	<skuid__text contents="Your page has been cloned and converted to v2" uniqueid="sk-2i-L-34949" styleSettingsVariant="4e169d0d-def8-4adb-9bb5-baca37505057">
+																																		<styles>
+																																			<spacing bottom="1"/>
+																																		</styles>
+																																	</skuid__text>
+																																	<skuid__text contents="If there are other migration tasks that need to be addressed, you&amp;#39;ll see them listed in the Composer. View and dismiss tasks as they are resolved.&lt;br /&gt;&#10;&lt;br /&gt;&#10;Remember to replace your v1 page in each place it was deployed with this v2 page after addressing all migration tasks." uniqueid="sk-2i-Q-37294"/>
+																																</components>
+																																<styles>
+																																	<spacing bottom="12" left="3" right="3"/>
+																																</styles>
+																																<background/>
+																															</skuid__wrapper>
+																														</components>
+																														<background/>
+																													</skuid__wrapper>
+																												</components>
+																												<buttons>
+																													<button label="Previous">
+																														<actions/>
+																														<renderConditions logictype="and"/>
+																														<enableConditions logictype="and" message="Page converted!">
+																															<condition type="blank" operator="=" fieldmodel="pgs__pagedata" sourcetype="userinfo" sourceuserinfotype="userid" value="null" enclosevalueinquotes="false"/>
+																														</enableConditions>
+																														<styleVariantConditions/>
+																													</button>
+																													<button label="Edit page" styleSettingsVariant="primary">
+																														<actions>
+																															<action type="redirect" window="blank" url="/ui/page/compose/{{{$Model.MigrationPageData.data.0.id}}}"/>
+																															<action type="closeModals" closebehavior="topmost"/>
+																														</actions>
+																													</button>
+																												</buttons>
+																											</step>
+																										</steps>
+																										<styles>
+																											<spacing top="b9ee9c28-f583-402b-a644-a3f08e956982" styleSettingsVariant="444037fc-67d5-4173-9895-ab1d52462032"/>
+																										</styles>
+																									</skuid__wizard>
+																								</components>
+																								<afterCloseActions>
+																									<action type="cancel">
+																										<models>
+																											<model>MigrationPageData</model>
+																										</models>
+																									</action>
+																									<action type="emptyModelData">
+																										<models>
+																											<model>pgs__NewPage_DuplicateCheck</model>
+																										</models>
+																									</action>
+																								</afterCloseActions>
+																							</skuid__modal>
+																						</action>
+																						<action type="branch" whenfinished="stop" model="MigrationPageData">
+																							<formula>{{step1_dont_show_again}} == true</formula>
+																							<iftrueactions>
+																								<action type="runComponentAction" componentid="migration-wizard" action="navigateToStep" stepId="step2"/>
+																							</iftrueactions>
+																						</action>
+																					</actions>
+																				</skuid__button>
+																				<skuid__button label="Compose" uniqueId="sk-2s8n-23710">
+																					<actions>
+																						<action type="redirect" window="blank" url="/ui/page/compose/{{id}}"/>
+																					</actions>
+																				</skuid__button>
+																				<skuid__button label="Preview" uniqueId="sk-2vl0-28927">
+																					<actions>
+																						<action type="custom" snippet="skuid.core.actions.previewPage"/>
+																					</actions>
+																				</skuid__button>
+																				<skuid__button label="Clone" uniqueId="sk-2vl0-29368">
+																					<actions>
+																						<action type="action-sequence" action-sequence-id="61306662-7f25-452c-b46f-eb399364255d"/>
+																					</actions>
+																				</skuid__button>
+																				<skuid__button label="View XML" uniqueId="sk-2vl1-29828">
+																					<actions>
+																						<action type="redirect" window="blank" url="/ui/page/compose/{{id}}/xml"/>
+																					</actions>
+																				</skuid__button>
+																				<skuid__button label="Delete" uniqueId="sk-2vl1-30337">
+																					<actions>
+																						<action type="updateCondition" model="Routes" condition="page_id" value="{{id}}" behavior="set"/>
+																						<action type="requeryModels" model="Routes" behavior="standard">
+																							<models>
+																								<model>Routes</model>
+																							</models>
+																						</action>
+																						<action type="branch" whenfinished="stop" label="If page is used in apps, don't continue with the deletion">
+																							<formula>{{$Model.Routes.data.length}} &gt; 0</formula>
+																							<iftrueactions>
+																								<action type="showModal">
+																									<skuid__modal title="Page in use" width="640px">
+																										<components>
+																											<skuid__text contents="This page is referenced by one or more apps. You must remove the page from the app(s) before it can be deleted.&amp;nbsp;" uniqueid="sk-2qMm-24191">
+																												<styles>
+																													<spacing/>
+																												</styles>
+																											</skuid__text>
+																											<skuid__text contents="App(s) using this page" uniqueid="sk-2qPN-20055" styleSettingsVariant="bcf356fb-cd9b-4b49-adb6-299b154f243f">
+																												<styles>
+																													<spacing top="3" styleSettingsVariant="bcf356fb-cd9b-4b49-adb6-299b154f243f" bottom="1"/>
+																												</styles>
+																											</skuid__text>
+																											<skuid__deck model="Routes" showSaveCancel="false" verticalAlign="top" minWidth="100%" uniqueid="sk-2qMn-24498" pageSize="Infinity" showPageSizeSelect="false" resetPaginationOnQuery="false" showLoadMore="false" showListHeader="false" showListFooter="false" setMaxWidth="auto" rowGutter="8px">
+																												<components>
+																													<skuid__text contents="&amp;bull;&amp;nbsp; &amp;nbsp;App: &lt;a href=&quot;/ns/skuid/ui/apps/{{app.id}}#pages&quot;&gt;&lt;strong&gt;{{app.name}}&lt;/strong&gt;&amp;nbsp;&lt;/a&gt;&lt;br /&gt;&#10;&amp;nbsp; &amp;nbsp;&amp;nbsp;URL: &lt;strong&gt;{{route}}&lt;/strong&gt;" uniqueid="sk-2qMn-24499" allowHtmlInBuilder="true">
+																														<renderConditions logictype="and"/>
+																														<styleVariantConditions/>
+																														<styles>
+																															<spacing/>
+																														</styles>
+																													</skuid__text>
+																												</components>
+																												<filtering enableSearch="false" instantSearch="false"/>
+																												<renderConditions logictype="and">
+																													<renderCondition type="fieldvalue" enclosevalueinquotes="true" fieldmodel="Routes" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasRows"/>
+																												</renderConditions>
+																												<styleVariantConditions/>
+																												<sorting enable="false"/>
+																												<styles>
+																													<spacing/>
+																												</styles>
+																											</skuid__deck>
+																										</components>
+																										<buttons>
+																											<skuid__button label="Ok" styleSettingsVariant="primary">
+																												<actions>
+																													<action type="closeModals" closebehavior="close"/>
+																												</actions>
+																											</skuid__button>
+																										</buttons>
+																									</skuid__modal>
+																								</action>
+																							</iftrueactions>
+																						</action>
+																						<action type="showModal">
+																							<skuid__modal title="Delete page" width="640px">
+																								<components>
+																									<skuid__wrapper uniqueid="sk-2lK0-19323" styleSettingsVariant="7d5572d7-ec59-43f0-9d03-5259d1980637">
+																										<components>
+																											<skuid__grid uniqueid="sk-2lK0-19325" flexDirection="row" justifyContent="flex-start" alignItems="flex-start" columnGutter="2" rowGutter="0">
+																												<divisions>
+																													<division minWidth="32px" ratio="1" alignSelf="auto" maxWidth="32px">
+																														<components>
+																															<skuid__image source="url" uniqueid="sk-2lJ_-19034" datasource="SkuidLocal" url="/assets/images/icon-purple-page.svg" heightStrategy="fixed" height="custom" heightCustom="32px"/>
+																														</components>
+																													</division>
+																													<division alignSelf="auto" minWidth="100px" ratio="1">
+																														<components>
+																															<skuid__text contents="{{name}}" uniqueid="sk-2lK0-19329" styleSettingsVariant="bcf356fb-cd9b-4b49-adb6-299b154f243f" model="pgs__pagedata">
+																																<styles>
+																																	<spacing bottom="1" top="0.5" styleSettingsVariant="bcf356fb-cd9b-4b49-adb6-299b154f243f"/>
+																																</styles>
+																																<conditions>
+																																	<condition type="contextrow" field="id" mergefield="id" operator="="/>
+																																</conditions>
+																															</skuid__text>
+																															<skuid__text contents="Created {{created_at}} by&amp;nbsp;{{updated_by.name}}" uniqueid="sk-2lK0-19331" styleSettingsVariant="ef8d4ab0-3722-4e16-903c-ec582c9ca67f">
+																																<conditions>
+																																	<condition type="contextrow" field="id" mergefield="id" operator="="/>
+																																</conditions>
+																																<styles>
+																																	<spacing bottom=".5" styleSettingsVariant="ef8d4ab0-3722-4e16-903c-ec582c9ca67f"/>
+																																</styles>
+																															</skuid__text>
+																															<skuid__text contents="Updated {{updated_at}} by&amp;nbsp;{{updated_by.name}}" uniqueid="sk-2lLB-36857" styleSettingsVariant="ef8d4ab0-3722-4e16-903c-ec582c9ca67f">
+																																<conditions>
+																																	<condition type="contextrow" field="id" mergefield="id" operator="="/>
+																																</conditions>
+																																<styles>
+																																	<spacing bottom=".5" styleSettingsVariant="ef8d4ab0-3722-4e16-903c-ec582c9ca67f"/>
+																																</styles>
+																															</skuid__text>
+																														</components>
+																													</division>
+																												</divisions>
+																											</skuid__grid>
+																										</components>
+																										<background/>
+																										<styles>
+																											<spacing bottom="3" styleSettingsVariant="7d5572d7-ec59-43f0-9d03-5259d1980637"/>
+																										</styles>
+																									</skuid__wrapper>
+																									<skuid__text contents="Are you sure you want to permanently delete this page? &lt;strong&gt;You can&amp;#39;t undo this.&lt;/strong&gt;" uniqueid="sk-3JA-26216">
+																										<conditions/>
+																										<styles>
+																											<spacing/>
+																										</styles>
+																									</skuid__text>
+																								</components>
+																								<buttons>
+																									<skuid__button label="Yes, delete this page" uniqueid="sk-3IR-25833" styleSettingsVariant="destructive">
+																										<actions>
+																											<action type="blockUI" styleSettingsVariant="dark" message="Deleting page..."/>
+																											<action type="markRowsForDeletion" model="pgs__pagedata" affectedrows="context"/>
+																											<action type="save" model="pgs__pagedata" affectedrows="context" message="Deleting page {{Name}}" timeout="3500">
+																												<models>
+																													<model>pgs__pagedata</model>
+																												</models>
+																											</action>
+																											<action type="closeModals" closebehavior="close"/>
+																											<action type="showToast" duration="4" message="Page deleted" position="bl"/>
+																											<action type="unblockUI"/>
+																										</actions>
+																									</skuid__button>
+																									<skuid__button label="Cancel" uniqueid="sk-3IR-25928">
+																										<actions>
+																											<action type="closeModals" closebehavior="topmost"/>
+																										</actions>
+																									</skuid__button>
+																								</buttons>
+																								<afterCloseActions>
+																									<action type="emptyModelData">
+																										<models>
+																											<model>Routes</model>
+																										</models>
+																									</action>
+																								</afterCloseActions>
+																							</skuid__modal>
+																						</action>
+																					</actions>
+																				</skuid__button>
+																			</buttons>
+																		</skuid__buttonGroup>
+																	</groups>
+																	<conditions>
+																		<condition type="contextrow" field="id" mergefield="id" operator="="/>
+																	</conditions>
+																</skuid__buttonSet>
+															</components>
+														</division>
+													</divisions>
+												</skuid__grid>
+											</components>
+											<filtering enableSearch="false" instantSearch="false"/>
+											<interactions>
+												<interaction type="tap">
+													<action type="redirect" message="this will take you to App Composer" timeout="1000" styleSettingsVariant="dark" window="blank" url="/ui/page/compose/{{id}}"/>
+												</interaction>
+											</interactions>
+											<styles>
+												<spacing/>
+											</styles>
+											<renderConditions logictype="and">
+												<renderCondition type="fieldvalue" enclosevalueinquotes="true" fieldmodel="pgs__pagedata" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasRows"/>
+											</renderConditions>
+											<styleVariantConditions/>
+											<sorting enable="false"/>
+										</skuid__deck>
+									</components>
+									<background/>
+									<renderConditions logictype="and">
+										<renderCondition type="fieldvalue" enclosevalueinquotes="true" fieldmodel="pgs_Ui_Control" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasRows"/>
+									</renderConditions>
+									<styles>
+										<spacing top="1" bottom="4"/>
+									</styles>
+									<styleVariantConditions/>
+									<interactions/>
+								</skuid__wrapper>
+								<skuid__wrapper uniqueid="wrapper-pages-blankstate" styleSettingsVariant="7d5572d7-ec59-43f0-9d03-5259d1980637">
+									<components>
+										<skuid__grid uniqueid="sk-2tCP-28384" flexDirection="row" justifyContent="flex-start" alignItems="flex-start" columnGutter="0" rowGutter="0">
+											<divisions>
+												<division minWidth="0px" ratio="1" alignSelf="auto">
+													<components/>
+												</division>
+												<division alignSelf="auto" minWidth="100px" ratio="1" maxWidth="400px">
+													<components>
+														<skuid__wrapper uniqueid="sk-JNG-13106">
+															<components>
+																<skuid__grid uniqueid="sk-JNV-15963" flexDirection="row" justifyContent="flex-start" alignItems="flex-start" columnGutter="0" rowGutter="0">
+																	<divisions>
+																		<division minWidth="4px" ratio="1" alignSelf="auto">
+																			<components/>
+																		</division>
+																		<division alignSelf="auto" minWidth="136px" ratio="1" maxWidth="136px">
+																			<components>
+																				<skuid__image source="url" uniqueid="sk-n6J-19180" datasource="SkuidLocal" model="pgs__pagedata" url="/assets/images/page.svg">
+																					<interactions/>
+																					<styles>
+																						<spacing/>
+																					</styles>
+																					<renderConditions logictype="and"/>
+																				</skuid__image>
+																			</components>
+																		</division>
+																		<division alignSelf="auto" minWidth="4px" ratio="1">
+																			<components/>
+																		</division>
+																	</divisions>
+																	<styles>
+																		<spacing top="2"/>
+																	</styles>
+																	<renderConditions logictype="and"/>
+																</skuid__grid>
+																<skuid__text contents="&lt;div style=&quot;text-align: center;&quot;&gt;You haven&amp;#39;t created any pages yet.&lt;/div&gt;&#10;" uniqueid="sk-JNh-18188" styleSettingsVariant="53193c74-b77c-429e-8fed-09b73deaa10c">
+																	<styles>
+																		<spacing bottom="1" top="1" styleSettingsVariant="53193c74-b77c-429e-8fed-09b73deaa10c"/>
+																	</styles>
+																</skuid__text>
+																<skuid__text contents="&lt;div style=&quot;text-align: center;&quot;&gt;&lt;a href=&quot;https://docs.skuid.com/latest/en/skuid/pages/create-page.html&quot; target=&quot;_blank&quot;&gt;Pages&lt;/a&gt; are the basic building block for Skuid apps, each is an arrangement of components, models, navigation, visualizations, and layout that collectively solves a problem or creates a consistent workflow. &amp;nbsp;&lt;/div&gt;&#10;" uniqueid="sk-2tCZ-31090" styleSettingsVariant="ef8d4ab0-3722-4e16-903c-ec582c9ca67f">
+																	<styles>
+																		<spacing bottom="4" styleSettingsVariant="ef8d4ab0-3722-4e16-903c-ec582c9ca67f"/>
+																	</styles>
+																</skuid__text>
+																<skuid__buttonSet uniqueid="sk-JNl-18568" position="center">
+																	<groups>
+																		<skuid__buttonGroup>
+																			<buttons>
+																				<skuid__button label="Create" uniqueId="button-pages-blankstate-create" styleSettingsVariant="primary">
+																					<actions>
+																						<action type="action-sequence" action-sequence-id="82793f2e-b6b1-40dd-93ac-5cc0d7192b5d"/>
+																					</actions>
+																					<tooltip position="top" text="Create a new Skuid page" compact="true"/>
+																					<hotkeys>
+																						<hotkey modifiers="ctrl" key="n"/>
+																					</hotkeys>
+																				</skuid__button>
+																			</buttons>
+																		</skuid__buttonGroup>
+																	</groups>
+																	<styles>
+																		<spacing bottom="6"/>
+																	</styles>
+																</skuid__buttonSet>
+															</components>
+															<background/>
+															<renderConditions logictype="and"/>
+															<styles>
+																<spacing top="6" bottom="6"/>
+															</styles>
+														</skuid__wrapper>
+													</components>
+												</division>
+												<division alignSelf="auto" minWidth="0px" ratio="1">
+													<components/>
+												</division>
+											</divisions>
+										</skuid__grid>
+									</components>
+									<background/>
+									<styles>
+										<spacing top="5" bottom="4"/>
+									</styles>
+									<renderConditions logictype="and">
+										<renderCondition fieldmodel="pgs_Ui_Control" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasNoRows"/>
+									</renderConditions>
+									<styleVariantConditions/>
+								</skuid__wrapper>
+							</components>
+							<renderConditions logictype="and"/>
+						</division>
+						<division alignSelf="auto" minWidth="24px" ratio="1">
+							<components/>
+						</division>
+					</divisions>
+					<styles>
+						<spacing left="4" right="4"/>
+					</styles>
+					<background/>
+				</skuid__grid>
+			</components>
+			<renderConditions logictype="and"/>
+		</pageregioncontent>
+	</pageregioncontents>
+	<components/>
+	<resources>
+		<labels/>
+		<javascript>
+			<jsitem location="staticresource" namespace="skuid" filepath="js/skuidPages/skuidPageList.js" scope="api"/>
+			<jsitem location="staticresource" namespace="skuid" filepath="js/skuidPages/skuidNewPage.js" scope="api"/>
+			<jsitem location="inlinesnippet" name="checkForAppliedFilters" cachelocation="false">
+				var params = arguments[0],
+						$ = skuid.$,
+						model = skuid.$M('pgs__pagedata'),
+						conditions = model.conditions,
+						filterModel = skuid.$M('pgs__FiltersApplied_UI'),
+						booleanFilters = ['isMaster','createdByMe','updatedByMe','inMigration'],
+						appliedFilters = [];
+				
+				$.each(conditions, function(i, row) {
+					if(booleanFilters.includes(row.name) &amp;&amp; row.inactive==false) {
+						appliedFilters.push({field: row.name + "Filter", value: true});
+					}
+					else if (row.name == 'apiVersion' &amp;&amp; row.value &amp;&amp; row.inactive==false) {
+						appliedFilters.push({field: row.name + "Filter", value: row.value});
+					}
+				});
+				
+				if (appliedFilters.length &gt; 0) {
+					filterModel.createRow({
+						additionalConditions: appliedFilters, doAppend: true
+					});
+					filterModel.save();
+				} 
+			</jsitem>
+			<jsitem location="inlinesnippet" name="checkForFeatureFlags" cachelocation="false">var params = arguments[0],
+    $ = skuid.$;
+var model = skuid.$M("FeatureFlags")
+model.updateRow(model.getFirstRow(),{
+    v1Enabled: skuid.platform.hasFeature("EnableV1"), 
+});</jsitem>
+			<jsitem location="inlinesnippet" name="getFileNameOnUpload" cachelocation="false">const params = arguments[0];
+const fileController = params.component;
+const file = fileController.component;
+const uploadingFileName = file.get("uploadingFileName");
+const newPageModel = skuid.$M('pgs__NewPage');
+
+newPageModel.updateRow(newPageModel.getFirstRow(), { ui_xml_file_name: uploadingFileName });</jsitem>
+		</javascript>
+		<actionsequences>
+			<actionsequence id="82793f2e-b6b1-40dd-93ac-5cc0d7192b5d" label="NewPage - Popup" type="reusable" uniqueid="sk-18o-2-464">
+				<actions>
+					<action type="emptyModelData">
+						<models>
+							<model>pgs__NewPage</model>
+							<model>master__DataSourceReassign</model>
+						</models>
+					</action>
+					<action type="deactivateFilterableConditions">
+						<models>
+							<model>master__MasterPages</model>
+						</models>
+					</action>
+					<action type="requeryModels" behavior="standard">
+						<onerroractions>
+							<action type="blockUI" message="There was an error" timeout="3000"/>
+						</onerroractions>
+						<models>
+							<model>master__MasterPages</model>
+						</models>
+					</action>
+					<action type="createRow" model="pgs__NewPage" appendorprepend="prepend" defaultmodefornewitems="edit">
+						<defaults>
+							<default field="api_version" value="v2" valuesource="fieldvalue"/>
+						</defaults>
+					</action>
+					<action type="showModal">
+						<skuid__modal title="Create new page" width="660px">
+							<components>
+								<skuid__messageArea uniqueid="sk-2l7P-44556">
+									<group>
+										<skuid__messageBlock styleSettingsVariant="errorStrong" title="This name is already in use." description="Please enter a different name." uniqueid="sk-2i4c-883"/>
+									</group>
+									<renderConditions logictype="and">
+										<renderCondition type="fieldvalue" enclosevalueinquotes="true" fieldmodel="pgs__NewPage_DuplicateCheck" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasRows"/>
+									</renderConditions>
+									<styles>
+										<spacing bottom="3"/>
+									</styles>
+								</skuid__messageArea>
+								<skuid__wrapper uniqueid="sk-1zj9-15466" minHeightCustom="300px" overflowY="auto">
+									<components>
+										<skuid__form showErrorsInline="true" model="pgs__NewPage" mode="edit">
+											<styles>
+												<spacing bottom="1.5"/>
+											</styles>
+											<renderConditions logictype="and"/>
+											<columns>
+												<column verticalAlign="top" ratio="1">
+													<sections>
+														<section title="New Section" showHeading="false">
+															<fields>
+																<skuid__field id="name" uniqueid="field-page-new-name" label="Page name" required="true"/>
+															</fields>
+														</section>
+													</sections>
+												</column>
+											</columns>
+										</skuid__form>
+										<skuid__form showErrorsInline="true" model="pgs__NewPage" uniqueid="form-page-new-master-option" mode="edit">
+											<columns>
+												<column verticalAlign="top" ratio="1">
+													<sections>
+														<section title="New Section" showHeading="false">
+															<fields>
+																<skuid__field id="ui_controller_apply_master_page" uniqueid="field-page-new-masterpage-option" selectedList="3" label=" " maxSelected="1" displayAs="CHECKBOX_LIST">
+																	<renderConditions logictype="and" onhidedatabehavior="keep"/>
+																	<enableConditions logictype="and" message="You can't apply a master page to a new page if importing or pasting XML">
+																		<condition type="fieldvalue" operator="!=" enclosevalueinquotes="true" fieldmodel="pgs__NewPage" sourcetype="fieldvalue" field="ui_controller_xml_options" fieldtargetobjects="SkuidLocal" value="show_xml_options"/>
+																	</enableConditions>
+																</skuid__field>
+															</fields>
+														</section>
+													</sections>
+												</column>
+											</columns>
+										</skuid__form>
+										<skuid__form showErrorsInline="true" model="pgs__NewPage" uniqueid="form-page-new-master-select" mode="edit">
+											<renderConditions logictype="and">
+												<renderCondition type="blank" operator="!=" fieldmodel="pgs__NewPage" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="ui_controller_apply_master_page" value="null" fieldtargetobjects="SkuidLocal" enclosevalueinquotes="false"/>
+											</renderConditions>
+											<styles>
+												<spacing top="1" bottom="2" left="3"/>
+											</styles>
+											<conditions/>
+											<styleVariantConditions/>
+											<columns>
+												<column verticalAlign="top" ratio="1">
+													<sections>
+														<section title="New Section" showHeading="false">
+															<fields>
+																<skuid__field id="master_page_id" uniqueid="field-pages-new-masterpage-select" pageSize="5" displayTemplate="{{name}} ({{api_version}})" label=" " redirectType="none" showHelp="false" addNoneOption="false" noneLabel="- Select a container page -" displayAs="COMBOBOX">
+																	<renderConditions logictype="and" onhidedatabehavior="keep"/>
+																	<enableConditions/>
+																</skuid__field>
+															</fields>
+														</section>
+													</sections>
+												</column>
+											</columns>
+										</skuid__form>
+										<skuid__wrapper uniqueid="api_versionSelection">
+											<components>
+												<skuid__form showErrorsInline="true" model="pgs__NewPage" uniqueid="form-page-new-XMLversion" mode="edit">
+													<styles>
+														<spacing bottom="2" top="3"/>
+													</styles>
+													<renderConditions logictype="or">
+														<renderCondition type="blank" operator="!=" fieldmodel="pgs__NewPage" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="skuid__Page_XML__c" fieldtargetobjects="SkuidLocal" value="null" enclosevalueinquotes="false"/>
+														<renderCondition type="blank" operator="!=" fieldmodel="pgs__NewPage" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="master_page_id" fieldtargetobjects="SkuidLocal" value="null" enclosevalueinquotes="false"/>
+													</renderConditions>
+													<conditions/>
+													<styleVariantConditions/>
+													<columns>
+														<column verticalAlign="top" ratio="1">
+															<sections>
+																<section title="New Section" showHeading="false">
+																	<fields>
+																		<skuid__field id="api_version" uniqueid="field-page-new-XMLversion" label="Page API version (detected by master page or XML source)" displayAs="RADIO" showHelp="false" radioLayout="column" required="false">
+																			<renderConditions logictype="and" onhidedatabehavior="keep"/>
+																			<enableConditions logictype="and" message="This page's API version will come from the master page or XML source">
+																				<condition type="fieldvalue" operator="=" enclosevalueinquotes="true"/>
+																			</enableConditions>
+																		</skuid__field>
+																	</fields>
+																</section>
+															</sections>
+														</column>
+													</columns>
+												</skuid__form>
+												<skuid__form showErrorsInline="true" model="pgs__NewPage" uniqueid="form-page-new-version-select" mode="edit">
+													<renderConditions logictype="and">
+														<renderCondition type="blank" operator="=" fieldmodel="pgs__NewPage" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="skuid__Page_XML__c" fieldtargetobjects="SkuidLocal" value="null" enclosevalueinquotes="false"/>
+														<renderCondition type="blank" operator="=" fieldmodel="pgs__NewPage" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="master_page_id" fieldtargetobjects="SkuidLocal" value="null" enclosevalueinquotes="false"/>
+													</renderConditions>
+													<styles>
+														<spacing top="3" bottom="2"/>
+													</styles>
+													<conditions/>
+													<styleVariantConditions/>
+													<columns>
+														<column verticalAlign="top" ratio="1">
+															<sections>
+																<section title="New Section" showHeading="false">
+																	<fields>
+																		<skuid__field id="api_version" uniqueid="field-page-new-version-select" label="Page API version" displayAs="RADIO" showHelp="false" radioLayout="column" required="true"/>
+																	</fields>
+																</section>
+															</sections>
+														</column>
+													</columns>
+												</skuid__form>
+												<skuid__text contents="&lt;a href=&quot;https://docs.skuid.com/latest/en/skuid/api-version/#&quot; target=&quot;_blank&quot;&gt;Explain API version&lt;/a&gt;" uniqueid="sk-2sIk-22401" styleSettingsVariant="small">
+													<styles>
+														<spacing bottom="3"/>
+													</styles>
+													<renderConditions logictype="and"/>
+													<conditions/>
+												</skuid__text>
+											</components>
+											<styles>
+												<spacing/>
+											</styles>
+											<background/>
+											<renderConditions logictype="and">
+												<rendercondition value="EnableV1" sourcetype="feature" enclosevalueinquotes="false" operator="=" fieldmodel="NavUiControl"/>
+											</renderConditions>
+											<styleVariantConditions/>
+										</skuid__wrapper>
+										<skuid__form showErrorsInline="true" model="pgs__NewPage" uniqueid="form-page-new-xmloptions" mode="edit">
+											<styles>
+												<spacing/>
+											</styles>
+											<renderConditions logictype="and"/>
+											<columns>
+												<column verticalAlign="top" ratio="1">
+													<sections>
+														<section title="New Section" showHeading="false">
+															<fields>
+																<skuid__field id="ui_controller_xml_options" uniqueid="field-page-new-xmloptions" selectedList="3" label=" " maxSelected="1" displayAs="CHECKBOX_LIST">
+																	<renderConditions logictype="and" onhidedatabehavior="keep"/>
+																	<enableConditions logictype="and" message="You can't create a page from XML if applying a master page">
+																		<condition type="fieldvalue" operator="!=" enclosevalueinquotes="true" fieldmodel="pgs__NewPage" sourcetype="fieldvalue" field="ui_controller_apply_master_page" fieldtargetobjects="SkuidLocal" value="masterpage"/>
+																	</enableConditions>
+																</skuid__field>
+															</fields>
+														</section>
+													</sections>
+												</column>
+											</columns>
+										</skuid__form>
+										<skuid__wrapper uniqueid="sk-1zjW-19354">
+											<components>
+												<skuid__wrapper uniqueid="sk-1zjW-19363">
+													<components>
+														<skuid__form showErrorsInline="true" model="pgs__NewPage" uniqueid="form-page-new-xmlupload" mode="edit">
+															<styles>
+																<spacing bottom="1"/>
+															</styles>
+															<columns>
+																<column verticalAlign="top" ratio="1">
+																	<sections>
+																		<section title="New Section" showHeading="false">
+																			<fields>
+																				<skuid__field id="ui_controller_upload_xml" uniqueid="field-page-new-xmlupload" label=" " displayAs="RADIO" radioLayout="column">
+																					<renderConditions logictype="and" onhidedatabehavior="keep"/>
+																					<enableConditions logictype="and"/>
+																				</skuid__field>
+																			</fields>
+																		</section>
+																	</sections>
+																</column>
+															</columns>
+														</skuid__form>
+														<skuid__wrapper uniqueid="sk-2Nh6-36816">
+															<components>
+																<skuid__file editable="true" displayAs="filename" deletable="true" uniqueid="file-page-new-xmlupload" datasource="SkuidLocal" saveTo="field" model="pgs__NewPage" storeAs="uploadfile" field="skuid__Page_XML__c">
+																	<uploadSuccessActions>
+																		<action type="showToast" duration="4" position="bl" message="XML successfully imported"/>
+																		<action type="custom" snippet="getFileNameOnUpload"/>
+																	</uploadSuccessActions>
+																	<uploadFailureActions/>
+																	<renderConditions logictype="or">
+																		<renderCondition type="blank" operator="=" fieldmodel="pgs__NewPage" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="ui_xml_file_name" fieldtargetobjects="SkuidLocal" value="null" enclosevalueinquotes="false"/>
+																		<renderCondition type="blank" operator="=" fieldmodel="pgs__NewPage" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="skuid__Page_XML__c" fieldtargetobjects="SkuidLocal" value="null" enclosevalueinquotes="false"/>
+																	</renderConditions>
+																	<styleVariantConditions/>
+																</skuid__file>
+																<skuid__grid uniqueid="sk-1J_-50532" flexDirection="row" justifyContent="flex-start" alignItems="flex-start" columnGutter="1">
+																	<divisions>
+																		<division ratio="0" alignSelf="center">
+																			<components>
+																				<skuid__text contents="{{ui_xml_file_name}}" uniqueid="sk-1KP-56042" model="pgs__NewPage" styleSettingsVariant="b756893f-de82-409d-b7b2-9838c4aa6213">
+																					<styles>
+																						<spacing/>
+																					</styles>
+																				</skuid__text>
+																			</components>
+																		</division>
+																		<division alignSelf="center" ratio="0">
+																			<components>
+																				<skuid__buttonSet model="pgs__NewPage" uniqueid="sk-1KU-56834" position="left">
+																					<groups>
+																						<skuid__buttonGroup uniqueId="sk-1KU-56832">
+																							<buttons>
+																								<skuid__button label="Remove" uniqueId="sk-1KU-56833" styleSettingsVariant="c217118d-b5a0-4759-b20f-01604730a904">
+																									<actions>
+																										<action type="updateRow" fieldmodel="pgs__NewPage" affectedrows="context">
+																											<updates>
+																												<update valuesource="blank" field="ui_xml_file_name" enclosevalueinquotes="true"/>
+																												<update valuesource="blank" field="skuid__Page_XML__c" enclosevalueinquotes="true"/>
+																											</updates>
+																										</action>
+																									</actions>
+																								</skuid__button>
+																							</buttons>
+																						</skuid__buttonGroup>
+																					</groups>
+																					<styles>
+																						<spacing/>
+																					</styles>
+																				</skuid__buttonSet>
+																			</components>
+																		</division>
+																	</divisions>
+																	<renderConditions logictype="and">
+																		<renderCondition type="blank" operator="!=" fieldmodel="pgs__NewPage" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="ui_xml_file_name" fieldtargetobjects="SkuidLocal" value="null" enclosevalueinquotes="false"/>
+																		<renderCondition type="blank" operator="!=" fieldmodel="pgs__NewPage" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="skuid__Page_XML__c" fieldtargetobjects="SkuidLocal" value="null" enclosevalueinquotes="false"/>
+																	</renderConditions>
+																	<styleVariantConditions/>
+																	<styles>
+																		<spacing/>
+																	</styles>
+																	<background/>
+																</skuid__grid>
+															</components>
+															<background/>
+															<styles>
+																<spacing left="3" bottom="2" top="1"/>
+															</styles>
+															<renderConditions logictype="and">
+																<renderCondition type="fieldvalue" operator="=" enclosevalueinquotes="true" fieldmodel="pgs__NewPage" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="skuid__Initial_State__c" fieldtargetobjects="SkuidLocal" value="from-xml-file"/>
+															</renderConditions>
+															<styleVariantConditions/>
+														</skuid__wrapper>
+													</components>
+													<background/>
+													<renderConditions logictype="and"/>
+													<styles>
+														<spacing top="2"/>
+													</styles>
+												</skuid__wrapper>
+												<skuid__wrapper uniqueid="sk-1zjW-19358" maxHeight="custom" maxHeightCustom="240px" heightStrategy="fixed">
+													<components>
+														<skuid__form showErrorsInline="true" model="pgs__NewPage" uniqueid="form-page-new-xmlpaste-option" mode="edit">
+															<styles>
+																<spacing bottom="0.5"/>
+															</styles>
+															<renderConditions logictype="and"/>
+															<columns>
+																<column verticalAlign="top" ratio="1">
+																	<sections>
+																		<section title="New Section" showHeading="false">
+																			<fields>
+																				<skuid__field id="ui_controller_paste_xml" uniqueid="field-page-new-xmlpaste-option" label=" " displayAs="RADIO" radioLayout="column">
+																					<renderConditions logictype="and" onhidedatabehavior="keep"/>
+																					<enableConditions logictype="and"/>
+																				</skuid__field>
+																			</fields>
+																		</section>
+																	</sections>
+																</column>
+															</columns>
+														</skuid__form>
+														<skuid__wrapper uniqueid="sk-1zjW-19359" maxHeight="custom" maxHeightCustom="240px" height="custom" heightCustom="240px">
+															<components>
+																<skuid__form showErrorsInline="true" model="pgs__NewPage" uniqueid="form-page-new-xmlpaste-details" mode="edit">
+																	<renderConditions logictype="and"/>
+																	<styles>
+																		<spacing/>
+																	</styles>
+																	<columns>
+																		<column verticalAlign="top" ratio="1">
+																			<sections>
+																				<section title="New Section" showHeading="false">
+																					<fields>
+																						<skuid__field id="skuid__Page_XML__c" uniqueid="field-page-new-xmlpaste-details" label=" " showHelp="true" displayRows="6">
+																							<renderConditions logictype="and" onhidedatabehavior="keep"/>
+																							<enableConditions/>
+																						</skuid__field>
+																					</fields>
+																				</section>
+																			</sections>
+																		</column>
+																	</columns>
+																</skuid__form>
+															</components>
+															<background/>
+															<styles>
+																<spacing top="1" left="3"/>
+															</styles>
+															<renderConditions logictype="and">
+																<renderCondition type="fieldvalue" operator="=" enclosevalueinquotes="true" fieldmodel="pgs__NewPage" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="skuid__Initial_State__c" fieldtargetobjects="SkuidLocal" value="from-xml"/>
+															</renderConditions>
+														</skuid__wrapper>
+													</components>
+													<background/>
+													<renderConditions logictype="and"/>
+												</skuid__wrapper>
+												<skuid__wrapper uniqueid="sk-1zjW-19368">
+													<components>
+														<skuid__text contents="Reassign invalid data sources" uniqueid="sk-1zjW-19369" styleSettingsVariant="bcf356fb-cd9b-4b49-adb6-299b154f243f">
+															<styles>
+																<spacing top="4" styleSettingsVariant="bcf356fb-cd9b-4b49-adb6-299b154f243f"/>
+															</styles>
+															<renderConditions logictype="and">
+																<renderCondition type="fieldvalue" enclosevalueinquotes="true" fieldmodel="master__DataSourceReassign" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasRows"/>
+															</renderConditions>
+														</skuid__text>
+														<skuid__table model="master__DataSourceReassign" uniqueid="table-page-new-reassignDataSources" mode="edit" pageSize="Infinity" showListHeader="false" showListFooter="false" showPageSizeSelect="false" resetPaginationOnQuery="false" showSaveCancel="false" styleSettingsVariant="6f64b91d-8879-45c0-b55b-59b914d9f401">
+															<fields>
+																<field id="currentName" uniqueid="field-page-new-reassignDataSources-name" readOnly="true"/>
+																<field id="newName" uniqueid="field-page-new-reassignDataSources-newName" displayAs="COMBOBOX"/>
+															</fields>
+															<filtering enableSearch="false" instantSearch="false" searchMethod="client"/>
+															<rowActions/>
+															<massActions/>
+															<renderConditions logictype="and">
+																<renderCondition type="fieldvalue" enclosevalueinquotes="true" fieldmodel="master__DataSourceReassign" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasRows"/>
+															</renderConditions>
+															<styles>
+																<spacing top="1" styleSettingsVariant="6f64b91d-8879-45c0-b55b-59b914d9f401"/>
+															</styles>
+															<exportProperties useTableColumns="true"/>
+															<sorting enable="false"/>
+														</skuid__table>
+													</components>
+													<background/>
+													<renderConditions logictype="and"/>
+													<styles>
+														<spacing/>
+													</styles>
+												</skuid__wrapper>
+											</components>
+											<background/>
+											<renderConditions logictype="and">
+												<renderCondition type="blank" operator="!=" fieldmodel="pgs__NewPage" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="ui_controller_xml_options" value="null" fieldtargetobjects="SkuidLocal" enclosevalueinquotes="false"/>
+											</renderConditions>
+											<interactions/>
+											<styles>
+												<spacing left="3"/>
+											</styles>
+										</skuid__wrapper>
+									</components>
+									<background/>
+									<renderConditions logictype="and"/>
+									<styles>
+										<spacing/>
+									</styles>
+								</skuid__wrapper>
+							</components>
+							<buttons>
+								<skuid__button label="Create" styleSettingsVariant="primary" uniqueId="button-pages-newpage-save-v1">
+									<actions>
+										<action type="action-sequence" action-sequence-id="e2e8959e-0370-4fb0-af5c-ef015264faf9"/>
+									</actions>
+									<renderConditions logictype="and">
+										<renderCondition type="fieldvalue" operator="=" enclosevalueinquotes="true" fieldmodel="pgs__NewPage" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="api_version" fieldtargetobjects="SkuidLocal" value="v1"/>
+									</renderConditions>
+									<enableConditions logictype="custom" logic="(1 AND 2 AND 3 AND (4 OR (5 AND 6)))">
+										<condition type="blank" operator="!=" fieldmodel="pgs__NewPage" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="name" fieldtargetobjects="SkuidLocal" value="null" enclosevalueinquotes="false"/>
+										<condition type="blank" operator="!=" fieldmodel="pgs__NewPage" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="api_version" fieldtargetobjects="SkuidLocal" value="null" enclosevalueinquotes="false"/>
+										<condition fieldmodel="pgs__NewPage_DuplicateCheck" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasNoRows"/>
+										<condition type="blank" operator="=" fieldmodel="pgs__NewPage" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="ui_controller_xml_options" fieldtargetobjects="SkuidLocal" value="null" enclosevalueinquotes="false"/>
+										<condition type="fieldvalue" operator="=" enclosevalueinquotes="true" fieldmodel="pgs__NewPage" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="ui_controller_xml_options" fieldtargetobjects="SkuidLocal" value="show_xml_options"/>
+										<condition type="blank" operator="!=" fieldmodel="pgs__NewPage" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="skuid__Page_XML__c" fieldtargetobjects="SkuidLocal" value="null" enclosevalueinquotes="false"/>
+									</enableConditions>
+									<tooltip position="right" compact="false"/>
+									<hotkeys/>
+									<styleVariantConditions/>
+								</skuid__button>
+								<skuid__button label="Create" styleSettingsVariant="primary" uniqueId="button-pages-newpage-save-v2">
+									<actions>
+										<action type="action-sequence" action-sequence-id="e2e8959e-0370-4fb0-af5c-ef015264faf9"/>
+									</actions>
+									<renderConditions logictype="and">
+										<renderCondition type="fieldvalue" operator="=" enclosevalueinquotes="true" fieldmodel="pgs__NewPage" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="api_version" fieldtargetobjects="SkuidLocal" value="v2"/>
+									</renderConditions>
+									<enableConditions logictype="custom" logic="(1 AND 2 AND 3 AND (4 OR (5 AND 6)))">
+										<condition type="blank" operator="!=" fieldmodel="pgs__NewPage" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="name" fieldtargetobjects="SkuidLocal" value="null" enclosevalueinquotes="false"/>
+										<condition type="blank" operator="!=" fieldmodel="pgs__NewPage" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="api_version" fieldtargetobjects="SkuidLocal" value="null" enclosevalueinquotes="false"/>
+										<condition fieldmodel="pgs__NewPage_DuplicateCheck" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasNoRows"/>
+										<condition type="blank" operator="=" fieldmodel="pgs__NewPage" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="ui_controller_xml_options" fieldtargetobjects="SkuidLocal" value="null" enclosevalueinquotes="false"/>
+										<condition type="fieldvalue" operator="=" fieldmodel="pgs__NewPage" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="ui_controller_xml_options" fieldtargetobjects="SkuidLocal" value="show_xml_options" enclosevalueinquotes="true"/>
+										<condition type="blank" operator="!=" fieldmodel="pgs__NewPage" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="skuid__Page_XML__c" fieldtargetobjects="SkuidLocal" value="null" enclosevalueinquotes="false"/>
+									</enableConditions>
+									<tooltip position="right" compact="false"/>
+									<hotkeys/>
+									<styleVariantConditions/>
+								</skuid__button>
+								<skuid__button label="Cancel" uniqueid="sk-1uUc-15322">
+									<actions>
+										<action type="closeModals" closebehavior="close"/>
+									</actions>
+									<tooltip position="top"/>
+								</skuid__button>
+							</buttons>
+							<afterCloseActions>
+								<action type="cancel">
+									<models>
+										<model>pgs__NewPage</model>
+									</models>
+								</action>
+								<action type="emptyModelData">
+									<models>
+										<model>master__DataSourceReassign</model>
+									</models>
+								</action>
+								<action type="emptyModelData">
+									<models>
+										<model>pgs__NewPage_DuplicateCheck</model>
+									</models>
+								</action>
+							</afterCloseActions>
+						</skuid__modal>
+					</action>
+				</actions>
+				<description>This creates a popup wizard for a new page</description>
+				<inputs/>
+			</actionsequence>
+			<actionsequence id="61306662-7f25-452c-b46f-eb399364255d" label="Clone page" type="reusable">
+				<description/>
+				<actions>
+					<action type="updateCondition" model="ClonePageData_Source" behavior="set" condition="selectedPageId" valuesource="fieldvalue" value="{{id}}"/>
+					<action type="requeryModels" behavior="standard">
+						<models>
+							<model>ClonePageData_Source</model>
+						</models>
+					</action>
+					<action type="emptyModelData">
+						<models>
+							<model>ClonePageData</model>
+						</models>
+					</action>
+					<action type="createRow" model="ClonePageData" appendorprepend="prepend" defaultmodefornewitems="edit" affectedrows="context">
+						<defaults>
+							<default field="content" value="{{content}}" valuesource="modelmerge" sourcemodel="ClonePageData_Source" sourcefield="content"/>
+							<default field="composer_settings" value="{{composer_settings}}" valuesource="modelmerge" sourcemodel="ClonePageData_Source" sourcefield="composer_settings"/>
+							<default field="name" value="{{name}}__clone" valuesource="formula">
+								<formula>JOIN_TEXT("",{{$Model.ClonePageData_Source.data.0.name}},"__clone")</formula>
+							</default>
+							<default field="max_auto_saves" value="{{max_auto_saves}}" valuesource="modelmerge" sourcemodel="ClonePageData_Source" sourcefield="max_auto_saves"/>
+							<default field="api_version" value="{{api_version}}" valuesource="modelmerge" sourcemodel="ClonePageData_Source" sourcefield="api_version"/>
+							<default field="is_master_page" value="{{is_master_page}}" valuesource="modelmerge" sourcemodel="ClonePageData_Source" sourcefield="is_master_page"/>
+							<default field="master_page_id" value="{{{master_page_id}}}" valuesource="modelmerge" sourcemodel="ClonePageData_Source" sourcefield="master_page_id"/>
+						</defaults>
+					</action>
+					<action type="showModal">
+						<skuid__modal title="{{$Label.Clone}} page" width="640px" fullScreen="false">
+							<components>
+								<skuid__messageArea uniqueid="sk-Nnh-15281">
+									<group>
+										<skuid__messageBlock title="This name is already in use." description="Please enter a different name." styleSettingsVariant="errorStrong"/>
+									</group>
+									<styles>
+										<spacing bottom="3"/>
+									</styles>
+									<renderConditions logictype="and">
+										<renderCondition type="fieldvalue" enclosevalueinquotes="true" fieldmodel="pgs__NewPage_DuplicateCheck" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasRows"/>
+									</renderConditions>
+								</skuid__messageArea>
+								<skuid__form showErrorsInline="true" model="ClonePageData" uniqueid="sk-2bNU-877" mode="edit" showSaveCancel="false">
+									<renderConditions logictype="and"/>
+									<styles>
+										<spacing/>
+									</styles>
+									<conditions/>
+									<columns>
+										<column verticalAlign="top" ratio="1">
+											<sections>
+												<section title="New Section" showHeading="false">
+													<fields>
+														<skuid__field id="name" uniqueid="sk-2bNY-898" required="true" label="Name"/>
+													</fields>
+												</section>
+											</sections>
+										</column>
+									</columns>
+								</skuid__form>
+							</components>
+							<afterCloseActions>
+								<action type="cancel">
+									<models>
+										<model>ClonePageData</model>
+									</models>
+								</action>
+								<action type="emptyModelData">
+									<models>
+										<model>ClonePageData</model>
+									</models>
+								</action>
+								<action type="emptyModelData">
+									<models>
+										<model>pgs__NewPage_DuplicateCheck</model>
+									</models>
+								</action>
+							</afterCloseActions>
+							<buttons>
+								<skuid__button label="Create" styleSettingsVariant="primary" uniqueId="button-pages-create-clone">
+									<actions>
+										<action type="blockUI" message="Creating page" styleSettingsVariant="dark" showPlaceholder="true"/>
+										<action type="save">
+											<models>
+												<model>ClonePageData</model>
+											</models>
+											<onerroractions>
+												<action type="blockUI" message="There was an error creating the page clone." timeout="2000"/>
+											</onerroractions>
+										</action>
+										<action type="requeryModels" behavior="standard">
+											<onerroractions>
+												<action type="blockUI" message="There was an error" timeout="3000"/>
+											</onerroractions>
+											<models>
+												<model>pgs__pagedata</model>
+											</models>
+										</action>
+										<action type="redirect" window="blank" url="/ui/page/compose/{{id}}"/>
+										<action type="closeModals" closebehavior="topmost"/>
+										<action type="unblockUI"/>
+									</actions>
+									<enableConditions logictype="and" message="Please enter a valid name for the cloned page.">
+										<condition type="blank" operator="!=" fieldmodel="ClonePageData" sourcetype="fieldvalue" field="name" fieldtargetobjects="SkuidLocal" value="null" enclosevalueinquotes="false" nosourcerowbehavior="deactivate"/>
+										<condition fieldmodel="pgs__NewPage_DuplicateCheck" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasNoRows"/>
+									</enableConditions>
+									<renderConditions logictype="and"/>
+									<styleVariantConditions/>
+								</skuid__button>
+								<skuid__button label="{{$Label.Cancel}}" styleSettingsVariant="default" uniqueId="button-pages-cancel-clone">
+									<actions>
+										<action type="emptyModelData">
+											<models>
+												<model>ClonePageData</model>
+											</models>
+										</action>
+										<action type="closeModals" closebehavior="topmost"/>
+									</actions>
+								</skuid__button>
+							</buttons>
+						</skuid__modal>
+					</action>
+				</actions>
+			</actionsequence>
+			<actionsequence id="e2e8959e-0370-4fb0-af5c-ef015264faf9" label="Save New Page" type="reusable">
+				<actions>
+					<action type="branch" whenfinished="continue" model="pgs__NewPage" label="If using XML paste/upload option">
+						<formula>NOT(ISBLANK({{skuid__Page_XML__c}}))</formula>
+						<iftrueactions>
+							<action type="custom" snippet="skuid.newPage.modifyXMLBeforeSave"/>
+						</iftrueactions>
+					</action>
+					<action type="save">
+						<models>
+							<model>pgs__NewPage</model>
+						</models>
+						<onerroractions>
+							<action type="blockUI" message="There was an error creating your page" timeout="3000" styleSettingsVariant="dark"/>
+						</onerroractions>
+					</action>
+					<action type="redirect" url="/ui/page/compose/{{{$Model.pgs__NewPage.data.0.id}}}" window="blank"/>
+					<action type="requeryModels" behavior="standard">
+						<models>
+							<model>pgs__pagedata</model>
+							<model>pgs_Ui_Control</model>
+						</models>
+					</action>
+					<action type="closeAllPopups"/>
+				</actions>
+				<description>Actions to take when saving a new page</description>
+			</actionsequence>
+			<actionsequence id="12774464-8d62-496b-b810-dff854ee0232" type="event-triggered" event-scope="component" event-name="page.rendered" label="Populate Page Settings on Load">
+				<description/>
+				<actions>
+					<action type="updateRow" fieldmodel="NavUiControl" affectedrows="context">
+						<updates>
+							<update valuesource="fieldvalue" field="GlobalNavController" enclosevalueinquotes="true" value="PAGES"/>
+						</updates>
+					</action>
+					<action type="custom" snippet="checkForFeatureFlags"/>
+					<action type="custom" snippet="checkForAppliedFilters"/>
+				</actions>
+			</actionsequence>
+			<actionsequence id="2de61af9-dbd7-4a91-aa2c-6f3e853e3f6d" label="Undo Failed Migration" type="reusable">
+				<description/>
+				<actions>
+					<action type="updateRow" fieldmodel="MigrationPageData" affectedrows="context">
+						<updates>
+							<update valuesource="modelmerge" field="api_version" enclosevalueinquotes="true" sourcemodel="ClonePageData_Source" sourcefield="api_version"/>
+							<update valuesource="modelmerge" field="content" enclosevalueinquotes="true" sourcemodel="ClonePageData_Source" sourcefield="content"/>
+							<update valuesource="blank" field="status" enclosevalueinquotes="true"/>
+						</updates>
+					</action>
+				</actions>
+				<inputs/>
+			</actionsequence>
+		</actionsequences>
+	</resources>
+</skuid__page>

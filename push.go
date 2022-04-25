@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"strconv"
 
 	"github.com/spf13/cobra"
@@ -27,7 +26,7 @@ var (
 
 			Printf("Pushing %d pages.\n", len(pagePost.Changes))
 
-			api, err := Login(
+			api, err := SalesforceLogin(
 				ArgAppClientID,
 				ArgAppClientSecret,
 				ArgHost,
@@ -38,14 +37,14 @@ var (
 
 			if err != nil {
 				Println(err.Error())
-				os.Exit(1) // todo return err
+				return
 			}
 
 			result, err := api.Connection.Post("/skuid/api/v1/pages", pagePost)
 
 			if err != nil {
 				Println(err.Error())
-				os.Exit(1) // todo return err
+				return
 			}
 
 			unquoted, _ := strconv.Unquote(string(result))
@@ -59,7 +58,7 @@ var (
 				for _, err := range response.Errors {
 					Println(err)
 				}
-				os.Exit(1) // todo return err
+				return
 			}
 
 			Println(fmt.Sprintf("Pages successfully pushed to org: %s.", response.OrgName))

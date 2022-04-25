@@ -1,0 +1,29 @@
+<skuid__page personalizationmode="client" showsidebar="true" showheader="true" theme="ComposerLight" unsavedchangeswarning="yes" hideeditbutton="true">
+	<models>
+		<model id="NavUiControl" query="true" createrowifnonefound="true" datasource="Ui-Only">
+			<fields>
+				<field id="GlobalNavController" displaytype="TEXT" length="255"/>
+				<field id="VerticalNavController" displaytype="TEXT" length="255"/>
+			</fields>
+			<conditions/>
+			<actions/>
+		</model>
+	</models>
+	<components>
+		<skuid__pageRegion uniqueid="sk-2w1w-1416"/>
+	</components>
+	<resources>
+		<labels/>
+		<javascript>
+			<jsitem location="staticresource" namespace="skuid" name="js/builderReqs.js" scope="api"/>
+			<jsitem location="staticresource" namespace="skuid" name="js/skuidPages/skuidPageUtils.js" scope="api"/>
+			<jsitem location="staticresource" namespace="skuid" name="js/skuidPages/skuidCoreMaster.js" scope="api"/>
+		</javascript>
+		<css/>
+		<actionsequences/>
+	</resources>
+	<styles>
+		<styleitem type="background" bgtype="none"/>
+	</styles>
+	<pageregioncontents/>
+</skuid__page>

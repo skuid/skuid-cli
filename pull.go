@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"net/url"
-	"os"
 	"strconv"
 
 	"github.com/spf13/cobra"
@@ -16,10 +15,10 @@ var pullCmd = &cobra.Command{
 	Use:   "pull",
 	Short: "Pull Skuid Pages from Salesforce into a local directory.",
 	Long:  `Pull your Skuid Pages from your Salesforce org to a local directory.`,
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 
 		//login to the Force API
-		api, err := Login(
+		api, err := SalesforceLogin(
 			ArgAppClientID,
 			ArgAppClientSecret,
 			ArgHost,
@@ -30,7 +29,7 @@ var pullCmd = &cobra.Command{
 
 		if err != nil {
 			Println(err.Error())
-			os.Exit(1)
+			return err
 		}
 
 		// Provide a default for targetDir
@@ -58,7 +57,7 @@ var pullCmd = &cobra.Command{
 
 		if err != nil {
 			Println(err.Error())
-			os.Exit(1)
+			return err
 		}
 
 		var pages map[string]PullResponse
@@ -73,7 +72,7 @@ var pullCmd = &cobra.Command{
 		if err != nil {
 			Println(string(result))
 			Println(err.Error())
-			os.Exit(1)
+			return err
 		}
 
 		for _, pageRecord := range pages {
@@ -82,11 +81,13 @@ var pullCmd = &cobra.Command{
 			err = pageRecord.WriteAtRest(ArgTargetDir)
 			if err != nil {
 				Println(err.Error())
-				os.Exit(1)
+				return err
 			}
 		}
 
 		Printf("Pages written to %s\n", ArgTargetDir)
+
+		return nil
 	},
 }
 

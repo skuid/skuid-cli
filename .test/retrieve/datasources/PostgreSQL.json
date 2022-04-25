@@ -1,0 +1,13 @@
+{
+	"name": "PostgreSQL",
+	"config": {
+		"ssl": false,
+		"ssl-ca": "",
+		"ssl-cert": "",
+		"ssl-key": ""
+	},
+	"databaseName": "pliny",
+	"type": "PostgreSQL",
+	"url": "kubernetes.docker.internal:5432",
+	"version": "2"
+}

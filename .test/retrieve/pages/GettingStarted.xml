@@ -1,0 +1,1478 @@
+<skuid__page personalizationmode="client" unsavedchangeswarning="yes" theme="Skuid Admin">
+	<models>
+		<model id="AppId" query="false" createrowifnonefound="false" datasource="SkuidLocal" verb="GET" endpoint="app-templates/{{id}}/details" payloadcontenttype="JSON">
+			<fields>
+				<field id="id" label="Id" ispolymorphic="false" isnamepointing="false" displaytype="STRING" accessible="true" filterable="true"/>
+			</fields>
+			<conditions>
+				<condition value="fe67037d-5ebc-416d-97fc-5859f3ba0044" enclosevalueinquotes="true" sourcetype="param" sourceparam="id" type="fieldvalue"/>
+			</conditions>
+			<actions/>
+		</model>
+		<model id="SampleApp" query="true" createrowifnonefound="false" datasource="SkuidLocal" verb="GET" payloadcontenttype="JSON" endpoint="/objects/app?order=name&amp;fields=id,name">
+			<fields>
+				<field id="id" label="Id" ispolymorphic="false" isnamepointing="false" displaytype="STRING" accessible="true" filterable="true"/>
+				<field id="name" label="Name" ispolymorphic="false" isnamepointing="false" displaytype="STRING" accessible="true" filterable="true"/>
+			</fields>
+			<conditions>
+				<condition type="fieldvalue" value="SkuidSample" enclosevalueinquotes="true" sourcetype="fieldvalue" field="name" operator="=" clientorserver="client"/>
+			</conditions>
+			<actions>
+				<action>
+					<actions>
+						<action type="branch" whenfinished="stop" label="If model has data">
+							<formula>{{$Model.SampleApp.data.length}} === 1</formula>
+							<iftrueactions>
+								<action type="updateRow" fieldmodel="gettingstarted_uionly" affectedrows="context">
+									<updates>
+										<update valuesource="fieldvalue" field="canceledInstall" enclosevalueinquotes="false" value="true"/>
+									</updates>
+								</action>
+							</iftrueactions>
+						</action>
+					</actions>
+					<events>
+						<event>models.loaded</event>
+					</events>
+				</action>
+			</actions>
+		</model>
+		<model id="gettingstarted_uionly" limit="20" query="true" createrowifnonefound="true" datasource="Ui-Only">
+			<fields>
+				<field id="canceledInstall" displaytype="BOOLEAN" ogdisplaytype="TEXT" defaultvaluetype="fieldvalue" defaultValue="false"/>
+				<field id="stayAfterModal" displaytype="BOOLEAN" ogdisplaytype="TEXT" precision="9" scale="2" defaultvaluetype="fieldvalue" defaultValue="false"/>
+			</fields>
+			<conditions/>
+			<actions/>
+		</model>
+		<model id="FeatureFlags" limit="20" query="true" createrowifnonefound="true" datasource="Ui-Only">
+			<fields>
+				<field id="appPermSetsEnabled" displaytype="BOOLEAN" length="255" ogdisplaytype="TEXT"/>
+				<field id="nativeEnabled" displaytype="BOOLEAN" length="255" ogdisplaytype="TEXT" label="nativeEnabled"/>
+			</fields>
+			<conditions/>
+			<actions/>
+		</model>
+	</models>
+	<pageregioncontents>
+		<pageregioncontent regionid="sk-2w1w-1416" uniqueid="sk-2sl4-2117">
+			<components>
+				<skuid__wrapper uniqueid="sk-2sm5-5262" styleSettingsVariant="b5342fe9-7125-4bf8-b20b-ade1825d7e72">
+					<components>
+						<skuid__grid uniqueid="sk-Hb5-27675" flexDirection="row" justifyContent="space-around" alignItems="flex-start">
+							<divisions>
+								<division minWidth="100px" ratio="1" alignSelf="auto" maxWidth="1440px">
+									<components>
+										<skuid__wrapper uniqueid="sk-2smC-5991">
+											<components>
+												<skuid__header title="Getting Started" uniqueid="sk-2smD-6274"/>
+											</components>
+											<background/>
+										</skuid__wrapper>
+									</components>
+								</division>
+							</divisions>
+							<styles>
+								<spacing top="4" bottom="4" left="4" right="4"/>
+							</styles>
+							<background/>
+						</skuid__grid>
+					</components>
+					<background/>
+				</skuid__wrapper>
+				<skuid__grid uniqueid="sk-HbG-36257" flexDirection="row" justifyContent="space-around" alignItems="flex-start">
+					<divisions>
+						<division minWidth="100px" ratio="1" alignSelf="auto" maxWidth="1440px">
+							<components>
+								<skuid__grid uniqueid="sk-2smz-6272" flexDirection="row" justifyContent="flex-start" alignItems="stretch" columnGutter="4" rowGutter="0">
+									<divisions>
+										<division ratio="0" alignSelf="auto" minWidth="160px">
+											<components>
+												<skuid__wrapper uniqueid="sk-Hco-76517" styleSettingsVariant="cb912890-8bf9-4451-8e7d-f13990092b83">
+													<components>
+														<skuid__wrapper uniqueid="sk-Hav-25561" styleSettingsVariant="c5a44cb4-0fb9-4631-a576-a20f998816e0">
+															<components>
+																<skuid__wizard uniqueid="step-labels-wizard" direction="vertical" styleSettingsVariant="b8643aa8-49a1-4a2f-a75b-5e7af1e7e713" disableStepButtons="false">
+																	<steps>
+																		<step stepId="step1" stepLabel="Introduction">
+																			<components/>
+																			<buttons/>
+																		</step>
+																		<step stepId="step2" stepLabel="Connecting to Data">
+																			<components/>
+																			<buttons/>
+																		</step>
+																		<step stepId="step3" stepLabel="Composing Pages">
+																			<components/>
+																			<buttons/>
+																		</step>
+																		<step stepId="step4" stepLabel="Creating Design Systems">
+																			<components/>
+																			<buttons/>
+																		</step>
+																		<step stepId="step5" stepLabel="Creating Apps">
+																			<components/>
+																			<buttons/>
+																		</step>
+																		<step stepId="step6" stepLabel="Deploying Apps">
+																			<components/>
+																			<buttons/>
+																		</step>
+																		<step stepId="step7" stepLabel="Exploring Skuid">
+																			<components/>
+																			<buttons/>
+																		</step>
+																		<step stepId="step8" stepLabel="Learn More">
+																			<components/>
+																			<buttons/>
+																		</step>
+																	</steps>
+																	<renderConditions logictype="and"/>
+																	<styles>
+																		<spacing bottom="-2"/>
+																	</styles>
+																</skuid__wizard>
+															</components>
+															<background/>
+															<styles>
+																<spacing/>
+															</styles>
+															<renderConditions logictype="and"/>
+															<styleVariantConditions/>
+														</skuid__wrapper>
+													</components>
+													<background/>
+												</skuid__wrapper>
+											</components>
+											<renderConditions logictype="and">
+												<renderCondition type="fieldvalue" operator="gte" enclosevalueinquotes="true" fieldmodel="" sourcetype="viewport" nosourcerowbehavior="deactivate" value="600px"/>
+											</renderConditions>
+										</division>
+										<division alignSelf="auto" minWidth="100px" ratio="1">
+											<components>
+												<skuid__wrapper uniqueid="sk-2sm--6916" minHeight="custom" minHeightCustom="100%">
+													<components>
+														<skuid__wizard uniqueid="sk-2sn1-7925" hideStepLabels="true" styleSettingsVariant="b8643aa8-49a1-4a2f-a75b-5e7af1e7e713">
+															<steps>
+																<step stepId="step1" stepLabel="Step 1">
+																	<components>
+																		<skuid__wrapper uniqueid="sk-2sng-18000">
+																			<components>
+																				<skuid__wrapper uniqueid="sk-2ss9-10784" styleSettingsVariant="bf33363a-3a94-4331-aa35-129d2ca56060">
+																					<components>
+																						<skuid__wrapper uniqueid="sk-Hb_-67423">
+																							<components>
+																								<skuid__text contents="Introduction" uniqueid="sk-Hba-44887" styleSettingsVariant="014b3346-10ed-4578-aa1a-cae68a21cc80">
+																									<styles>
+																										<spacing/>
+																									</styles>
+																								</skuid__text>
+																							</components>
+																							<styles>
+																								<spacing top="3" bottom="3" left="3" right="3"/>
+																							</styles>
+																							<background/>
+																						</skuid__wrapper>
+																						<skuid__wrapper uniqueid="sk-Hby-66154" styleSettingsVariant="b5342fe9-7125-4bf8-b20b-ade1825d7e72">
+																							<components/>
+																							<background/>
+																							<styles>
+																								<spacing/>
+																							</styles>
+																						</skuid__wrapper>
+																						<skuid__wrapper uniqueid="sk-2xgm-25976">
+																							<components>
+																								<skuid__text contents="Welcome to Skuid!&amp;nbsp;&lt;br /&gt;&#10;&lt;br /&gt;&#10;This wizard will walk you through the typical process for building your applications, from start to finish.&lt;br /&gt;&#10;&lt;br /&gt;&#10;We&amp;#39;ll introduce the basics of app building and where to learn more about building with Skuid. Think of this as &lt;strong&gt;a quick overview of what things are, where to find them, and how to use them&lt;/strong&gt; rather than a drill down into each step.&lt;br /&gt;&#10;&lt;br /&gt;&#10;After completing the wizard, create your own application, explore the samples we&amp;#39;ve created for you, or read our related resources to learn more." uniqueid="sk-2snR-16769"/>
+																								<skuid__wrapper uniqueid="sk-3asp-59700">
+																									<components>
+																										<skuid__buttonSet model="SampleApp" uniqueid="sk-3Pxc-52709" position="left">
+																											<groups>
+																												<skuid__buttonGroup>
+																													<buttons>
+																														<skuid__button label="Install Skuid Sample App" uniqueid="button-install-sample-app-first-time" styleSettingsVariant="primary">
+																															<actions>
+																																<action type="updateRow" fieldmodel="gettingstarted_uionly" affectedrows="context">
+																																	<updates>
+																																		<update valuesource="fieldvalue" field="stayAfterModal" enclosevalueinquotes="false" value="true"/>
+																																	</updates>
+																																</action>
+																																<action type="action-sequence" action-sequence-id="45244483-49de-4a32-8b89-853a404c246d">
+																																	<inputs/>
+																																</action>
+																															</actions>
+																															<renderConditions logictype="and"/>
+																															<enableConditions/>
+																															<hotkeys/>
+																														</skuid__button>
+																													</buttons>
+																												</skuid__buttonGroup>
+																											</groups>
+																											<styles>
+																												<spacing top="2"/>
+																											</styles>
+																											<renderConditions logictype="and"/>
+																										</skuid__buttonSet>
+																									</components>
+																									<background/>
+																									<renderConditions logictype="and">
+																										<renderCondition fieldmodel="SampleApp" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasNoRows"/>
+																									</renderConditions>
+																									<styles>
+																										<spacing/>
+																									</styles>
+																									<styleVariantConditions/>
+																								</skuid__wrapper>
+																								<skuid__wrapper uniqueid="sk-3QEm-7700">
+																									<components>
+																										<skuid__messageBlock styleSettingsVariant="successStrong" title="Skuid sample app installed!" description="Way to go!" uniqueid="sample-app-installed-success">
+																											<renderConditions/>
+																											<styles/>
+																										</skuid__messageBlock>
+																										<skuid__buttonSet model="SampleApp" uniqueid="buttonset-reinstall-sample-app" position="left">
+																											<groups>
+																												<skuid__buttonGroup>
+																													<buttons>
+																														<skuid__button label="Reinstall" uniqueid="button-reinstall-sample-app">
+																															<actions>
+																																<action type="updateRow" fieldmodel="gettingstarted_uionly" affectedrows="context">
+																																	<updates>
+																																		<update valuesource="fieldvalue" field="stayAfterModal" enclosevalueinquotes="false" value="true"/>
+																																	</updates>
+																																</action>
+																																<action type="action-sequence" action-sequence-id="80ca9c3d-57da-4e23-82ea-1088a86f0975">
+																																	<inputs/>
+																																</action>
+																															</actions>
+																															<renderConditions logictype="and"/>
+																															<enableConditions/>
+																															<hotkeys/>
+																														</skuid__button>
+																													</buttons>
+																												</skuid__buttonGroup>
+																											</groups>
+																											<styles>
+																												<spacing top="2"/>
+																											</styles>
+																											<renderConditions logictype="and"/>
+																										</skuid__buttonSet>
+																									</components>
+																									<background/>
+																									<renderConditions logictype="and">
+																										<renderCondition type="fieldvalue" enclosevalueinquotes="true" fieldmodel="SampleApp" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasRows"/>
+																									</renderConditions>
+																									<interactions/>
+																									<styles>
+																										<spacing top="2"/>
+																									</styles>
+																									<styleVariantConditions/>
+																								</skuid__wrapper>
+																								<skuid__grid uniqueid="sk-2-di-25442" flexDirection="row" justifyContent="flex-start" alignItems="flex-start" columnGutter="0" rowGutter="0">
+																									<divisions>
+																										<division minWidth="100px" ratio="1" alignSelf="auto" maxWidth="600px">
+																											<components>
+																												<skuid__wrapper uniqueid="sk-Qd0-45559" styleSettingsVariant="6a8ef5c7-8fac-4b36-9927-9f15c6fa8f5e">
+																													<components>
+																														<skuid__image source="url" uniqueid="sk-2-ba-23940" datasource="SkuidLocal" url="/assets/images/gettingstarted_skuidsample-app-runtime.png" model="NavUiControl">
+																															<interactions>
+																																<interaction type="tap">
+																																	<action type="showModal">
+																																		<skuid__modal width="80%">
+																																			<components>
+																																				<skuid__image source="url" uniqueid="sk-2-fa-25471" datasource="SkuidLocal" url="/assets/images/gettingstarted_skuidsample-app-runtime.png"/>
+																																			</components>
+																																		</skuid__modal>
+																																	</action>
+																																</interaction>
+																															</interactions>
+																														</skuid__image>
+																													</components>
+																													<background/>
+																												</skuid__wrapper>
+																											</components>
+																										</division>
+																									</divisions>
+																									<styles>
+																										<spacing top="5"/>
+																									</styles>
+																									<background/>
+																								</skuid__grid>
+																							</components>
+																							<background/>
+																							<styles>
+																								<spacing top="3" bottom="3" left="3" right="3"/>
+																							</styles>
+																						</skuid__wrapper>
+																					</components>
+																					<background/>
+																					<styles>
+																						<spacing/>
+																					</styles>
+																				</skuid__wrapper>
+																			</components>
+																			<background/>
+																			<styles>
+																				<spacing bottom="4"/>
+																			</styles>
+																		</skuid__wrapper>
+																	</components>
+																	<buttons>
+																		<button label="Back to App Dashboard" uniqueid="back-to-app-dashboard">
+																			<actions>
+																				<action type="redirect" window="self" url="/ns/skuid/ui/apps"/>
+																			</actions>
+																		</button>
+																		<button label="Next" styleSettingsVariant="primary" uniqueid="sk-2sn1-8283">
+																			<actions>
+																				<action type="branch" whenfinished="stop" label="If user canceled installation, don't prompt it again">
+																					<formula>{{$Model.gettingstarted_uionly.data.0.canceledInstall}} === true</formula>
+																					<iftrueactions>
+																						<action type="runComponentAction" componentid="step-labels-wizard" action="navigateToStep" stepId="step2"/>
+																						<action type="runComponentAction" componentid="sk-2sn1-7925" action="navigateToStep" stepId="step2"/>
+																					</iftrueactions>
+																				</action>
+																				<action type="action-sequence" action-sequence-id="45244483-49de-4a32-8b89-853a404c246d">
+																					<inputs/>
+																				</action>
+																			</actions>
+																		</button>
+																	</buttons>
+																</step>
+																<step stepId="step2" stepLabel="Step 2">
+																	<components>
+																		<skuid__wrapper uniqueid="sk-2so_-9645">
+																			<components>
+																				<skuid__wrapper uniqueid="sk-2ssB-11094" styleSettingsVariant="bf33363a-3a94-4331-aa35-129d2ca56060">
+																					<components>
+																						<skuid__wrapper uniqueid="sk-Hgi-41196">
+																							<components>
+																								<skuid__text contents="Connecting to Data" uniqueid="sk-Hgi-41197" styleSettingsVariant="014b3346-10ed-4578-aa1a-cae68a21cc80">
+																									<styles>
+																										<spacing/>
+																									</styles>
+																								</skuid__text>
+																							</components>
+																							<styles>
+																								<spacing top="3" bottom="3" left="3" right="3"/>
+																							</styles>
+																							<background/>
+																						</skuid__wrapper>
+																						<skuid__wrapper uniqueid="sk-Hgl-43001" styleSettingsVariant="b5342fe9-7125-4bf8-b20b-ade1825d7e72">
+																							<components/>
+																							<background/>
+																						</skuid__wrapper>
+																						<skuid__wrapper uniqueid="sk-2xgj-25643">
+																							<components>
+																								<skuid__text contents="Your first step in building great apps is almost always &lt;strong&gt;creating a Skuid data source&lt;/strong&gt;.&lt;br /&gt;&#10;&lt;br /&gt;&#10;A data source represents a connection to a single external system. They are created based on &lt;strong&gt;data source types&lt;/strong&gt;&amp;mdash;which provide the code Skuid needs to connect to the selected system.&lt;br /&gt;&#10;&lt;br /&gt;&#10;You&amp;#39;ll create a data source &lt;em&gt;for each external system&lt;/em&gt; you want to connect to. If you need to authenticate your connection&amp;mdash;prove to a system that you have rights to access it&amp;mdash;you can also set up an &lt;strong&gt;authentication provider&lt;/strong&gt;." uniqueid="sk-2so_-9647">
+																									<styles>
+																										<spacing/>
+																									</styles>
+																								</skuid__text>
+																								<skuid__grid uniqueid="sk-2-gT-26768" flexDirection="row" justifyContent="flex-start" alignItems="flex-start" columnGutter="0" rowGutter="0">
+																									<divisions>
+																										<division minWidth="100px" ratio="1" alignSelf="auto" maxWidth="600px">
+																											<components>
+																												<skuid__wrapper uniqueid="sk-QdC-48248" styleSettingsVariant="6a8ef5c7-8fac-4b36-9927-9f15c6fa8f5e">
+																													<components>
+																														<skuid__image source="url" uniqueid="sk-2-g1-26525" datasource="SkuidLocal" url="/assets/images/gettingstarted_datasource-config.png" model="NavUiControl">
+																															<interactions>
+																																<interaction type="tap">
+																																	<action type="showModal">
+																																		<skuid__modal width="80%">
+																																			<components>
+																																				<skuid__image source="url" uniqueid="sk-2-gZ-27837" datasource="SkuidLocal" url="/assets/images/gettingstarted_datasource-config.png"/>
+																																			</components>
+																																		</skuid__modal>
+																																	</action>
+																																</interaction>
+																															</interactions>
+																														</skuid__image>
+																													</components>
+																													<background/>
+																												</skuid__wrapper>
+																											</components>
+																										</division>
+																									</divisions>
+																									<styles>
+																										<spacing top="4"/>
+																									</styles>
+																								</skuid__grid>
+																							</components>
+																							<background/>
+																							<styles>
+																								<spacing top="3" bottom="3" left="3" right="3"/>
+																							</styles>
+																						</skuid__wrapper>
+																					</components>
+																					<background/>
+																				</skuid__wrapper>
+																			</components>
+																			<background/>
+																			<styles>
+																				<spacing bottom="4"/>
+																			</styles>
+																		</skuid__wrapper>
+																	</components>
+																	<buttons>
+																		<button label="Back" uniqueid="sk-2sn1-8433">
+																			<actions>
+																				<action type="runComponentAction" componentid="sk-2sn1-7925" action="navigateToStep" stepId="step1"/>
+																				<action type="runComponentAction" componentid="step-labels-wizard" action="navigateToStep" stepId="step1"/>
+																			</actions>
+																		</button>
+																		<button label="Next" styleSettingsVariant="primary" uniqueid="sk-2sn1-8514">
+																			<actions>
+																				<action type="runComponentAction" componentid="sk-2sn1-7925" action="navigateToStep" stepId="step3"/>
+																				<action type="runComponentAction" componentid="step-labels-wizard" action="navigateToStep" stepId="step3"/>
+																			</actions>
+																		</button>
+																	</buttons>
+																</step>
+																<step stepId="step3" stepLabel="Step 3">
+																	<components>
+																		<skuid__wrapper uniqueid="sk-2sqk-10605">
+																			<components>
+																				<skuid__wrapper uniqueid="sk-2x9k-14625" styleSettingsVariant="bf33363a-3a94-4331-aa35-129d2ca56060">
+																					<components>
+																						<skuid__wrapper uniqueid="sk-Hgz-46568">
+																							<components>
+																								<skuid__text contents="Composing Pages" uniqueid="sk-Hgz-46569" styleSettingsVariant="014b3346-10ed-4578-aa1a-cae68a21cc80">
+																									<styles>
+																										<spacing/>
+																									</styles>
+																								</skuid__text>
+																							</components>
+																							<styles>
+																								<spacing top="3" bottom="3" left="3" right="3"/>
+																							</styles>
+																							<background/>
+																						</skuid__wrapper>
+																						<skuid__wrapper uniqueid="sk-Hh0-49754" styleSettingsVariant="b5342fe9-7125-4bf8-b20b-ade1825d7e72">
+																							<components/>
+																							<background/>
+																							<styles>
+																								<spacing/>
+																							</styles>
+																						</skuid__wrapper>
+																						<skuid__wrapper uniqueid="sk-2xgg-25308">
+																							<components>
+																								<skuid__text contents="The drag-and-drop App Composer is where a Skuid page comes together.&lt;br /&gt;&#10;&lt;br /&gt;&#10;Within the App Composer, you create &lt;strong&gt;models&lt;/strong&gt; for accessing data, and then drag-and-drop &lt;strong&gt;components&lt;/strong&gt; to craft the User Interface (or UI). Each page can be as small or as large (within reason) as you need it to be.&amp;nbsp;" uniqueid="sk-2srA-11437"/>
+																								<skuid__grid uniqueid="sk-2-oO-30910" flexDirection="row" justifyContent="flex-start" alignItems="flex-start" columnGutter="0" rowGutter="0">
+																									<divisions>
+																										<division minWidth="100px" ratio="1" alignSelf="auto" maxWidth="600px">
+																											<components>
+																												<skuid__wrapper uniqueid="sk-QdK-52253" styleSettingsVariant="6a8ef5c7-8fac-4b36-9927-9f15c6fa8f5e">
+																													<components>
+																														<skuid__image source="url" uniqueid="sk-2-jt-29678" datasource="SkuidLocal" url="/assets/images/gettingstarted_app-builder-light.png" model="NavUiControl">
+																															<interactions>
+																																<interaction type="tap">
+																																	<action type="showModal">
+																																		<skuid__modal width="80%">
+																																			<components>
+																																				<skuid__image source="url" uniqueid="sk-2-pq-34792" datasource="SkuidLocal" url="/assets/images/gettingstarted_app-builder-light.png"/>
+																																			</components>
+																																		</skuid__modal>
+																																	</action>
+																																</interaction>
+																															</interactions>
+																														</skuid__image>
+																													</components>
+																													<background/>
+																												</skuid__wrapper>
+																											</components>
+																										</division>
+																									</divisions>
+																									<styles>
+																										<spacing top="4"/>
+																									</styles>
+																								</skuid__grid>
+																							</components>
+																							<background/>
+																							<styles>
+																								<spacing top="3" bottom="3" left="3" right="3"/>
+																							</styles>
+																						</skuid__wrapper>
+																					</components>
+																					<background/>
+																					<styles>
+																						<spacing/>
+																					</styles>
+																				</skuid__wrapper>
+																			</components>
+																			<background/>
+																			<styles>
+																				<spacing bottom="4"/>
+																			</styles>
+																		</skuid__wrapper>
+																	</components>
+																	<buttons>
+																		<button label="Back" uniqueid="sk-2sn2-8771">
+																			<actions>
+																				<action type="runComponentAction" componentid="sk-2sn1-7925" action="navigateToStep" stepId="step2"/>
+																				<action type="runComponentAction" componentid="step-labels-wizard" action="navigateToStep" stepId="step2"/>
+																			</actions>
+																		</button>
+																		<button label="Next" styleSettingsVariant="primary" uniqueid="sk-2sn2-8852">
+																			<actions>
+																				<action type="runComponentAction" componentid="sk-2sn1-7925" action="navigateToStep" stepId="step4"/>
+																				<action type="runComponentAction" componentid="step-labels-wizard" action="navigateToStep" stepId="step4"/>
+																			</actions>
+																		</button>
+																	</buttons>
+																</step>
+																<step stepId="step4" stepLabel="Step 4">
+																	<components>
+																		<skuid__wrapper uniqueid="sk-2srL-12192">
+																			<components>
+																				<skuid__wrapper uniqueid="sk-2x9d-13736" styleSettingsVariant="bf33363a-3a94-4331-aa35-129d2ca56060">
+																					<components>
+																						<skuid__wrapper uniqueid="sk-HhH-60768">
+																							<components>
+																								<skuid__text contents="Creating Design Systems" uniqueid="sk-HhH-60769" styleSettingsVariant="014b3346-10ed-4578-aa1a-cae68a21cc80">
+																									<styles>
+																										<spacing/>
+																									</styles>
+																								</skuid__text>
+																							</components>
+																							<styles>
+																								<spacing top="3" bottom="3" left="3" right="3"/>
+																							</styles>
+																							<background/>
+																						</skuid__wrapper>
+																						<skuid__wrapper uniqueid="sk-HhK-63187" styleSettingsVariant="b5342fe9-7125-4bf8-b20b-ade1825d7e72">
+																							<components/>
+																							<background/>
+																						</skuid__wrapper>
+																						<skuid__wrapper uniqueid="sk-2xgd-24973">
+																							<components>
+																								<skuid__text contents="Style your apps using the &lt;strong&gt;Design System Studio&lt;/strong&gt; to create &lt;em&gt;design systems&lt;/em&gt;, instead of managing complicated CSS files.&lt;br /&gt;&#10;&lt;br /&gt;&#10;Design systems are made up of &lt;strong&gt;variables&lt;/strong&gt; and &lt;strong&gt;style variants&lt;/strong&gt;. &lt;em&gt;Variables&lt;/em&gt; are individual attributes&amp;mdash;height, width, color, spacing&amp;mdash;that can be reused across component style options. Style &lt;em&gt;variants&lt;/em&gt; are created per component, allowing for unique, fully-customized design variations.&lt;br /&gt;&#10;&lt;br /&gt;&#10;After creating your variables and style variants, you can save your design system and use it across the pages of your app." uniqueid="sk-2srO-12755"/>
+																								<skuid__grid uniqueid="sk-2-hQ-28616" flexDirection="row" justifyContent="flex-start" alignItems="flex-start" columnGutter="0" rowGutter="0">
+																									<divisions>
+																										<division minWidth="100px" ratio="1" alignSelf="auto" maxWidth="600px">
+																											<components>
+																												<skuid__wrapper uniqueid="sk-QdN-54987" styleSettingsVariant="6a8ef5c7-8fac-4b36-9927-9f15c6fa8f5e">
+																													<components>
+																														<skuid__image source="url" uniqueid="sk-2-hS-29008" datasource="SkuidLocal" url="/assets/images/gettingstarted_dss-composer.png" model="NavUiControl">
+																															<interactions>
+																																<interaction type="tap">
+																																	<action type="showModal">
+																																		<skuid__modal width="80%">
+																																			<components>
+																																				<skuid__image source="url" uniqueid="sk-2-oq-33609" datasource="SkuidLocal" url="/assets/images/gettingstarted_dss-composer.png"/>
+																																			</components>
+																																		</skuid__modal>
+																																	</action>
+																																</interaction>
+																															</interactions>
+																														</skuid__image>
+																													</components>
+																													<background/>
+																												</skuid__wrapper>
+																											</components>
+																										</division>
+																									</divisions>
+																									<styles>
+																										<spacing top="4"/>
+																									</styles>
+																								</skuid__grid>
+																							</components>
+																							<background/>
+																							<styles>
+																								<spacing top="3" bottom="3" left="3" right="3"/>
+																							</styles>
+																						</skuid__wrapper>
+																					</components>
+																					<background/>
+																					<interactions/>
+																					<renderConditions logictype="and"/>
+																				</skuid__wrapper>
+																			</components>
+																			<background/>
+																			<styles>
+																				<spacing bottom="4"/>
+																			</styles>
+																		</skuid__wrapper>
+																	</components>
+																	<buttons>
+																		<button label="Back" uniqueid="sk-2sn2-9106">
+																			<actions>
+																				<action type="runComponentAction" componentid="sk-2sn1-7925" action="navigateToStep" stepId="step3"/>
+																				<action type="runComponentAction" componentid="step-labels-wizard" action="navigateToStep" stepId="step3"/>
+																			</actions>
+																		</button>
+																		<button label="Next" styleSettingsVariant="primary" uniqueid="sk-2sn2-9187">
+																			<actions>
+																				<action type="runComponentAction" componentid="sk-2sn1-7925" action="navigateToStep" stepId="step5"/>
+																				<action type="runComponentAction" componentid="step-labels-wizard" action="navigateToStep" stepId="step5"/>
+																			</actions>
+																		</button>
+																	</buttons>
+																</step>
+																<step stepId="step5" stepLabel="Step 5">
+																	<components>
+																		<skuid__wrapper uniqueid="sk-2xBU-12926">
+																			<components>
+																				<skuid__wrapper uniqueid="sk-2xAH-11492" styleSettingsVariant="bf33363a-3a94-4331-aa35-129d2ca56060">
+																					<components>
+																						<skuid__wrapper uniqueid="sk-Hhb-66803">
+																							<components>
+																								<skuid__text contents="Creating Apps" uniqueid="sk-Hhb-66804" styleSettingsVariant="014b3346-10ed-4578-aa1a-cae68a21cc80">
+																									<styles>
+																										<spacing/>
+																									</styles>
+																								</skuid__text>
+																							</components>
+																							<styles>
+																								<spacing top="3" bottom="3" left="3" right="3"/>
+																							</styles>
+																							<background/>
+																						</skuid__wrapper>
+																						<skuid__wrapper uniqueid="sk-Hhd-69381" styleSettingsVariant="b5342fe9-7125-4bf8-b20b-ade1825d7e72">
+																							<components/>
+																							<background/>
+																						</skuid__wrapper>
+																						<skuid__wrapper uniqueid="sk-2xga-24638">
+																							<components>
+																								<skuid__text contents="The next step in developing an all-star application is &lt;em&gt;creating the app&amp;nbsp;&lt;/em&gt;!&lt;br /&gt;&#10;&lt;br /&gt;&#10;An app is a collection of Skuid pages and their associated URLs. Once created, apps are used to specify user access and deployment features{{#$Model.FeatureFlags.data.0.nativeEnabled}}&amp;mdash;such as native mobile packages{{/$Model.FeatureFlags.data.0.nativeEnabled}}. It&amp;#39;s the final step in organizing the pages of an application for your users.&amp;nbsp;&lt;br /&gt;&#10;&lt;br /&gt;&#10;Each page within your app must be assigned a &lt;strong&gt;route&lt;/strong&gt;&amp;mdash;a URL where end users can access the page. Routes should help end users identify where they are within an application.&lt;br /&gt;&#10;&lt;br /&gt;&#10;You can have few or many apps, and they can be as small or as complex as you need." uniqueid="sk-2xAJ-11784"/>
+																								<skuid__grid uniqueid="sk-2-qZ-35063" flexDirection="row" justifyContent="flex-start" alignItems="flex-start" columnGutter="0" rowGutter="0">
+																									<divisions>
+																										<division minWidth="100px" ratio="1" alignSelf="auto" maxWidth="600px">
+																											<components>
+																												<skuid__wrapper uniqueid="sk-QdQ-57519" styleSettingsVariant="6a8ef5c7-8fac-4b36-9927-9f15c6fa8f5e">
+																													<components>
+																														<skuid__image source="url" uniqueid="sk-2-qb-35449" datasource="SkuidLocal" url="/assets/images/gettingstarted_deploying-app.png" model="NavUiControl">
+																															<interactions>
+																																<interaction type="tap">
+																																	<action type="showModal">
+																																		<skuid__modal width="80%">
+																																			<components>
+																																				<skuid__image source="url" uniqueid="sk-2-qf-36234" datasource="SkuidLocal" url="/assets/images/gettingstarted_deploying-app.png"/>
+																																			</components>
+																																		</skuid__modal>
+																																	</action>
+																																</interaction>
+																															</interactions>
+																														</skuid__image>
+																													</components>
+																													<background/>
+																													<interactions/>
+																												</skuid__wrapper>
+																											</components>
+																										</division>
+																									</divisions>
+																									<styles>
+																										<spacing top="4"/>
+																									</styles>
+																								</skuid__grid>
+																							</components>
+																							<background/>
+																							<styles>
+																								<spacing top="3" bottom="3" left="3" right="3"/>
+																							</styles>
+																						</skuid__wrapper>
+																					</components>
+																					<background/>
+																				</skuid__wrapper>
+																			</components>
+																			<background/>
+																			<styles>
+																				<spacing bottom="4"/>
+																			</styles>
+																		</skuid__wrapper>
+																	</components>
+																	<buttons>
+																		<button label="Back" uniqueid="sk-2sn3-9441">
+																			<actions>
+																				<action type="runComponentAction" componentid="sk-2sn1-7925" action="navigateToStep" stepId="step4"/>
+																				<action type="runComponentAction" componentid="step-labels-wizard" action="navigateToStep" stepId="step4"/>
+																			</actions>
+																			<tooltip position="top"/>
+																		</button>
+																		<button label="Next" styleSettingsVariant="primary" uniqueid="sk-2sn3-9522">
+																			<actions>
+																				<action type="runComponentAction" componentid="sk-2sn1-7925" action="navigateToStep" stepId="step6"/>
+																				<action type="runComponentAction" componentid="step-labels-wizard" action="navigateToStep" stepId="step6"/>
+																			</actions>
+																		</button>
+																	</buttons>
+																</step>
+																<step stepId="step6" stepLabel="Step 6">
+																	<components>
+																		<skuid__wrapper uniqueid="sk-2xBW-13534">
+																			<components>
+																				<skuid__wrapper uniqueid="sk-2xAi-14707" styleSettingsVariant="bf33363a-3a94-4331-aa35-129d2ca56060">
+																					<components>
+																						<skuid__wrapper uniqueid="sk-HiG-79023">
+																							<components>
+																								<skuid__text contents="Deploying Apps" uniqueid="sk-HiG-79024" styleSettingsVariant="014b3346-10ed-4578-aa1a-cae68a21cc80">
+																									<styles>
+																										<spacing/>
+																									</styles>
+																								</skuid__text>
+																							</components>
+																							<styles>
+																								<spacing top="3" bottom="3" left="3" right="3"/>
+																							</styles>
+																							<background/>
+																						</skuid__wrapper>
+																						<skuid__wrapper uniqueid="sk-HiK-81815" styleSettingsVariant="b5342fe9-7125-4bf8-b20b-ade1825d7e72">
+																							<components/>
+																							<background/>
+																						</skuid__wrapper>
+																						<skuid__wrapper uniqueid="sk-2xgX-24303">
+																							<components>
+																								<skuid__text contents="It&amp;#39;s time to make your app available to your users. This is known as &lt;strong&gt;deployment&lt;/strong&gt;.&lt;br /&gt;&#10;&lt;br /&gt;&#10;After that, you&amp;#39;ll need to make sure your {{^$Model.FeatureFlags.data.0.appPermSetsEnabled}}&lt;strong&gt;profiles&lt;/strong&gt;{{/$Model.FeatureFlags.data.0.appPermSetsEnabled}}{{#$Model.FeatureFlags.data.0.appPermSetsEnabled}}&lt;strong&gt;site permission sets&lt;/strong&gt;{{/$Model.FeatureFlags.data.0.appPermSetsEnabled}} are granted access to the app and any data source used within the app.&amp;nbsp;&lt;br /&gt;&#10;&lt;br /&gt;&#10;Now&amp;#39;s the time to import (or create) your users, if you haven&amp;#39;t already! Be sure to assign the new or imported users to a&amp;nbsp;{{^$Model.FeatureFlags.data.0.appPermSetsEnabled}}profile{{/$Model.FeatureFlags.data.0.appPermSetsEnabled}}{{#$Model.FeatureFlags.data.0.appPermSetsEnabled}}site permission set{{/$Model.FeatureFlags.data.0.appPermSetsEnabled}} with access permissions to the apps they need." uniqueid="sk-2xAj-14997" model="FeatureFlags"/>
+																								<skuid__grid uniqueid="sk-30LE-28745" flexDirection="row" justifyContent="flex-start" alignItems="flex-start" columnGutter="0" rowGutter="0">
+																									<divisions>
+																										<division minWidth="100px" ratio="1" alignSelf="auto" maxWidth="600px">
+																											<components>
+																												<skuid__wrapper uniqueid="sk-QdS-60035" styleSettingsVariant="bf33363a-3a94-4331-aa35-129d2ca56060">
+																													<components>
+																														<skuid__image source="url" uniqueid="sk-30LI-29204" datasource="SkuidLocal" url="/assets/images/gettingstarted_deploy-apps.gif" model="NavUiControl"/>
+																													</components>
+																													<background/>
+																												</skuid__wrapper>
+																											</components>
+																										</division>
+																									</divisions>
+																									<styles>
+																										<spacing top="4"/>
+																									</styles>
+																								</skuid__grid>
+																							</components>
+																							<background/>
+																							<styles>
+																								<spacing top="3" bottom="3" left="3" right="3"/>
+																							</styles>
+																						</skuid__wrapper>
+																					</components>
+																					<background/>
+																				</skuid__wrapper>
+																			</components>
+																			<background/>
+																			<styles>
+																				<spacing bottom="4"/>
+																			</styles>
+																		</skuid__wrapper>
+																	</components>
+																	<buttons>
+																		<button label="Back" uniqueid="sk-2sn3-9776">
+																			<actions>
+																				<action type="runComponentAction" componentid="sk-2sn1-7925" action="navigateToStep" stepId="step5"/>
+																				<action type="runComponentAction" componentid="step-labels-wizard" action="navigateToStep" stepId="step5"/>
+																			</actions>
+																		</button>
+																		<button label="Next" styleSettingsVariant="primary" uniqueid="sk-2sn3-9857">
+																			<actions>
+																				<action type="runComponentAction" componentid="sk-2sn1-7925" action="navigateToStep" stepId="step7"/>
+																				<action type="runComponentAction" componentid="step-labels-wizard" action="navigateToStep" stepId="step7"/>
+																			</actions>
+																		</button>
+																	</buttons>
+																</step>
+																<step stepId="step7" stepLabel="Step 7">
+																	<components>
+																		<skuid__wrapper uniqueid="sk-2xBZ-14104" minHeightCustom="586px">
+																			<components>
+																				<skuid__wrapper uniqueid="sk-2xAz-17044" styleSettingsVariant="bf33363a-3a94-4331-aa35-129d2ca56060">
+																					<components>
+																						<skuid__wrapper uniqueid="sk-HjA-96872">
+																							<components>
+																								<skuid__text contents="Exploring Skuid" uniqueid="sk-HjA-96873" styleSettingsVariant="014b3346-10ed-4578-aa1a-cae68a21cc80">
+																									<styles>
+																										<spacing/>
+																									</styles>
+																								</skuid__text>
+																							</components>
+																							<styles>
+																								<spacing top="3" bottom="3" left="3" right="3"/>
+																							</styles>
+																							<background/>
+																						</skuid__wrapper>
+																						<skuid__wrapper uniqueid="sk-HjF-99414" styleSettingsVariant="b5342fe9-7125-4bf8-b20b-ade1825d7e72">
+																							<components/>
+																							<background/>
+																						</skuid__wrapper>
+																						<skuid__wrapper uniqueid="sk-2xgG-23244" minHeight="custom" minHeightCustom="395px">
+																							<components>
+																								<skuid__text contents="And with that, you&amp;rsquo;ve completed the tour!&amp;nbsp;&lt;br /&gt;&#10;&lt;br /&gt;&#10;The goal was to help you identify what you need to learn more about&amp;mdash;and where to explore. But if you&amp;rsquo;re not ready to build your own apps from start-to-finish, don&amp;rsquo;t worry." uniqueid="sk-2xB2-17607"/>
+																								<skuid__text contents="Try exploring our sample app by clicking the links below:" uniqueid="sk-2xfl-21600">
+																									<styles>
+																										<spacing top="2" bottom="4"/>
+																									</styles>
+																								</skuid__text>
+																								<skuid__wrapper uniqueid="sk-3Poa-30555">
+																									<components>
+																										<skuid__text contents="Step 1" uniqueid="sk-3Pob-30839" styleSettingsVariant="bcf356fb-cd9b-4b49-adb6-299b154f243f">
+																											<styles>
+																												<spacing bottom="1" styleSettingsVariant="bcf356fb-cd9b-4b49-adb6-299b154f243f"/>
+																											</styles>
+																										</skuid__text>
+																										<skuid__buttonSet uniqueid="sk-3Pon-31126" position="left">
+																											<groups>
+																												<skuid__buttonGroup>
+																													<buttons>
+																														<skuid__button label="Connect to Data" uniqueid="sk-3Pon-31392" icon="sk-webicon-ink:arrow-right" styleSettingsVariant="803b8f80-948e-46cc-840f-bc4b952464c3" iconPosition="right">
+																															<hotkeys/>
+																															<actions>
+																																<action type="redirect" window="blank" url="/ns/skuid/ui/datasources"/>
+																															</actions>
+																														</skuid__button>
+																													</buttons>
+																												</skuid__buttonGroup>
+																											</groups>
+																										</skuid__buttonSet>
+																									</components>
+																									<background/>
+																									<styles>
+																										<spacing bottom="3"/>
+																									</styles>
+																									<interactions/>
+																								</skuid__wrapper>
+																								<skuid__wrapper uniqueid="sk-3Poa-30555">
+																									<components>
+																										<skuid__text contents="Step 2" uniqueid="sk-3Pob-30839" styleSettingsVariant="bcf356fb-cd9b-4b49-adb6-299b154f243f">
+																											<styles>
+																												<spacing bottom="1" styleSettingsVariant="bcf356fb-cd9b-4b49-adb6-299b154f243f"/>
+																											</styles>
+																										</skuid__text>
+																										<skuid__buttonSet uniqueid="sk-3Pon-31126" position="left">
+																											<groups>
+																												<skuid__buttonGroup>
+																													<buttons>
+																														<skuid__button label="Composing Pages" uniqueid="sk-3Pon-31392" icon="sk-webicon-ink:arrow-right" styleSettingsVariant="803b8f80-948e-46cc-840f-bc4b952464c3" iconPosition="right">
+																															<hotkeys/>
+																															<actions>
+																																<action type="redirect" window="blank" url="/ns/skuid/ui/pages"/>
+																															</actions>
+																														</skuid__button>
+																													</buttons>
+																												</skuid__buttonGroup>
+																											</groups>
+																										</skuid__buttonSet>
+																									</components>
+																									<background/>
+																									<styles>
+																										<spacing bottom="3"/>
+																									</styles>
+																								</skuid__wrapper>
+																								<skuid__wrapper uniqueid="sk-3Poa-30555">
+																									<components>
+																										<skuid__text contents="Step 3" uniqueid="sk-3Pob-30839" styleSettingsVariant="bcf356fb-cd9b-4b49-adb6-299b154f243f">
+																											<styles>
+																												<spacing bottom="1" styleSettingsVariant="bcf356fb-cd9b-4b49-adb6-299b154f243f"/>
+																											</styles>
+																										</skuid__text>
+																										<skuid__buttonSet uniqueid="sk-3Pon-31126" position="left">
+																											<groups>
+																												<skuid__buttonGroup>
+																													<buttons>
+																														<skuid__button label="Creating Design Systems" uniqueid="sk-3Pon-31392" icon="sk-webicon-ink:arrow-right" styleSettingsVariant="803b8f80-948e-46cc-840f-bc4b952464c3" iconPosition="right">
+																															<hotkeys/>
+																															<actions>
+																																<action type="redirect" window="blank" url="/ns/skuid/ui/designsystems"/>
+																															</actions>
+																															<tooltip position="top"/>
+																														</skuid__button>
+																													</buttons>
+																												</skuid__buttonGroup>
+																											</groups>
+																										</skuid__buttonSet>
+																									</components>
+																									<background/>
+																									<styles>
+																										<spacing bottom="3"/>
+																									</styles>
+																								</skuid__wrapper>
+																								<skuid__wrapper uniqueid="sk-3Poa-30555">
+																									<components>
+																										<skuid__text contents="Step 4" uniqueid="sk-3Pob-30839" styleSettingsVariant="bcf356fb-cd9b-4b49-adb6-299b154f243f">
+																											<styles>
+																												<spacing bottom="1" styleSettingsVariant="bcf356fb-cd9b-4b49-adb6-299b154f243f"/>
+																											</styles>
+																										</skuid__text>
+																										<skuid__buttonSet uniqueid="sk-3Pon-31126" position="left">
+																											<groups>
+																												<skuid__buttonGroup>
+																													<buttons>
+																														<skuid__button label="Creating and Deploying Apps" uniqueid="sk-3Pon-31392" styleSettingsVariant="803b8f80-948e-46cc-840f-bc4b952464c3" icon="sk-webicon-ink:arrow-right" iconPosition="right">
+																															<hotkeys/>
+																															<actions>
+																																<action type="redirect" redirectType="page" window="blank" url="/ns/skuid/ui/apps"/>
+																															</actions>
+																														</skuid__button>
+																													</buttons>
+																												</skuid__buttonGroup>
+																											</groups>
+																										</skuid__buttonSet>
+																									</components>
+																									<background/>
+																									<styles>
+																										<spacing/>
+																									</styles>
+																									<interactions/>
+																								</skuid__wrapper>
+																							</components>
+																							<background/>
+																							<styles>
+																								<spacing top="3" bottom="3" left="3" right="3"/>
+																							</styles>
+																						</skuid__wrapper>
+																					</components>
+																					<background/>
+																					<styles>
+																						<spacing/>
+																					</styles>
+																				</skuid__wrapper>
+																			</components>
+																			<background/>
+																			<styles>
+																				<spacing bottom="4"/>
+																			</styles>
+																		</skuid__wrapper>
+																	</components>
+																	<buttons>
+																		<button label="Back" uniqueid="sk-2sn3-10111">
+																			<actions>
+																				<action type="runComponentAction" componentid="sk-2sn1-7925" action="navigateToStep" stepId="step6"/>
+																				<action type="runComponentAction" componentid="step-labels-wizard" action="navigateToStep" stepId="step6"/>
+																			</actions>
+																		</button>
+																		<button label="Next" styleSettingsVariant="primary" uniqueid="sk-2sn3-10192">
+																			<actions>
+																				<action type="runComponentAction" componentid="sk-2sn1-7925" action="navigateToStep" stepId="step8"/>
+																				<action type="runComponentAction" componentid="step-labels-wizard" action="navigateToStep" stepId="step8"/>
+																			</actions>
+																		</button>
+																	</buttons>
+																</step>
+																<step stepId="step8" stepLabel="Step 8">
+																	<components>
+																		<skuid__wrapper uniqueid="sk-3Pnr-26302">
+																			<components>
+																				<skuid__wrapper uniqueid="sk-3Po2-28394" styleSettingsVariant="bf33363a-3a94-4331-aa35-129d2ca56060">
+																					<components>
+																						<skuid__wrapper uniqueid="sk-Hlr-158163">
+																							<components>
+																								<skuid__text contents="Learn More" uniqueid="sk-Hlr-158164" styleSettingsVariant="014b3346-10ed-4578-aa1a-cae68a21cc80">
+																									<styles>
+																										<spacing/>
+																									</styles>
+																								</skuid__text>
+																							</components>
+																							<styles>
+																								<spacing top="3" bottom="3" left="3" right="3"/>
+																							</styles>
+																							<background/>
+																						</skuid__wrapper>
+																						<skuid__wrapper uniqueid="sk-Hlt-160503" styleSettingsVariant="b5342fe9-7125-4bf8-b20b-ade1825d7e72">
+																							<components/>
+																							<background/>
+																							<styles>
+																								<spacing/>
+																							</styles>
+																						</skuid__wrapper>
+																						<skuid__wrapper uniqueid="sk-3Po3-28682">
+																							<components>
+																								<skuid__text contents="After you&amp;#39;ve explored the sample app, it&amp;#39;s time to try creating your own.&lt;br /&gt;&#10;&lt;br /&gt;&#10;For more information about the steps we&amp;#39;ve covered in this tour, try the resources below:" uniqueid="sk-3Po5-28998">
+																									<styles>
+																										<spacing bottom="4"/>
+																									</styles>
+																								</skuid__text>
+																								<skuid__grid uniqueid="sk-30AS-29712" flexDirection="row" justifyContent="flex-start" alignItems="flex-start" columnGutter="2" rowGutter="2">
+																									<divisions>
+																										<division minWidth="200px" ratio="1" alignSelf="auto">
+																											<components>
+																												<skuid__text contents="Connecting to Data" uniqueid="sk-2-v2-46283" styleSettingsVariant="bcf356fb-cd9b-4b49-adb6-299b154f243f"/>
+																												<skuid__text contents="&amp;bull;&amp;nbsp;&amp;nbsp;&lt;a href=&quot;https://docs.skuid.com/latest/en/data/&quot; target=&quot;_blank&quot;&gt;Data overview&lt;/a&gt;&lt;br /&gt;&#10;&amp;bull;&amp;nbsp;&amp;nbsp;&lt;a href=&quot;https://docs.skuid.com/latest/v2/en/data/#creating-a-data-source&quot; target=&quot;_blank&quot;&gt;Creating a datasource&lt;/a&gt;&lt;br /&gt;&#10;&amp;bull;&amp;nbsp;&amp;nbsp;&lt;a href=&quot;https://docs.skuid.com/latest/en/data/authentication-and-skuid.html&quot; target=&quot;_blank&quot;&gt;Authentication options&lt;/a&gt;" uniqueid="sk-30Ao-28697">
+																													<styles>
+																														<spacing top="1"/>
+																													</styles>
+																												</skuid__text>
+																											</components>
+																										</division>
+																										<division alignSelf="auto" minWidth="200px" ratio="1">
+																											<components>
+																												<skuid__text contents="Composing Pages" uniqueid="sk-2-v5-46650" styleSettingsVariant="bcf356fb-cd9b-4b49-adb6-299b154f243f"/>
+																												<skuid__text contents="&amp;bull;&amp;nbsp;&amp;nbsp;&lt;a href=&quot;https://docs.skuid.com/latest/en/skuid/app-composer.html&quot; target=&quot;_blank&quot;&gt;App Composer overview&lt;/a&gt;&lt;br /&gt;&#10;&amp;bull;&amp;nbsp;&amp;nbsp;&lt;a href=&quot;https://docs.skuid.com/latest/en/skuid/pages/&quot; target=&quot;_blank&quot;&gt;Pages overview&lt;/a&gt;&lt;br /&gt;&#10;&amp;bull;&amp;nbsp;&amp;nbsp;&lt;a href=&quot;https://docs.skuid.com/latest/v2/en/skuid/components/ink/&quot; target=&quot;_blank&quot;&gt;Components overview&lt;/a&gt;" uniqueid="sk-30B9-29970">
+																													<styles>
+																														<spacing top="1"/>
+																													</styles>
+																												</skuid__text>
+																											</components>
+																										</division>
+																										<division alignSelf="auto" minWidth="200px" ratio="1">
+																											<components>
+																												<skuid__text contents="Creating Design Systems" uniqueid="sk-2-v7-46833" styleSettingsVariant="bcf356fb-cd9b-4b49-adb6-299b154f243f"/>
+																												<skuid__text contents="&amp;bull;&amp;nbsp;&amp;nbsp;&lt;a href=&quot;https://docs.skuid.com/latest/en/skuid/design-system-studio/&quot; target=&quot;_blank&quot;&gt;Design System Studio overview&lt;/a&gt;" uniqueid="sk-30BQ-30526">
+																													<styles>
+																														<spacing top="1"/>
+																													</styles>
+																												</skuid__text>
+																											</components>
+																										</division>
+																										<division alignSelf="auto" minWidth="200px" ratio="1">
+																											<components>
+																												<skuid__text contents="Creating and Deploying Apps" uniqueid="sk-2-v8-47017" styleSettingsVariant="bcf356fb-cd9b-4b49-adb6-299b154f243f"></skuid__text>
+																												<skuid__text contents="&amp;bull;&amp;nbsp;&amp;nbsp;&lt;a href=&quot;https://docs.skuid.com/latest/en/skuid-platform/deploying-apps-in-skuid-platform.html&quot; target=&quot;_blank&quot;&gt;Basics of app creation&lt;/a&gt;&lt;br /&gt;&#10;&amp;bull;&amp;nbsp;&amp;nbsp;{{^$Model.FeatureFlags.data.0.appPermSetsEnabled}}&lt;a href=&quot;https://docs.skuid.com/platform/v2/en/skuid-platform/user-and-permission-management.html&quot; target=&quot;_blank&quot;&gt;Profile assignments&lt;/a&gt;&amp;nbsp;{{/$Model.FeatureFlags.data.0.appPermSetsEnabled}}{{#$Model.FeatureFlags.data.0.appPermSetsEnabled}}&lt;a href=&quot;https://docs.skuid.com/platform/en/permissions&quot; target=&quot;_blank&quot;&gt;Site permission set assignments&lt;/a&gt;{{/$Model.FeatureFlags.data.0.appPermSetsEnabled}}" uniqueid="sk-30BX-30994" model="FeatureFlags">
+																													<styles>
+																														<spacing top="1"/>
+																													</styles>
+																												</skuid__text>
+																											</components>
+																										</division>
+																									</divisions>
+																									<styles>
+																										<spacing/>
+																									</styles>
+																									<background/>
+																								</skuid__grid>
+																								<skuid__wrapper uniqueid="sk-2xMa-32312">
+																									<components>
+																										<skuid__text contents="Other learning resources:" uniqueid="sk-2xMc-32602" styleSettingsVariant="bcf356fb-cd9b-4b49-adb6-299b154f243f">
+																											<styles>
+																												<spacing top="3" bottom="2" styleSettingsVariant="bcf356fb-cd9b-4b49-adb6-299b154f243f"/>
+																											</styles>
+																										</skuid__text>
+																										<skuid__wrapper uniqueid="sk-2xgO-23722">
+																											<components>
+																												<skuid__grid uniqueid="sk-2xMh-32903" flexDirection="row" justifyContent="flex-start" alignItems="center" columnGutter="2" rowGutter="0">
+																													<divisions>
+																														<division minWidth="40px" ratio="0" alignSelf="auto" maxWidth="40px">
+																															<components>
+																																<skuid__image source="url" uniqueid="sk-2xMi-33364" datasource="Ui-Only" url="/assets/images/skuid-learn.svg"/>
+																															</components>
+																														</division>
+																														<division alignSelf="auto" minWidth="100px" ratio="1">
+																															<components>
+																																<skuid__text contents="&lt;a href=&quot;https://portal.skuidsite.com/learning&quot; target=&quot;_blank&quot;&gt;Skuid Learn&lt;/a&gt;" uniqueid="sk-2xN--33765" styleSettingsVariant="4e169d0d-def8-4adb-9bb5-baca37505057">
+																																	<styles>
+																																		<spacing bottom="1"/>
+																																	</styles>
+																																</skuid__text>
+																																<skuid__text contents="In-depth lessons about the Skuid process&amp;mdash;from the basic concepts of Skuid to building an application." uniqueid="sk-2xN--33925"/>
+																															</components>
+																														</division>
+																													</divisions>
+																												</skuid__grid>
+																												<skuid__grid flexDirection="row" justifyContent="flex-start" alignItems="center" columnGutter="2" rowGutter="0" uniqueid="sk-2xQ1-13493">
+																													<divisions>
+																														<division minWidth="40px" ratio="0" alignSelf="auto" maxWidth="40px">
+																															<components>
+																																<skuid__image source="url" uniqueid="sk-2xMi-33364" datasource="Ui-Only" url="/assets/images/skuid-community.svg"/>
+																															</components>
+																														</division>
+																														<division alignSelf="auto" minWidth="100px" ratio="1">
+																															<components>
+																																<skuid__text contents="&lt;a href=&quot;https://community.skuid.com/skuid&quot; target=&quot;_blank&quot;&gt;Skuid Community&lt;/a&gt;" uniqueid="sk-2xN--33765" styleSettingsVariant="4e169d0d-def8-4adb-9bb5-baca37505057">
+																																	<styles>
+																																		<spacing bottom="1"/>
+																																	</styles>
+																																</skuid__text>
+																																<skuid__text contents="Join our community to get answers to your questions, offer suggestions, and report problems." uniqueid="sk-2xN--33925">
+																																	<styles>
+																																		<spacing/>
+																																	</styles>
+																																</skuid__text>
+																															</components>
+																														</division>
+																													</divisions>
+																													<styles>
+																														<spacing top="3" bottom="3"/>
+																													</styles>
+																												</skuid__grid>
+																												<skuid__grid flexDirection="row" justifyContent="flex-start" alignItems="center" columnGutter="2" rowGutter="0" uniqueid="sk-2xQ1-14320">
+																													<divisions>
+																														<division minWidth="40px" ratio="0" alignSelf="auto" maxWidth="40px">
+																															<components>
+																																<skuid__image source="url" uniqueid="sk-2xMi-33364" datasource="Ui-Only" url="/assets/images/skuid-docs.svg"/>
+																															</components>
+																														</division>
+																														<division alignSelf="auto" minWidth="100px" ratio="1">
+																															<components>
+																																<skuid__text contents="&lt;a href=&quot;https://docs.skuid.com/platform/en/&quot; target=&quot;_blank&quot;&gt;Skuid Documentation&lt;/a&gt;" uniqueid="sk-2xN--33765" styleSettingsVariant="4e169d0d-def8-4adb-9bb5-baca37505057">
+																																	<styles>
+																																		<spacing bottom="1"/>
+																																	</styles>
+																																</skuid__text>
+																																<skuid__text contents="Learn about Skuid features and their properties in our reference documentation." uniqueid="sk-2xN--33925"/>
+																															</components>
+																														</division>
+																													</divisions>
+																												</skuid__grid>
+																											</components>
+																											<background/>
+																											<styles>
+																												<spacing top="2" right="2"/>
+																											</styles>
+																										</skuid__wrapper>
+																									</components>
+																									<background/>
+																									<styles>
+																										<spacing top="1"/>
+																									</styles>
+																								</skuid__wrapper>
+																							</components>
+																							<background/>
+																							<styles>
+																								<spacing top="3" bottom="3" left="3" right="3"/>
+																							</styles>
+																						</skuid__wrapper>
+																					</components>
+																					<background/>
+																					<styles>
+																						<spacing/>
+																					</styles>
+																				</skuid__wrapper>
+																			</components>
+																			<background/>
+																			<styles>
+																				<spacing bottom="4"/>
+																			</styles>
+																		</skuid__wrapper>
+																	</components>
+																	<buttons>
+																		<button label="Back" uniqueid="sk-3Pno-25883">
+																			<actions>
+																				<action type="runComponentAction" componentid="sk-2sn1-7925" action="navigateToStep" stepId="step7"/>
+																				<action type="runComponentAction" componentid="step-labels-wizard" action="navigateToStep" stepId="step7"/>
+																			</actions>
+																		</button>
+																		<button label="Go to App Dashboard" styleSettingsVariant="primary" uniqueid="sk-3Pno-25964">
+																			<actions>
+																				<action type="redirect" componentid="sk-2sn1-7925" action="navigateToStep" stepId="" window="self" url="/ns/skuid/ui/apps"/>
+																			</actions>
+																		</button>
+																	</buttons>
+																</step>
+															</steps>
+															<renderConditions logictype="and"/>
+															<styleVariantConditions/>
+															<styles>
+																<spacing/>
+															</styles>
+														</skuid__wizard>
+													</components>
+													<background/>
+													<styles>
+														<spacing/>
+													</styles>
+												</skuid__wrapper>
+											</components>
+										</division>
+									</divisions>
+									<background/>
+								</skuid__grid>
+							</components>
+						</division>
+					</divisions>
+					<styles>
+						<spacing left="4" top="4" bottom="4" right="4"/>
+					</styles>
+					<background/>
+				</skuid__grid>
+			</components>
+		</pageregioncontent>
+	</pageregioncontents>
+	<components/>
+	<resources>
+		<labels/>
+		<javascript>
+			<jsitem location="inlinesnippet" name="connectingTwoWizards" cachelocation="false" url="">var params = arguments[0],
+	$ = skuid.$;
+var stepId = "step1";
+
+var sideNavWizard = skuid.component.getById('step-labels-wizard');
+sideNavWizard.subscribeChange("currentStep", function(newValue) {
+    skuid.actionSequences.getByName("goToWizardStep").run({
+        stepId: "step" + newValue,
+    });
+});</jsitem>
+			<jsitem location="staticresource" namespace="skuid" filepath="js/skuidPages/skuidCentral.js" scope="api"/>
+			<jsitem location="inlinesnippet" name="checkForFeatureFlags" cachelocation="false">var params = arguments[0],
+    $ = skuid.$;
+    
+var model = skuid.$M("FeatureFlags")
+model.updateRow(model.getFirstRow(),{
+    appPermSetsEnabled: skuid.platform.hasFeature("Permission Sets"),
+    nativeEnabled: skuid.platform.hasFeature("Native") 
+});</jsitem>
+		</javascript>
+		<css/>
+		<actionsequences>
+			<actionsequence id="4333fba4-5301-49a9-9a08-0e522ed226b0" label="goToWizardStep" type="reusable">
+				<description/>
+				<actions>
+					<action type="branch" whenfinished="stop">
+						<formula>{{$Input.stepId}} === "step1"</formula>
+						<iftrueactions>
+							<action type="runComponentAction" componentid="sk-2sn1-7925" action="navigateToStep" stepId="step1"/>
+						</iftrueactions>
+					</action>
+					<action type="branch" whenfinished="stop">
+						<formula>{{$Input.stepId}} === "step2"</formula>
+						<iftrueactions>
+							<action type="branch" whenfinished="stop" model="gettingstarted_uionly" label="if user canceled installation, don't prompt it again">
+								<formula>{{canceledInstall}} === true</formula>
+								<iftrueactions>
+									<action type="runComponentAction" componentid="sk-2sn1-7925" action="navigateToStep" stepId="step2"/>
+								</iftrueactions>
+							</action>
+							<action type="action-sequence" action-sequence-id="45244483-49de-4a32-8b89-853a404c246d">
+								<inputs>
+									<input name="goToStep2" value="true"/>
+								</inputs>
+							</action>
+						</iftrueactions>
+					</action>
+					<action type="branch" whenfinished="stop">
+						<formula>{{$Input.stepId}} === "step3"</formula>
+						<iftrueactions>
+							<action type="runComponentAction" action="navigateToStep" stepId="step3" componentid="sk-2sn1-7925"/>
+						</iftrueactions>
+					</action>
+					<action type="branch" whenfinished="stop">
+						<formula>{{$Input.stepId}} === "step4"</formula>
+						<iftrueactions>
+							<action type="runComponentAction" action="navigateToStep" stepId="step4" componentid="sk-2sn1-7925"/>
+						</iftrueactions>
+					</action>
+					<action type="branch" whenfinished="stop">
+						<formula>{{$Input.stepId}} === "step5"</formula>
+						<iftrueactions>
+							<action type="runComponentAction" action="navigateToStep" stepId="step5" componentid="sk-2sn1-7925"/>
+						</iftrueactions>
+					</action>
+					<action type="branch" whenfinished="stop">
+						<formula>{{$Input.stepId}} === "step6"</formula>
+						<iftrueactions>
+							<action type="runComponentAction" action="navigateToStep" stepId="step6" componentid="sk-2sn1-7925"/>
+						</iftrueactions>
+					</action>
+					<action type="branch" whenfinished="stop">
+						<formula>{{$Input.stepId}} === "step7"</formula>
+						<iftrueactions>
+							<action type="runComponentAction" action="navigateToStep" stepId="step7" componentid="sk-2sn1-7925"/>
+						</iftrueactions>
+					</action>
+					<action type="branch" whenfinished="stop">
+						<formula>{{$Input.stepId}} === "step8"</formula>
+						<iftrueactions>
+							<action type="runComponentAction" componentid="sk-2sn1-7925" action="navigateToStep" stepId="step8"/>
+						</iftrueactions>
+					</action>
+				</actions>
+				<inputs>
+					<input type="value" name="stepId"/>
+				</inputs>
+			</actionsequence>
+			<actionsequence id="64347c74-380e-4cb3-be7f-9f4b8b17425d" label="Run connectingTwoWizards snippet on page load" type="event-triggered" event-scope="component" event-name="page.rendered">
+				<description/>
+				<actions>
+					<action type="custom" snippet="connectingTwoWizards"/>
+					<action type="custom" snippet="checkForFeatureFlags"/>
+				</actions>
+			</actionsequence>
+			<actionsequence id="45244483-49de-4a32-8b89-853a404c246d" label="Install Northwinds template" type="reusable">
+				<description/>
+				<actions>
+					<action type="showModal">
+						<skuid__modal title="Install Skuid Sample App" width="560px">
+							<components>
+								<skuid__text contents="Do you wish to install the Skuid sample app with its resources?" uniqueid="sk-3PtS-56386">
+									<styles>
+										<spacing bottom="2"/>
+									</styles>
+								</skuid__text>
+								<skuid__wrapper uniqueid="sk-3PuP-59262">
+									<components>
+										<skuid__text contents="&lt;strong&gt;App:&lt;/strong&gt;&#10;&lt;ul&gt;&#10;&#9;&lt;li&gt;SkuidSample&lt;/li&gt;&#10;&lt;/ul&gt;&#10;&lt;strong&gt;Pages:&lt;/strong&gt;&#10;&#10;&lt;ul&gt;&#10;&#9;&lt;li&gt;SkuidSample_NW_Products&lt;/li&gt;&#10;&#9;&lt;li&gt;SkuidSample_NW_Advertisements&lt;/li&gt;&#10;&#9;&lt;li&gt;SkuidSample_NW_Employees&lt;/li&gt;&#10;&#9;&lt;li&gt;SkuidSample_NW_Master (Master Page)&lt;/li&gt;&#10;&lt;/ul&gt;&#10;&lt;strong&gt;Data Source:&lt;/strong&gt;&#10;&#10;&lt;ul&gt;&#10;&#9;&lt;li&gt;SkuidSample_NW_OData&lt;/li&gt;&#10;&lt;/ul&gt;&#10;&lt;br /&gt;&#10;&lt;strong&gt;Design System:&lt;/strong&gt;&#10;&#10;&lt;ul&gt;&#10;&#9;&lt;li&gt;SkuidSample NW&lt;/li&gt;&#10;&lt;/ul&gt;&#10;" uniqueid="sk-3PuU-59568">
+											<styles>
+												<spacing/>
+											</styles>
+										</skuid__text>
+									</components>
+									<background color="#f1f1f1"/>
+									<styles>
+										<spacing/>
+									</styles>
+								</skuid__wrapper>
+							</components>
+							<buttons>
+								<skuid__button label="Install" uniqueid="install-skuid-sample-app" styleSettingsVariant="primary">
+									<actions>
+										<action type="blockUI" message="Installing sample app..." styleSettingsVariant="dark" showPlaceholder="true"/>
+										<action type="requeryModel" model="AppId" behavior="standard">
+											<onerroractions>
+												<action type="action-sequence" message="There was an error" timeout="3000" action-sequence-id="a7893650-d30e-4684-b104-429ea34616f0"/>
+											</onerroractions>
+										</action>
+										<action type="action-sequence" action-sequence-id="9235c248-cc0c-4b21-a91f-a1f990fd72b3">
+											<inputs>
+												<input name="id" value="{{$Model.AppId.data.0.id}}"/>
+											</inputs>
+											<onerroractions>
+												<action type="action-sequence" message="There was an error" timeout="3000" action-sequence-id="a7893650-d30e-4684-b104-429ea34616f0"/>
+											</onerroractions>
+										</action>
+										<action type="requeryModel" model="SampleApp" behavior="standard">
+											<onerroractions>
+												<action type="blockUI" message="There was an error" timeout="3000"/>
+											</onerroractions>
+										</action>
+										<action type="blockUI" message="Sample app installed successfully!" styleSettingsVariant="dark" timeout="1500"/>
+										<action type="closeAllPopups"/>
+										<action type="branch" whenfinished="stop" label="If staying in step 1" model="gettingstarted_uionly">
+											<iftrueactions>
+												<action type="unblockUI" timeout="1000"/>
+											</iftrueactions>
+											<formula>{{stayAfterModal}} === true</formula>
+										</action>
+										<action type="runComponentAction" componentid="step-labels-wizard" action="navigateToStep" stepId="step2"/>
+										<action type="runComponentAction" componentid="sk-2sn1-7925" action="navigateToStep" stepId="step2"/>
+									</actions>
+								</skuid__button>
+								<skuid__button label="Skip for now" uniqueid="skip-install">
+									<actions>
+										<action type="closeAllPopups"/>
+										<action type="updateRow" fieldmodel="gettingstarted_uionly" affectedrows="context">
+											<updates>
+												<update valuesource="fieldvalue" field="canceledInstall" enclosevalueinquotes="false" value="true"/>
+											</updates>
+										</action>
+										<action type="branch" whenfinished="stop" model="gettingstarted_uionly">
+											<iftrueactions>
+												<action type="unblockUI" timeout="1000"/>
+											</iftrueactions>
+											<formula>{{stayAfterModal}} === true</formula>
+										</action>
+										<action type="runComponentAction" componentid="step-labels-wizard" action="navigateToStep" stepId="step2"/>
+										<action type="runComponentAction" componentid="sk-2sn1-7925" action="navigateToStep" stepId="step2"/>
+									</actions>
+									<renderConditions logictype="and"/>
+									<enableConditions/>
+								</skuid__button>
+							</buttons>
+						</skuid__modal>
+					</action>
+				</actions>
+				<inputs/>
+			</actionsequence>
+			<actionsequence id="9235c248-cc0c-4b21-a91f-a1f990fd72b3" label="InstallAppById" type="reusable">
+				<description/>
+				<actions>
+					<action type="custom" snippet="seedDataForDemo">
+						<onerroractions/>
+					</action>
+				</actions>
+				<inputs>
+					<input type="value" name="id"/>
+				</inputs>
+			</actionsequence>
+			<actionsequence id="a7893650-d30e-4684-b104-429ea34616f0" label="Install Template - On Error" type="reusable">
+				<description/>
+				<actions>
+					<action type="blockUI" message="Something went wrong" styleSettingsVariant="dark" timeout="3000" subtext="We couldn't install the sample app"/>
+					<action type="updateRow" fieldmodel="gettingstarted_uionly" affectedrows="context">
+						<updates>
+							<update valuesource="fieldvalue" field="canceledInstall" enclosevalueinquotes="false" value="true"/>
+						</updates>
+					</action>
+					<action type="closeModals" closebehavior="close"/>
+					<action type="branch" whenfinished="stop" model="gettingstarted_uionly">
+						<formula>{{stayAfterModal}} === true</formula>
+						<iftrueactions>
+							<action type="blockUI" message="Something went wrong" subtext="We couldn't install the sample app" timeout="3000" styleSettingsVariant="dark"/>
+						</iftrueactions>
+					</action>
+					<action type="runComponentAction" componentid="step-labels-wizard" action="navigateToStep" stepId="step2"/>
+					<action type="runComponentAction" componentid="sk-2sn1-7925" action="navigateToStep" stepId="step2"/>
+				</actions>
+			</actionsequence>
+			<actionsequence id="80ca9c3d-57da-4e23-82ea-1088a86f0975" label="Reinstall Northwinds template" type="reusable">
+				<description/>
+				<actions>
+					<action type="showModal">
+						<skuid__modal title="Install Skuid Sample App" width="560px">
+							<components>
+								<skuid__text contents="Do you wish to reinstall the Skuid sample app and its resources?&lt;br /&gt;&#10;&lt;br /&gt;&#10;If you have installed this app previously, reinstalling will overwrite any changes you have made to the following items:" uniqueid="sk-3Bua-18083">
+									<styles>
+										<spacing bottom="2"/>
+									</styles>
+								</skuid__text>
+								<skuid__wrapper uniqueid="sk-3Bua-18084">
+									<components>
+										<skuid__text contents="&lt;strong&gt;App:&lt;/strong&gt;&#10;&lt;ul&gt;&#10;&#9;&lt;li&gt;SkuidSample&lt;/li&gt;&#10;&lt;/ul&gt;&#10;&lt;strong&gt;Pages:&lt;/strong&gt;&#10;&#10;&lt;ul&gt;&#10;&#9;&lt;li&gt;SkuidSample_NW_Products&lt;/li&gt;&#10;&#9;&lt;li&gt;SkuidSample_NW_Advertisements&lt;/li&gt;&#10;&#9;&lt;li&gt;SkuidSample_NW_Employees&lt;/li&gt;&#10;&#9;&lt;li&gt;SkuidSample_NW_Master (Master Page)&lt;/li&gt;&#10;&lt;/ul&gt;&#10;&lt;strong&gt;Data Source:&lt;/strong&gt;&#10;&#10;&lt;ul&gt;&#10;&#9;&lt;li&gt;SkuidSample_NW_OData&lt;/li&gt;&#10;&lt;/ul&gt;&#10;&lt;br /&gt;&#10;&lt;strong&gt;Design System:&lt;/strong&gt;&#10;&#10;&lt;ul&gt;&#10;&#9;&lt;li&gt;SkuidSample NW&lt;/li&gt;&#10;&lt;/ul&gt;&#10;" uniqueid="sk-3Bua-18085">
+											<styles>
+												<spacing/>
+											</styles>
+										</skuid__text>
+									</components>
+									<background color="#f1f1f1"/>
+								</skuid__wrapper>
+							</components>
+							<buttons>
+								<skuid__button label="Reinstall" uniqueid="sk-3Bua-18086" styleSettingsVariant="primary">
+									<actions>
+										<action type="blockUI" message="Installing sample app..." styleSettingsVariant="dark" showPlaceholder="true"/>
+										<action type="requeryModel" model="AppId" behavior="standard">
+											<onerroractions>
+												<action type="action-sequence" message="There was an error" timeout="3000" action-sequence-id="a7893650-d30e-4684-b104-429ea34616f0"/>
+											</onerroractions>
+										</action>
+										<action type="action-sequence" action-sequence-id="9235c248-cc0c-4b21-a91f-a1f990fd72b3">
+											<inputs>
+												<input name="id" value="{{$Model.AppId.data.0.id}}"/>
+											</inputs>
+											<onerroractions>
+												<action type="action-sequence" message="There was an error" timeout="3000" action-sequence-id="a7893650-d30e-4684-b104-429ea34616f0"/>
+											</onerroractions>
+										</action>
+										<action type="requeryModel" model="SampleApp" behavior="standard">
+											<onerroractions>
+												<action type="blockUI" message="There was an error" timeout="3000"/>
+											</onerroractions>
+										</action>
+										<action type="blockUI" message="Sample app installed successfully!" styleSettingsVariant="dark" timeout="1500"/>
+										<action type="closeAllPopups"/>
+										<action type="branch" whenfinished="stop" label="If staying in step 1" model="gettingstarted_uionly">
+											<iftrueactions>
+												<action type="unblockUI" timeout="1000"/>
+											</iftrueactions>
+											<formula>{{stayAfterModal}} === true</formula>
+										</action>
+										<action type="runComponentAction" componentid="step-labels-wizard" action="navigateToStep" stepId="step2"/>
+										<action type="runComponentAction" componentid="sk-2sn1-7925" action="navigateToStep" stepId="step2"/>
+									</actions>
+								</skuid__button>
+								<skuid__button label="Cancel" uniqueid="sk-3Bua-18087">
+									<actions>
+										<action type="closeAllPopups"/>
+										<action type="updateRow" fieldmodel="gettingstarted_uionly" affectedrows="context">
+											<updates>
+												<update valuesource="fieldvalue" field="canceledInstall" enclosevalueinquotes="false" value="true"/>
+											</updates>
+										</action>
+										<action type="branch" whenfinished="stop" model="gettingstarted_uionly">
+											<iftrueactions>
+												<action type="unblockUI" timeout="1000"/>
+											</iftrueactions>
+											<formula>{{stayAfterModal}} === true</formula>
+										</action>
+										<action type="runComponentAction" componentid="step-labels-wizard" action="navigateToStep" stepId="step2"/>
+										<action type="runComponentAction" componentid="sk-2sn1-7925" action="navigateToStep" stepId="step2"/>
+									</actions>
+									<renderConditions logictype="and"/>
+									<enableConditions/>
+								</skuid__button>
+							</buttons>
+						</skuid__modal>
+					</action>
+				</actions>
+				<inputs/>
+			</actionsequence>
+		</actionsequences>
+	</resources>
+	<styles>
+		<styleitem type="background" bgtype="none"/>
+	</styles>
+</skuid__page>

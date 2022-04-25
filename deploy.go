@@ -18,7 +18,7 @@ var deployCmd = &cobra.Command{
 	Long:  "Deploy Skuid metadata stored within a local file system directory to a Skuid Platform Site.",
 	Run: func(cmd *cobra.Command, args []string) {
 
-		Println(RunCommand("Deploy Metadata"))
+		VerboseCommand("Deploy Metadata")
 
 		api, err := PlatformLogin(
 			ArgHost,
@@ -31,8 +31,8 @@ var deployCmd = &cobra.Command{
 		)
 
 		if err != nil {
-			Println(PrettyError("Error logging in to Skuid site", err))
-			os.Exit(1)
+			PrintError("Error logging in to Skuid site", err)
+			return
 		}
 
 		deployStart := time.Now()
@@ -41,12 +41,14 @@ var deployCmd = &cobra.Command{
 
 		currentDirectory, err := os.Getwd()
 		if err != nil {
-			log.Fatal(err)
+			PrintError("Unable to get working directory", err)
+			return
 		}
 
 		defer func() {
 			err := os.Chdir(currentDirectory)
 			if err != nil {
+				PrintError("Unable to change directory", err)
 				log.Fatal(err)
 			}
 		}()
@@ -56,26 +58,26 @@ var deployCmd = &cobra.Command{
 		if ArgTargetDir != "" {
 			err := os.Chdir(ArgTargetDir)
 			if err != nil {
-				log.Fatal(err)
+				PrintError("Unable to change working directory", err)
+				return
 			}
 		}
 
 		dotDir := "."
 		currDir, err = filepath.Abs(filepath.Dir(dotDir))
 		if err != nil {
-			log.Fatal(err)
+			PrintError("Unable to form filepath", err)
+			return
 		}
 
-		if ArgVerbose {
-			Println("Deploying site from", currDir)
-		}
+		VerboseLn("Deploying site from", currDir)
 
 		// Create a buffer to write our archive to.
 		bufPlan := new(bytes.Buffer)
 		err = Archive(".", bufPlan, nil)
 		if err != nil {
-			Println(PrettyError("Error creating deployment ZIP archive", err))
-			os.Exit(1)
+			PrintError("Error creating deployment ZIP archive", err)
+			return
 		}
 
 		var deployPlan io.Reader
@@ -87,8 +89,8 @@ var deployCmd = &cobra.Command{
 			}
 			deployBytes, err := json.Marshal(filter)
 			if err != nil {
-				Println(PrettyError("Error creating deployment plan payload", err))
-				os.Exit(1)
+				PrintError("Error creating deployment plan payload", err)
+				return
 			}
 			deployPlan = bytes.NewReader(deployBytes)
 			mimeType = "application/json"
@@ -98,8 +100,8 @@ var deployCmd = &cobra.Command{
 
 		plan, err := api.GetDeployPlan(deployPlan, mimeType, ArgVerbose)
 		if err != nil {
-			Println(PrettyError("Error getting deploy plan", err))
-			os.Exit(1)
+			PrintError("Error getting deploy plan", err)
+			return
 		}
 
 		for _, service := range plan {
@@ -112,17 +114,13 @@ var deployCmd = &cobra.Command{
 
 		_, err = api.ExecuteDeployPlan(plan, dotDir, ArgVerbose)
 		if err != nil {
-			Println(PrettyError("Error executing deploy plan", err))
-			os.Exit(1)
+			PrintError("Error executing deploy plan", err)
+			return
 		}
 
 		successMessage := "Successfully deployed metadata to Skuid Site"
 
-		if ArgVerbose {
-			Println(SuccessWithTime(successMessage, deployStart))
-		} else {
-			Println(successMessage + ".")
-		}
+		SuccessWithTime(successMessage, deployStart)
 
 	},
 }

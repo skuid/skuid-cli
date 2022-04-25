@@ -24,7 +24,7 @@ var retrieveCmd = &cobra.Command{
 	Long:  "Retrieve Skuid metadata from a Skuid Platform Site and output it into a local directory.",
 	RunE: func(_ *cobra.Command, _ []string) (err error) {
 
-		Println(RunCommand("Retrieve Metadata"))
+		VerboseCommand("Retrieve Metadata")
 
 		api, err := PlatformLogin(
 			ArgHost,
@@ -39,34 +39,31 @@ var retrieveCmd = &cobra.Command{
 		retrieveStart := time.Now()
 
 		if err != nil {
-			Println(PrettyError("Error logging in to Skuid site", err))
+			PrintError("Error logging in to Skuid site", err)
 			return
 		}
 
 		plan, err := getRetrievePlan(api, ArgAppName)
 		if err != nil {
-			Println(PrettyError("Error getting retrieve plan", err))
+			PrintError("Error getting retrieve plan", err)
 			return
 		}
 
 		results, err := executeRetrievePlan(api, plan)
 		if err != nil {
-			Println(PrettyError("Error executing retrieve plan", err))
+			PrintError("Error executing retrieve plan", err)
 			return
 		}
 
 		err = WriteResultsToDisk(results, writeNewFile, createDirectory, readExistingFile)
 		if err != nil {
-			Println(PrettyError("Error writing results to disk", err))
+			PrintError("Error writing results to disk", err)
 			return
 		}
 
 		successMessage := "Successfully retrieved metadata from Skuid Site"
-		if ArgVerbose {
-			Println(SuccessWithTime(successMessage, retrieveStart))
-		} else {
-			Println(successMessage + ".")
-		}
+
+		VerboseSuccess(successMessage, retrieveStart)
 
 		return
 	},
@@ -92,18 +89,16 @@ func WriteResultsToDisk(results []*io.ReadCloser, fileCreator FileCreator, direc
 		return err
 	}
 
-	if ArgVerbose {
-		Println(VerboseSection("Writing results to " + targetDirFriendly))
-	}
+	VerboseSection("Writing results to " + targetDirFriendly)
 
 	// Remove all of our metadata directories so we get a clean slate.
 	// We may want to improve this later when we do partial retrieves so that
 	// we don't clear out the whole directory every time we retrieve.
 	for _, dirName := range GetMetadataTypeDirNames() {
 		dirPath := filepath.Join(ArgTargetDir, dirName)
-		if ArgVerbose {
-			Println("Deleting Directory: " + dirPath)
-		}
+
+		VerboseLn("Deleting Directory: " + dirPath)
+
 		os.RemoveAll(dirPath)
 	}
 
@@ -181,17 +176,17 @@ func moveTempFile(sourceFileLocation, targetLocation string, pathMap map[string]
 		return directoryCreator(path, fstat.Mode())
 	}
 	if fileAlreadyWritten {
-		if ArgVerbose {
-			Println("Augmenting existing file with more data: " + fi.Name())
-		}
+
+		VerboseLn("Augmenting existing file with more data: " + fi.Name())
+
 		fileReader, err = combineJSONFile(fileReader, existingFileReader, path)
 		if err != nil {
 			return err
 		}
 	}
-	if ArgVerbose {
-		Println("Creating file: " + fi.Name())
-	}
+
+	VerboseLn("Creating file: " + fi.Name())
+
 	err = fileCreator(fileReader, path)
 	if err != nil {
 		return err
@@ -263,18 +258,18 @@ func readFileFromZipAndWriteToFilesystem(file *zip.File, fullPath string, fileAl
 	defer fileReader.Close()
 
 	if fileAlreadyWritten {
-		if ArgVerbose {
-			Println("Augmenting existing file with more data: " + file.Name)
-		}
+
+		VerboseLn("Augmenting existing file with more data: " + file.Name)
+
 		fileReader, err = combineJSONFile(fileReader, existingFileReader, fullPath)
 		if err != nil {
 			return err
 		}
 
 	}
-	if ArgVerbose {
-		Println("Creating file: " + file.Name)
-	}
+
+	VerboseLn("Creating file: " + file.Name)
+
 	err = fileCreator(fileReader, fullPath)
 	if err != nil {
 		return err
@@ -285,9 +280,9 @@ func readFileFromZipAndWriteToFilesystem(file *zip.File, fullPath string, fileAl
 
 func createDirectory(path string, fileMode os.FileMode) error {
 	if _, err := os.Stat(path); err != nil {
-		if ArgVerbose {
-			Println("Creating intermediate directory: " + path)
-		}
+
+		VerboseLn("Creating intermediate directory: " + path)
+
 		return os.MkdirAll(path, fileMode)
 	}
 	return nil
@@ -350,9 +345,9 @@ func combineJSONFile(newFileReader io.ReadCloser, existingFileReader FileReader,
 }
 
 func getRetrievePlan(api *PlatformRestApi, appName string) (map[string]Plan, error) {
-	if ArgVerbose {
-		Println(VerboseSection("Getting Retrieve Plan"))
-	}
+
+	VerboseSection("Getting Retrieve Plan")
+
 	var postBody io.Reader
 	if appName != "" {
 		retFilter, err := json.Marshal(RetrieveFilter{
@@ -377,9 +372,7 @@ func getRetrievePlan(api *PlatformRestApi, appName string) (map[string]Plan, err
 		return nil, err
 	}
 
-	if ArgVerbose {
-		Println(SuccessWithTime("Success Getting Retrieve Plan", planStart))
-	}
+	VerboseSuccess("Success Getting Retrieve Plan", planStart)
 
 	defer (*planResult).Close()
 
@@ -391,9 +384,9 @@ func getRetrievePlan(api *PlatformRestApi, appName string) (map[string]Plan, err
 }
 
 func executeRetrievePlan(api *PlatformRestApi, plans map[string]Plan) ([]*io.ReadCloser, error) {
-	if ArgVerbose {
-		Println(VerboseSection("Executing Retrieve Plan"))
-	}
+
+	VerboseSection("Executing Retrieve Plan")
+
 	planResults := []*io.ReadCloser{}
 	for _, plan := range plans {
 		metadataBytes, err := json.Marshal(RetrieveRequest{
@@ -405,9 +398,9 @@ func executeRetrievePlan(api *PlatformRestApi, plans map[string]Plan) ([]*io.Rea
 		}
 		retrieveStart := time.Now()
 		if plan.Host == "" {
-			if ArgVerbose {
-				Println(fmt.Sprintf("Making Retrieve Request: URL: [%s] Type: [%s]", plan.URL, plan.Type))
-			}
+
+			VerboseLn(fmt.Sprintf("Making Retrieve Request: URL: [%s] Type: [%s]", plan.URL, plan.Type))
+
 			planResult, err := api.Connection.MakeRequest(
 				http.MethodPost,
 				plan.URL,
@@ -420,9 +413,9 @@ func executeRetrievePlan(api *PlatformRestApi, plans map[string]Plan) ([]*io.Rea
 			planResults = append(planResults, planResult)
 		} else {
 			url := fmt.Sprintf("%s:%s/api/v2%s", plan.Host, plan.Port, plan.URL)
-			if ArgVerbose {
-				Println(fmt.Sprintf("Making Retrieve Request: URL: [%s] Type: [%s]", url, plan.Type))
-			}
+
+			VerboseLn(fmt.Sprintf("Making Retrieve Request: URL: [%s] Type: [%s]", url, plan.Type))
+
 			planResult, err := api.Connection.MakeJWTRequest(
 				http.MethodPost,
 				url,
@@ -435,9 +428,8 @@ func executeRetrievePlan(api *PlatformRestApi, plans map[string]Plan) ([]*io.Rea
 			planResults = append(planResults, planResult)
 		}
 
-		if ArgVerbose {
-			Println(SuccessWithTime("Success Retrieving from Source", retrieveStart))
-		}
+		VerboseSuccess("Success Retrieving from Source", retrieveStart)
+
 	}
 	return planResults, nil
 }

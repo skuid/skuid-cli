@@ -1,0 +1,214 @@
+<skuid__page personalizationmode="client" unsavedchangeswarning="yes" theme="Skuid Admin" title="Templates">
+	<models>
+		<model id="AppTemplates" query="true" createrowifnonefound="false" datasource="SkuidLocal" verb="GET" payloadcontenttype="JSON" endpoint="app-templates" label="App Template" labelplural="App Templates">
+			<fields>
+				<field id="active" label="Active" ispolymorphic="false" isnamepointing="false" displaytype="BOOLEAN" accessible="true" filterable="true"/>
+				<field id="created_date" label="Created Date" ispolymorphic="false" isnamepointing="false" displaytype="DATETIME" accessible="true" filterable="true"/>
+				<field id="datasources" label="Datasources" ispolymorphic="false" isnamepointing="false" displaytype="STRING" accessible="true" filterable="true"/>
+				<field id="description" label="Description" ispolymorphic="false" isnamepointing="false" displaytype="STRING" accessible="true" filterable="true"/>
+				<field id="free" label="Free" ispolymorphic="false" isnamepointing="false" displaytype="BOOLEAN" accessible="true" filterable="true"/>
+				<field id="github_repo_url" label="Github Repo Url" ispolymorphic="false" isnamepointing="false" displaytype="URL" accessible="true" filterable="true"/>
+				<field id="has_install" label="Has Install" ispolymorphic="false" isnamepointing="false" displaytype="BOOLEAN" accessible="true" filterable="true"/>
+				<field id="has_preview" label="Has Preview" ispolymorphic="false" isnamepointing="false" displaytype="BOOLEAN" accessible="true" filterable="true"/>
+				<field id="icon_url" label="Icon Url" ispolymorphic="false" isnamepointing="false" displaytype="STRING" accessible="true" filterable="true"/>
+				<field id="id" label="Id" ispolymorphic="false" isnamepointing="false" displaytype="STRING" accessible="true" filterable="true"/>
+				<field id="industries" label="Industries" ispolymorphic="false" isnamepointing="false" displaytype="STRING" accessible="true" filterable="true"/>
+				<field id="install_data_blob_url" label="Install Data Blob Url" ispolymorphic="false" isnamepointing="false" displaytype="URL" accessible="true" filterable="true"/>
+				<field id="last_modified" label="Last Modified" ispolymorphic="false" isnamepointing="false" displaytype="DATETIME" accessible="true" filterable="true"/>
+				<field id="license" label="License" ispolymorphic="false" isnamepointing="false" displaytype="STRING" accessible="true" filterable="true"/>
+				<field id="other_links" label="Other Links" ispolymorphic="false" isnamepointing="false" displaytype="STRING" accessible="true" filterable="true"/>
+				<field id="preview_data_blob_url" label="Preview Data Blob Url" ispolymorphic="false" isnamepointing="false" displaytype="URL" accessible="true" filterable="true"/>
+				<field id="primary_image_url" label="Primary Image Url" ispolymorphic="false" isnamepointing="false" displaytype="STRING" accessible="true" filterable="true"/>
+				<field id="related_images" label="Related Images" ispolymorphic="false" isnamepointing="false" displaytype="STRING" accessible="true" filterable="true"/>
+				<field id="tags" label="Tags" ispolymorphic="false" isnamepointing="false" displaytype="STRING" accessible="true" filterable="true"/>
+				<field id="template_name" label="Template Name" ispolymorphic="false" isnamepointing="false" displaytype="STRING" accessible="true" filterable="true"/>
+				<field id="vendor_id" label="Vendor Id" ispolymorphic="false" isnamepointing="false" displaytype="STRING" accessible="true" filterable="true"/>
+				<field id="version" label="Version" ispolymorphic="false" isnamepointing="false" displaytype="DOUBLE" precision="3" scale="0" accessible="true" filterable="true"/>
+				<field id="pretty_date" displaytype="FORMULA" uionly="true" ogdisplaytype="TEXT" readonly="true" returntype="TEXT">
+					<formula>JOIN_TEXT("","Created ",FORMAT_DATE("M d, yy",{{created_date}}))</formula>
+				</field>
+			</fields>
+			<conditions>
+				<condition type="fieldvalue" value="true" enclosevalueinquotes="false" sourcetype="fieldvalue" field="active" operator="="/>
+			</conditions>
+			<actions/>
+		</model>
+	</models>
+	<pageregioncontents>
+		<pageregioncontent regionid="sk-2w1w-1416" uniqueid="sk-fjT-1362">
+			<components>
+				<skuid__wrapper uniqueid="sk-2w35-12359" styleSettingsVariant="b5342fe9-7125-4bf8-b20b-ade1825d7e72">
+					<components>
+						<skuid__grid uniqueid="sk-2w35-12360" flexDirection="row" justifyContent="space-around" alignItems="flex-start" columnGutter="0" rowGutter="0">
+							<divisions>
+								<division ratio="1" alignSelf="auto" maxWidth="1440px" minWidth="100%">
+									<components>
+										<skuid__header title="Templates" uniqueid="sk-2w35-12362" model="AppTemplates">
+											<renderConditions logictype="and"/>
+											<skuid__buttonSet>
+												<groups/>
+											</skuid__buttonSet>
+										</skuid__header>
+									</components>
+								</division>
+							</divisions>
+							<styles>
+								<spacing top="4" bottom="4" left="4" right="4"/>
+							</styles>
+							<background/>
+						</skuid__grid>
+					</components>
+					<background/>
+					<renderConditions logictype="and"/>
+				</skuid__wrapper>
+				<skuid__grid uniqueid="sk-c4h-8805" flexDirection="row" justifyContent="space-around" alignItems="flex-start">
+					<divisions>
+						<division alignSelf="auto" minWidth="100%" ratio="1" maxWidth="1440px">
+							<components>
+								<skuid__grid uniqueid="sk-c4W-6977" flexDirection="row" justifyContent="flex-start" alignItems="center" columnGutter="0" rowGutter="0" fullWidth="true">
+									<divisions>
+										<division minWidth="1px" ratio="1" alignSelf="auto">
+											<components/>
+										</division>
+										<division alignSelf="auto" ratio="0">
+											<components>
+												<skuid__filterSet model="AppTemplates" uniqueid="sk-c4W-6982" resetButtonBehavior="hide">
+													<filters/>
+													<filtering enableSearch="true" instantSearch="true" instantFilters="true" searchMethod="client" emptySearchBehavior="query" searchConditionName="search" searchPlaceholder="Search"/>
+													<styles>
+														<spacing right="2"/>
+													</styles>
+													<positioning justifyContent="space-between" alignItems="flex-end"/>
+												</skuid__filterSet>
+											</components>
+										</division>
+									</divisions>
+									<renderConditions logictype="and"/>
+									<interactions/>
+									<styleVariantConditions/>
+								</skuid__grid>
+							</components>
+						</division>
+					</divisions>
+					<renderConditions logictype="and"/>
+					<styleVariantConditions/>
+					<styles>
+						<spacing top="3" bottom="3" left="4" right="4"/>
+					</styles>
+					<background/>
+				</skuid__grid>
+				<skuid__grid uniqueid="sk-c53-10766" flexDirection="row" justifyContent="space-around" alignItems="flex-start">
+					<divisions>
+						<division alignSelf="auto" minWidth="100%" ratio="1" maxWidth="1440px">
+							<components>
+								<skuid__deck rowGutter="24px" model="AppTemplates" showSaveCancel="false" verticalAlign="top" uniqueid="sk-fkd-3817" pageSize="Infinity" columnGutter="24px" setMaxWidth="manual" maxWidth="460px">
+									<components>
+										<skuid__wrapper uniqueid="sk-c5n-12749" styleSettingsVariant="bf33363a-3a94-4331-aa35-129d2ca56060">
+											<components>
+												<skuid__wrapper uniqueid="sk-c6D-15347" styleSettingsVariant="b5342fe9-7125-4bf8-b20b-ade1825d7e72">
+													<components>
+														<skuid__image source="url" uniqueid="sk-fkg-3968" datasource="SkuidLocal" model="AppTemplates" url="{{primary_image_url}}" heightStrategy="fixed" height="custom" heightCustom="306px">
+															<conditions>
+																<condition type="contextrow" field="id" mergefield="id" operator="="/>
+															</conditions>
+															<styles>
+																<spacing/>
+															</styles>
+															<interactions/>
+														</skuid__image>
+													</components>
+													<background/>
+												</skuid__wrapper>
+												<skuid__wrapper uniqueid="sk-c6y-18843">
+													<components>
+														<skuid__grid uniqueid="sk-c5u-14174">
+															<divisions>
+																<division minWidth="100px" ratio="1" alignSelf="center">
+																	<components>
+																		<skuid__text contents="{{template_name}}" uniqueid="sk-fks-4342" model="AppTemplates" styleSettingsVariant="53193c74-b77c-429e-8fed-09b73deaa10c">
+																			<conditions>
+																				<condition type="contextrow" field="id" mergefield="id" operator="="/>
+																			</conditions>
+																			<renderConditions logictype="and"/>
+																			<styleVariantConditions/>
+																		</skuid__text>
+																	</components>
+																</division>
+																<division alignSelf="center" minWidth="24px" ratio="0">
+																	<components>
+																		<skuid__buttonSet model="AppTemplates" uniqueid="sk-c5r-13406">
+																			<groups>
+																				<skuid__buttonGroup displayType="detached">
+																					<buttons>
+																						<skuid__button styleSettingsVariant="borderless" icon="sk-webicon-ink:dots-vertical" uniqueid="button-go-to-template-details">
+																							<actions>
+																								<action type="redirect" window="self" url="/ns/skuid/ui/app-template-preview/{{id}}"/>
+																							</actions>
+																						</skuid__button>
+																					</buttons>
+																					<renderConditions logictype="and"/>
+																					<styleVariantConditions/>
+																				</skuid__buttonGroup>
+																			</groups>
+																			<conditions>
+																				<condition type="contextrow" field="id" mergefield="id" operator="="/>
+																			</conditions>
+																			<styles>
+																				<spacing/>
+																			</styles>
+																		</skuid__buttonSet>
+																	</components>
+																</division>
+															</divisions>
+															<interactions/>
+														</skuid__grid>
+													</components>
+													<styles>
+														<spacing top="2" bottom="2" left="2" right="2"/>
+													</styles>
+													<background/>
+												</skuid__wrapper>
+											</components>
+											<background/>
+											<styles>
+												<spacing/>
+											</styles>
+										</skuid__wrapper>
+									</components>
+									<filtering enableSearch="false" instantSearch="false"/>
+									<renderConditions logictype="and"/>
+									<styleVariantConditions/>
+									<interactions>
+										<interaction type="tap">
+											<action type="redirect" window="self" url="/ns/skuid/ui/app-template-preview/{{id}}"/>
+										</interaction>
+									</interactions>
+									<sorting enable="false"/>
+									<styles>
+										<spacing/>
+									</styles>
+								</skuid__deck>
+							</components>
+						</division>
+					</divisions>
+					<renderConditions logictype="and"/>
+					<styleVariantConditions/>
+					<styles>
+						<spacing left="4" right="4" bottom="4"/>
+					</styles>
+					<background/>
+				</skuid__grid>
+			</components>
+		</pageregioncontent>
+	</pageregioncontents>
+	<components/>
+	<resources>
+		<labels/>
+		<javascript/>
+		<css/>
+		<actionsequences/>
+	</resources>
+	<styles>
+		<styleitem type="background" bgtype="none"/>
+	</styles>
+</skuid__page>

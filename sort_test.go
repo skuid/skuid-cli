@@ -83,7 +83,7 @@ func TestSortJson(t *testing.T) {
 		},
 	} {
 		t.Run(tc.description, func(t *testing.T) {
-			actual := tides.ReSortJson([]byte(tc.given))
+			actual, _ := tides.ReSortJson([]byte(tc.given))
 			expectedTrimmed := regexp.MustCompile(`\s`).ReplaceAllString(tc.expected, "")
 			assert.Equal(t, expectedTrimmed, string(actual))
 		})

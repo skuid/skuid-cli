@@ -1,0 +1,12 @@
+{
+	"name": "PageBuilderV2",
+	"apiVersion": "v2",
+	"composerSettings": null,
+	"isMasterPage": false,
+	"isPublic": false,
+	"masterPageUniqueId": "SkuidCoreMasterV2",
+	"maxAutoSaves": 25,
+	"module": "",
+	"type": "Desktop",
+	"uniqueId": "PageBuilderV2"
+}

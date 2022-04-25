@@ -1,0 +1,12 @@
+{
+	"name": "Settings_DataSourceFieldDetail_Warden",
+	"apiVersion": "v1",
+	"composerSettings": null,
+	"isMasterPage": false,
+	"isPublic": false,
+	"masterPageUniqueId": "SkuidCoreMaster",
+	"maxAutoSaves": 25,
+	"module": "",
+	"type": "Desktop",
+	"uniqueId": "Settings_DataSourceFieldDetail_Warden"
+}

@@ -1,0 +1,1297 @@
+<skuid__page unsavedchangeswarning="yes" title="My Settings" theme="Skuid Admin">
+	<models>
+		<model id="FeatureFlags" limit="20" query="true" createrowifnonefound="true" datasource="Ui-Only">
+			<fields>
+				<field id="appPermSetsEnabled" displaytype="BOOLEAN" length="255" ogdisplaytype="TEXT"/>
+			</fields>
+			<conditions/>
+			<actions/>
+		</model>
+		<model id="me__Site" limit="1" query="true" createrowifnonefound="false" datasource="SkuidLocal" type="readwrite" label="Site" labelplural="Sites" unloadwarningifunsavedchanges="false">
+			<fields>
+				<field id="saml_sso_enabled" label="SAML Enabled" displaytype="BOOLEAN" accessible="true" filterable="true" defaultValue="false"/>
+			</fields>
+			<conditions/>
+			<actions/>
+			<methods>
+				<method type="query" verb="GET" endpoint="/site?fields=saml_sso_enabled"/>
+			</methods>
+		</model>
+		<model id="me__CurrentUser" query="true" createrowifnonefound="false" datasource="SkuidLocal" type="readwrite" label="User" labelplural="Users" unloadwarningifunsavedchanges="false">
+			<fields>
+				<field id="id" displaytype="TEXT"/>
+				<field id="email" label="Email" displaytype="EMAIL" accessible="true" filterable="true" required="true"/>
+				<field id="first_name" label="First Name" displaytype="TEXT" accessible="true" filterable="true" required="true" length="100"/>
+				<field id="language" label="Language" displaytype="PICKLIST" accessible="true" filterable="true" picklistsource="rowsinmodel" readonly="true" defaultvaluetype="fieldvalue" defaultValue="en-US" picklistmodel="stng__LanguageOptions" entryvalue="{{{value}}}" entrylabel="{{label}}"/>
+				<field id="last_name" label="Last Name" displaytype="TEXT" accessible="true" filterable="true" required="true" length="100"/>
+				<field id="locale" label="Locale" displaytype="PICKLIST" accessible="true" filterable="true" required="true" picklistsource="rowsinmodel" defaultvaluetype="fieldvalue" picklistmodel="stng__LocaleOptions" entryvalue="{{{value}}}" entrylabel="{{label}}" defaultValue="en-US"/>
+				<field id="time_zone" label="Time Zone" displaytype="PICKLIST" accessible="true" filterable="true" required="true" picklistsource="rowsinmodel" picklistmodel="stng__TimeZoneOptions" entryvalue="{{{value}}}" entrylabel="{{label}}" defaultvaluetype="fieldvalue" defaultValue="America/New_York"/>
+				<field id="username" label="Username" displaytype="TEXT" accessible="true" filterable="true" required="true" length="255"/>
+				<field id="federation_id" label="Federation Id" displaytype="TEXT" accessible="true" filterable="true" required="false" length="255" readonly="true"/>
+				<field id="land_on_last_visited_page" label="Land on last visited page after login" ispolymorphic="false" isnamepointing="false" displaytype="BOOLEAN" accessible="true" filterable="true"/>
+				<field id="profile.name" label="Name" ispolymorphic="false" isnamepointing="false" displaytype="STRING" accessible="true" filterable="true" readonly="true"/>
+				<field id="email_has_changed" displaytype="BOOLEAN" ogdisplaytype="TEXT" uionly="true" defaultvaluetype="fieldvalue"/>
+				<field id="show_password" displaytype="BOOLEAN" ogdisplaytype="TEXT" uionly="true"/>
+				<field id="hasPassword" label="Has Password" ispolymorphic="false" isnamepointing="false" displaytype="BOOLEAN" accessible="true" filterable="true"/>
+			</fields>
+			<idfields>
+				<field>id</field>
+			</idfields>
+			<conditions/>
+			<actions>
+				<action>
+					<actions>
+						<action type="updateRow" fieldmodel="me__CurrentUser" affectedrows="context">
+							<updates>
+								<update valuesource="fieldvalue" field="email_has_changed" enclosevalueinquotes="false" value="true"/>
+							</updates>
+						</action>
+					</actions>
+					<events>
+						<event>row.updated</event>
+					</events>
+					<fields>
+						<field>email</field>
+					</fields>
+				</action>
+				<action>
+					<actions>
+						<action type="requeryModels" behavior="standard">
+							<models>
+								<model>me__CurrentUser</model>
+							</models>
+						</action>
+					</actions>
+					<events>
+						<event>models.saved</event>
+						<event>models.cancelled</event>
+					</events>
+				</action>
+			</actions>
+			<methods>
+				<method type="query" verb="GET" endpoint="/me" payloadcontenttype="JSON"/>
+				<method type="update" verb="PUT" successif="requestsucceeds" sendchanges="asjsoninbody" endpoint="/me" updateresponse="recordinbody"/>
+			</methods>
+		</model>
+		<model id="me__AvatarSettings" query="true" createrowifnonefound="false" datasource="SkuidLocal" payloadcontenttype="JSON" async="true" unloadwarningifunsavedchanges="false" type="readwrite">
+			<fields>
+				<field id="avatar.exists" label="Avatar Exists" displaytype="BOOLEAN" accessible="true" filterable="true"/>
+				<field id="avatar.name" label="Avatar Image Name" displaytype="TEXT" accessible="true" filterable="true"/>
+				<field id="avatar.modstamp" label="Avatar Modstamp" displaytype="INTEGER" accessible="true" filterable="true"/>
+				<field id="avatar_original.exists" label="Exists" ispolymorphic="false" isnamepointing="false" displaytype="BOOLEAN" accessible="true" filterable="true"/>
+				<field id="avatar_original.modstamp" label="Modstamp" ispolymorphic="false" isnamepointing="false" displaytype="DOUBLE" precision="13" scale="0" accessible="true" filterable="true"/>
+				<field id="avatar_original.name" label="Name" ispolymorphic="false" isnamepointing="false" displaytype="STRING" accessible="true" filterable="true"/>
+				<field id="userid" label="Userid" ispolymorphic="false" isnamepointing="false" displaytype="STRING" accessible="true" filterable="true"/>
+			</fields>
+			<conditions/>
+			<actions/>
+			<methods>
+				<method type="query" verb="GET" endpoint="/me/{{$User.userId}}/avatar/settings" payloadcontenttype="JSON"/>
+				<method type="delete" verb="DELETE" payloadcontenttype="JSON" successif="requestsucceeds" endpoint="/me/{{$User.userId}}/avatar"/>
+			</methods>
+		</model>
+		<model id="stng__LocaleOptions" query="true" createrowifnonefound="false" datasource="SkuidLocal" verb="GET" endpoint="/locale-options" pathtocontent="locales" label="Locale" labelplural="Locales" payloadcontenttype="JSON" unloadwarningifunsavedchanges="false">
+			<fields>
+				<field id="label" label="Label" displaytype="STRING" accessible="true" filterable="true"/>
+				<field id="value" label="Value" displaytype="STRING" accessible="true" filterable="true"/>
+			</fields>
+			<idfields>
+				<field>value</field>
+			</idfields>
+			<conditions/>
+			<actions/>
+		</model>
+		<model id="stng__LanguageOptions" query="true" createrowifnonefound="false" datasource="SkuidLocal" verb="GET" endpoint="/locale-options" pathtocontent="languages" label="Language" labelplural="Languages" payloadcontenttype="JSON" unloadwarningifunsavedchanges="false">
+			<fields>
+				<field id="label" label="Label" displaytype="STRING" accessible="true" filterable="true"/>
+				<field id="value" label="Value" displaytype="STRING" accessible="true" filterable="true"/>
+			</fields>
+			<idfields>
+				<field>value</field>
+			</idfields>
+			<conditions/>
+			<actions/>
+		</model>
+		<model id="stng__TimeZoneOptions" query="true" createrowifnonefound="false" datasource="SkuidLocal" verb="GET" endpoint="/locale-options" pathtocontent="timeZones" label="Time Zone" labelplural="Time Zones" payloadcontenttype="JSON" unloadwarningifunsavedchanges="false">
+			<fields>
+				<field id="label" label="Label" displaytype="STRING" accessible="true" filterable="true"/>
+				<field id="value" label="Value" displaytype="STRING" accessible="true" filterable="true"/>
+				<idfields>
+					<field>value</field>
+				</idfields>
+			</fields>
+			<conditions/>
+			<actions/>
+		</model>
+		<model id="cm_OAuthCredentials" query="true" createrowifnonefound="false" datasource="SkuidLocal" type="readwrite" label="Credential" labelplural="Credentials" namefield="auth_provider_name" async="true" unloadwarningifunsavedchanges="false">
+			<fields>
+				<field id="auth_provider_id" label="Auth Provider Id" displaytype="TEXT" accessible="true" createable="false" editable="false" filterable="false" required="true" readonly="true"/>
+				<field id="auth_provider_name" label="Auth Provider Name" displaytype="TEXT" accessible="true" createable="false" editable="false" filterable="false" required="true" readonly="true"/>
+				<field id="access_token_expiration" label="Access Token Expires" displaytype="DATETIME" accessible="true" createable="false" editable="false" filterable="false" required="false"/>
+				<field id="access_token_issued" label="Access Token Issued" displaytype="DATETIME" accessible="true" createable="false" editable="false" filterable="false" required="false"/>
+				<field id="access_token" label="Access Token" displaytype="TEXT" accessible="true" createable="true" editable="true" filterable="false" required="false"/>
+				<field id="refresh_token" label="Refresh Token" displaytype="TEXT" accessible="true" createable="true" editable="true" filterable="false" required="false"/>
+				<field id="refresh_token_issued" label="Refresh Token Issued" displaytype="DATETIME" accessible="true" createable="false" editable="false" filterable="false" required="false"/>
+				<field id="times_refresh_token_used" label="# Times Refresh Token Used" displaytype="INTEGER" accessible="true" createable="false" editable="false" filterable="false" required="false" digits=""/>
+				<field id="action" label="Action" displaytype="TEXT" accessible="true" createable="true" editable="true" filterable="false" required="false" uionly="true"/>
+				<field id="auth_provider.oauth_provider_type" label="Auth Provider Type" ispolymorphic="false" isnamepointing="false" displaytype="TEXT" accessible="true" filterable="true" ogdisplaytype="STRING"/>
+				<field id="auth_provider.authorize_endpoint_url" label="Authorize Endpoint URL" ispolymorphic="false" isnamepointing="false" displaytype="URL" accessible="true" filterable="true"/>
+				<field id="auth_provider.client_id" label="Client Id" ispolymorphic="false" isnamepointing="false" displaytype="STRING" accessible="true" filterable="true"/>
+				<field id="auth_provider.default_scopes" label="Default_scopes" ispolymorphic="false" isnamepointing="false" displaytype="STRING" accessible="true" filterable="true"/>
+				<field id="AuthProvider__ui" displaytype="FORMULA" uionly="true" label="Auth Provider" ogdisplaytype="TEXT" readonly="true" returntype="TEXT">
+					<formula>IF(
+{{auth_provider.oauth_provider_type}} == "other", 
+{{auth_provider_name}},
+{{auth_provider_name}} + " (" + {{auth_provider.oauth_provider_type}} + ")"
+)</formula>
+				</field>
+				<field id="AccessToken__ui" displaytype="FORMULA" uionly="true" label="Has Access Token" ogdisplaytype="TEXT" readonly="true" returntype="BOOLEAN">
+					<formula>!ISBLANK({{access_token}})</formula>
+				</field>
+				<field id="RefreshToken__ui" displaytype="FORMULA" uionly="true" label="Has Refresh Token" defaultvaluetype="fieldvalue" ogdisplaytype="TEXT" readonly="true" returntype="BOOLEAN">
+					<formula>!ISBLANK({{refresh_token}})</formula>
+				</field>
+			</fields>
+			<conditions/>
+			<actions>
+				<action>
+					<events>
+						<event>models.saved</event>
+					</events>
+					<actions>
+						<action type="requeryModel" model="cm_OAuthCredentials"/>
+					</actions>
+				</action>
+			</actions>
+			<methods>
+				<method type="query" verb="GET" endpoint="/my-auth-provider-credentials"/>
+				<method type="update" verb="POST" successif="requestsucceeds" sendchanges="asjsoninbody" endpoint="/my-auth-provider-credentials/{{{auth_provider_id}}}{{#action}}/{{{action}}}{{/action}}"/>
+				<method type="delete" verb="POST" successif="requestsucceeds" endpoint="/my-auth-provider-credentials/{{{auth_provider_id}}}/clear"/>
+			</methods>
+			<idfields>
+				<field>auth_provider_id</field>
+			</idfields>
+		</model>
+		<model id="cm_ModelDataSourceCreds" query="true" createrowifnonefound="false" datasource="SkuidLocal" type="readwrite" label="Credential" labelplural="Credentials" namefield="data_source_name" async="true" unloadwarningifunsavedchanges="false">
+			<fields>
+				<field id="data_source_id" label="Data Source Id" displaytype="TEXT" accessible="true" createable="false" editable="false" filterable="false" required="true" readonly="true"/>
+				<field id="data_source_name" label="Data Source Name" displaytype="TEXT" accessible="true" createable="false" editable="false" filterable="false" required="true" readonly="true"/>
+				<field id="data_source_type" label="Data Source Type" displaytype="TEXT" accessible="true" createable="false" editable="false" filterable="false" required="true" readonly="true"/>
+				<field id="username" label="Username" displaytype="TEXT" accessible="true" createable="true" editable="true" filterable="false" required="false"/>
+				<field id="password" label="Password" displaytype="TEXT" accessible="true" createable="true" editable="true" filterable="false" required="false"/>
+				<field id="ui_value" displaytype="TEXT" uionly="true"/>
+				<field id="show_password" displaytype="BOOLEAN" uionly="true" ogdisplaytype="TEXT" defaultvaluetype="fieldvalue" defaultValue="false"/>
+			</fields>
+			<conditions/>
+			<actions>
+				<action>
+					<actions>
+						<action type="requeryModels" behavior="standard">
+							<models>
+								<model>cm_ModelDataSourceCreds</model>
+							</models>
+						</action>
+					</actions>
+					<events>
+						<event>models.saved</event>
+					</events>
+				</action>
+				<action>
+					<actions>
+						<action type="branch" whenfinished="stop" model="cm_ModelDataSourceCreds" label="if ui value doesn't equal password">
+							<formula>{{password}} != {{ui_value}}</formula>
+							<iftrueactions>
+								<action type="updateRow" fieldmodel="cm_ModelDataSourceCreds" affectedrows="context">
+									<updates>
+										<update valuesource="fieldvalue" field="ui_value" enclosevalueinquotes="true" value="{{password}}"/>
+									</updates>
+								</action>
+							</iftrueactions>
+						</action>
+					</actions>
+					<events>
+						<event>row.updated</event>
+					</events>
+					<fields>
+						<field>password</field>
+					</fields>
+				</action>
+				<action>
+					<actions>
+						<action type="branch" whenfinished="stop" label="if password doesn't equal ui value">
+							<formula>{{password}} != {{ui_value}}</formula>
+							<iftrueactions>
+								<action type="updateRow" fieldmodel="cm_ModelDataSourceCreds" affectedrows="context">
+									<updates>
+										<update valuesource="fieldvalue" field="password" enclosevalueinquotes="true" value="{{ui_value}}"/>
+									</updates>
+								</action>
+							</iftrueactions>
+						</action>
+					</actions>
+					<events>
+						<event>row.updated</event>
+					</events>
+					<fields>
+						<field>ui_value</field>
+					</fields>
+				</action>
+			</actions>
+			<methods>
+				<method type="query" verb="GET" endpoint="/my-data-source-credentials" payloadcontenttype="JSON"/>
+				<method type="update" verb="POST" successif="requestsucceeds" sendchanges="asjsoninbody" endpoint="/my-data-source-credentials/{{{data_source_id}}}{{#action}}/{{{action}}}{{/action}}"/>
+				<method type="delete" verb="POST" successif="requestsucceeds" endpoint="/my-data-source-credentials/{{{data_source_id}}}/clear"/>
+			</methods>
+			<idfields>
+				<field>data_source_id</field>
+			</idfields>
+		</model>
+		<model id="ui__VerticalNav" query="true" datasource="Ui-Only" createrowifnonefound="true">
+			<fields>
+				<field id="currentTab" displaytype="PICKLIST" length="255" ogdisplaytype="TEXT" picklistsource="manual" returntype="TEXT">
+					<picklistentries>
+						<entry value="General" label="General"/>
+						<entry value="Locale" label="Locale"/>
+						<entry value="Site Preferences" label="Site Preferences"/>
+						<entry value="Data Source Credentials" label="Data Source Credentials"/>
+					</picklistentries>
+				</field>
+			</fields>
+			<conditions/>
+			<actions/>
+		</model>
+		<model id="ui__ValidatePassword" limit="20" query="true" createrowifnonefound="true" datasource="Ui-Only">
+			<fields>
+				<field id="text_password" displaytype="TEXT" length="255" label="Password" defaultvaluetype="fieldvalue"/>
+				<field id="hidden_password" displaytype="TEXT" length="255"/>
+			</fields>
+			<conditions/>
+			<actions>
+				<action>
+					<actions>
+						<action type="emptyModelData">
+							<models>
+								<model>stng__ValidatePassword</model>
+							</models>
+						</action>
+						<action type="branch" whenfinished="stop" model="ui__ValidatePassword" label="if the two passwords don't match">
+							<formula>{{text_password}} != {{hidden_password}}</formula>
+							<iftrueactions>
+								<action type="updateRow" fieldmodel="ui__ValidatePassword" affectedrows="context">
+									<updates>
+										<update valuesource="fieldvalue" field="text_password" enclosevalueinquotes="true" value="{{hidden_password}}"/>
+									</updates>
+								</action>
+							</iftrueactions>
+						</action>
+					</actions>
+					<events>
+						<event>row.updated</event>
+					</events>
+					<fields>
+						<field>hidden_password</field>
+					</fields>
+				</action>
+				<action>
+					<actions>
+						<action type="emptyModelData">
+							<models>
+								<model>stng__ValidatePassword</model>
+							</models>
+						</action>
+						<action type="branch" whenfinished="stop" model="ui__ValidatePassword" label="if the two passwords don't match">
+							<formula>{{text_password}} != {{hidden_password}}</formula>
+							<iftrueactions>
+								<action type="updateRow" fieldmodel="ui__ValidatePassword" affectedrows="context">
+									<updates>
+										<update valuesource="fieldvalue" field="hidden_password" enclosevalueinquotes="true" value="{{text_password}}"/>
+									</updates>
+								</action>
+							</iftrueactions>
+						</action>
+					</actions>
+					<events>
+						<event>row.updated</event>
+					</events>
+					<fields>
+						<field>text_password</field>
+					</fields>
+				</action>
+			</actions>
+		</model>
+		<model id="stng__ValidatePassword" query="false" datasource="SkuidLocal" payloadcontenttype="JSON" type="readwrite">
+			<fields>
+				<field id="password" displaytype="TEXT"/>
+				<field id="success" displaytype="BOOLEAN" ogdisplaytype="TEXT"/>
+				<field id="reason" displaytype="TEXT"/>
+			</fields>
+			<conditions/>
+			<actions/>
+			<methods>
+				<method type="insert" verb="POST" payloadcontenttype="JSON" endpoint="/me/validatePassword" successif="requestsucceeds" sendchanges="asjsoninbody" insertresponse="recordinbody"/>
+			</methods>
+		</model>
+	</models>
+	<pageregioncontents>
+		<pageregioncontent regionid="sk-2w1w-1416" uniqueid="sk-1Ki--1786">
+			<components>
+				<skuid__wrapper uniqueid="sk-1KkJ-6017" overflowY="auto" styleSettingsVariant="b5342fe9-7125-4bf8-b20b-ade1825d7e72">
+					<components>
+						<skuid__grid uniqueid="sk-1KkJ-6018" flexDirection="row" justifyContent="space-around" alignItems="flex-start">
+							<divisions>
+								<division alignSelf="auto" minWidth="100%" ratio="1" maxWidth="1440px">
+									<components>
+										<skuid__header uniqueid="sk-1KkJ-6020" title="My Settings" subtitle="">
+											<skuid__buttonSet>
+												<groups/>
+											</skuid__buttonSet>
+											<renderConditions logictype="and"/>
+											<styleVariantConditions/>
+										</skuid__header>
+									</components>
+								</division>
+							</divisions>
+							<styles>
+								<spacing top="4" bottom="4" left="4" right="4"/>
+							</styles>
+							<background/>
+						</skuid__grid>
+					</components>
+					<background type="color" color="white"/>
+					<renderConditions logictype="and"/>
+					<styleVariantConditions/>
+					<interactions/>
+					<styles>
+						<spacing/>
+					</styles>
+				</skuid__wrapper>
+				<skuid__wrapper uniqueid="sk-1nSl-21963">
+					<components>
+						<skuid__grid uniqueid="sk-1Kkt-11707" flexDirection="row" justifyContent="space-around" alignItems="flex-start">
+							<divisions>
+								<division alignSelf="auto" minWidth="100%" ratio="1" maxWidth="1440px">
+									<components>
+										<skuid__grid uniqueid="sk-1nSt-28373" flexDirection="row" justifyContent="stretch" alignItems="flex-start" columnGutter="4">
+											<divisions>
+												<division alignSelf="auto" minWidth="200px" ratio="0">
+													<components>
+														<skuid__wrapper uniqueid="sk-1nVU-60088" styleSettingsVariant="bf33363a-3a94-4331-aa35-129d2ca56060" overflowY="auto">
+															<components>
+																<skuid__grid uniqueid="sk-1Kty-17567" flexDirection="row" justifyContent="flex-start" alignItems="flex-start" columnGutter="0" rowGutter="0">
+																	<divisions>
+																		<division minWidth="200px" ratio="0" alignSelf="flex-start">
+																			<components>
+																				<skuid__wrapper uniqueid="sk-1nHx-28296" overflowY="auto">
+																					<components>
+																						<skuid__image source="url" uniqueid="avatar-image" datasource="SkuidLocal" model="me__AvatarSettings" url="/api/v1/me/{{$User.userId}}/avatar/large?i={{avatar.modstamp}}" imageWidth="250px">
+																							<interactions/>
+																							<renderConditions logictype="and"/>
+																							<styleVariantConditions/>
+																							<styles>
+																								<spacing/>
+																							</styles>
+																						</skuid__image>
+																					</components>
+																					<background/>
+																				</skuid__wrapper>
+																				<skuid__grid uniqueid="sk-3rsS-51969" flexDirection="row" justifyContent="center" alignItems="center" columnGutter="0" rowGutter="0">
+																					<divisions>
+																						<division minWidth="0px" ratio="1" alignSelf="auto">
+																							<components/>
+																							<renderConditions logictype="and"/>
+																						</division>
+																						<division alignSelf="auto" minWidth="0px" ratio="0">
+																							<components>
+																								<skuid__buttonSet uniqueid="sk-3scY-47604" position="center">
+																									<groups>
+																										<skuid__buttonGroup uniqueId="sk-3scY-47602">
+																											<buttons>
+																												<skuid__button label="Upload avatar" uniqueId="sk-3scY-47603" styleSettingsVariant="803b8f80-948e-46cc-840f-bc4b952464c3">
+																													<actions>
+																														<action type="action-sequence" action-sequence-id="15707fa6-ed02-45fb-b42a-7d2e5f16dc21"/>
+																													</actions>
+																													<tooltip position="top"/>
+																												</skuid__button>
+																											</buttons>
+																										</skuid__buttonGroup>
+																									</groups>
+																								</skuid__buttonSet>
+																							</components>
+																							<renderConditions logictype="and"/>
+																						</division>
+																						<division alignSelf="center" minWidth="0px" ratio="1">
+																							<components/>
+																						</division>
+																					</divisions>
+																					<renderConditions logictype="and">
+																						<renderCondition type="fieldvalue" operator="!=" enclosevalueinquotes="false" fieldmodel="me__AvatarSettings" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="avatar.exists" value="true"/>
+																					</renderConditions>
+																					<styleVariantConditions/>
+																					<interactions/>
+																					<styles>
+																						<spacing bottom="2" top="2"/>
+																					</styles>
+																					<background/>
+																				</skuid__grid>
+																				<skuid__grid uniqueid="sk-3ryj-35336" flexDirection="row" justifyContent="center" alignItems="center" columnGutter="2" rowGutter="0">
+																					<divisions>
+																						<division minWidth="0px" ratio="1" alignSelf="auto">
+																							<components/>
+																							<renderConditions logictype="and"/>
+																						</division>
+																						<division alignSelf="auto" minWidth="0" ratio="0">
+																							<components>
+																								<skuid__buttonSet uniqueid="sk-3sa--18330" position="center">
+																									<groups>
+																										<skuid__buttonGroup uniqueId="sk-3sa--18328">
+																											<buttons>
+																												<skuid__button label="Replace" uniqueId="sk-3sa--18329" styleSettingsVariant="803b8f80-948e-46cc-840f-bc4b952464c3">
+																													<actions>
+																														<action type="action-sequence" action-sequence-id="15707fa6-ed02-45fb-b42a-7d2e5f16dc21"/>
+																													</actions>
+																												</skuid__button>
+																											</buttons>
+																										</skuid__buttonGroup>
+																									</groups>
+																									<renderConditions logictype="and"/>
+																									<styleVariantConditions/>
+																								</skuid__buttonSet>
+																							</components>
+																							<renderConditions logictype="and"/>
+																						</division>
+																						<division alignSelf="auto" minWidth="0" ratio="0">
+																							<components>
+																								<skuid__text contents="&lt;div style=&quot;text-align: center;&quot;&gt;&amp;nbsp;|&amp;nbsp;&lt;/div&gt;&#10;" uniqueid="sk-3ryj-35341" styleSettingsVariant="ef8d4ab0-3722-4e16-903c-ec582c9ca67f">
+																									<renderConditions logictype="and"/>
+																									<styleVariantConditions/>
+																								</skuid__text>
+																							</components>
+																							<renderConditions logictype="and"/>
+																						</division>
+																						<division alignSelf="auto" minWidth="0" ratio="0">
+																							<components>
+																								<skuid__buttonSet model="me__AvatarSettings" uniqueid="sk-3ryj-35342" position="center">
+																									<groups>
+																										<skuid__buttonGroup displayType="detached">
+																											<buttons>
+																												<skuid__button label="Delete" uniqueid="sk-3ryj-35343" styleSettingsVariant="803b8f80-948e-46cc-840f-bc4b952464c3">
+																													<actions>
+																														<action type="showModal">
+																															<skuid__modal title="Delete avatar" width="640px">
+																																<components>
+																																	<skuid__text contents="Are you sure you want to permanantly delete this avatar?&amp;nbsp; &lt;strong&gt;You can&amp;#39;t undo this.&amp;nbsp;&lt;/strong&gt;" uniqueid="sk-3ryj-35344"/>
+																																</components>
+																																<buttons>
+																																	<skuid__button label="Yes, delete avatar" uniqueid="sk-3ryj-35345" styleSettingsVariant="destructive">
+																																		<actions>
+																																			<action type="markRowsForDeletion" model="me__AvatarSettings" affectedrows="context"/>
+																																			<action type="save">
+																																				<models>
+																																					<model>me__AvatarSettings</model>
+																																				</models>
+																																				<onerroractions>
+																																					<action type="blockUI" message="There was an error deleting the image" timeout="3000" styleSettingsVariant="dark"/>
+																																				</onerroractions>
+																																			</action>
+																																			<action type="requeryModels" behavior="standard">
+																																				<models>
+																																					<model>me__AvatarSettings</model>
+																																				</models>
+																																			</action>
+																																			<action type="closeModals" closebehavior="close"/>
+																																			<action type="showToast" duration="4" styleSettingsVariant="default" message="Avatar deleted" position="bl"/>
+																																		</actions>
+																																	</skuid__button>
+																																	<skuid__button label="Cancel" uniqueid="sk-3ryj-35346">
+																																		<actions>
+																																			<action type="closeModals" closebehavior="close"/>
+																																		</actions>
+																																		<renderConditions logictype="and"/>
+																																		<enableConditions/>
+																																		<styleVariantConditions/>
+																																	</skuid__button>
+																																</buttons>
+																																<afterCloseActions/>
+																															</skuid__modal>
+																														</action>
+																														<action type="save">
+																															<models>
+																																<model>me__AvatarSettings</model>
+																															</models>
+																														</action>
+																													</actions>
+																													<renderConditions logictype="and"/>
+																													<enableConditions/>
+																													<styleVariantConditions/>
+																												</skuid__button>
+																											</buttons>
+																										</skuid__buttonGroup>
+																									</groups>
+																									<renderConditions logictype="and"/>
+																									<styleVariantConditions/>
+																									<styles>
+																										<spacing/>
+																									</styles>
+																								</skuid__buttonSet>
+																							</components>
+																							<renderConditions logictype="and"/>
+																						</division>
+																						<division alignSelf="auto" minWidth="0px" ratio="1">
+																							<components/>
+																							<renderConditions logictype="and"/>
+																						</division>
+																					</divisions>
+																					<renderConditions logictype="and">
+																						<renderCondition type="fieldvalue" operator="=" enclosevalueinquotes="false" fieldmodel="me__AvatarSettings" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="avatar.exists" value="true"/>
+																					</renderConditions>
+																					<styles>
+																						<spacing bottom="2" top="2"/>
+																					</styles>
+																					<styleVariantConditions/>
+																					<interactions/>
+																					<background/>
+																				</skuid__grid>
+																			</components>
+																		</division>
+																	</divisions>
+																	<renderConditions logictype="and"/>
+																	<interactions/>
+																	<styles>
+																		<spacing/>
+																	</styles>
+																</skuid__grid>
+															</components>
+															<background/>
+															<styles>
+																<spacing bottom="2" styleSettingsVariant="bf33363a-3a94-4331-aa35-129d2ca56060"/>
+															</styles>
+														</skuid__wrapper>
+														<skuid__verticalNavigation uniqueid="sk-1CjW-25603" styleSettingsVariant="borderless">
+															<items>
+																<item label=" " uniqueid="sk-HrZ-45906">
+																	<actions>
+																		<action type="redirect" window="self"/>
+																	</actions>
+																</item>
+																<item label="General" uniqueid="sk-1CjW-25602">
+																	<actions>
+																		<action type="updateRow" fieldmodel="ui__VerticalNav" affectedrows="context">
+																			<updates>
+																				<update valuesource="fieldvalue" field="currentTab" enclosevalueinquotes="true" value="General"/>
+																			</updates>
+																		</action>
+																	</actions>
+																	<renderConditions logictype="and"/>
+																	<selectedConditions logictype="and">
+																		<condition type="fieldvalue" operator="=" enclosevalueinquotes="true" fieldmodel="ui__VerticalNav" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="currentTab" value="General"/>
+																	</selectedConditions>
+																</item>
+																<item label="Locale" uniqueid="sk-1Cja-27714">
+																	<actions>
+																		<action type="updateRow" fieldmodel="ui__VerticalNav" affectedrows="context">
+																			<updates>
+																				<update valuesource="fieldvalue" field="currentTab" enclosevalueinquotes="true" value="Locale"/>
+																			</updates>
+																		</action>
+																	</actions>
+																	<renderConditions logictype="and"/>
+																	<selectedConditions logictype="and">
+																		<condition type="fieldvalue" operator="=" enclosevalueinquotes="true" fieldmodel="ui__VerticalNav" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="currentTab" value="Locale"/>
+																	</selectedConditions>
+																</item>
+																<item label="Site Preferences" uniqueid="sk-1Cja-28349">
+																	<actions>
+																		<action type="updateRow" fieldmodel="ui__VerticalNav" affectedrows="context">
+																			<updates>
+																				<update valuesource="fieldvalue" field="currentTab" enclosevalueinquotes="true" value="Site Preferences"/>
+																			</updates>
+																		</action>
+																	</actions>
+																	<renderConditions logictype="and"/>
+																	<selectedConditions logictype="and">
+																		<condition type="fieldvalue" operator="=" enclosevalueinquotes="true" fieldmodel="ui__VerticalNav" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="currentTab" value="Site Preferences"/>
+																	</selectedConditions>
+																</item>
+																<item label="Data Source Credentials" uniqueid="sk-1Cja-29064">
+																	<actions>
+																		<action type="updateRow" fieldmodel="ui__VerticalNav" affectedrows="context">
+																			<updates>
+																				<update valuesource="fieldvalue" field="currentTab" enclosevalueinquotes="true" value="Data Source Credentials"/>
+																			</updates>
+																		</action>
+																	</actions>
+																	<renderConditions logictype="and">
+																		<renderCondition type="fieldvalue" enclosevalueinquotes="true" fieldmodel="cm_ModelDataSourceCreds" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasRows"/>
+																	</renderConditions>
+																	<selectedConditions logictype="and">
+																		<condition type="fieldvalue" operator="=" enclosevalueinquotes="true" fieldmodel="ui__VerticalNav" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="currentTab" value="Data Source Credentials"/>
+																	</selectedConditions>
+																</item>
+															</items>
+														</skuid__verticalNavigation>
+													</components>
+												</division>
+												<division minWidth="100px" ratio="1" alignSelf="auto">
+													<components>
+														<skuid__text contents="{{currentTab}}" uniqueid="sk-Hp9-19090" model="ui__VerticalNav" styleSettingsVariant="014b3346-10ed-4578-aa1a-cae68a21cc80">
+															<styles>
+																<spacing bottom="4" styleSettingsVariant="014b3346-10ed-4578-aa1a-cae68a21cc80"/>
+															</styles>
+														</skuid__text>
+														<skuid__wrapper uniqueid="user-details" styleSettingsVariant="c5a44cb4-0fb9-4631-a576-a20f998816e0" overflowY="auto">
+															<components>
+																<skuid__grid uniqueid="sk-1hn6-35914" flexDirection="row" justifyContent="flex-start" alignItems="flex-start" columnGutter="4">
+																	<divisions>
+																		<division minWidth="100px" ratio="1" alignSelf="auto" maxWidth="600px">
+																			<components>
+																				<skuid__wrapper uniqueid="sk-ppo-36647">
+																					<components>
+																						<skuid__form showErrorsInline="true" model="me__CurrentUser" uniqueid="sk-1KlG-26976" mode="edit" minLabelWidth="100px" flexRatioLabel="0" minValueWidth="200px" flexRatioValue="0">
+																							<renderConditions logictype="and">
+																								<renderCondition type="fieldvalue" operator="=" enclosevalueinquotes="true" fieldmodel="ui__VerticalNav" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="currentTab" value="General"/>
+																							</renderConditions>
+																							<styleVariantConditions/>
+																							<columns>
+																								<column verticalAlign="top" ratio="1" behavior="flex">
+																									<sections>
+																										<section title="New Section" showHeading="false">
+																											<fields>
+																												<skuid__field id="first_name"/>
+																												<skuid__field id="last_name"/>
+																												<skuid__field id="username"/>
+																												<skuid__field id="email"/>
+																												<skuid__field type="COMBO" label="Federation Id" uniqueId="sk-1cbk-98911" template="{{#federation_id}}{{federation_id}}{{/federation_id}}{{^federation_id}}None{{/federation_id}}" readOnly="true"/>
+																											</fields>
+																										</section>
+																									</sections>
+																								</column>
+																							</columns>
+																							<styles>
+																								<spacing bottom="3"/>
+																							</styles>
+																						</skuid__form>
+																						<skuid__text contents="{{^$Model.FeatureFlags.data.0.appPermSetsEnabled}}Profile{{/$Model.FeatureFlags.data.0.appPermSetsEnabled}}{{#$Model.FeatureFlags.data.0.appPermSetsEnabled}}Site permission set{{/$Model.FeatureFlags.data.0.appPermSetsEnabled}}" uniqueid="sk-pok-25750" model="FeatureFlags" styleSettingsVariant="bcf356fb-cd9b-4b49-adb6-299b154f243f">
+																							<styles>
+																								<spacing bottom="1" styleSettingsVariant="bcf356fb-cd9b-4b49-adb6-299b154f243f"/>
+																							</styles>
+																						</skuid__text>
+																						<skuid__text contents="{{profile.name}}" uniqueid="sk-pow-28544" model="me__CurrentUser">
+																							<styles>
+																								<spacing bottom="0.5"/>
+																							</styles>
+																						</skuid__text>
+																					</components>
+																					<styles>
+																						<spacing/>
+																					</styles>
+																					<background/>
+																					<renderConditions logictype="and">
+																						<renderCondition type="fieldvalue" operator="=" enclosevalueinquotes="true" fieldmodel="ui__VerticalNav" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="currentTab" value="General"/>
+																					</renderConditions>
+																					<styleVariantConditions/>
+																				</skuid__wrapper>
+																				<skuid__form showErrorsInline="true" model="me__CurrentUser" uniqueid="sk-1KmY-36484" mode="edit">
+																					<renderConditions logictype="and">
+																						<renderCondition type="fieldvalue" operator="=" enclosevalueinquotes="true" fieldmodel="ui__VerticalNav" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="currentTab" value="Locale"/>
+																					</renderConditions>
+																					<styleVariantConditions/>
+																					<columns>
+																						<column verticalAlign="top" ratio="1">
+																							<sections>
+																								<section title="Site Behavior" showHeading="false">
+																									<fields>
+																										<skuid__field id="locale" displayAs="COMBOBOX"/>
+																										<skuid__field id="time_zone" displayAs="COMBOBOX"/>
+																										<skuid__field id="language"/>
+																									</fields>
+																								</section>
+																							</sections>
+																						</column>
+																					</columns>
+																					<styles>
+																						<spacing/>
+																					</styles>
+																				</skuid__form>
+																				<skuid__form showErrorsInline="true" model="me__CurrentUser" uniqueid="sk-1Kn0-40492" mode="edit">
+																					<renderConditions logictype="and">
+																						<renderCondition type="fieldvalue" operator="=" enclosevalueinquotes="true" fieldmodel="ui__VerticalNav" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="currentTab" value="Site Preferences"/>
+																					</renderConditions>
+																					<styleVariantConditions/>
+																					<columns>
+																						<column verticalAlign="top" ratio="1">
+																							<sections>
+																								<section title="New Section" showHeading="false">
+																									<fields>
+																										<skuid__field id="land_on_last_visited_page"/>
+																									</fields>
+																								</section>
+																							</sections>
+																						</column>
+																					</columns>
+																				</skuid__form>
+																			</components>
+																		</division>
+																	</divisions>
+																</skuid__grid>
+																<skuid__table allowColumnFreezing="dragDrop" model="cm_ModelDataSourceCreds" uniqueid="sk-1Ksu-13532" mode="readonly" showSaveCancel="false" pageSize="Infinity" showListFooter="false">
+																	<fields>
+																		<field id="data_source_type" uniqueid="fi-1nQK-21046"/>
+																		<field id="data_source_name" uniqueid="fi-1nQK-21047"/>
+																		<field id="username" uniqueid="fi-1nQK-21048"/>
+																		<field id="password" uniqueid="fi-1nQK-21049" displayAs="PASSWORD" readOnly="false"/>
+																	</fields>
+																	<filtering enableSearch="false"/>
+																	<rowActions>
+																		<action type="multi" label="EDIT">
+																			<actions>
+																				<action type="updateRow" fieldmodel="cm_ModelDataSourceCreds" affectedrows="context">
+																					<updates>
+																						<update valuesource="blank" field="password" enclosevalueinquotes="true"/>
+																					</updates>
+																				</action>
+																				<action type="showModal">
+																					<skuid__modal title="Update credentials for {{data_source_name}}" width="480px" styleSettingsVariant="9c54fc61-6857-4f90-8d09-722dfe82ce42">
+																						<components>
+																							<skuid__wrapper uniqueid="sk-8Hf-31148">
+																								<components>
+																									<skuid__form showErrorsInline="true" model="cm_ModelDataSourceCreds" uniqueid="sk-1bM5-24362" mode="edit">
+																										<columns>
+																											<column verticalAlign="top" ratio="1">
+																												<sections>
+																													<section title="New Section" showHeading="false">
+																														<fields>
+																															<skuid__field id="username" uniqueId="sk-1bM7-25726"/>
+																														</fields>
+																													</section>
+																												</sections>
+																											</column>
+																										</columns>
+																										<styles>
+																											<spacing bottom="3"/>
+																										</styles>
+																									</skuid__form>
+																									<skuid__grid uniqueid="sk-1bMC-30218" flexDirection="row" justifyContent="flex-start" alignItems="flex-start">
+																										<divisions>
+																											<division minWidth="100px" ratio="1" alignSelf="flex-end">
+																												<components>
+																													<skuid__text contents="Password" uniqueid="sk-1bME-31508" styleSettingsVariant="bcf356fb-cd9b-4b49-adb6-299b154f243f">
+																														<renderConditions logictype="and"/>
+																														<styleVariantConditions/>
+																													</skuid__text>
+																												</components>
+																											</division>
+																											<division alignSelf="flex-end" minWidth="100px" ratio="1">
+																												<components>
+																													<skuid__buttonSet uniqueid="sk-1bMR-33585">
+																														<groups>
+																															<skuid__buttonGroup uniqueId="sk-1bMR-33583" displayType="detached">
+																																<buttons>
+																																	<skuid__button label="Show Password" uniqueId="sk-1bMR-33584" styleSettingsVariant="803b8f80-948e-46cc-840f-bc4b952464c3">
+																																		<renderConditions logictype="and">
+																																			<renderCondition type="fieldvalue" operator="!=" enclosevalueinquotes="false" fieldmodel="cm_ModelDataSourceCreds" sourcetype="fieldvalue" field="show_password" fieldtargetobjects="SkuidLocal" value="true"/>
+																																		</renderConditions>
+																																		<enableConditions logictype="and">
+																																			<condition type="fieldvalue" enclosevalueinquotes="false" fieldmodel="cm_ModelDataSourceCreds" sourcetype="modelproperty" sourceproperty="hasChanged" value="true" operator="="/>
+																																			<condition type="blank" operator="!=" fieldmodel="cm_ModelDataSourceCreds" sourcetype="fieldvalue" field="password" fieldtargetobjects="SkuidLocal" value="null" enclosevalueinquotes="false"/>
+																																		</enableConditions>
+																																		<styleVariantConditions/>
+																																		<actions>
+																																			<action type="updateRow" fieldmodel="cm_ModelDataSourceCreds" affectedrows="context">
+																																				<updates>
+																																					<update valuesource="fieldvalue" field="show_password" enclosevalueinquotes="false" value="true"/>
+																																				</updates>
+																																			</action>
+																																		</actions>
+																																	</skuid__button>
+																																	<skuid__button uniqueId="sk-1cDN-24662" styleSettingsVariant="803b8f80-948e-46cc-840f-bc4b952464c3" label="Hide Password">
+																																		<renderConditions logictype="and">
+																																			<renderCondition type="fieldvalue" operator="=" enclosevalueinquotes="false" fieldmodel="cm_ModelDataSourceCreds" sourcetype="fieldvalue" field="show_password" fieldtargetobjects="SkuidLocal" value="true"/>
+																																		</renderConditions>
+																																		<enableConditions logictype="and" message="(1 OR 2) AND 3">
+																																			<condition type="fieldvalue" enclosevalueinquotes="false" fieldmodel="cm_ModelDataSourceCreds" sourcetype="modelproperty" sourceproperty="hasChanged" value="true" operator="="/>
+																																			<condition type="blank" operator="!=" fieldmodel="cm_ModelDataSourceCreds" sourcetype="fieldvalue" field="password" fieldtargetobjects="SkuidLocal" value="null" enclosevalueinquotes="false"/>
+																																		</enableConditions>
+																																		<styleVariantConditions/>
+																																		<actions>
+																																			<action type="updateRow" fieldmodel="cm_ModelDataSourceCreds" affectedrows="context">
+																																				<updates>
+																																					<update valuesource="fieldvalue" field="show_password" enclosevalueinquotes="false" value="false"/>
+																																				</updates>
+																																			</action>
+																																		</actions>
+																																	</skuid__button>
+																																</buttons>
+																															</skuid__buttonGroup>
+																														</groups>
+																														<styles>
+																															<spacing top="0.5"/>
+																														</styles>
+																													</skuid__buttonSet>
+																												</components>
+																											</division>
+																										</divisions>
+																										<styles>
+																											<spacing top="1"/>
+																										</styles>
+																										<background/>
+																									</skuid__grid>
+																									<skuid__form showErrorsInline="true" model="cm_ModelDataSourceCreds" uniqueid="sk-1bMA-28346" mode="edit">
+																										<columns>
+																											<column verticalAlign="top" ratio="1">
+																												<sections>
+																													<section title="New Section" showHeading="false">
+																														<fields>
+																															<skuid__field id="password" uniqueId="sk-1bMA-28348" label=" " displayAs="PASSWORD">
+																																<renderConditions logictype="and" onhidedatabehavior="keep">
+																																	<renderCondition type="fieldvalue" operator="!=" enclosevalueinquotes="false" fieldmodel="cm_ModelDataSourceCreds" sourcetype="fieldvalue" field="show_password" fieldtargetobjects="SkuidLocal" value="true"/>
+																																</renderConditions>
+																																<enableConditions/>
+																																<styleVariantConditions/>
+																															</skuid__field>
+																															<skuid__field id="ui_value" uniqueId="sk-1cE6-44877" label=" ">
+																																<renderConditions logictype="and" onhidedatabehavior="keep">
+																																	<renderCondition type="fieldvalue" operator="=" enclosevalueinquotes="false" fieldmodel="cm_ModelDataSourceCreds" sourcetype="fieldvalue" field="show_password" fieldtargetobjects="SkuidLocal" value="true"/>
+																																</renderConditions>
+																																<enableConditions/>
+																																<styleVariantConditions/>
+																															</skuid__field>
+																														</fields>
+																													</section>
+																												</sections>
+																											</column>
+																										</columns>
+																										<styles>
+																											<spacing/>
+																										</styles>
+																									</skuid__form>
+																								</components>
+																								<styles>
+																									<spacing bottom="3" left="3" right="3"/>
+																								</styles>
+																								<background/>
+																							</skuid__wrapper>
+																							<skuid__wrapper uniqueid="sk-8HZ-26219" styleSettingsVariant="127a15a3-f039-4e89-a282-c1f25b6f8d26">
+																								<components/>
+																								<background/>
+																							</skuid__wrapper>
+																							<skuid__wrapper uniqueid="sk-8HX-25008" styleSettingsVariant="04fd592a-6f76-4508-b19c-ee3b1c7bb66c">
+																								<components>
+																									<skuid__wrapper uniqueid="sk-8Ha-27301">
+																										<components>
+																											<skuid__buttonSet uniqueid="sk-1bMX-36087" position="left" model="cm_ModelDataSourceCreds">
+																												<groups>
+																													<skuid__buttonGroup uniqueId="sk-1bMX-36085" displayType="detached">
+																														<buttons>
+																															<skuid__button label="Save" uniqueId="sk-1bMX-36086" styleSettingsVariant="primary">
+																																<actions>
+																																	<action type="save">
+																																		<models>
+																																			<model>cm_ModelDataSourceCreds</model>
+																																		</models>
+																																	</action>
+																																	<action type="closeModals" closebehavior="close"/>
+																																	<action type="showToast" duration="4" position="bl" message="Credentials updated"/>
+																																</actions>
+																																<renderConditions logictype="and"/>
+																																<enableConditions logictype="and">
+																																	<condition type="blank" operator="!=" fieldmodel="cm_ModelDataSourceCreds" sourcetype="fieldvalue" field="username" fieldtargetobjects="SkuidLocal" value="null" enclosevalueinquotes="false"/>
+																																	<condition type="blank" operator="!=" fieldmodel="cm_ModelDataSourceCreds" sourcetype="fieldvalue" field="password" fieldtargetobjects="SkuidLocal" value="null" enclosevalueinquotes="false"/>
+																																</enableConditions>
+																																<styleVariantConditions/>
+																															</skuid__button>
+																															<skuid__button label="Cancel" uniqueId="sk-1bMa-37129">
+																																<actions>
+																																	<action type="closeModals" closebehavior="close"/>
+																																</actions>
+																																<renderConditions logictype="and"/>
+																																<enableConditions/>
+																																<styleVariantConditions/>
+																															</skuid__button>
+																														</buttons>
+																													</skuid__buttonGroup>
+																												</groups>
+																											</skuid__buttonSet>
+																										</components>
+																										<styles>
+																											<spacing top="2" bottom="2" left="3" right="3"/>
+																										</styles>
+																										<background/>
+																									</skuid__wrapper>
+																								</components>
+																								<background/>
+																							</skuid__wrapper>
+																						</components>
+																						<afterCloseActions>
+																							<action type="cancel">
+																								<models>
+																									<model>cm_ModelDataSourceCreds</model>
+																								</models>
+																							</action>
+																							<action type="requeryModels" behavior="standard">
+																								<models>
+																									<model>cm_ModelDataSourceCreds</model>
+																								</models>
+																							</action>
+																						</afterCloseActions>
+																					</skuid__modal>
+																				</action>
+																			</actions>
+																		</action>
+																	</rowActions>
+																	<massActions/>
+																	<renderConditions logictype="and">
+																		<renderCondition type="fieldvalue" operator="=" enclosevalueinquotes="true" fieldmodel="ui__VerticalNav" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="currentTab" value="Data Source Credentials"/>
+																	</renderConditions>
+																	<styleVariantConditions/>
+																	<exportProperties useTableColumns="true"/>
+																	<sorting enable="false"/>
+																	<styles>
+																		<spacing/>
+																	</styles>
+																</skuid__table>
+																<skuid__buttonSet uniqueid="sk-263v-23259" position="left" model="me__CurrentUser">
+																	<groups>
+																		<skuid__buttonGroup uniqueId="sk-263v-23260" displayType="detached" horizontalAlignment="left">
+																			<buttons>
+																				<skuid__button label="Save" uniqueId="sk-263v-23261" styleSettingsVariant="primary">
+																					<actions>
+																						<action type="branch" whenfinished="stop" model="me__CurrentUser" label="if email has changed">
+																							<formula>{{email_has_changed}} &amp;&amp; {{hasPassword}}</formula>
+																							<iftrueactions>
+																								<action type="emptyModelData">
+																									<models>
+																										<model>ui__ValidatePassword</model>
+																									</models>
+																								</action>
+																								<action type="createRow" model="ui__ValidatePassword" appendorprepend="prepend" defaultmodefornewitems="edit" affectedrows="context"/>
+																								<action type="showModal">
+																									<skuid__modal title="Confirm password" width="640px">
+																										<components>
+																											<skuid__text contents="Confirm your password to save your changes." uniqueid="sk-1cWa-30815">
+																												<styles>
+																													<spacing bottom="3"/>
+																												</styles>
+																											</skuid__text>
+																											<skuid__messageArea model="ui__ValidatePassword" uniqueid="sk-3yfi-27015">
+																												<group>
+																													<skuid__messageBlock model="ui__ValidatePassword" title="Incorrect password" description="You can try again or &lt;a href=&quot;/ui/forgotpassword&quot;&gt;reset your password&lt;/a&gt;." allowHTML="true" styleSettingsVariant="errorStrong">
+																														<renderConditions logictype="and">
+																															<renderCondition type="fieldvalue" operator="does not contain" enclosevalueinquotes="true" fieldmodel="stng__ValidatePassword" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="reason" fieldtargetobjects="SkuidLocal" value="You have one attempt remaining"/>
+																														</renderConditions>
+																													</skuid__messageBlock>
+																													<skuid__messageBlock model="ui__ValidatePassword" title="This account will be locked" allowHTML="true" description="You'll be logged out, and you'll need to contact a site administrator after another failed login attempt. If you've forgotten your password, you can &lt;a href=&quot;/ui/forgotpassword&quot;&gt;reset it here&lt;/a&gt;." styleSettingsVariant="errorStrong">
+																														<renderConditions logictype="and">
+																															<renderCondition type="fieldvalue" operator="contains" enclosevalueinquotes="true" fieldmodel="stng__ValidatePassword" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="reason" fieldtargetobjects="SkuidLocal" value="You have one attempt remaining"/>
+																														</renderConditions>
+																													</skuid__messageBlock>
+																												</group>
+																												<renderConditions logictype="and">
+																													<renderCondition type="fieldvalue" enclosevalueinquotes="true" fieldmodel="stng__ValidatePassword" sourcetype="modelproperty" sourceproperty="hasRows"/>
+																													<renderCondition type="fieldvalue" operator="=" enclosevalueinquotes="false" fieldmodel="stng__ValidatePassword" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="success" fieldtargetobjects="SkuidLocal" value="false"/>
+																												</renderConditions>
+																											</skuid__messageArea>
+																											<skuid__grid uniqueid="sk-1cWf-32540" flexDirection="row" justifyContent="flex-start" alignItems="flex-start">
+																												<divisions>
+																													<division minWidth="100px" ratio="1" alignSelf="flex-end">
+																														<components>
+																															<skuid__text contents="Password" uniqueid="sk-1cWh-34457" styleSettingsVariant="4e169d0d-def8-4adb-9bb5-baca37505057"/>
+																														</components>
+																													</division>
+																													<division alignSelf="flex-end" minWidth="100px" ratio="1">
+																														<components>
+																															<skuid__buttonSet model="me__CurrentUser" uniqueid="sk-1cWk-36134">
+																																<groups>
+																																	<skuid__buttonGroup uniqueId="sk-1cWk-36132" displayType="detached">
+																																		<buttons>
+																																			<skuid__button label="Show Password" uniqueId="sk-1cWk-36133" styleSettingsVariant="borderless-no-padding">
+																																				<renderConditions logictype="and">
+																																					<renderCondition type="fieldvalue" operator="!=" enclosevalueinquotes="false" fieldmodel="me__CurrentUser" sourcetype="fieldvalue" field="show_password" fieldtargetobjects="SkuidLocal" value="true"/>
+																																				</renderConditions>
+																																				<enableConditions/>
+																																				<styleVariantConditions/>
+																																				<actions>
+																																					<action type="updateRow" fieldmodel="me__CurrentUser" affectedrows="context">
+																																						<updates>
+																																							<update valuesource="fieldvalue" field="show_password" enclosevalueinquotes="false" value="true"/>
+																																						</updates>
+																																					</action>
+																																				</actions>
+																																			</skuid__button>
+																																			<skuid__button label="Hide Password" uniqueId="sk-1cWl-37205" styleSettingsVariant="borderless-no-padding">
+																																				<renderConditions logictype="and">
+																																					<renderCondition type="fieldvalue" operator="=" enclosevalueinquotes="false" fieldmodel="me__CurrentUser" sourcetype="fieldvalue" field="show_password" fieldtargetobjects="SkuidLocal" value="true"/>
+																																				</renderConditions>
+																																				<enableConditions/>
+																																				<styleVariantConditions/>
+																																				<actions>
+																																					<action type="updateRow" fieldmodel="me__CurrentUser" affectedrows="context">
+																																						<updates>
+																																							<update valuesource="fieldvalue" field="show_password" enclosevalueinquotes="false" value="false"/>
+																																						</updates>
+																																					</action>
+																																				</actions>
+																																			</skuid__button>
+																																		</buttons>
+																																	</skuid__buttonGroup>
+																																</groups>
+																																<styles>
+																																	<spacing top="0.5"/>
+																																</styles>
+																															</skuid__buttonSet>
+																														</components>
+																													</division>
+																												</divisions>
+																												<renderConditions logictype="and"/>
+																												<styleVariantConditions/>
+																											</skuid__grid>
+																											<skuid__form showErrorsInline="true" model="ui__ValidatePassword" uniqueid="sk-3Sgz-35434" mode="edit">
+																												<sections>
+																													<section title="New Section" showHeading="false">
+																														<rows>
+																															<row>
+																																<fields>
+																																	<skuid__field id="text_password" uniqueId="sk-3Sg--36323" label=" ">
+																																		<renderConditions logictype="and" onhidedatabehavior="keep">
+																																			<renderCondition type="fieldvalue" operator="=" enclosevalueinquotes="false" fieldmodel="me__CurrentUser" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="show_password" fieldtargetobjects="SkuidLocal" value="true"/>
+																																		</renderConditions>
+																																		<enableConditions/>
+																																		<styleVariantConditions/>
+																																	</skuid__field>
+																																</fields>
+																															</row>
+																															<row>
+																																<fields>
+																																	<skuid__field id="hidden_password" uniqueId="sk-3Sg--36328" label=" " displayAs="PASSWORD">
+																																		<renderConditions logictype="and" onhidedatabehavior="keep">
+																																			<renderCondition type="fieldvalue" operator="!=" enclosevalueinquotes="false" fieldmodel="me__CurrentUser" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="show_password" fieldtargetobjects="SkuidLocal" value="true"/>
+																																		</renderConditions>
+																																		<enableConditions/>
+																																		<styleVariantConditions/>
+																																	</skuid__field>
+																																</fields>
+																															</row>
+																														</rows>
+																													</section>
+																												</sections>
+																											</skuid__form>
+																											<skuid__buttonSet model="me__CurrentUser" uniqueid="sk-1cZg-86431" position="left">
+																												<groups>
+																													<skuid__buttonGroup uniqueId="sk-1cZg-86429" displayType="detached">
+																														<buttons>
+																															<skuid__button label="Confirm and save" uniqueId="sk-1cZg-86430" styleSettingsVariant="primary">
+																																<actions>
+																																	<action type="emptyModelData">
+																																		<models>
+																																			<model>stng__ValidatePassword</model>
+																																		</models>
+																																	</action>
+																																	<action type="createRow" model="stng__ValidatePassword" appendorprepend="prepend" defaultmodefornewitems="edit" affectedrows="context">
+																																		<defaults>
+																																			<default valuesource="modelmerge" field="password" enclosevalueinquotes="true" sourcemodel="ui__ValidatePassword" sourcefield="text_password"/>
+																																		</defaults>
+																																	</action>
+																																	<action type="save">
+																																		<models>
+																																			<model>stng__ValidatePassword</model>
+																																		</models>
+																																		<onerroractions/>
+																																	</action>
+																																	<action type="branch" whenfinished="stop" label="if user is locked out" model="stng__ValidatePassword">
+																																		<formula>CONTAINS({{{reason}}} , "user is locked out")</formula>
+																																		<iftrueactions>
+																																			<action type="cancel">
+																																				<models>
+																																					<model>me__CurrentUser</model>
+																																					<model>ui__ValidatePassword</model>
+																																					<model>stng__ValidatePassword</model>
+																																				</models>
+																																			</action>
+																																			<action type="redirect" window="self" url="/auth/logout"/>
+																																		</iftrueactions>
+																																	</action>
+																																	<action type="branch" whenfinished="stop" label="if password is valid" model="stng__ValidatePassword">
+																																		<formula>{{success}}</formula>
+																																		<iftrueactions>
+																																			<action type="save">
+																																				<models>
+																																					<model>me__CurrentUser</model>
+																																				</models>
+																																			</action>
+																																			<action type="closeModals" closebehavior="close"/>
+																																			<action type="showToast" duration="4" position="bl" message="Changes saved"/>
+																																		</iftrueactions>
+																																	</action>
+																																</actions>
+																																<renderConditions logictype="and"/>
+																																<enableConditions logictype="and">
+																																	<condition type="blank" operator="!=" fieldmodel="ui__ValidatePassword" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="text_password" value="null" enclosevalueinquotes="false"/>
+																																</enableConditions>
+																																<styleVariantConditions/>
+																															</skuid__button>
+																															<skuid__button label="Cancel" uniqueId="sk-1cZk-88947">
+																																<actions>
+																																	<action type="cancel">
+																																		<models>
+																																			<model>me__CurrentUser</model>
+																																			<model>ui__ValidatePassword</model>
+																																			<model>stng__ValidatePassword</model>
+																																		</models>
+																																	</action>
+																																	<action type="closeModals" closebehavior="close"/>
+																																</actions>
+																															</skuid__button>
+																														</buttons>
+																													</skuid__buttonGroup>
+																												</groups>
+																												<styles>
+																													<spacing top="2" bottom="1"/>
+																												</styles>
+																											</skuid__buttonSet>
+																										</components>
+																										<afterCloseActions>
+																											<action type="cancel">
+																												<models>
+																													<model>me__CurrentUser</model>
+																												</models>
+																											</action>
+																										</afterCloseActions>
+																									</skuid__modal>
+																								</action>
+																							</iftrueactions>
+																						</action>
+																						<action type="save">
+																							<models>
+																								<model>me__CurrentUser</model>
+																							</models>
+																							<onerroractions>
+																								<action type="blockUI" message="There was an error saving changes" timeout="3000" styleSettingsVariant="dark"/>
+																							</onerroractions>
+																						</action>
+																						<action type="showToast" duration="4" position="bl" message="Changes saved"/>
+																					</actions>
+																					<renderConditions logictype="and"/>
+																					<enableConditions logictype="or">
+																						<condition type="fieldvalue" enclosevalueinquotes="false" fieldmodel="me__CurrentUser" sourcetype="modelproperty" sourceproperty="hasChanged" value="true" operator="="/>
+																					</enableConditions>
+																					<styleVariantConditions/>
+																				</skuid__button>
+																				<skuid__button label="Cancel" uniqueId="sk-263v-23262">
+																					<actions>
+																						<action type="cancel">
+																							<models>
+																								<model>me__CurrentUser</model>
+																								<model>cm_ModelDataSourceCreds</model>
+																							</models>
+																						</action>
+																					</actions>
+																					<renderConditions logictype="and"/>
+																					<enableConditions logictype="or">
+																						<condition type="fieldvalue" enclosevalueinquotes="false" fieldmodel="me__CurrentUser" sourcetype="modelproperty" sourceproperty="hasChanged" value="true" operator="="/>
+																					</enableConditions>
+																					<styleVariantConditions/>
+																				</skuid__button>
+																			</buttons>
+																		</skuid__buttonGroup>
+																	</groups>
+																	<styles>
+																		<spacing top="4"/>
+																	</styles>
+																	<renderConditions logictype="and">
+																		<renderCondition type="fieldvalue" operator="!=" enclosevalueinquotes="true" fieldmodel="ui__VerticalNav" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="currentTab" value="Data Source Credentials"/>
+																	</renderConditions>
+																	<styleVariantConditions/>
+																</skuid__buttonSet>
+															</components>
+															<background/>
+															<interactions/>
+															<renderConditions logictype="and"/>
+															<styleVariantConditions/>
+														</skuid__wrapper>
+													</components>
+												</division>
+											</divisions>
+											<background/>
+										</skuid__grid>
+									</components>
+								</division>
+							</divisions>
+							<interactions/>
+							<styles>
+								<spacing/>
+							</styles>
+							<renderConditions logictype="and"/>
+							<styleVariantConditions/>
+							<background/>
+						</skuid__grid>
+					</components>
+					<styles>
+						<spacing bottom="4" top="7" left="4" right="4"/>
+					</styles>
+					<background/>
+				</skuid__wrapper>
+			</components>
+		</pageregioncontent>
+	</pageregioncontents>
+	<components/>
+	<resources>
+		<labels/>
+		<javascript>
+			<jsitem location="staticresource" url="" namespace="skuid" filepath="js/skuidPages/skuidCredentialsManagement.js" scope="api"/>
+			<jsitem location="inlinesnippet" name="checkForFeatureFlags" cachelocation="false">var params = arguments[0],
+   $ = skuid.$;
+  
+var model = skuid.$M("FeatureFlags")
+model.updateRow(model.getFirstRow(),{
+   appPermSetsEnabled: skuid.platform.hasFeature("Permission Sets"),
+});</jsitem>
+		</javascript>
+		<css/>
+		<actionsequences uniqueid="sk-Qke-497">
+			<actionsequence id="2e2f00e0-7b27-4623-9d85-a63041ab43cd" label="SetupDeleteListener" type="event-triggered" event-scope="component" event-name="page.rendered">
+				<description/>
+				<actions>
+					<action type="custom" snippet="skuid.mySettings.resetHeaderAvatar" action-sequence-id="82793f2e-b6b1-40dd-93ac-5cc0d7192b5d"/>
+					<action type="updateRow" fieldmodel="ui__VerticalNav" affectedrows="context">
+						<updates>
+							<update valuesource="fieldvalue" field="currentTab" enclosevalueinquotes="true" value="General"/>
+						</updates>
+					</action>
+					<action type="custom" snippet="checkForFeatureFlags"/>
+				</actions>
+			</actionsequence>
+			<actionsequence id="15707fa6-ed02-45fb-b42a-7d2e5f16dc21" label="Upload an image" type="reusable">
+				<actions>
+					<action type="showModal">
+						<skuid__modal title="Upload an avatar" width="640px">
+							<components>
+								<skuid__text contents="Upload a &lt;strong&gt;.png&lt;/strong&gt;, &lt;strong&gt;.jpg&lt;/strong&gt;, or &lt;strong&gt;.gif&lt;/strong&gt;&amp;nbsp;smaller than 5 MB." uniqueid="sk-3sb7-26133"/>
+								<skuid__file storeAs="uploadfilewithcontext" displayAs="filename" uniqueid="sk-3sbX-31908" datasource="SkuidLocal" model="me__CurrentUser" url="/me/{{$User.userId}}/avatar" buttonLabel="Upload" enforceMaxFileSize="false" maxFileSize="50000000000000" styleSettingsVariant="9ee933a8-36c4-4850-bc90-71e5abf31e1b">
+									<uploadSuccessActions>
+										<action type="requeryModels" behavior="standard">
+											<models>
+												<model>me__AvatarSettings</model>
+											</models>
+										</action>
+										<action type="closeModals" closebehavior="close"/>
+										<action type="showToast" duration="4" message="Avatar uploaded" position="bl"/>
+									</uploadSuccessActions>
+									<uploadFailureActions/>
+									<renderConditions logictype="and"/>
+									<styleVariantConditions/>
+									<styles>
+										<spacing top="3" bottom="3" styleSettingsVariant="9ee933a8-36c4-4850-bc90-71e5abf31e1b"/>
+									</styles>
+								</skuid__file>
+							</components>
+							<buttons/>
+						</skuid__modal>
+					</action>
+				</actions>
+				<description/>
+			</actionsequence>
+		</actionsequences>
+	</resources>
+	<styles>
+		<styleitem type="background" bgtype="none"/>
+	</styles>
+</skuid__page>

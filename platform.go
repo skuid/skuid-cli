@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gookit/color"
 	"github.com/pkg/errors"
 )
 
@@ -53,8 +54,14 @@ func PlatformLogin(host, username, password, apiVersion, metadataServiceProxy, d
 	loginStart := time.Now()
 
 	if verbose {
-		Println(fmt.Sprintf("Logging in to Skuid Platform as user: %v\n%v", username, host))
-		Println("API Version: " + apiVersion)
+		for _, msg := range [][]string{
+			{"Logging in to Skuid Platform as user:", username},
+			{"Connecting to host:", host},
+			{"API Version:", apiVersion},
+		} {
+			Printf("%-45s\t%s\n", color.Yellow.Sprint(msg[0]), color.Green.Sprint(msg[1]))
+		}
+		Separator()
 	}
 
 	conn := PlatformRestConnection{
@@ -97,7 +104,7 @@ func PlatformLogin(host, username, password, apiVersion, metadataServiceProxy, d
 	}
 
 	if verbose {
-		Println(SuccessWithTime("Login Success", loginStart))
+		SuccessWithTime("Login Success", loginStart)
 		Println("Access Token: " + conn.AccessToken)
 	}
 
@@ -125,7 +132,7 @@ func (conn *PlatformRestConnection) Refresh() error {
 	if err != nil {
 		switch err.(type) {
 		case *url.Error:
-			return AugmentError("Could not connect to authorization endpoint", err)
+			return fmt.Errorf("%v\n%v", "Could not connect to Authorization Endpoint", err.Error())
 		default:
 			return err
 		}
@@ -261,7 +268,7 @@ func (conn *PlatformRestConnection) MakeJWTRequest(method string, url string, pa
 // GetDeployPlan fetches a deploymnent plan from Skuid Platform API
 func (api *PlatformRestApi) GetDeployPlan(payload io.Reader, mimeType string, verbose bool) (map[string]Plan, error) {
 	if verbose {
-		Println(VerboseSection("Getting Deploy Plan"))
+		VerboseSection("Getting Deploy Plan")
 	}
 	if mimeType == "" {
 		mimeType = "application/zip"
@@ -281,7 +288,7 @@ func (api *PlatformRestApi) GetDeployPlan(payload io.Reader, mimeType string, ve
 	}
 
 	if verbose {
-		Println(SuccessWithTime("Success Getting Deploy Plan", planStart))
+		SuccessWithTime("Success Getting Deploy Plan", planStart)
 	}
 
 	defer (*planResult).Close()
@@ -297,7 +304,7 @@ func (api *PlatformRestApi) GetDeployPlan(payload io.Reader, mimeType string, ve
 // ExecuteDeployPlan executes a map of plan items in a deployment plan
 func (api *PlatformRestApi) ExecuteDeployPlan(plans map[string]Plan, targetDir string, verbose bool) ([]*io.ReadCloser, error) {
 	if verbose {
-		Println(VerboseSection("Executing Deploy Plan"))
+		VerboseSection("Executing Deploy Plan")
 	}
 	planResults := []*io.ReadCloser{}
 	for _, plan := range plans {
@@ -355,7 +362,7 @@ func (api *PlatformRestApi) ExecutePlanItem(plan Plan, targetDir string, verbose
 	}
 
 	if verbose {
-		Println(SuccessWithTime("Success Deploying to Source", deployStart))
+		SuccessWithTime("Success Deploying to Source", deployStart)
 	}
 	defer (*planResult).Close()
 	return planResult, nil

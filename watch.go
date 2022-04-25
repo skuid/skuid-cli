@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -16,7 +17,7 @@ var watchCmd = &cobra.Command{
 	Use:   "watch",
 	Short: "Watch for changes to local Skuid metadata, and deploy changes to a Skuid Platform Site.",
 	Long:  "Watches for changes to local Skuid metadata on your file system, and automatically deploys the changed files to a Skuid Platform Site.",
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 
 		api, err := PlatformLogin(
 			ArgHost,
@@ -29,8 +30,8 @@ var watchCmd = &cobra.Command{
 		)
 
 		if err != nil {
-			Println(PrettyError("Error logging in to Skuid site", err))
-			os.Exit(1)
+			PrintError("Error logging in to Skuid site", err)
+			return
 		}
 
 		var targetDirFriendly string
@@ -49,7 +50,7 @@ var watchCmd = &cobra.Command{
 		targetDirFriendly, err = filepath.Abs(filepath.Dir(os.Args[0]))
 
 		if err != nil {
-			log.Fatal(err)
+			return
 		}
 
 		Println("Watching for changes to Skuid metadata files in directory: " + targetDirFriendly)
@@ -86,25 +87,25 @@ var watchCmd = &cobra.Command{
 		}()
 
 		// Watch targetDir recursively for changes.
-		if err := w.AddRecursive(ArgTargetDir); err != nil {
-			log.Fatalln(err)
+		if err = w.AddRecursive(ArgTargetDir); err != nil {
+			return
 		}
 
 		// Print a list of all of the files and folders currently
 		// being watched and their paths.
-		if ArgVerbose {
-			Println("** Now watching the following files for changes... **")
-			for path, f := range w.WatchedFiles() {
-				Printf("%s: %s\n", path, f.Name())
-			}
-			Println("Waiting for changes...")
+
+		VerboseLn("** Now watching the following files for changes... **")
+		for path, f := range w.WatchedFiles() {
+			VerboseLn(fmt.Sprintf("%s: %s", path, f.Name()))
 		}
+		VerboseLn("Waiting for changes...")
 
 		// Start the watching process - it'll check for changes every 100ms.
-		if err := w.Start(time.Millisecond * 100); err != nil {
-			log.Fatalln(err)
+		if err = w.Start(time.Millisecond * 100); err != nil {
+			return
 		}
 
+		return
 	},
 }
 
@@ -114,27 +115,23 @@ func deployModifiedFiles(api *PlatformRestApi, modifiedFile string) {
 	bufPlan := new(bytes.Buffer)
 	err := ArchivePartial(ArgTargetDir, bufPlan, modifiedFile)
 	if err != nil {
-		Println(PrettyError("Error creating deployment ZIP archive", err))
+		PrintError("Error creating deployment ZIP archive", err)
 		os.Exit(1)
 	}
 
-	if ArgVerbose {
-		Println("Getting deploy plan...")
-	}
+	VerboseLn("Getting deploy plan...")
 
 	plan, err := api.GetDeployPlan(bufPlan, "application/zip", ArgVerbose)
 	if err != nil {
-		Println(PrettyError("Error getting deploy plan", err))
+		PrintError("Error getting deploy plan", err)
 		os.Exit(1)
 	}
 
-	if ArgVerbose {
-		Println("Retrieved deploy plan. Deploying...")
-	}
+	VerboseLn("Retrieved deploy plan. Deploying...")
 
 	_, err = api.ExecuteDeployPlan(plan, ArgTargetDir, ArgVerbose)
 	if err != nil {
-		Println(PrettyError("Error executing deploy plan", err))
+		PrintError("Error executing deploy plan", err)
 		os.Exit(1)
 	}
 

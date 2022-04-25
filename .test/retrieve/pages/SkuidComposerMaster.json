@@ -1,0 +1,11 @@
+{
+	"name": "SkuidComposerMaster",
+	"apiVersion": "v2",
+	"composerSettings": null,
+	"isMasterPage": true,
+	"isPublic": false,
+	"maxAutoSaves": 25,
+	"module": "",
+	"type": "Desktop",
+	"uniqueId": "SkuidComposerMaster"
+}
