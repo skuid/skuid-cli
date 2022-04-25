@@ -40,6 +40,7 @@ type Metadata struct {
 type RetrieveFilter struct {
 	AppName string `json:"appName"`
 }
+
 type DeployFilter struct {
 	AppName string `json:"appName"`
 	Plan    []byte `json:"plan"`
@@ -51,7 +52,7 @@ func GetMetadataTypeDirNames() (types []string) {
 
 	for i := 0; i < metadataType.NumField(); i++ {
 		field := metadataType.Field(i)
-		types[i] = field.Tag.Get("json")
+		types = append(types, field.Tag.Get("json"))
 	}
 
 	return types
