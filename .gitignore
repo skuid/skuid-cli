@@ -2,6 +2,7 @@ skuidpages
 .env
 .envrc
 skuid
+tides
 !vendor/github.com/skuid
 skuid-cli
 skuid_darwin_amd64
