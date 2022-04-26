@@ -9,12 +9,6 @@ import (
 	"strings"
 )
 
-// TestFile contains the information needed to create a test file
-type TestFile struct {
-	Name string
-	Body string
-}
-
 // Archive compresses a file/directory to a writer
 //
 // If the path ends with a separator, then the contents of the folder at that path

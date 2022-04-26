@@ -1,6 +1,8 @@
 package main
 
-// Name of this version of Skuid CLI
 const (
 	VERSION_NAME = "unknown"
+
+	// Name of this version of the Skuid CLI
+	PROJECT_NAME = "tides" // used to be skuid-cli
 )

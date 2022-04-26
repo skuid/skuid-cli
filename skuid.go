@@ -12,7 +12,7 @@ import (
 	"github.com/beevik/etree"
 )
 
-type PullResponse struct {
+type SkuidPullResponse struct {
 	APIVersion         string  `json:"apiVersion"`
 	Name               string  `json:"name"`
 	UniqueID           string  `json:"uniqueId"`
@@ -25,12 +25,12 @@ type PullResponse struct {
 	Body               string  `json:"body,omitempty"`
 }
 
-type PagePost struct {
-	Changes   []PullResponse `json:"changes"`
-	Deletions []PullResponse `json:"deletions"`
+type SkuidPagePost struct {
+	Changes   []SkuidPullResponse `json:"changes"`
+	Deletions []SkuidPullResponse `json:"deletions"`
 }
 
-type PagePostResult struct {
+type SkuidPagePostResult struct {
 	OrgName string   `json:"orgName"`
 	Success bool     `json:"success"`
 	Errors  []string `json:"upsertErrors,omitempty"`
@@ -38,7 +38,7 @@ type PagePostResult struct {
 
 // Create a file basename from the pull response
 // I have no idea why we were using a buffer before
-func (page *PullResponse) FileBasename() string {
+func (page *SkuidPullResponse) FileBasename() string {
 	if page.Module != "" {
 		return fmt.Sprintf("%v_%v", page.Module, page.Name)
 	} else {
@@ -46,7 +46,7 @@ func (page *PullResponse) FileBasename() string {
 	}
 }
 
-func (page *PullResponse) WriteAtRest(path string) (err error) {
+func (page *SkuidPullResponse) WriteAtRest(path string) (err error) {
 
 	// if the desired directory isn't there, create it
 	if _, err = os.Stat(path); err != nil {
@@ -128,7 +128,7 @@ func filterOutXmlFiles(files []string) []string {
 	return filtered
 }
 
-func ReadFiles(dir, moduleFilter, file string) ([]PullResponse, error) {
+func ReadFiles(dir, moduleFilter, file string) ([]SkuidPullResponse, error) {
 
 	var files []string
 
@@ -155,7 +155,7 @@ func ReadFiles(dir, moduleFilter, file string) ([]PullResponse, error) {
 
 	files = filterOutXmlFiles(files)
 
-	definitions := []PullResponse{}
+	definitions := []SkuidPullResponse{}
 
 	for _, file := range files {
 
@@ -167,7 +167,7 @@ func ReadFiles(dir, moduleFilter, file string) ([]PullResponse, error) {
 		//read the page xml
 		bodyFile, _ := ioutil.ReadFile(bodyFilename)
 
-		pullRes := &PullResponse{}
+		pullRes := &SkuidPullResponse{}
 
 		_ = json.Unmarshal(metadataFile, pullRes)
 

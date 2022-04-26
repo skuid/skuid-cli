@@ -60,7 +60,7 @@ var pullCmd = &cobra.Command{
 			return err
 		}
 
-		var pages map[string]PullResponse
+		var pages map[string]SkuidPullResponse
 
 		//you have to unquote the string because what comes back
 		//is escaped json

@@ -22,7 +22,7 @@ var (
 				return err
 			}
 
-			pagePost := &PagePost{Changes: pageDefinitions}
+			pagePost := &SkuidPagePost{Changes: pageDefinitions}
 
 			Printf("Pushing %d pages.\n", len(pagePost.Changes))
 
@@ -49,7 +49,7 @@ var (
 
 			unquoted, _ := strconv.Unquote(string(result))
 
-			response := &PagePostResult{}
+			response := &SkuidPagePostResult{}
 
 			_ = json.Unmarshal([]byte(unquoted), response)
 

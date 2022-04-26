@@ -16,7 +16,7 @@ var deployCmd = &cobra.Command{
 	Use:   "deploy",
 	Short: "Deploy local Skuid metadata to a Skuid Platform Site.",
 	Long:  "Deploy Skuid metadata stored within a local file system directory to a Skuid Platform Site.",
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 
 		VerboseCommand("Deploy Metadata")
 
@@ -56,7 +56,7 @@ var deployCmd = &cobra.Command{
 		// If target directory is provided,
 		// switch to that target directory and later switch back.
 		if ArgTargetDir != "" {
-			err := os.Chdir(ArgTargetDir)
+			err = os.Chdir(ArgTargetDir)
 			if err != nil {
 				PrintError("Unable to change working directory", err)
 				return
@@ -90,7 +90,7 @@ var deployCmd = &cobra.Command{
 			deployBytes, err := json.Marshal(filter)
 			if err != nil {
 				PrintError("Error creating deployment plan payload", err)
-				return
+				return err
 			}
 			deployPlan = bytes.NewReader(deployBytes)
 			mimeType = "application/json"
@@ -122,6 +122,7 @@ var deployCmd = &cobra.Command{
 
 		SuccessWithTime(successMessage, deployStart)
 
+		return
 	},
 }
 

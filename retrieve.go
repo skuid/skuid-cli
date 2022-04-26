@@ -15,7 +15,7 @@ import (
 // retrieveCmd represents the retrieve command
 var (
 	retrieveCmd = &cobra.Command{
-		Use:   "retrieve",
+		Use:   "retrieve -u username -p password ",
 		Short: "Retrieve Skuid metadata from a Site into a local directory.",
 		Long:  "Retrieve Skuid metadata from a Skuid Platform Site and output it into a local directory.",
 		RunE: func(_ *cobra.Command, _ []string) (err error) {
