@@ -55,6 +55,32 @@ func (api *PlatformRestApi) ExecuteDeployPlan(plans map[string]Plan, targetDir s
 	if verbose {
 		VerboseSection("Executing Deploy Plan")
 	}
+
+	// eg := &errgroup.Group{}
+	// ch := make(chan *io.ReadCloser)
+
+	// for _, plan := range plans {
+	// 		p := plan
+	// 	eg.Go(func() error {
+	// 		planResult, err := api.ExecutePlanItem(p, targetDir, verbose)
+	// 		if err != nil {
+	// 			return err
+	// 		}
+	// 		ch <- planResult
+	// 		return nil
+	// 	})
+	// }
+
+	// go func() {
+	// 	eg.Wait()
+	// 	close(ch)
+	// }()
+
+	// planResults := []*io.ReadCloser{}
+	// for pr := range ch {
+	// 	planResults = append(planResults, pr)
+	// }
+
 	planResults := []*io.ReadCloser{}
 	for _, plan := range plans {
 		planResult, err := api.ExecutePlanItem(plan, targetDir, verbose)

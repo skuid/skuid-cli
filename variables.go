@@ -103,15 +103,7 @@ var getvarCmd = &cobra.Command{
 
 		VerboseCommand("Get Variables")
 
-		api, err := PlatformLogin(
-			ArgHost,
-			ArgUsername,
-			ArgPassword,
-			ArgApiVersion,
-			ArgMetadataServiceProxy,
-			ArgDataServiceProxy,
-			ArgVerbose,
-		)
+		api, err := PlatformLogin(cmd)
 
 		if err != nil {
 			PrintError("Error logging in to Skuid site", err)
@@ -190,15 +182,7 @@ var setvarCmd = &cobra.Command{
 
 		VerboseCommand("Set Variable")
 
-		api, err := PlatformLogin(
-			ArgHost,
-			ArgUsername,
-			ArgPassword,
-			ArgApiVersion,
-			ArgMetadataServiceProxy,
-			ArgDataServiceProxy,
-			ArgVerbose,
-		)
+		api, err := PlatformLogin(cmd)
 
 		if err != nil {
 			PrintError("Error logging in to Skuid site", err)
@@ -303,15 +287,7 @@ var rmvarCmd = &cobra.Command{
 
 		VerboseCommand("Delete Variable")
 
-		api, err := PlatformLogin(
-			ArgHost,
-			ArgUsername,
-			ArgPassword,
-			ArgApiVersion,
-			ArgMetadataServiceProxy,
-			ArgDataServiceProxy,
-			ArgVerbose,
-		)
+		api, err := PlatformLogin(cmd)
 
 		if err != nil {
 			PrintError("Error logging in to Skuid site", err)
@@ -393,4 +369,11 @@ func init() {
 	RootCmd.AddCommand(setvarCmd)
 	RootCmd.AddCommand(getvarCmd)
 	RootCmd.AddCommand(rmvarCmd)
+
+	// for each of these, add the necessary flags
+	for _, varCommand := range []*cobra.Command{
+		setvarCmd, getvarCmd, rmvarCmd,
+	} {
+		AddFlags(varCommand, PlatformLoginFlags...)
+	}
 }

@@ -1,0 +1,7 @@
+export PLINY_SUBDOMAIN=
+export PLINY_USER=
+export PLINY_PASSWORD=
+
+export SKUID_PW=
+export SKUID_UN=
+export SKUID_HOST=

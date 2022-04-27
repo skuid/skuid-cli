@@ -6,11 +6,42 @@ import (
 	"time"
 
 	"github.com/gookit/color"
+	"github.com/spf13/cobra"
 )
 
-// Login logs a given user into a target Skuid Platform site and returns a RestApi connection
-// that can be used to make HTTP requests
-func PlatformLogin(host, username, password, apiVersion, metadataServiceProxy, dataServiceProxy string, verbose bool) (api *PlatformRestApi, err error) {
+func PlatformLogin(cmd *cobra.Command) (api *PlatformRestApi, err error) {
+	var host, username, password, apiVersion, metadataServiceProxy, dataServiceProxy string
+	var verbose bool
+
+	f := cmd.Flags()
+
+	if host, err = f.GetString(FlagNameHost); err != nil {
+		return
+	}
+
+	if username, err = f.GetString(FlagNameUsername); err != nil {
+		return
+	}
+
+	if password, err = f.GetString(FlagNamePassword); err != nil {
+		return
+	}
+
+	if verbose, err = f.GetBool(FlagNameVerbose); err != nil {
+		return
+	}
+
+	if apiVersion, err = f.GetString(FlagNameApiVersion); err != nil {
+		return
+	}
+
+	if metadataServiceProxy, err = f.GetString(FlagNameMetadataServiceProxy); err != nil {
+		return
+	}
+
+	if dataServiceProxy, err = f.GetString(FlagNameDataserviceProxy); err != nil {
+		return
+	}
 
 	if apiVersion == "" {
 		apiVersion = "2"
@@ -73,7 +104,7 @@ func PlatformLogin(host, username, password, apiVersion, metadataServiceProxy, d
 		Println("Access Token: " + conn.AccessToken)
 	}
 
-	return api, nil
+	return
 }
 
 func getClientForProxyURL(url *url.URL) *http.Client {

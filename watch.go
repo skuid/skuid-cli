@@ -19,15 +19,7 @@ var watchCmd = &cobra.Command{
 	Long:  "Watches for changes to local Skuid metadata on your file system, and automatically deploys the changed files to a Skuid Platform Site.",
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 
-		api, err := PlatformLogin(
-			ArgHost,
-			ArgUsername,
-			ArgPassword,
-			ArgApiVersion,
-			ArgMetadataServiceProxy,
-			ArgDataServiceProxy,
-			ArgVerbose,
-		)
+		api, err := PlatformLogin(cmd)
 
 		if err != nil {
 			PrintError("Error logging in to Skuid site", err)
@@ -121,7 +113,7 @@ func deployModifiedFiles(api *PlatformRestApi, modifiedFile string) {
 
 	VerboseLn("Getting deploy plan...")
 
-	plan, err := api.GetDeployPlan(bufPlan, "application/zip", ArgVerbose)
+	plan, err := api.GetDeployPlan(bufPlan, "application/zip", GlobalArgVerbose)
 	if err != nil {
 		PrintError("Error getting deploy plan", err)
 		os.Exit(1)
@@ -129,7 +121,7 @@ func deployModifiedFiles(api *PlatformRestApi, modifiedFile string) {
 
 	VerboseLn("Retrieved deploy plan. Deploying...")
 
-	_, err = api.ExecuteDeployPlan(plan, ArgTargetDir, ArgVerbose)
+	_, err = api.ExecuteDeployPlan(plan, ArgTargetDir, GlobalArgVerbose)
 	if err != nil {
 		PrintError("Error executing deploy plan", err)
 		os.Exit(1)
@@ -141,4 +133,5 @@ func deployModifiedFiles(api *PlatformRestApi, modifiedFile string) {
 
 func init() {
 	RootCmd.AddCommand(watchCmd)
+	AddFlags(watchCmd, PlatformLoginFlags...)
 }

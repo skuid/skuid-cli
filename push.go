@@ -17,7 +17,7 @@ var (
 		Long:  "Push Skuid Pages from a directory to Skuid.",
 		RunE: func(_ *cobra.Command, _ []string) (err error) {
 
-			pageDefinitions, err := ReadFiles(ArgTargetDir, ArgModule, ArgPushFile)
+			pageDefinitions, err := ReadFiles(ArgTargetDir, ArgModules, ArgPushFile)
 			if err != nil {
 				return err
 			}
@@ -27,7 +27,7 @@ var (
 			Printf("Pushing %d pages.\n", len(pagePost.Changes))
 
 			api, err := SalesforceLogin(
-				ArgAppClientID,
+				ArgClientId,
 				ArgAppClientSecret,
 				ArgHost,
 				ArgUsername,

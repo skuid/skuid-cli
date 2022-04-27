@@ -4,7 +4,9 @@
 - [ ] update 'use' field
 - [ ] update documentation fields
 - [ ] provide examples
-- [ ] consolidate arguments
+- [x] consolidate arguments
+- [x] refactor arguments for lunch & learn example
+- [ ] no duplicate keys on marshal
 
 # tests:
 - [ ] deploy_test.go

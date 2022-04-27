@@ -100,12 +100,16 @@ func FilterByGlob(pattern string) ([]string, error) {
 	return filepath.Glob(pattern)
 }
 
-func FilterByModule(dir, moduleFilter string) ([]string, error) {
+func FilterByModule(dir string, moduleFilter []string) ([]string, error) {
 
 	filter := &bytes.Buffer{}
 
-	if moduleFilter != "" {
-		filter.WriteString(moduleFilter + "_")
+	if len(moduleFilter) > 0 {
+		// TODO: make sure this works
+		// this module filter (if there are more)
+		// should be inclusive. we had "module(s)" as
+		// part of the argument, so I turned it into an array of strings
+		filter.WriteString(strings.Join(moduleFilter, "_") + "_")
 	}
 
 	filter.WriteString("*")
@@ -128,7 +132,7 @@ func filterOutXmlFiles(files []string) []string {
 	return filtered
 }
 
-func ReadFiles(dir, moduleFilter, file string) ([]SkuidPullResponse, error) {
+func ReadFiles(dir string, moduleFilter []string, file string) ([]SkuidPullResponse, error) {
 
 	var files []string
 

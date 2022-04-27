@@ -19,7 +19,7 @@ var pullCmd = &cobra.Command{
 
 		//login to the Force API
 		api, err := SalesforceLogin(
-			ArgAppClientID,
+			ArgClientId,
 			ArgAppClientSecret,
 			ArgHost,
 			ArgUsername,
@@ -44,12 +44,16 @@ var pullCmd = &cobra.Command{
 			query.Add("nomodule", strconv.FormatBool(noModule))
 		}
 
-		if ArgModule != "" {
-			query.Add("module", ArgModule)
+		if len(ArgModules) > 0 {
+			for _, module := range ArgModules {
+				query.Add("module", module)
+			}
 		}
 
-		if ArgPage != "" {
-			query.Add("page", ArgPage)
+		if len(ArgPages) > 0 {
+			for _, page := range ArgPages {
+				query.Add("page", page)
+			}
 		}
 
 		//query the API for all pages in the requested module

@@ -59,7 +59,8 @@ func PrintCommand(commandName string) {
 // PrintError formats an error with a description and message
 func PrintError(description string, err error) {
 	ErrorSeparator()
-	color.Red.Printf("%v: %v\n", description, err.Error())
+	color.Red.Println(description)
+	color.Red.Println(err.Error())
 	ErrorSeparator()
 }
 
@@ -70,7 +71,7 @@ func SuccessWithTime(description string, timeStart time.Time) {
 
 // VerboseSection creates some visual space for a title in verbose mode
 func VerboseSection(description string) {
-	if ArgVerbose {
+	if GlobalArgVerbose {
 		Separator()
 		Println(description)
 	}
@@ -78,7 +79,7 @@ func VerboseSection(description string) {
 
 // VerboseLn will only call Println if ArgVerbose is true.
 func VerboseLn(args ...interface{}) {
-	if ArgVerbose {
+	if GlobalArgVerbose {
 		Println(args...)
 	}
 }
@@ -86,7 +87,7 @@ func VerboseLn(args ...interface{}) {
 // VerboseLn will call SuccessWithTime if ArgVerbose is true.
 // Otherwise, it just prints a success message
 func VerboseSuccess(msg string, t time.Time) {
-	if ArgVerbose {
+	if GlobalArgVerbose {
 		SuccessWithTime(msg, t)
 	} else {
 		Println(msg + ".")
@@ -95,14 +96,14 @@ func VerboseSuccess(msg string, t time.Time) {
 
 // VerboseCommand only prints the command if ArgVerbose is true.
 func VerboseCommand(commandName string) {
-	if ArgVerbose {
+	if GlobalArgVerbose {
 		PrintCommand(commandName)
 	}
 }
 
 // VerboseError logs an error if ArgVerbose is true.
 func VerboseError(description string, err error) {
-	if ArgVerbose {
+	if GlobalArgVerbose {
 		PrintError(description, err)
 	}
 }

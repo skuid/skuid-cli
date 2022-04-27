@@ -48,3 +48,17 @@ release:
 	GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -o skuid_linux_amd64
 	GOOS=darwin GOARCH=amd64 go build $(LDFLAGS) -o skuid_darwin_amd64
 	GOOS=windows GOARCH=amd64 go build $(LDFLAGS) -o skuid_windows_amd64.exe
+
+# this command creates a directory .coverage 
+# then outputs coverage data into .coverage/cover.out, 
+# then generates a readable html file in .coverage/coverage.html
+cover:
+	@mkdir .coverage || echo "hidden coverage folder exists"
+	@go test -v -cover ./... -coverprofile .coverage/coverage.out
+	@go tool cover -html=.coverage/coverage.out -o .coverage/coverage.html
+
+# this opens the file .coverage/coverage.html after
+# generating the consumable html coverage report
+covero:
+	@make cover
+	@open .coverage/coverage.html

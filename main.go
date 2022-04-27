@@ -3,12 +3,21 @@ package main
 import (
 	"os"
 
-	"github.com/gookit/color"
+	"github.com/joho/godotenv"
 )
 
 func main() {
 	if err := RootCmd.Execute(); err != nil {
-		color.Errorf("Error executing: %v", err.Error())
+		PrintError("Error Encountered During Run:", err)
+		os.Exit(1)
+	}
+}
+
+func init() {
+	// if we want to load environments for customers
+	// instead of relying on autoenv/direnv
+	if err := godotenv.Load(".env"); err != nil {
+		PrintError("Error initializing environment:", err)
 		os.Exit(1)
 	}
 }

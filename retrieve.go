@@ -15,33 +15,28 @@ import (
 // retrieveCmd represents the retrieve command
 var (
 	retrieveCmd = &cobra.Command{
-		Use:   "retrieve -u username -p password ",
-		Short: "Retrieve Skuid metadata from a Site into a local directory.",
-		Long:  "Retrieve Skuid metadata from a Skuid Platform Site and output it into a local directory.",
-		RunE: func(_ *cobra.Command, _ []string) (err error) {
+		SilenceUsage:  true,
+		SilenceErrors: true, // we do not want to show users raw errors
+		Example:       "retrieve -u myUser -p myPassword --host my-site.skuidsite.com --dir ./retrieval",
+		Use:           "retrieve",
+		Short:         "Retrieve Skuid metadata from a Site into a local directory.",
+		Long:          "Retrieve Skuid metadata from a Skuid Platform Site and output it into a local directory.",
+		RunE: func(cmd *cobra.Command, _ []string) (err error) {
 
 			VerboseCommand("Retrieve Metadata")
 
-			api, err := PlatformLogin(
-				ArgHost,
-				ArgUsername,
-				ArgPassword,
-				ArgApiVersion,
-				ArgMetadataServiceProxy,
-				ArgDataServiceProxy,
-				ArgVerbose,
-			)
+			api, err := PlatformLogin(cmd)
 
 			retrieveStart := time.Now()
 
 			if err != nil {
-				PrintError("Error logging in to Skuid site", err)
+				err = fmt.Errorf("Error logging in to Skuid site: %v", err)
 				return
 			}
 
 			plan, err := GetRetrievePlan(api, ArgAppName)
 			if err != nil {
-				PrintError("Error getting retrieve plan", err)
+				err = fmt.Errorf("Error getting retrieve plan: %v", err)
 				return
 			}
 
@@ -68,6 +63,8 @@ var (
 
 func init() {
 	RootCmd.AddCommand(retrieveCmd)
+
+	AddFlags(retrieveCmd, PlatformLoginFlags...)
 }
 
 func GetRetrievePlan(api *PlatformRestApi, appName string) (map[string]Plan, error) {

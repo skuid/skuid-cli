@@ -16,19 +16,16 @@ var deployCmd = &cobra.Command{
 	Use:   "deploy",
 	Short: "Deploy local Skuid metadata to a Skuid Platform Site.",
 	Long:  "Deploy Skuid metadata stored within a local file system directory to a Skuid Platform Site.",
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	RunE: func(cmd *cobra.Command, _ []string) (err error) {
 
 		VerboseCommand("Deploy Metadata")
 
-		api, err := PlatformLogin(
-			ArgHost,
-			ArgUsername,
-			ArgPassword,
-			ArgApiVersion,
-			ArgMetadataServiceProxy,
-			ArgDataServiceProxy,
-			ArgVerbose,
-		)
+		var verbose bool
+		if verbose, err = cmd.Flags().GetBool(FlagNameVerbose); err != nil {
+			return
+		}
+
+		api, err := PlatformLogin(cmd)
 
 		if err != nil {
 			PrintError("Error logging in to Skuid site", err)
@@ -98,7 +95,7 @@ var deployCmd = &cobra.Command{
 			deployPlan = bufPlan
 		}
 
-		plan, err := api.GetDeployPlan(deployPlan, mimeType, ArgVerbose)
+		plan, err := api.GetDeployPlan(deployPlan, mimeType, verbose)
 		if err != nil {
 			PrintError("Error getting deploy plan", err)
 			return
@@ -112,7 +109,7 @@ var deployCmd = &cobra.Command{
 			}
 		}
 
-		_, err = api.ExecuteDeployPlan(plan, dotDir, ArgVerbose)
+		_, err = api.ExecuteDeployPlan(plan, dotDir, verbose)
 		if err != nil {
 			PrintError("Error executing deploy plan", err)
 			return
@@ -128,4 +125,5 @@ var deployCmd = &cobra.Command{
 
 func init() {
 	RootCmd.AddCommand(deployCmd)
+	AddFlags(deployCmd, PlatformLoginFlags...)
 }
