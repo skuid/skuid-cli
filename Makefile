@@ -2,7 +2,7 @@ SHA = $(shell git rev-parse --short HEAD)
 GO_PKGS = $$(go list ./... | grep -v vendor)
 REPOSITORY = 095427547185.dkr.ecr.us-west-2.amazonaws.com/skuid/skuid
 TAG = latest
-VOL_PATH=/go/src/github.com/skuid/skuid
+VOL_PATH=/go/src/github.com/skuid/skuid_tides
 GO_VERSION=1.15
 IMAGE ?= golang
 
@@ -49,10 +49,11 @@ push:
 	$$(aws ecr get-login --region us-west-2)
 	docker push $(REPOSITORY):$(TAG)
 
+# specifically used for downloads via github.
 release:
-	GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -o skuid_linux_amd64
-	GOOS=darwin GOARCH=amd64 go build $(LDFLAGS) -o skuid_darwin_amd64
-	GOOS=windows GOARCH=amd64 go build $(LDFLAGS) -o skuid_windows_amd64.exe
+	GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -o skuid_tides_linux_amd64
+	GOOS=darwin GOARCH=amd64 go build $(LDFLAGS) -o skuid_tides_darwin_amd64
+	GOOS=windows GOARCH=amd64 go build $(LDFLAGS) -o skuid_tides_windows_amd64.exe
 
 # this command creates a directory .coverage 
 # then outputs coverage data into .coverage/cover.out, 
