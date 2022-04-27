@@ -17,14 +17,14 @@ steps:
     commands:
       - git fetch --tags
   - name: test
-    image: golang:1.15-alpine
+    image: golang:1.18-alpine
     commands:
       - apk add git
-      - go test -v ./...
+      - make ci # fails if coverage is below 85%; see MainTest for details
     environment:
       CGO_ENABLED: '0'
   - name: build
-    image: golang:1.15-alpine
+    image: golang:1.18-alpine
     commands:
       - go mod download
       - GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -o /tmp/dist/skuid_linux_amd64

@@ -12,3 +12,4 @@ skuid_windows_amd64.exe
 .scripts
 .test
 .testenv
+.coverage

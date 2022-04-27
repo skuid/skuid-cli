@@ -14,6 +14,11 @@ LDFLAGS=-ldflags="-w -X github.com/skuid/tides/version.Name=$(VERSION)"
 
 .PHONY: setup fmt vendored
 
+# fails if coverage < 85%
+# see MainTest for details
+ci:
+	go test -v -cover ./... -args coverfail=true
+
 test:
 	go test -v ./...
 
