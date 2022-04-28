@@ -49,5 +49,4 @@ var varGetCmd = &cobra.Command{
 func init() {
 	TidesCmd.AddCommand(varGetCmd)
 	flags.AddFlagFunctions(varGetCmd, flags.PlatformLoginFlags...)
-
 }
