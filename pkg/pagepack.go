@@ -20,7 +20,7 @@ var (
 		Use:   "page-pack",
 		Short: "Retrieve a collection of Skuid Pages as a Page Pack.",
 		Long:  "Retrieves all Pages in a given Module and returns in a Page Pack, which is a JSON-serialized array of Page objects.",
-		RunE: func(cmd *cobra.Command, args []string) (err error) {
+		RunE: func(cmd *cobra.Command, _ []string) (err error) {
 			// login to the Force API
 			api, err := SalesforceLogin(cmd)
 

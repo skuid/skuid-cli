@@ -16,17 +16,12 @@ import (
 )
 
 var deployCmd = &cobra.Command{
-	Use:   "deploy",
-	Short: "Deploy local Skuid metadata to a Skuid Platform Site.",
-	Long:  "Deploy Skuid metadata stored within a local file system directory to a Skuid Platform Site.",
+	Use:               "deploy",
+	Short:             "Deploy local Skuid metadata to a Skuid Platform Site.",
+	Long:              "Deploy Skuid metadata stored within a local file system directory to a Skuid Platform Site.",
+	PersistentPreRunE: PrerunValidation,
 	RunE: func(cmd *cobra.Command, _ []string) (err error) {
 
-		var verbose bool
-		if verbose, err = cmd.Flags().GetBool(flags.Verbose.Name); err != nil {
-			return
-		}
-
-		logging.SetVerbose(verbose)
 		logging.VerboseCommand("Deploy Metadata")
 
 		api, err := PlatformLogin(cmd)
@@ -141,4 +136,5 @@ var deployCmd = &cobra.Command{
 func init() {
 	RootCmd.AddCommand(deployCmd)
 	flags.AddFlagFunctions(deployCmd, flags.PlatformLoginFlags...)
+	flags.AddFlags(deployCmd, flags.Directory, flags.AppName)
 }
