@@ -26,9 +26,14 @@ var (
 				return err
 			}
 
+			var module string
+			if module, err = cmd.Flags().GetString(flags.Module.Name); err != nil {
+				return err
+			}
+
 			query := url.Values{
-				// "module": []string{pagePackModule}, // this was an unused string before
-				"as": []string{"pagePack"},
+				"module": []string{module}, // this was an unused string before
+				"as":     []string{"pagePack"},
 			}
 
 			result, err := api.Connection.Get("/skuid/api/v1/pages", query)
@@ -39,9 +44,9 @@ var (
 
 			unquoted, _ := strconv.Unquote(string(result))
 
-			pagePack := &PagePackResponse{}
+			pagePack := PagePackResponse{}
 
-			err = json.Unmarshal([]byte(unquoted), pagePack)
+			err = json.Unmarshal([]byte(unquoted), &pagePack)
 
 			if err != nil {
 				return err
@@ -52,7 +57,7 @@ var (
 				return
 			}
 
-			err = pagePack.WritePagePack(outputfileName, pagePackModule)
+			err = WritePagePack(pagePack, outputfileName, module)
 
 			return
 		},
@@ -88,14 +93,11 @@ type PagePackResponse map[string][]struct {
 	Layout5  *string `json:"skuid__Layout5__c"`
 }
 
-func (pack PagePackResponse) WritePagePack(filename, module string) error {
+func WritePagePack(pack PagePackResponse, filename string, module string) error {
 	definition := pack[module]
-
-	str, err := json.MarshalIndent(definition, "", "    ")
-
-	if err != nil {
+	if str, err := json.MarshalIndent(definition, "", "    "); err != nil {
 		return err
+	} else {
+		return ioutil.WriteFile(filename, []byte(str), 0644)
 	}
-
-	return ioutil.WriteFile(filename, []byte(str), 0644)
 }

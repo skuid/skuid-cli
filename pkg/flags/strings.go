@@ -43,7 +43,7 @@ var (
 		argument:  &argOutputFilename,
 		Name:      "output",
 		Shorthand: "o",
-		Usage:     "Filename of output Page Pack file",
+		Usage:     "Filename of output file",
 		Required:  true,
 	}
 
@@ -51,6 +51,7 @@ var (
 		argument: &argApiVersion,
 		Name:     "api-version",
 		Usage:    "API Version",
+		Default:  constants.DEFAULT_SALESFORCE_API_VERSION,
 	}
 
 	MetadataServiceProxy = &Flag[string]{
@@ -102,6 +103,7 @@ var (
 	Directory = &Flag[string]{
 		argument:  &argTargetDir,
 		Name:      "dir",
+		Aliases:   []string{"directory"},
 		Shorthand: "d",
 		Usage:     "Target directory for this operation.",
 	}
@@ -111,5 +113,12 @@ var (
 		Name:      "file",
 		Shorthand: "f",
 		Usage:     "Skuid Page file(s) to push. Supports file globs.",
+	}
+
+	Module = &Flag[string]{
+		argument:  &argModule,
+		Name:      "module",
+		Shorthand: "m",
+		Usage:     "Module to pack",
 	}
 )

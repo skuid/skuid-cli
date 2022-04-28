@@ -16,6 +16,7 @@ var (
 	argVariableDataservice  string
 	argOutputFilename       string
 	argPushFile             string
+	argModule               string
 
 	argNoZip    bool
 	argNoModule bool

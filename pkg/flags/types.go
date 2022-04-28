@@ -14,17 +14,19 @@ import (
 
 // Generic flag type that can take a type variable and use a pointer
 // to that type as the thing we're going to add
+// just reflecting the external pflags stuff
 type Flag[T any] struct {
 	// we're making argument private because I want you to access flags
 	// through the command pointer that we get from the function
 	argument *T // required
 
-	Name       string // required
-	Default    T      // optional, overridden by existing environment variable
-	EnvVarName string // optional, overrides default value if exists
-	Usage      string // required, text shown in usage
-	Required   bool   // flag whether the command requires this flag
-	Shorthand  string // optional, will change call to allow for shorthand
+	Name       string   // required
+	Aliases    []string // optional
+	Default    T        // optional, overridden by existing environment variable
+	EnvVarName string   // optional, overrides default value if exists
+	Usage      string   // required, text shown in usage
+	Required   bool     // flag whether the command requires this flag
+	Shorthand  string   // optional, will change call to allow for shorthand
 
 	Global bool // is this a global/persistent flag?
 }

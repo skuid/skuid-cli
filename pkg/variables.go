@@ -114,7 +114,7 @@ var getvarCmd = &cobra.Command{
 			return
 		}
 
-		escResult, err := getEscs(api, true)
+		escResult, err := getEnvironmentSpecificConfigurations(api, true)
 		if err != nil {
 			err = fmt.Errorf("Error getting variables from Skuid site: %v", err)
 			return
@@ -134,7 +134,7 @@ var getvarCmd = &cobra.Command{
 	},
 }
 
-func getEscs(api *PlatformRestApi, mapDsName bool) ([]EnvSpecificConfig, error) {
+func getEnvironmentSpecificConfigurations(api *PlatformRestApi, mapDsName bool) ([]EnvSpecificConfig, error) {
 
 	logging.VerboseSection("Getting Variables")
 
@@ -252,7 +252,7 @@ func setEsc(api *PlatformRestApi, variableName, variableValue, variableDataServi
 
 	verb := http.MethodPost
 	path := "/ui/variables"
-	existingEscs, err := getEscs(api, false)
+	existingEscs, err := getEnvironmentSpecificConfigurations(api, false)
 	if err != nil {
 		return err
 	}
@@ -355,7 +355,7 @@ func rmEsc(api *PlatformRestApi, variableName, variableDataService string) error
 
 	// Find ID of ESC to delete
 	escID := ""
-	existingEscs, err := getEscs(api, false)
+	existingEscs, err := getEnvironmentSpecificConfigurations(api, false)
 	if err != nil {
 		return err
 	}
