@@ -13,7 +13,7 @@ import (
 	"github.com/skuid/tides/pkg/constants"
 )
 
-type PlatformRestConnection struct {
+type NlxConnection struct {
 	AccessToken          string
 	APIVersion           string
 	ClientId             string
@@ -26,7 +26,7 @@ type PlatformRestConnection struct {
 	DataServiceProxy     *url.URL
 }
 
-type OAuthResponse struct {
+type NlxAuthResponse struct {
 	ExpiresIn   int    `json:"expires_in"`
 	AccessToken string `json:"access_token"`
 }
@@ -36,7 +36,7 @@ var (
 )
 
 // Refresh is used to obtain an OAuth2 access_token
-func (conn *PlatformRestConnection) Refresh() error {
+func (conn *NlxConnection) Refresh() error {
 	urlValues := url.Values{}
 
 	urlValues.Set("grant_type", "password")
@@ -68,7 +68,7 @@ func (conn *PlatformRestConnection) Refresh() error {
 		return NewHttpError(resp.Status, resp.Body)
 	}
 
-	result := OAuthResponse{}
+	result := NlxAuthResponse{}
 
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return NewHttpError(resp.Status, resp.Body)
@@ -83,7 +83,7 @@ type JWTResponse struct {
 	Token string `json:"token"`
 }
 
-func (conn *PlatformRestConnection) GetJWT() error {
+func (conn *NlxConnection) GetJWT() error {
 	jwtResult, err := conn.MakeRequest(
 		http.MethodGet,
 		"/auth/token",
@@ -107,7 +107,7 @@ func (conn *PlatformRestConnection) GetJWT() error {
 }
 
 // MakeRequest Executes an HTTP request using a session token
-func (conn *PlatformRestConnection) MakeRequest(method string, url string, payload io.Reader, contentType string) (result *io.ReadCloser, err error) {
+func (conn *NlxConnection) MakeRequest(method string, url string, payload io.Reader, contentType string) (result *io.ReadCloser, err error) {
 	endpoint := fmt.Sprintf("%s/api/v%s%s", conn.Host, conn.APIVersion, url)
 
 	req, err := http.NewRequest(method, endpoint, payload)
@@ -163,7 +163,7 @@ func (conn *PlatformRestConnection) MakeRequest(method string, url string, paylo
 }
 
 // MakeJWTRequest Executes HTTP request using a jwt
-func (conn *PlatformRestConnection) MakeJWTRequest(method string, url string, payload io.Reader, contentType string) (result *io.ReadCloser, err error) {
+func (conn *NlxConnection) MakeJWTRequest(method string, url string, payload io.Reader, contentType string) (result *io.ReadCloser, err error) {
 	endpoint := fmt.Sprintf("https://%s", url)
 	req, err := http.NewRequest(method, endpoint, payload)
 

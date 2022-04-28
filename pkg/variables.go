@@ -58,7 +58,7 @@ func isDefaultDs(ds string) bool {
 	return ok
 }
 
-func getDataServices(api *PlatformRestApi) (map[string]DataService, error) {
+func getDataServices(api *NlxApi) (map[string]DataService, error) {
 	dspath := "/objects/dataservice"
 	dsStream, err := api.Connection.MakeRequest(
 		http.MethodGet,
@@ -80,7 +80,7 @@ func getDataServices(api *PlatformRestApi) (map[string]DataService, error) {
 	return dsmap, nil
 }
 
-func findDataServiceId(api *PlatformRestApi, variableDataService, name string) (string, error) {
+func findDataServiceId(api *NlxApi, variableDataService, name string) (string, error) {
 	if isDefaultDs(variableDataService) {
 		return fakeDefaultDataServiceId, nil
 	}
@@ -107,7 +107,7 @@ var getvarCmd = &cobra.Command{
 
 		logging.VerboseCommand("Get Variables")
 
-		api, err := PlatformLogin(cmd)
+		api, err := SkuidNlxLogin(cmd)
 
 		if err != nil {
 			err = fmt.Errorf("Error logging in to Skuid site: %v", err)
@@ -134,7 +134,7 @@ var getvarCmd = &cobra.Command{
 	},
 }
 
-func getEnvironmentSpecificConfigurations(api *PlatformRestApi, mapDsName bool) ([]EnvSpecificConfig, error) {
+func getEnvironmentSpecificConfigurations(api *NlxApi, mapDsName bool) ([]EnvSpecificConfig, error) {
 
 	logging.VerboseSection("Getting Variables")
 
@@ -186,7 +186,7 @@ var setvarCmd = &cobra.Command{
 
 		logging.VerboseCommand("Set Variable")
 
-		api, err := PlatformLogin(cmd)
+		api, err := SkuidNlxLogin(cmd)
 
 		if err != nil {
 			err = fmt.Errorf("Error logging in to Skuid site: %v", err)
@@ -222,7 +222,7 @@ var setvarCmd = &cobra.Command{
 	},
 }
 
-func setEsc(api *PlatformRestApi, variableName, variableValue, variableDataService string) error {
+func setEsc(api *NlxApi, variableName, variableValue, variableDataService string) error {
 
 	logging.VerboseSection("Setting Variable")
 
@@ -305,7 +305,7 @@ var rmvarCmd = &cobra.Command{
 
 		logging.VerboseCommand("Delete Variable")
 
-		api, err := PlatformLogin(cmd)
+		api, err := SkuidNlxLogin(cmd)
 
 		if err != nil {
 			err = fmt.Errorf("Error logging in to Skuid site: %v", err)
@@ -339,7 +339,7 @@ var rmvarCmd = &cobra.Command{
 	},
 }
 
-func rmEsc(api *PlatformRestApi, variableName, variableDataService string) error {
+func rmEsc(api *NlxApi, variableName, variableDataService string) error {
 
 	logging.VerboseSection("Deleting Variable")
 

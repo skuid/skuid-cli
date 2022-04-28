@@ -29,7 +29,7 @@ var (
 
 			logging.VerboseCommand("Retrieve Metadata")
 
-			api, err := PlatformLogin(cmd)
+			api, err := SkuidNlxLogin(cmd)
 
 			retrieveStart := time.Now()
 
@@ -88,7 +88,7 @@ func init() {
 	flags.AddFlags(retrieveCmd, flags.NoZip)
 }
 
-func GetRetrievePlan(api *PlatformRestApi, appName string) (map[string]Plan, error) {
+func GetRetrievePlan(api *NlxApi, appName string) (map[string]Plan, error) {
 
 	logging.VerboseSection("Getting Retrieve Plan")
 
@@ -127,7 +127,7 @@ func GetRetrievePlan(api *PlatformRestApi, appName string) (map[string]Plan, err
 	return plans, nil
 }
 
-func executeRetrievePlan(api *PlatformRestApi, plans map[string]Plan, noZip bool) (planResults []*io.ReadCloser, err error) {
+func executeRetrievePlan(api *NlxApi, plans map[string]Plan, noZip bool) (planResults []*io.ReadCloser, err error) {
 
 	logging.VerboseSection("Executing Retrieve Plan")
 

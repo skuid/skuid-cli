@@ -22,7 +22,7 @@ var watchCmd = &cobra.Command{
 	Long:  "Watches for changes to local Skuid metadata on your file system, and automatically deploys the changed files to a Skuid Platform Site.",
 	RunE: func(cmd *cobra.Command, _ []string) (err error) {
 
-		api, err := PlatformLogin(cmd)
+		api, err := SkuidNlxLogin(cmd)
 
 		if err != nil {
 			err = fmt.Errorf("Error logging in to Skuid site: %v", err)
@@ -130,7 +130,7 @@ var watchCmd = &cobra.Command{
 	},
 }
 
-func deployModifiedFiles(api *PlatformRestApi, targetDir, modifiedFile string) (err error) {
+func deployModifiedFiles(api *NlxApi, targetDir, modifiedFile string) (err error) {
 
 	// Create a buffer to write our archive to.
 	bufPlan := new(bytes.Buffer)

@@ -12,7 +12,7 @@ import (
 	"github.com/skuid/tides/pkg/logging"
 )
 
-func PlatformLogin(cmd *cobra.Command) (api *PlatformRestApi, err error) {
+func SkuidNlxLogin(cmd *cobra.Command) (api *NlxApi, err error) {
 	var host, username, password, apiVersion, metadataServiceProxy, dataServiceProxy string
 
 	f := cmd.Flags()
@@ -56,7 +56,7 @@ func PlatformLogin(cmd *cobra.Command) (api *PlatformRestApi, err error) {
 	}
 	logging.VerboseSeparator()
 
-	conn := PlatformRestConnection{
+	conn := NlxConnection{
 		Host:       host,
 		Username:   username,
 		Password:   password,
@@ -91,7 +91,7 @@ func PlatformLogin(cmd *cobra.Command) (api *PlatformRestApi, err error) {
 		return nil, err
 	}
 
-	api = &PlatformRestApi{
+	api = &NlxApi{
 		Connection: &conn,
 	}
 

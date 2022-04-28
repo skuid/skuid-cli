@@ -9,7 +9,7 @@ import (
 func TestGetRetrievePlan(t *testing.T) {
 	for _, tc := range []struct {
 		description     string
-		givenApi        *pkg.PlatformRestApi
+		givenApi        *pkg.NlxApi
 		givenAppName    string
 		expectedPlanMap map[string]pkg.Plan
 		expectedError   error

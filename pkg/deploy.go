@@ -24,7 +24,7 @@ var deployCmd = &cobra.Command{
 
 		logging.VerboseCommand("Deploy Metadata")
 
-		api, err := PlatformLogin(cmd)
+		api, err := SkuidNlxLogin(cmd)
 
 		if err != nil {
 			logging.PrintError("Error logging in to Skuid site", err)

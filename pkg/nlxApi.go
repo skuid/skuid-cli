@@ -12,12 +12,12 @@ import (
 	"github.com/skuid/tides/pkg/logging"
 )
 
-type PlatformRestApi struct {
-	Connection *PlatformRestConnection
+type NlxApi struct {
+	Connection *NlxConnection
 }
 
 // GetDeployPlan fetches a deploymnent plan from Skuid Platform API
-func (api *PlatformRestApi) GetDeployPlan(payload io.Reader, mimeType string) (map[string]Plan, error) {
+func (api *NlxApi) GetDeployPlan(payload io.Reader, mimeType string) (map[string]Plan, error) {
 	logging.VerboseSection("Getting Deploy Plan")
 
 	if mimeType == "" {
@@ -50,7 +50,7 @@ func (api *PlatformRestApi) GetDeployPlan(payload io.Reader, mimeType string) (m
 }
 
 // ExecuteDeployPlan executes a map of plan items in a deployment plan
-func (api *PlatformRestApi) ExecuteDeployPlan(plans map[string]Plan, targetDir string) ([]*io.ReadCloser, error) {
+func (api *NlxApi) ExecuteDeployPlan(plans map[string]Plan, targetDir string) ([]*io.ReadCloser, error) {
 
 	logging.VerboseSection("Executing Deploy Plan")
 
@@ -91,7 +91,7 @@ func (api *PlatformRestApi) ExecuteDeployPlan(plans map[string]Plan, targetDir s
 }
 
 // ExecutePlanItem executes a particular item in a deployment plan
-func (api *PlatformRestApi) ExecutePlanItem(plan Plan, targetDir string) (*io.ReadCloser, error) {
+func (api *NlxApi) ExecutePlanItem(plan Plan, targetDir string) (*io.ReadCloser, error) {
 	// Create a buffer to write our archive to.
 	var planResult *io.ReadCloser
 	bufDeploy := new(bytes.Buffer)
