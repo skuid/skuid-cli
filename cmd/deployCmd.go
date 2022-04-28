@@ -1,4 +1,4 @@
-package pkg
+package cmd
 
 import (
 	"bytes"
@@ -11,20 +11,24 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/skuid/tides/cmd/validation"
+	"github.com/skuid/tides/pkg"
 	"github.com/skuid/tides/pkg/flags"
 	"github.com/skuid/tides/pkg/logging"
 )
 
 var deployCmd = &cobra.Command{
+	SilenceErrors:     true,
+	SilenceUsage:      true,
 	Use:               "deploy",
 	Short:             "Deploy local Skuid metadata to a Skuid Platform Site.",
 	Long:              "Deploy Skuid metadata stored within a local file system directory to a Skuid Platform Site.",
-	PersistentPreRunE: PrerunValidation,
+	PersistentPreRunE: validation.PrerunValidation,
 	RunE: func(cmd *cobra.Command, _ []string) (err error) {
 
 		logging.VerboseCommand("Deploy Metadata")
 
-		api, err := SkuidNlxLogin(cmd)
+		api, err := pkg.SkuidNlxLogin(cmd)
 
 		if err != nil {
 			logging.PrintError("Error logging in to Skuid site", err)
@@ -75,7 +79,7 @@ var deployCmd = &cobra.Command{
 
 		// Create a buffer to write our archive to.
 		bufPlan := new(bytes.Buffer)
-		err = Archive(".", bufPlan, nil)
+		err = pkg.Archive(".", bufPlan, nil)
 		if err != nil {
 			logging.PrintError("Error creating deployment ZIP archive", err)
 			return
@@ -90,7 +94,7 @@ var deployCmd = &cobra.Command{
 		}
 
 		if appName != "" {
-			filter := DeployFilter{
+			filter := pkg.DeployFilter{
 				AppName: appName,
 				Plan:    bufPlan.Bytes(),
 			}
@@ -134,7 +138,7 @@ var deployCmd = &cobra.Command{
 }
 
 func init() {
-	RootCmd.AddCommand(deployCmd)
+	TidesCmd.AddCommand(deployCmd)
 	flags.AddFlagFunctions(deployCmd, flags.PlatformLoginFlags...)
 	flags.AddFlags(deployCmd, flags.Directory, flags.AppName)
 }

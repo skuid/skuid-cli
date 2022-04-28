@@ -5,12 +5,12 @@ import (
 
 	"github.com/joho/godotenv"
 
-	"github.com/skuid/tides/pkg"
+	"github.com/skuid/tides/cmd"
 	"github.com/skuid/tides/pkg/logging"
 )
 
 func main() {
-	if err := pkg.RootCmd.Execute(); err != nil {
+	if err := cmd.TidesCmd.Execute(); err != nil {
 		logging.PrintError("Error Encountered During Run:", err)
 		os.Exit(1)
 	}

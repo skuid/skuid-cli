@@ -1,4 +1,4 @@
-package pkg
+package cmd
 
 import (
 	"github.com/spf13/cobra"
@@ -14,8 +14,8 @@ var (
 )
 
 var (
-	// RootCmd represents the base command when called without any subcommands
-	RootCmd = &cobra.Command{
+	// TidesCmd represents the base command when called without any subcommands
+	TidesCmd = &cobra.Command{
 		Use:     constants.PROJECT_NAME,
 		Short:   "Tides: A CLI for interacting with Skuid APIs",
 		Long:    `Tides: Deploy and retrieve Skuid metadata to / from Skuid NLX.`,
@@ -34,7 +34,7 @@ func init() {
 		}
 	})
 
-	if err := flags.Add(flags.Verbose)(RootCmd); err != nil {
+	if err := flags.Add(flags.Verbose)(TidesCmd); err != nil {
 		logging.Fatal(err)
 	}
 

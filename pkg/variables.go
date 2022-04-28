@@ -2,19 +2,14 @@ package pkg
 
 import (
 	"encoding/json"
-	"errors"
-	"fmt"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
-	"github.com/olekukonko/tablewriter"
+	"github.com/pkg/errors"
 	uuid "github.com/satori/go.uuid"
-	"github.com/spf13/cobra"
 	"golang.org/x/crypto/ssh/terminal"
 
-	"github.com/skuid/tides/pkg/flags"
 	"github.com/skuid/tides/pkg/logging"
 )
 
@@ -100,41 +95,7 @@ func findDataServiceId(api *NlxApi, variableDataService, name string) (string, e
 	return "", errors.New("Could not find specified Data Service by name.")
 }
 
-var getvarCmd = &cobra.Command{
-	Use:   "variables",
-	Short: "Get a list of Skuid site environment variables.",
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
-
-		logging.VerboseCommand("Get Variables")
-
-		api, err := SkuidNlxLogin(cmd)
-
-		if err != nil {
-			err = fmt.Errorf("Error logging in to Skuid site: %v", err)
-			return
-		}
-
-		escResult, err := getEnvironmentSpecificConfigurations(api, true)
-		if err != nil {
-			err = fmt.Errorf("Error getting variables from Skuid site: %v", err)
-			return
-		}
-
-		body := tablewriter.NewWriter(os.Stdout)
-		body.SetHeader([]string{"Name", "Data Service"})
-		for _, esc := range escResult {
-			body.Append([]string{esc.Name, esc.DataServiceName})
-		}
-
-		logging.VerboseLn("Successfully retrieved variables from Skuid site")
-
-		body.Render()
-
-		return
-	},
-}
-
-func getEnvironmentSpecificConfigurations(api *NlxApi, mapDsName bool) ([]EnvSpecificConfig, error) {
+func GetEnvironmentSpecificConfigurations(api *NlxApi, mapDsName bool) ([]EnvSpecificConfig, error) {
 
 	logging.VerboseSection("Getting Variables")
 
@@ -178,51 +139,7 @@ func getEnvironmentSpecificConfigurations(api *NlxApi, mapDsName bool) ([]EnvSpe
 	return escs, nil
 }
 
-// setvarCmd represents the setvariable command
-var setvarCmd = &cobra.Command{
-	Use:   "set-variable",
-	Short: "Set a Skuid site environment variable",
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
-
-		logging.VerboseCommand("Set Variable")
-
-		api, err := SkuidNlxLogin(cmd)
-
-		if err != nil {
-			err = fmt.Errorf("Error logging in to Skuid site: %v", err)
-			return
-		}
-
-		var variableName, variableValue, variableDataService string
-
-		if variableName, err = cmd.Flags().GetString(flags.VariableName.Name); err != nil {
-			return
-		}
-
-		if variableValue, err = cmd.Flags().GetString(flags.VariableValue.Name); err != nil {
-			return
-		}
-
-		if variableDataService, err = cmd.Flags().GetString(flags.VariableDataService.Name); err != nil {
-			return
-		}
-
-		variableStart := time.Now()
-		err = setEsc(api, variableName, variableValue, variableDataService)
-		if err != nil {
-			err = fmt.Errorf("Error setting variable in Skuid site: %v", err)
-			return
-		}
-
-		successMessage := "Successfully set variable in Skuid Site"
-
-		logging.VerboseSuccess(successMessage, variableStart)
-
-		return
-	},
-}
-
-func setEsc(api *NlxApi, variableName, variableValue, variableDataService string) error {
+func SetEnvironmentSpecificConfiguration(api *NlxApi, variableName, variableValue, variableDataService string) error {
 
 	logging.VerboseSection("Setting Variable")
 
@@ -252,7 +169,7 @@ func setEsc(api *NlxApi, variableName, variableValue, variableDataService string
 
 	verb := http.MethodPost
 	path := "/ui/variables"
-	existingEscs, err := getEnvironmentSpecificConfigurations(api, false)
+	existingEscs, err := GetEnvironmentSpecificConfigurations(api, false)
 	if err != nil {
 		return err
 	}
@@ -298,48 +215,7 @@ func setEsc(api *NlxApi, variableName, variableValue, variableDataService string
 	return nil
 }
 
-var rmvarCmd = &cobra.Command{
-	Use:   "rm-variable",
-	Short: "Delete a Skuid site environment variable",
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
-
-		logging.VerboseCommand("Delete Variable")
-
-		api, err := SkuidNlxLogin(cmd)
-
-		if err != nil {
-			err = fmt.Errorf("Error logging in to Skuid site: %v", err)
-			return
-		}
-
-		var variableName, variableDataService string
-
-		variableName, err = cmd.Flags().GetString(flags.VariableName.Name)
-		if err != nil {
-			return
-		}
-
-		variableDataService, err = cmd.Flags().GetString(flags.VariableDataService.Name)
-		if err != nil {
-			return
-		}
-
-		variableStart := time.Now()
-		err = rmEsc(api, variableName, variableDataService)
-		if err != nil {
-			err = fmt.Errorf("Error deleting variable in Skuid site: %v", err)
-			return
-		}
-
-		successMessage := "Successfully deleted variable in Skuid Site"
-
-		logging.VerboseSuccess(successMessage, variableStart)
-
-		return
-	},
-}
-
-func rmEsc(api *NlxApi, variableName, variableDataService string) error {
+func RemoveEnvironmentSpecificConfigurations(api *NlxApi, variableName, variableDataService string) error {
 
 	logging.VerboseSection("Deleting Variable")
 
@@ -355,7 +231,7 @@ func rmEsc(api *NlxApi, variableName, variableDataService string) error {
 
 	// Find ID of ESC to delete
 	escID := ""
-	existingEscs, err := getEnvironmentSpecificConfigurations(api, false)
+	existingEscs, err := GetEnvironmentSpecificConfigurations(api, false)
 	if err != nil {
 		return err
 	}
@@ -393,24 +269,4 @@ func rmEsc(api *NlxApi, variableName, variableDataService string) error {
 	logging.VerboseSuccess("Success deleting variable", escStart)
 
 	return nil
-}
-
-func init() {
-	RootCmd.AddCommand(setvarCmd)
-	RootCmd.AddCommand(getvarCmd)
-	RootCmd.AddCommand(rmvarCmd)
-
-	// for each of these, add the necessary flags
-	for _, varCommand := range []*cobra.Command{
-		setvarCmd, getvarCmd, rmvarCmd,
-	} {
-		flags.AddFlagFunctions(varCommand, flags.PlatformLoginFlags...)
-	}
-
-	for _, varCommand := range []*cobra.Command{
-		setvarCmd, rmvarCmd,
-	} {
-		flags.AddFlags(varCommand, flags.VariableName, flags.VariableValue, flags.VariableDataService)
-	}
-
 }

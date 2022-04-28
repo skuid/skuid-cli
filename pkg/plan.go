@@ -1,10 +1,15 @@
 package pkg
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"path/filepath"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/skuid/tides/pkg/logging"
 )
@@ -153,6 +158,127 @@ func (m Metadata) FilterMetadataItem(relativeFilePath string) (keep bool) {
 		keep = true
 		return
 	}
+
+	return
+}
+
+func GetRetrievePlan(api *NlxApi, appName string) (map[string]Plan, error) {
+
+	logging.VerboseSection("Getting Retrieve Plan")
+
+	var postBody io.Reader
+	if appName != "" {
+		retFilter, err := json.Marshal(RetrieveFilter{
+			AppName: appName,
+		})
+		if err != nil {
+			return nil, err
+		}
+		postBody = bytes.NewReader(retFilter)
+	}
+
+	planStart := time.Now()
+	// Get a retrieve plan
+	planResult, err := api.Connection.MakeRequest(
+		http.MethodPost,
+		"/metadata/retrieve/plan",
+		postBody,
+		"application/json",
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	logging.VerboseSuccess("Success Getting Retrieve Plan", planStart)
+
+	defer (*planResult).Close()
+
+	var plans map[string]Plan
+	if err := json.NewDecoder(*planResult).Decode(&plans); err != nil {
+		return nil, err
+	}
+	return plans, nil
+}
+
+func ExecuteRetrievePlan(api *NlxApi, plans map[string]Plan, noZip bool) (planResults []*io.ReadCloser, err error) {
+
+	logging.VerboseSection("Executing Retrieve Plan")
+
+	for _, plan := range plans {
+		metadataBytes, err := json.Marshal(RetrieveRequest{
+			Metadata: plan.Metadata,
+			DoZip:    !noZip,
+		})
+		if err != nil {
+			return nil, err
+		}
+		retrieveStart := time.Now()
+		if plan.Host == "" {
+
+			logging.VerboseF("Making Retrieve Request: URL: [%s] Type: [%s]\n", plan.URL, plan.Type)
+
+			planResult, err := api.Connection.MakeRequest(
+				http.MethodPost,
+				plan.URL,
+				bytes.NewReader(metadataBytes),
+				"application/json",
+			)
+			if err != nil {
+				return nil, err
+			}
+			planResults = append(planResults, planResult)
+		} else {
+			url := fmt.Sprintf("%s:%s/api/v2%s", plan.Host, plan.Port, plan.URL)
+
+			logging.VerboseF("Making Retrieve Request: URL: [%s] Type: [%s]\n", url, plan.Type)
+
+			planResult, err := api.Connection.MakeJWTRequest(
+				http.MethodPost,
+				url,
+				bytes.NewReader(metadataBytes),
+				"application/json",
+			)
+			if err != nil {
+				return nil, err
+			}
+			planResults = append(planResults, planResult)
+		}
+
+		logging.VerboseSuccess("Success Retrieving from Source", retrieveStart)
+
+	}
+	return planResults, nil
+}
+
+func DeployModifiedFiles(api *NlxApi, targetDir, modifiedFile string) (err error) {
+
+	// Create a buffer to write our archive to.
+	bufPlan := new(bytes.Buffer)
+	err = ArchivePartial(targetDir, bufPlan, modifiedFile)
+	if err != nil {
+		err = fmt.Errorf("Error creating deployment ZIP archive: %v", err)
+		return
+	}
+
+	logging.VerboseLn("Getting deploy plan...")
+
+	plan, err := api.GetDeployPlan(bufPlan, "application/zip")
+	if err != nil {
+		err = fmt.Errorf("Error getting deploy plan: %v", err)
+		return
+	}
+
+	logging.VerboseLn("Retrieved deploy plan. Deploying...")
+
+	_, err = api.ExecuteDeployPlan(plan, targetDir)
+	if err != nil {
+		err = fmt.Errorf("Error executing deploy plan: %v", err)
+		return
+	}
+
+	successMessage := "Successfully deployed metadata to Skuid Site: " + modifiedFile
+	logging.Println(successMessage)
 
 	return
 }

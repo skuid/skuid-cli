@@ -1,7 +1,6 @@
-package pkg
+package cmd
 
 import (
-	"bytes"
 	"fmt"
 	"log"
 	"os"
@@ -12,17 +11,22 @@ import (
 	"github.com/radovskyb/watcher"
 	"github.com/spf13/cobra"
 
+	"github.com/skuid/tides/cmd/validation"
+	"github.com/skuid/tides/pkg"
 	"github.com/skuid/tides/pkg/flags"
 	"github.com/skuid/tides/pkg/logging"
 )
 
 var watchCmd = &cobra.Command{
-	Use:   "watch",
-	Short: "Watch for changes to local Skuid metadata, and deploy changes to a Skuid Platform Site.",
-	Long:  "Watches for changes to local Skuid metadata on your file system, and automatically deploys the changed files to a Skuid Platform Site.",
+	SilenceErrors:     true,
+	SilenceUsage:      true,
+	Use:               "watch",
+	Short:             "Watch for changes to local Skuid metadata, and deploy changes to a Skuid Platform Site.",
+	Long:              "Watches for changes to local Skuid metadata on your file system, and automatically deploys the changed files to a Skuid Platform Site.",
+	PersistentPreRunE: validation.PrerunValidation,
 	RunE: func(cmd *cobra.Command, _ []string) (err error) {
 
-		api, err := SkuidNlxLogin(cmd)
+		api, err := pkg.SkuidNlxLogin(cmd)
 
 		if err != nil {
 			err = fmt.Errorf("Error logging in to Skuid site: %v", err)
@@ -82,7 +86,7 @@ var watchCmd = &cobra.Command{
 			for {
 				select {
 				case event := <-w.Event:
-					cleanRelativeFilePath := FromWindowsPath(strings.Split(event.Path, targetDirFriendly)[1])
+					cleanRelativeFilePath := pkg.FromWindowsPath(strings.Split(event.Path, targetDirFriendly)[1])
 					dirSplit := strings.Split(cleanRelativeFilePath, string(filepath.Separator))
 					metadataType, remainder := dirSplit[1], dirSplit[2]
 					var changedEntity string
@@ -95,7 +99,7 @@ var watchCmd = &cobra.Command{
 					}
 					logging.Println("Detected change to metadata type: " + changedEntity)
 					go func() {
-						if err := deployModifiedFiles(api, targetDir, changedEntity); err != nil {
+						if err := pkg.DeployModifiedFiles(api, targetDir, changedEntity); err != nil {
 							w.Error <- err
 						}
 					}()
@@ -130,39 +134,7 @@ var watchCmd = &cobra.Command{
 	},
 }
 
-func deployModifiedFiles(api *NlxApi, targetDir, modifiedFile string) (err error) {
-
-	// Create a buffer to write our archive to.
-	bufPlan := new(bytes.Buffer)
-	err = ArchivePartial(targetDir, bufPlan, modifiedFile)
-	if err != nil {
-		err = fmt.Errorf("Error creating deployment ZIP archive: %v", err)
-		return
-	}
-
-	logging.VerboseLn("Getting deploy plan...")
-
-	plan, err := api.GetDeployPlan(bufPlan, "application/zip")
-	if err != nil {
-		err = fmt.Errorf("Error getting deploy plan: %v", err)
-		return
-	}
-
-	logging.VerboseLn("Retrieved deploy plan. Deploying...")
-
-	_, err = api.ExecuteDeployPlan(plan, targetDir)
-	if err != nil {
-		err = fmt.Errorf("Error executing deploy plan: %v", err)
-		return
-	}
-
-	successMessage := "Successfully deployed metadata to Skuid Site: " + modifiedFile
-	logging.Println(successMessage)
-
-	return
-}
-
 func init() {
-	RootCmd.AddCommand(watchCmd)
+	TidesCmd.AddCommand(watchCmd)
 	flags.AddFlagFunctions(watchCmd, flags.PlatformLoginFlags...)
 }

@@ -237,7 +237,7 @@ func readFileFromZipAndWriteToFilesystem(file *zip.File, fullPath string, fileAl
 	return nil
 }
 
-func createDirectory(path string, fileMode os.FileMode) error {
+func CreateDirectory(path string, fileMode os.FileMode) error {
 	if _, err := os.Stat(path); err != nil {
 
 		logging.VerboseLn("Creating intermediate directory: " + path)
@@ -251,7 +251,7 @@ type FileCreator func(fileReader io.ReadCloser, path string) error
 type DirectoryCreator func(path string, fileMode os.FileMode) error
 type FileReader func(path string) ([]byte, error)
 
-func writeNewFile(fileReader io.ReadCloser, path string) error {
+func WriteNewFile(fileReader io.ReadCloser, path string) error {
 	targetFile, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	if err != nil {
 		return err
@@ -264,7 +264,7 @@ func writeNewFile(fileReader io.ReadCloser, path string) error {
 	return nil
 }
 
-func readExistingFile(path string) ([]byte, error) {
+func ReadExistingFile(path string) ([]byte, error) {
 	return ioutil.ReadFile(path)
 }
 
