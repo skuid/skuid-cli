@@ -12,7 +12,7 @@ import (
 	"github.com/skuid/tides/pkg/logging"
 )
 
-var getvarCmd = &cobra.Command{
+var varGetCmd = &cobra.Command{
 	Use:   "variables",
 	Short: "Get a list of Skuid site environment variables.",
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
@@ -47,21 +47,7 @@ var getvarCmd = &cobra.Command{
 }
 
 func init() {
-	TidesCmd.AddCommand(setvarCmd)
-	TidesCmd.AddCommand(getvarCmd)
-	TidesCmd.AddCommand(rmvarCmd)
-
-	// for each of these, add the necessary flags
-	for _, varCommand := range []*cobra.Command{
-		setvarCmd, getvarCmd, rmvarCmd,
-	} {
-		flags.AddFlagFunctions(varCommand, flags.PlatformLoginFlags...)
-	}
-
-	for _, varCommand := range []*cobra.Command{
-		setvarCmd, rmvarCmd,
-	} {
-		flags.AddFlags(varCommand, flags.VariableName, flags.VariableValue, flags.VariableDataService)
-	}
+	TidesCmd.AddCommand(varGetCmd)
+	flags.AddFlagFunctions(varGetCmd, flags.PlatformLoginFlags...)
 
 }

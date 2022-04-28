@@ -12,7 +12,7 @@ import (
 )
 
 // setvarCmd represents the setvariable command
-var setvarCmd = &cobra.Command{
+var varSetCmd = &cobra.Command{
 	Use:   "set-variable",
 	Short: "Set a Skuid site environment variable",
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
@@ -53,4 +53,10 @@ var setvarCmd = &cobra.Command{
 
 		return
 	},
+}
+
+func init() {
+	TidesCmd.AddCommand(varSetCmd)
+	flags.AddFlagFunctions(varSetCmd, flags.PlatformLoginFlags...)
+	flags.AddFlags(varSetCmd, flags.VariableName, flags.VariableValue, flags.VariableDataService)
 }

@@ -11,7 +11,7 @@ import (
 	"github.com/skuid/tides/pkg/logging"
 )
 
-var rmvarCmd = &cobra.Command{
+var varRmCmd = &cobra.Command{
 	Use:   "rm-variable",
 	Short: "Delete a Skuid site environment variable",
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
@@ -50,4 +50,10 @@ var rmvarCmd = &cobra.Command{
 
 		return
 	},
+}
+
+func init() {
+	TidesCmd.AddCommand(varRmCmd)
+	flags.AddFlagFunctions(varRmCmd, flags.PlatformLoginFlags...)
+	flags.AddFlags(varRmCmd, flags.VariableName, flags.VariableValue, flags.VariableDataService)
 }
