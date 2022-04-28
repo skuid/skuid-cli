@@ -6,8 +6,4 @@ var (
 	PlatformLoginFlags = FlagFunctions(
 		Host, Username, Password, ApiVersion, MetadataServiceProxy, DataServiceProxy,
 	)
-
-	SalesforceLoginFlags = FlagFunctions(
-		ClientId, ClientSecret, Host, Username, Password, ApiVersion,
-	)
 )

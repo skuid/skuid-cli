@@ -17,7 +17,7 @@ var (
 		argument:   &argPassword,
 		Name:       "password",
 		Shorthand:  "p",
-		Usage:      "Skuid Platform / Salesforce Password",
+		Usage:      "Skuid NLX Password",
 		EnvVarName: constants.ENV_SKUID_PASSWORD,
 		Required:   true,
 	}
@@ -28,15 +28,7 @@ var (
 		Shorthand:  "u",
 		EnvVarName: constants.ENV_SKUID_USERNAME,
 		Required:   true,
-		Usage:      "Skuid Platform / Salesforce Username",
-	}
-
-	ClientId = &Flag[string]{
-		argument:   &argClientId,
-		Name:       "client-id",
-		EnvVarName: constants.ENV_SKUID_CLIENT_ID,
-		Required:   false,
-		Usage:      "OAuth Client ID",
+		Usage:      "Skuid NLX Username",
 	}
 
 	OutputFile = &Flag[string]{
@@ -51,7 +43,6 @@ var (
 		argument: &argApiVersion,
 		Name:     "api-version",
 		Usage:    "API Version",
-		Default:  constants.DEFAULT_SALESFORCE_API_VERSION,
 	}
 
 	MetadataServiceProxy = &Flag[string]{
@@ -68,18 +59,11 @@ var (
 		Usage:      "Proxy used to reach the data service",
 	}
 
-	ClientSecret = &Flag[string]{
-		argument:   &argClientSecret,
-		Name:       "client-secret",
-		EnvVarName: constants.ENV_SKUID_CLIENT_SECRET,
-		Usage:      "OAuth Client Secret",
-	}
-
 	AppName = &Flag[string]{
 		argument:  &argAppName,
 		Name:      "app-name",
 		Shorthand: "a",
-		Usage:     "Scope the operation to a specific Skuid App (name).",
+		Usage:     "Scope the operation to a specific Skuid NLX App (name).",
 	}
 
 	VariableDataService = &Flag[string]{
@@ -106,19 +90,5 @@ var (
 		Aliases:   []string{"directory"},
 		Shorthand: "d",
 		Usage:     "Target directory for this operation.",
-	}
-
-	PushFile = &Flag[string]{
-		argument:  &argPushFile,
-		Name:      "file",
-		Shorthand: "f",
-		Usage:     "Skuid Page file(s) to push. Supports file globs.",
-	}
-
-	Module = &Flag[string]{
-		argument:  &argModule,
-		Name:      "module",
-		Shorthand: "m",
-		Usage:     "Module to pack",
 	}
 )
