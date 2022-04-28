@@ -4,11 +4,14 @@ import (
 	"os"
 
 	"github.com/joho/godotenv"
+
+	"github.com/skuid/tides/pkg"
+	"github.com/skuid/tides/pkg/logging"
 )
 
 func main() {
-	if err := RootCmd.Execute(); err != nil {
-		PrintError("Error Encountered During Run:", err)
+	if err := pkg.RootCmd.Execute(); err != nil {
+		logging.PrintError("Error Encountered During Run:", err)
 		os.Exit(1)
 	}
 }
@@ -17,7 +20,9 @@ func init() {
 	// if we want to load environments for customers
 	// instead of relying on autoenv/direnv
 	if err := godotenv.Load(".env"); err != nil {
-		PrintError("Error initializing environment:", err)
+		logging.PrintError("Error initializing environment:", err)
 		os.Exit(1)
+	} else {
+		logging.VerboseLn("Loaded Environment")
 	}
 }
