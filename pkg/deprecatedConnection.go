@@ -10,7 +10,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/skuid/tides/pkg/constants"
+	"github.com/skuid/tides/pkg/nlx"
 )
 
 type NlxConnection struct {
@@ -29,10 +29,6 @@ type NlxAuthResponse struct {
 	AccessToken string `json:"access_token"`
 }
 
-var (
-	SkuidUserAgent = fmt.Sprintf("Skuid-CLI/%s", constants.VERSION_NAME)
-)
-
 // Refresh is used to obtain an OAuth2 access_token
 func (conn *NlxConnection) Refresh() error {
 	urlValues := url.Values{}
@@ -47,7 +43,7 @@ func (conn *NlxConnection) Refresh() error {
 	}
 
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Add("User-Agent", SkuidUserAgent)
+	req.Header.Add("User-Agent", nlx.SkuidUserAgent)
 
 	resp, err := http.DefaultClient.Do(req)
 
@@ -118,7 +114,7 @@ func (conn *NlxConnection) MakeRequest(method string, url string, payload io.Rea
 	if contentType != "" {
 		req.Header.Add("Content-Type", contentType)
 	}
-	req.Header.Add("User-Agent", SkuidUserAgent)
+	req.Header.Add("User-Agent", nlx.SkuidUserAgent)
 
 	resp, err := http.DefaultClient.Do(req)
 
@@ -173,7 +169,7 @@ func (conn *NlxConnection) MakeJWTRequest(method string, url string, payload io.
 	if contentType != "" {
 		req.Header.Add("Content-Type", contentType)
 	}
-	req.Header.Add("User-Agent", SkuidUserAgent)
+	req.Header.Add("User-Agent", nlx.SkuidUserAgent)
 
 	// Send the public key endpoint so that warden can configure a JWT key if needed
 	req.Header.Add("x-skuid-public-key-endpoint", conn.Host+"/api/v1/site/verificationkey")
