@@ -46,20 +46,6 @@ var (
 		Usage:    "API Version",
 	}
 
-	MetadataServiceProxy = &Flag[string]{
-		argument:   &argMetadataServiceProxy,
-		Name:       "metadata-service-proxy",
-		EnvVarName: constants.ENV_METADATA_SERVICE_PROXY,
-		Usage:      "Proxy used to reach the metadata service",
-	}
-
-	DataServiceProxy = &Flag[string]{
-		argument:   &argDataServiceProxy,
-		Name:       "data-service-proxy",
-		EnvVarName: constants.ENV_DATA_SERVICE_PROXY,
-		Usage:      "Proxy used to reach the data service",
-	}
-
 	AppName = &Flag[string]{
 		argument:  &argAppName,
 		Name:      "app-name",

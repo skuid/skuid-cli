@@ -14,16 +14,14 @@ import (
 )
 
 type NlxConnection struct {
-	AccessToken          string
-	APIVersion           string
-	ClientId             string
-	ClientSecret         string
-	Host                 string
-	Password             string
-	Username             string
-	JWT                  string
-	MetadataServiceProxy *url.URL
-	DataServiceProxy     *url.URL
+	AccessToken  string
+	APIVersion   string
+	ClientId     string
+	ClientSecret string
+	Host         string
+	Password     string
+	Username     string
+	JWT          string
 }
 
 type NlxAuthResponse struct {
@@ -51,7 +49,7 @@ func (conn *NlxConnection) Refresh() error {
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Add("User-Agent", SkuidUserAgent)
 
-	resp, err := getClientForProxyURL(conn.MetadataServiceProxy).Do(req)
+	resp, err := http.DefaultClient.Do(req)
 
 	if err != nil {
 		switch err.(type) {
@@ -122,7 +120,7 @@ func (conn *NlxConnection) MakeRequest(method string, url string, payload io.Rea
 	}
 	req.Header.Add("User-Agent", SkuidUserAgent)
 
-	resp, err := getClientForProxyURL(conn.MetadataServiceProxy).Do(req)
+	resp, err := http.DefaultClient.Do(req)
 
 	if err != nil {
 		return nil, err
@@ -134,7 +132,7 @@ func (conn *NlxConnection) MakeRequest(method string, url string, payload io.Rea
 		conn.AccessToken = ""
 		refreshErr := conn.Refresh()
 		if refreshErr == nil && conn.AccessToken != "" {
-			newResp, newErr := getClientForProxyURL(conn.MetadataServiceProxy).Do(req)
+			newResp, newErr := http.DefaultClient.Do(req)
 			if newErr != nil {
 				return nil, newErr
 			}
@@ -180,7 +178,7 @@ func (conn *NlxConnection) MakeJWTRequest(method string, url string, payload io.
 	// Send the public key endpoint so that warden can configure a JWT key if needed
 	req.Header.Add("x-skuid-public-key-endpoint", conn.Host+"/api/v1/site/verificationkey")
 
-	resp, err := getClientForProxyURL(conn.DataServiceProxy).Do(req)
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
 	}

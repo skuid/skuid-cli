@@ -12,7 +12,6 @@ import (
 	"github.com/skuid/tides/pkg"
 	"github.com/skuid/tides/pkg/constants"
 	"github.com/skuid/tides/pkg/logging"
-	"github.com/skuid/tides/pkg/nlx"
 )
 
 const (
@@ -20,7 +19,7 @@ const (
 )
 
 func GetAccessToken(
-	host, username, password, metadataServiceProxy string, // optional
+	host, username, password string, // optional
 ) (accessToken string, err error) {
 	logging.VerboseSeparator()
 	logging.VerboseLn("Starting NLX Login")
@@ -29,14 +28,6 @@ func GetAccessToken(
 	// 	logging.VerboseF("Setting API Version to DEFAULT_API_VERSION: %v\n", DEFAULT_API_VERSION)
 	// 	apiVersion = DEFAULT_API_VERSION
 	// }
-
-	metadataServiceProxyUri := fasthttp.AcquireURI()
-	defer fasthttp.ReleaseURI(metadataServiceProxyUri)
-	if metadataServiceProxy != "" {
-		if err = metadataServiceProxyUri.Parse(nil, []byte(metadataServiceProxy)); err == nil {
-			logging.VerboseF("Using Metadata Service Proxy: %v", color.Green.Sprint(metadataServiceProxy))
-		}
-	}
 
 	// Need to acquire and release resources from fasthttp
 	// fasthttp handles multithreading for us and removes
@@ -122,7 +113,7 @@ func GetAccessToken(
 
 func TestFasthttpMethods(t *testing.T) {
 	logging.SetVerbose(true)
-	if _, err := GetAccessToken("https://jredhoop-subdomain.pliny.webserver:3000", "jredhoop", "SkuidLocalDevelopment", ""); err != nil {
+	if _, err := GetAccessToken("https://jredhoop-subdomain.pliny.webserver:3000", "jredhoop", "SkuidLocalDevelopment"); err != nil {
 		color.Red.Println(err)
 		t.FailNow()
 	}
@@ -131,7 +122,7 @@ func TestFasthttpMethods(t *testing.T) {
 func BenchmarkFasthttpLogin(b *testing.B) {
 	logging.SetVerbose(false)
 	for i := 0; i < b.N; i++ {
-		if _, err := GetAccessToken("https://jredhoop-subdomain.pliny.webserver:3000", "jredhoop", "SkuidLocalDevelopment", ""); err != nil {
+		if _, err := GetAccessToken("https://jredhoop-subdomain.pliny.webserver:3000", "jredhoop", "SkuidLocalDevelopment"); err != nil {
 			color.Red.Println(err)
 			b.FailNow()
 		}
@@ -141,7 +132,7 @@ func BenchmarkFasthttpLogin(b *testing.B) {
 func BenchmarkHttpLogin(b *testing.B) {
 	logging.SetVerbose(false)
 	for i := 0; i < b.N; i++ {
-		if _, err := pkg.SkuidNlxLogin2("https://jredhoop-subdomain.pliny.webserver:3000", "jredhoop", "SkuidLocalDevelopment", "", "", ""); err != nil {
+		if _, err := pkg.SkuidNlxLogin2("https://jredhoop-subdomain.pliny.webserver:3000", "jredhoop", "SkuidLocalDevelopment", ""); err != nil {
 			color.Red.Println(err)
 			b.FailNow()
 		}
