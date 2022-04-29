@@ -41,6 +41,11 @@ func SkuidNlxLogin(cmd *cobra.Command) (api *NlxApi, err error) {
 		return
 	}
 
+	return SkuidNlxLogin2(host, username, password, apiVersion, metadataServiceProxy, dataServiceProxy)
+}
+
+func SkuidNlxLogin2(host, username, password, apiVersion, metadataServiceProxy, dataServiceProxy string) (api *NlxApi, err error) {
+
 	if apiVersion == "" {
 		apiVersion = "2"
 	}
@@ -48,11 +53,11 @@ func SkuidNlxLogin(cmd *cobra.Command) (api *NlxApi, err error) {
 	loginStart := time.Now()
 
 	for _, msg := range [][]string{
-		{"Logging in to Skuid Platform as user:", username},
-		{"Connecting to host:", host},
-		{"API Version:", apiVersion},
+		{"Skuid NLX User:", username},
+		{"Skuid NLX Host:", host},
+		{"Skuid NLX API Version:", apiVersion},
 	} {
-		logging.VerboseF("%-45s\t%s\n", color.Yellow.Sprint(msg[0]), color.Green.Sprint(msg[1]))
+		logging.VerboseF("%-20s\t%s\n", msg[0], color.Green.Sprint(msg[1]))
 	}
 	logging.VerboseSeparator()
 
@@ -64,31 +69,29 @@ func SkuidNlxLogin(cmd *cobra.Command) (api *NlxApi, err error) {
 	}
 
 	if metadataServiceProxy != "" {
-		proxyURL, err := url.Parse(metadataServiceProxy)
-		if err != nil {
-			return nil, err
+		logging.VerboseF("Using Metadata Service Proxy: %v", color.Green.Sprint(metadataServiceProxy))
+		if conn.MetadataServiceProxy, err = url.Parse(metadataServiceProxy); err != nil {
+			return
 		}
-		conn.MetadataServiceProxy = proxyURL
 	}
 
 	if dataServiceProxy != "" {
-		proxyURL, err := url.Parse(dataServiceProxy)
-		if err != nil {
-			return nil, err
+		logging.VerboseF("Using Data Service Proxy: %v", color.Green.Sprint(dataServiceProxy))
+		if conn.DataServiceProxy, err = url.Parse(dataServiceProxy); err != nil {
+			return
 		}
-		conn.DataServiceProxy = proxyURL
 	}
 
 	err = conn.Refresh()
 
 	if err != nil {
-		return nil, err
+		return
 	}
 
 	err = conn.GetJWT()
 
 	if err != nil {
-		return nil, err
+		return
 	}
 
 	api = &NlxApi{
@@ -96,7 +99,6 @@ func SkuidNlxLogin(cmd *cobra.Command) (api *NlxApi, err error) {
 	}
 
 	logging.VerboseSuccess("Login Success", loginStart)
-	logging.VerboseLn("Access Token: " + conn.AccessToken)
 
 	return
 }

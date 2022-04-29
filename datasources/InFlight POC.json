@@ -1,0 +1,24 @@
+{
+	"name": "InFlight POC",
+	"authentication": "none",
+	"authRequestBody": {
+	},
+	"authRequestBodyContentType": null,
+	"authRequestHeaders": {
+	},
+	"authRequestVerb": "POST",
+	"authUrl": null,
+	"config": null,
+	"credentialSource": "none",
+	"nameIdentifierFormula": "{{$User.FirstName}}@skuid.com",
+	"requestBodyParameters": {
+	},
+	"requestHeaders": {
+	},
+	"requestUrlParameters": {
+	},
+	"type": "InFlight",
+	"url": "https://samplehcm92858.inflight.local:8443",
+	"useProxy": false,
+	"version": null
+}

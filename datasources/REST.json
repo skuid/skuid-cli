@@ -1,0 +1,24 @@
+{
+	"name": "REST",
+	"authentication": "none",
+	"authRequestBody": {
+	},
+	"authRequestBodyContentType": null,
+	"authRequestHeaders": {
+	},
+	"authRequestVerb": "POST",
+	"authUrl": null,
+	"config": null,
+	"credentialSource": "none",
+	"nameIdentifierFormula": "{{$User.FirstName}}@skuid.com",
+	"requestBodyParameters": {
+	},
+	"requestHeaders": {
+	},
+	"requestUrlParameters": {
+	},
+	"type": "REST",
+	"url": "google.com/api",
+	"useProxy": true,
+	"version": null
+}

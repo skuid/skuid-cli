@@ -1,0 +1,11 @@
+{
+	"name": "Settings_EnvironmentVariables",
+	"apiVersion": "v2",
+	"composerSettings": null,
+	"isMasterPage": false,
+	"isPublic": false,
+	"maxAutoSaves": 25,
+	"module": "",
+	"type": "Desktop",
+	"uniqueId": "Settings_EnvironmentVariables"
+}

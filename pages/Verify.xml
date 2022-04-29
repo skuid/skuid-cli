@@ -1,0 +1,422 @@
+<skuid__page unsavedchangeswarning="yes" title="{{#$Param.pr}}New Password{{/$Param.pr}}{{^$Param.pr}}Create Password{{/$Param.pr}}">
+	<models>
+		<model id="Verify_UI" limit="20" query="false" createrowifnonefound="true" datasource="SkuidLocal" type="readwrite" unloadwarningifunsavedchanges="false">
+			<fields>
+				<field id="password" displaytype="TEXT" label="Password"/>
+				<field id="password_verify" displaytype="TEXT" label="Repeat Password"/>
+				<field id="verification_code" displaytype="TEXT" label="Verification Code" defaultvaluetype="param" defaultValue="vc" enclosevalueinquotes="true"/>
+				<field id="PasswordVerifier__ui" displaytype="FORMULA" uionly="true" readonly="true" returntype="BOOLEAN" precision="9" scale="0">
+					<formula>LEN({{password}}) &gt; 0  and LEN({{password}}) &lt; 8</formula>
+				</field>
+				<field id="status__ui" displaytype="TEXT" uionly="true" length="255"/>
+			</fields>
+			<conditions/>
+			<actions>
+				<action>
+					<actions>
+						<action type="updateRow" fieldmodel="Verify_UI" enclosevalueinquotes="true">
+							<updates>
+								<update valuesource="fieldvalue" field="verification_code" value="{{$Param.vc}}"/>
+							</updates>
+						</action>
+					</actions>
+					<events>
+						<event>row.created</event>
+					</events>
+				</action>
+				<action>
+					<actions>
+						<action type="updateRow" fieldmodel="Verify_UI" affectedrows="context">
+							<updates>
+								<update valuesource="fieldvalue" field="password_verify" enclosevalueinquotes="true" value="{{password}}"/>
+							</updates>
+						</action>
+					</actions>
+					<events>
+						<event>row.updated</event>
+					</events>
+					<fields>
+						<field>password</field>
+					</fields>
+				</action>
+			</actions>
+			<methods>
+				<method type="insert" verb="POST" successif="responsefieldistrue" sendchanges="asformdatainbody" insertresponse="recordinbody" endpoint="/auth/verify" successfield="success"/>
+			</methods>
+		</model>
+		<model id="UI" limit="20" query="true" createrowifnonefound="true" datasource="Ui-Only">
+			<fields>
+				<field id="showPassword" displaytype="BOOLEAN" length="255" defaultvaluetype="fieldvalue" ogdisplaytype="TEXT"/>
+				<field id="passwordCreationStatus" displaytype="PICKLIST" length="255" ogdisplaytype="TEXT" picklistsource="manual" returntype="TEXT">
+					<picklistentries>
+						<entry value="in_progress" label="in_progress"/>
+						<entry value="not_started" label="not_started"/>
+					</picklistentries>
+				</field>
+				<field id="errorType" displaytype="PICKLIST" length="255" ogdisplaytype="TEXT" picklistsource="manual" returntype="TEXT">
+					<picklistentries>
+						<entry value="commonPassword" label="commonPassword"/>
+					</picklistentries>
+				</field>
+			</fields>
+			<conditions/>
+			<actions/>
+		</model>
+	</models>
+	<pageregioncontents>
+		<pageregioncontent regionid="sk-1fq-2169" uniqueid="sk-SBW-1472">
+			<components>
+				<skuid__wrapper uniqueid="sk-1hu-3953" overflowY="hidden" height="custom" heightCustom="128px" heightStrategy="fixed">
+					<components/>
+					<styles>
+						<spacing/>
+					</styles>
+					<background/>
+				</skuid__wrapper>
+				<skuid__grid uniqueid="sk-1iW-5188" flexDirection="row" justifyContent="space-around" alignItems="flex-start">
+					<divisions>
+						<division alignSelf="auto" minWidth="384px" ratio="0" maxWidth="384px">
+							<components>
+								<skuid__wrapper uniqueid="sk-2x1q-6297">
+									<components>
+										<skuid__grid uniqueid="sk-1ks-6227" flexDirection="row" justifyContent="space-around" alignItems="center">
+											<divisions>
+												<division ratio="0" alignSelf="auto">
+													<components>
+														<skuid__image source="url" uniqueid="sk-1il-6825" datasource="SkuidLocal" model="Login_UI" url="/api/v1/site/logo/large" imageHeight="64px" imageWidth="auto">
+															<styles>
+																<spacing/>
+															</styles>
+														</skuid__image>
+													</components>
+												</division>
+											</divisions>
+											<styles>
+												<spacing bottom="4"/>
+											</styles>
+										</skuid__grid>
+										<skuid__wrapper uniqueid="public-main-wrapper" styleSettingsVariant="c5a44cb4-0fb9-4631-a576-a20f998816e0">
+											<components>
+												<skuid__wrapper uniqueid="sk-348-33666">
+													<components>
+														<skuid__text contents="&lt;div style=&quot;text-align: center;&quot;&gt;{{#$Param.pr}}Enter a new password{{/$Param.pr}}{{^$Param.pr}}Create a password{{/$Param.pr}}&lt;/div&gt;&#10;" uniqueid="sk-1kT-7091" styleSettingsVariant="53193c74-b77c-429e-8fed-09b73deaa10c">
+															<styles>
+																<spacing bottom="2" styleSettingsVariant="53193c74-b77c-429e-8fed-09b73deaa10c"/>
+															</styles>
+														</skuid__text>
+														<skuid__messageArea uniqueid="sk-7-8-10741" model="Login_UI">
+															<group>
+																<skuid__messageBlock title="Password too common" description="That password is too commonly used. Enter a different, more secure password to continue. " allowHTML="false" styleSettingsVariant="errorStrong" icon="sk-webicon-ink:warning">
+																	<renderConditions logictype="and">
+																		<renderCondition type="fieldvalue" operator="=" enclosevalueinquotes="true" fieldmodel="UI" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="errorType" value="commonPassword"/>
+																	</renderConditions>
+																</skuid__messageBlock>
+															</group>
+															<renderConditions logictype="and">
+																<renderCondition type="blank" operator="!=" fieldmodel="UI" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="errorType" value="null" enclosevalueinquotes="false"/>
+															</renderConditions>
+															<styles>
+																<spacing bottom="3"/>
+															</styles>
+														</skuid__messageArea>
+														<skuid__text contents="&lt;div&gt;Avoid commonly used passwords, and try adding numbers or special characters to make yours unique.&lt;/div&gt;&#10;" uniqueid="sk-SIe-22510">
+															<styles>
+																<spacing bottom="3"/>
+															</styles>
+														</skuid__text>
+														<skuid__wrapper uniqueid="sk-1l_-13883">
+															<components>
+																<skuid__grid uniqueid="sk-1o9-20536" flexDirection="row" justifyContent="flex-start" alignItems="center">
+																	<divisions>
+																		<division minWidth="100px" ratio="1" alignSelf="flex-end">
+																			<components>
+																				<skuid__text contents="Password" uniqueid="sk-1oB-21592" styleSettingsVariant="bcf356fb-cd9b-4b49-adb6-299b154f243f">
+																					<styles>
+																						<spacing/>
+																					</styles>
+																				</skuid__text>
+																			</components>
+																		</division>
+																		<division alignSelf="flex-start" minWidth="100px" ratio="1">
+																			<components>
+																				<skuid__wrapper uniqueid="sk-XjZ-6489">
+																					<components>
+																						<skuid__buttonSet uniqueid="sk-1m3-14794">
+																							<groups>
+																								<skuid__buttonGroup uniqueId="sk-1m3-14792" displayType="detached">
+																									<buttons>
+																										<skuid__button label="Show Password" uniqueId="sk-1m3-14793" styleSettingsVariant="c217118d-b5a0-4759-b20f-01604730a904">
+																											<renderConditions logictype="and">
+																												<renderCondition type="fieldvalue" operator="!=" enclosevalueinquotes="false" fieldmodel="UI" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="showPassword" value="true"/>
+																											</renderConditions>
+																											<enableConditions/>
+																											<styleVariantConditions/>
+																											<actions>
+																												<action type="updateRow" fieldmodel="UI" affectedrows="context">
+																													<updates>
+																														<update valuesource="fieldvalue" field="showPassword" enclosevalueinquotes="false" value="true"/>
+																													</updates>
+																												</action>
+																												<action type="action-sequence" action-sequence-id="142cea29-67f5-4dee-a582-af1fcffb8383">
+																													<inputs>
+																														<input name="id" value="#password-input"/>
+																													</inputs>
+																												</action>
+																											</actions>
+																										</skuid__button>
+																										<skuid__button label="Hide Password" uniqueId="sk-1os-25420" styleSettingsVariant="c217118d-b5a0-4759-b20f-01604730a904">
+																											<renderConditions logictype="and">
+																												<renderCondition type="fieldvalue" operator="=" enclosevalueinquotes="false" fieldmodel="UI" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="showPassword" value="true"/>
+																											</renderConditions>
+																											<enableConditions/>
+																											<styleVariantConditions/>
+																											<actions>
+																												<action type="updateRow" fieldmodel="UI" affectedrows="context">
+																													<updates>
+																														<update valuesource="fieldvalue" field="showPassword" enclosevalueinquotes="false" value="false"/>
+																													</updates>
+																												</action>
+																												<action type="action-sequence" action-sequence-id="142cea29-67f5-4dee-a582-af1fcffb8383">
+																													<inputs>
+																														<input name="id" value="#password-input"/>
+																													</inputs>
+																												</action>
+																											</actions>
+																										</skuid__button>
+																									</buttons>
+																								</skuid__buttonGroup>
+																							</groups>
+																							<styles>
+																								<spacing bottom="0.5"/>
+																							</styles>
+																						</skuid__buttonSet>
+																					</components>
+																					<background/>
+																				</skuid__wrapper>
+																			</components>
+																		</division>
+																	</divisions>
+																	<styles>
+																		<spacing/>
+																	</styles>
+																</skuid__grid>
+																<skuid__form showErrorsInline="true" model="Verify_UI" uniqueid="sk-2EBT-22476" mode="edit" styleSettingsVariant="3815a36b-52d9-4fa2-a3b9-bf4ec881a44f">
+																	<columns>
+																		<column ratio="1" minWidth="100px" behavior="flex">
+																			<sections>
+																				<section title="New Section" showHeading="false">
+																					<fields>
+																						<skuid__field id="password" uniqueId="password-input" label=" " displayAs="PASSWORD"/>
+																					</fields>
+																				</section>
+																			</sections>
+																		</column>
+																	</columns>
+																</skuid__form>
+															</components>
+															<styles>
+																<spacing top="3"/>
+															</styles>
+															<background/>
+															<renderConditions logictype="and"/>
+															<styleVariantConditions/>
+														</skuid__wrapper>
+														<skuid__text contents="&lt;div&gt;Password must be at least 8 characters long&lt;/div&gt;&#10;" uniqueid="sk-STx-12002" styleSettingsVariant="0224f73b-c343-4727-9406-b258577a430d" allowHtmlInBuilder="false">
+															<styles>
+																<spacing top="1" styleSettingsVariant="0224f73b-c343-4727-9406-b258577a430d"/>
+															</styles>
+															<renderConditions logictype="and">
+																<renderCondition type="fieldvalue" operator="=" enclosevalueinquotes="false" fieldmodel="Verify_UI" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="PasswordVerifier__ui" fieldtargetobjects="SkuidLocal" value="true"/>
+															</renderConditions>
+															<styleVariantConditions/>
+														</skuid__text>
+														<skuid__buttonSet uniqueid="sk-1pL-29379" expandToFill="true">
+															<groups>
+																<skuid__buttonGroup uniqueId="sk-1pL-29377" displayType="detached">
+																	<buttons>
+																		<skuid__button label="Save" uniqueId="password-verify-next-button" styleSettingsVariant="a8573762-83d9-40e1-bd77-e89a20e4c021">
+																			<actions>
+																				<action type="updateRow" fieldmodel="UI" affectedrows="context">
+																					<updates>
+																						<update valuesource="fieldvalue" field="passwordCreationStatus" enclosevalueinquotes="true" value="in_progress"/>
+																						<update valuesource="blank" field="errorType" enclosevalueinquotes="true"/>
+																					</updates>
+																				</action>
+																				<action type="branch" whenfinished="stop" model="UI">
+																					<formula>ISBLANK({{$Model.Verify_UI.data.0.verification_code}})</formula>
+																					<iftrueactions>
+																						<action type="updateRow" fieldmodel="Verify_UI" affectedrows="context">
+																							<updates>
+																								<update valuesource="fieldvalue" field="status__ui" enclosevalueinquotes="true" value="NO_VERIFICATION_CODE_PROVIDED"/>
+																							</updates>
+																						</action>
+																					</iftrueactions>
+																				</action>
+																				<actions>
+																					<action type="branch" label="If no UN / PW" model="Login_UI">
+																						<formula>ISBLANK({{username}}) || ISBLANK({{password}})</formula>
+																						<iftrueactions>
+																							<action type="blockUI" timeout="2000" message="Please enter a valid Username and Password."/>
+																						</iftrueactions>
+																					</action>
+																					<action type="updateRow" fieldmodel="UI" affectedrows="context" field="login_status" enclosevalueinquotes="true" value="in_progress"/>
+																					<action type="save">
+																						<models>
+																							<model>Login_UI</model>
+																						</models>
+																						<onerroractions>
+																							<action type="updateRow" fieldmodel="UI" affectedrows="context" field="login_status" enclosevalueinquotes="true" value="failure"/>
+																						</onerroractions>
+																					</action>
+																					<action type="updateRow" fieldmodel="UI" affectedrows="context" field="login_status" enclosevalueinquotes="true" value="success"/>
+																					<action type="branch" model="UI">
+																						<formula>{{noredirect}}!=true</formula>
+																						<iftrueactions>
+																							<action type="redirect" window="self" url="{{$Model.Login_UI.data.0.redirect}}"/>
+																						</iftrueactions>
+																					</action>
+																					<action type="branch" model="UI">
+																						<formula>{{noredirect}}==true</formula>
+																						<iftrueactions>
+																							<action type="custom" snippet="LoginClose"/>
+																						</iftrueactions>
+																					</action>
+																				</actions>
+																				<action type="save">
+																					<models>
+																						<model>Verify_UI</model>
+																					</models>
+																					<onerroractions>
+																						<action type="branch" whenfinished="stop">
+																							<formula>CONTAINS({{messages.0.message}}, "list of common passwords")</formula>
+																							<iftrueactions>
+																								<action type="updateRow" fieldmodel="UI" affectedrows="context">
+																									<updates>
+																										<update valuesource="fieldvalue" field="errorType" enclosevalueinquotes="true" value="commonPassword"/>
+																										<update valuesource="fieldvalue" field="passwordCreationStatus" enclosevalueinquotes="true" value="not_started"/>
+																									</updates>
+																								</action>
+																							</iftrueactions>
+																						</action>
+																					</onerroractions>
+																				</action>
+																				<action type="redirect" window="self" url="{{$Model.Verify_UI.data.0.redirect}}"/>
+																			</actions>
+																			<renderConditions logictype="and">
+																				<renderCondition type="fieldvalue" operator="!=" enclosevalueinquotes="true" fieldmodel="UI" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="passwordCreationStatus" value="in_progress"/>
+																			</renderConditions>
+																			<enableConditions logictype="and">
+																				<condition type="blank" operator="!=" fieldmodel="Verify_UI" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="password" fieldtargetobjects="SkuidLocal" value="null" enclosevalueinquotes="false"/>
+																				<condition type="fieldvalue" operator="!=" enclosevalueinquotes="false" fieldmodel="Verify_UI" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="PasswordVerifier__ui" fieldtargetobjects="SkuidLocal" value="true"/>
+																			</enableConditions>
+																			<styleVariantConditions/>
+																			<hotkeys>
+																				<hotkey key="return" ignoretextinputs="false"/>
+																			</hotkeys>
+																		</skuid__button>
+																		<skuid__button label="Logging in..." uniqueId="sk-2aj-35452" styleSettingsVariant="a8573762-83d9-40e1-bd77-e89a20e4c021">
+																			<actions/>
+																			<renderConditions logictype="and">
+																				<renderCondition type="fieldvalue" operator="=" enclosevalueinquotes="true" fieldmodel="UI" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="passwordCreationStatus" value="in_progress"/>
+																			</renderConditions>
+																			<enableConditions logictype="and">
+																				<condition type="fieldvalue" operator="!=" enclosevalueinquotes="true" fieldmodel="UI" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="passwordCreationStatus" value="in_progress"/>
+																			</enableConditions>
+																			<styleVariantConditions/>
+																		</skuid__button>
+																	</buttons>
+																</skuid__buttonGroup>
+															</groups>
+															<styles>
+																<spacing top="2"/>
+															</styles>
+														</skuid__buttonSet>
+													</components>
+													<styles>
+														<spacing/>
+													</styles>
+													<background/>
+													<renderConditions logictype="or"/>
+													<styleVariantConditions/>
+												</skuid__wrapper>
+											</components>
+											<background/>
+											<interactions/>
+											<renderConditions logictype="and">
+												<renderCondition type="fieldvalue" operator="!=" enclosevalueinquotes="false" fieldmodel="UI" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="isLockedOut" value="true"/>
+											</renderConditions>
+											<styleVariantConditions/>
+										</skuid__wrapper>
+									</components>
+									<styles>
+										<spacing bottom="6"/>
+									</styles>
+									<background/>
+								</skuid__wrapper>
+							</components>
+						</division>
+					</divisions>
+				</skuid__grid>
+			</components>
+		</pageregioncontent>
+	</pageregioncontents>
+	<components/>
+	<resources>
+		<labels/>
+		<javascript>
+			<jsitem location="inlinesnippet" name="showhidePassword" cachelocation="false">//Using this method because it's the standard method on other sites and it
+//works a bit better with autofill tools like LastPass and Chrome Passwords.
+
+const input = arguments[0].$Input;
+
+var password = skuid.$(input.id).find('input');
+
+if (password.attr('type') == 'password') {
+    password.attr('type','text');
+} else {
+    password.attr('type','password');
+}</jsitem>
+			<jsitem location="inlinesnippet" name="autoFocus" cachelocation="false">setTimeout( function() {skuid.$('#password-input').find('input').focus()}, 1)</jsitem>
+		</javascript>
+		<css>
+			<cssitem location="inline" name="newcss" cachelocation="false">.rules {
+    visibility: hidden;
+    opacity: 0;
+    max-height: 0;
+}
+
+.rules .nx-basicfieldeditor-item-label{
+    display:none;
+}
+
+.rules.visible {
+    visibility: visible;
+    opacity: 1;
+    max-height: 500px;
+    transition: opacity 0.5s ease, max-height 0.25s linear;
+}
+
+.rules .explainer {
+    font-size: .8em;
+    color: #888;
+}</cssitem>
+		</css>
+		<actionsequences uniqueid="sk-1yb2-436">
+			<actionsequence id="c29af82c-50ab-436e-83f3-a569b3789251" label="Page Load" type="event-triggered" event-scope="component" event-name="page.rendered">
+				<description/>
+				<actions>
+					<action type="custom" snippet="autoFocus"/>
+				</actions>
+			</actionsequence>
+			<actionsequence id="142cea29-67f5-4dee-a582-af1fcffb8383" label="Show / Hide Password" type="reusable">
+				<description/>
+				<actions>
+					<action type="custom" snippet="showhidePassword"/>
+				</actions>
+				<inputs>
+					<input type="value" name="id"/>
+				</inputs>
+			</actionsequence>
+		</actionsequences>
+	</resources>
+</skuid__page>

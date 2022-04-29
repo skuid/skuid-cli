@@ -1,0 +1,1155 @@
+<skuid__page personalizationmode="client" unsavedchangeswarning="yes" showsidebar="true" showheader="true" theme="Skuid Admin">
+	<models>
+		<model id="stng__SiteEnv" label="SiteEnvironment" labelplural="SiteEnvironment" limit="20" query="false" createrowifnonefound="false" datasource="Ui-Only" processonclient="true">
+			<fields>
+				<field id="PLINY_WARDEN_HOST" displaytype="TEXT" label="PLINYWARDENHOST"/>
+				<field id="PLINY_WARDEN_PORT" displaytype="TEXT" label="PLINYWARDENPORT"/>
+				<field id="PLINY_WARDEN_VERSION" displaytype="TEXT" label="PLINYWARDENVERSION"/>
+			</fields>
+			<conditions/>
+			<actions/>
+		</model>
+		<model id="Include_UiControl" query="true" createrowifnonefound="true" datasource="Ui-Only">
+			<fields>
+				<field id="origin" displaytype="TEXT" length="255" defaultvaluetype="param" defaultValue="origin" mergefield="Id" enclosevalueinquotes="true"/>
+			</fields>
+			<conditions/>
+			<actions/>
+		</model>
+		<model id="Inc_PermissionSet" query="false" createrowifnonefound="true" datasource="SkuidLocal" payloadcontenttype="JSON" type="readwrite" label="Permission set" labelplural="Permission sets">
+			<fields>
+				<field id="app_id" label="App Id" ispolymorphic="false" isnamepointing="false" displaytype="STRING" accessible="true" filterable="true"/>
+				<field id="created_at" label="Created At" ispolymorphic="false" isnamepointing="false" displaytype="DATETIME" accessible="true" filterable="true"/>
+				<field id="created_by_id" label="Created By Id" ispolymorphic="false" isnamepointing="false" displaytype="STRING" accessible="true" filterable="true"/>
+				<field id="description" label="Description" ispolymorphic="false" isnamepointing="false" displaytype="TEXTAREA" accessible="true" filterable="true" helptext="Describe this permission set's purpose for at-a-glance assignment." ogdisplaytype="STRING"/>
+				<field id="id" label="Id" ispolymorphic="false" isnamepointing="false" displaytype="STRING" accessible="true" filterable="true"/>
+				<field id="name" label="Name" ispolymorphic="false" isnamepointing="false" displaytype="STRING" accessible="true" filterable="true"/>
+				<field id="updated_at" label="Updated At" ispolymorphic="false" isnamepointing="false" displaytype="DATETIME" accessible="true" filterable="true"/>
+				<field id="updated_by_id" label="Updated By Id" ispolymorphic="false" isnamepointing="false" displaytype="STRING" accessible="true" filterable="true"/>
+			</fields>
+			<conditions>
+				<condition type="param" value="inc_perm_set_id" sourcetype="param" sourceparam="id" operator="=" enclosevalueinquotes="true" novaluebehavior="noquery"/>
+			</conditions>
+			<actions/>
+			<methods>
+				<method type="query" verb="GET" payloadcontenttype="JSON" endpoint="/objects/permissionset/{{id}}?fields=id,name,description,app_id,created_at,updated_at,created_by_id,created_by.first_name,created_by.last_name,updated_by_id,updated_by.first_name,updated_by.last_name"/>
+			</methods>
+		</model>
+		<model id="Inc_Datasource" query="true" createrowifnonefound="false" datasource="SkuidLocal" label="Data Source" labelplural="Data Sources" type="readwrite" namefield="name" unloadwarningifunsavedchanges="false">
+			<methods>
+				<method type="query" verb="GET" endpoint="/objects/datasource/{{dataSourceName}}?fields=id,name,external_id,data_service_id,data_service.host,data_service.port,data_service.version" payloadcontenttype="JSON"/>
+			</methods>
+			<conditions>
+				<condition type="param" value="inc_dataSourceId" enclosevalueinquotes="true" field="dataSourceId" sourcetype="param" sourceparam="dataSourceName" novaluebehavior="noquery"/>
+			</conditions>
+			<fields>
+				<field id="id" displaytype="TEXT" readonly="true" label="Id"/>
+				<field id="name" displaytype="TEXT" label="Name" length="255" required="true"/>
+				<field id="data_service_id" displaytype="TEXT" label="Data Service Id"/>
+				<field id="data_service.host" displaytype="TEXT" label="Data Service Host"/>
+				<field id="data_service.port" displaytype="TEXT" label="Data Service Port"/>
+				<field id="data_service.version" displaytype="TEXT" label="Version"/>
+				<field id="external_id" displaytype="TEXT" label="External Id"/>
+				<field id="data_service_host" uionly="true" displaytype="FORMULA" readonly="true" returntype="TEXT" defaultvaluetype="fieldvalue">
+					<formula>IF(ISBLANK({{data_service_id}}),{{$Model.stng__SiteEnv.data.0.PLINY_WARDEN_HOST}},{{data_service.host}})</formula>
+				</field>
+				<field id="data_service_port" uionly="true" displaytype="FORMULA" readonly="true" returntype="TEXT" defaultvaluetype="fieldvalue">
+					<formula>IF(ISBLANK({{data_service_id}}),{{$Model.stng__SiteEnv.data.0.PLINY_WARDEN_PORT}},{{data_service.port}})</formula>
+				</field>
+				<field id="data_service_version" uionly="true" displaytype="FORMULA" readonly="true" returntype="TEXT" defaultvaluetype="fieldvalue">
+					<formula>IF(ISBLANK({{data_service_id}}),{{$Model.stng__SiteEnv.data.0.PLINY_WARDEN_VERSION}},{{data_service.version}})</formula>
+				</field>
+				<field id="external_key" uionly="true" displaytype="FORMULA" readonly="true" returntype="TEXT" defaultvaluetype="fieldvalue">
+					<formula>IF((ISBLANK({{data_service_version}})||{{data_service_version}}="0.2.0"||{{data_service_version}}="0.2.1"),{{external_id}},{{name}})</formula>
+				</field>
+			</fields>
+			<idfields>
+				<field>id</field>
+			</idfields>
+			<actions/>
+		</model>
+		<model id="Inc_Warden_Datasource" query="false" createrowifnonefound="false" datasource="SkuidDataService" label="Data Source" labelplural="Data Sources" type="readwrite" namefield="name" unloadwarningifunsavedchanges="false">
+			<methods>
+				<method type="query" verb="GET" endpoint="/api/v2/datasources/{{dataSourceName}}"/>
+			</methods>
+			<conditions>
+				<condition type="modelmerge" value="external_key" enclosevalueinquotes="true" field="external_key" sourcetype="modelmerge" model="Inc_Datasource" sourceparam="dataSourceName" novaluebehavior="noquery"/>
+				<condition type="modelmerge" value="data_service_host" enclosevalueinquotes="true" field="data_service_host" sourcetype="modelmerge" model="Inc_Datasource" sourceparam="host" novaluebehavior="noquery"/>
+				<condition type="modelmerge" value="data_service_port" enclosevalueinquotes="true" field="data_service_port" sourcetype="modelmerge" model="Inc_Datasource" sourceparam="port" novaluebehavior="noquery"/>
+			</conditions>
+			<fields>
+				<field id="id" displaytype="TEXT" readonly="true" label="Id"/>
+				<field id="name" displaytype="TEXT" label="Name" length="255" required="true"/>
+			</fields>
+			<idfields>
+				<field>id</field>
+			</idfields>
+			<actions/>
+		</model>
+		<model id="Inc_Datasource_Object" query="false" createrowifnonefound="false" datasource="SkuidDataService" label="Data Source Object" labelplural="Data Source Objects" type="readwrite" namefield="name">
+			<methods>
+				<method type="query" verb="GET" endpoint="/api/v2/datasources/{{dataSourceId}}/entities/{{entityId}}"/>
+				<method type="update" verb="PUT" successif="requestsucceeds" sendchanges="asjsoninbody" endpoint="/api/v2/datasources/{{dataSourceId}}/entities/{{entityId}}"/>
+				<method type="delete" verb="DELETE" endpoint="/api/v2/datasources/{{dataSourceId}}/entities/{{entityId}}" successif="requestsucceeds"/>
+			</methods>
+			<conditions>
+				<condition value="inc_entityId" field="entityId" sourcetype="param" sourceparam="entityId" novaluebehavior="noquery" type="param" operator="=" enclosevalueinquotes="true"/>
+				<condition type="modelmerge" value="id" enclosevalueinquotes="true" field="id" sourcetype="modelmerge" model="Inc_Warden_Datasource" sourceparam="dataSourceId" novaluebehavior="noquery"/>
+				<condition type="modelmerge" value="data_service_host" enclosevalueinquotes="true" field="data_service_host" sourcetype="modelmerge" model="Inc_Datasource" sourceparam="host" novaluebehavior="noquery"/>
+				<condition type="modelmerge" value="data_service_port" enclosevalueinquotes="true" field="data_service_port" sourcetype="modelmerge" model="Inc_Datasource" sourceparam="port" novaluebehavior="noquery"/>
+			</conditions>
+			<fields>
+				<field id="id" displaytype="TEXT" readonly="true" label="Id"/>
+				<field id="name" displaytype="TEXT" label="Name" length="255" required="true"/>
+				<field id="custom_config" displaytype="TEXT" label="Custom Config"/>
+				<field id="data_source_id" displaytype="TEXT" label="Name" length="255" required="true"/>
+				<field id="schema" label="Schema" ispolymorphic="false" isnamepointing="false" displaytype="STRING" accessible="true" filterable="true" defaultvaluetype="fieldvalue"/>
+				<field id="ui_queryable" displaytype="BOOLEAN" label="Read" ogdisplaytype="TEXT" uionly="true" defaultvaluetype="fieldvalue" defaultValue="false"/>
+				<field id="ui_createable" displaytype="BOOLEAN" label="Create" ogdisplaytype="TEXT" uionly="true" defaultvaluetype="fieldvalue" defaultValue="false"/>
+				<field id="ui_updateable" displaytype="BOOLEAN" label="Update" ogdisplaytype="TEXT" uionly="true" defaultvaluetype="fieldvalue" defaultValue="false"/>
+				<field id="ui_deleteable" displaytype="BOOLEAN" label="Delete" ogdisplaytype="TEXT" uionly="true" defaultvaluetype="fieldvalue" defaultValue="false"/>
+				<field id="ui_all_allowed" displaytype="BOOLEAN" uionly="true" ogdisplaytype="TEXT"/>
+			</fields>
+			<idfields>
+				<field>id</field>
+			</idfields>
+			<actions>
+				<action>
+					<actions>
+						<action type="branch" whenfinished="stop" model="Inc_Datasource_Object" label="if allow all is set to true">
+							<formula>{{ui_all_allowed}}</formula>
+							<iftrueactions>
+								<action type="updateRow" fieldmodel="Inc_Datasource_Object" affectedrows="context">
+									<updates>
+										<update valuesource="fieldvalue" field="ui_queryable" enclosevalueinquotes="false" value="true"/>
+										<update valuesource="fieldvalue" field="ui_createable" enclosevalueinquotes="false" value="true"/>
+										<update valuesource="fieldvalue" field="ui_updateable" enclosevalueinquotes="false" value="true"/>
+										<update valuesource="fieldvalue" field="ui_deleteable" enclosevalueinquotes="false" value="true"/>
+									</updates>
+								</action>
+							</iftrueactions>
+						</action>
+						<action type="branch" whenfinished="stop" model="Inc_Datasource_Object" label="if allow all is set to false and all others are true">
+							<formula>!{{ui_all_allowed}} &amp;&amp; ( {{ui_queryable}} &amp;&amp; {{ui_createable}} &amp;&amp; {{ui_updateable}} &amp;&amp; {{ui_deleteable}} )</formula>
+							<iftrueactions>
+								<action type="updateRow" fieldmodel="Inc_Datasource_Object" affectedrows="context">
+									<updates>
+										<update valuesource="fieldvalue" field="ui_queryable" enclosevalueinquotes="false" value="false"/>
+										<update valuesource="fieldvalue" field="ui_createable" enclosevalueinquotes="false" value="false"/>
+										<update valuesource="fieldvalue" field="ui_updateable" enclosevalueinquotes="false" value="false"/>
+										<update valuesource="fieldvalue" field="ui_deleteable" enclosevalueinquotes="false" value="false"/>
+									</updates>
+								</action>
+							</iftrueactions>
+						</action>
+					</actions>
+					<events>
+						<event>row.updated</event>
+					</events>
+					<fields>
+						<field>ui_all_allowed</field>
+					</fields>
+				</action>
+				<action>
+					<actions>
+						<action type="branch" whenfinished="stop" model="Inc_Datasource_Object" label="if all are true">
+							<formula>{{ui_queryable}} &amp;&amp; {{ui_createable}} &amp;&amp; {{ui_updateable}} &amp;&amp; {{ui_deleteable}}</formula>
+							<iftrueactions>
+								<action type="updateRow" fieldmodel="Inc_Datasource_Object" affectedrows="context">
+									<updates>
+										<update valuesource="fieldvalue" field="ui_all_allowed" enclosevalueinquotes="false" value="true"/>
+									</updates>
+								</action>
+							</iftrueactions>
+						</action>
+						<action type="branch" whenfinished="stop" model="Inc_Datasource_Object" label="if allow all is true but one of the fields is changed to false">
+							<formula>{{ui_all_allowed}} &amp;&amp; 
+(
+    !{{ui_queryable}} || !{{ui_createable}} || !{{ui_updateable}} || !{{ui_deleteable}}
+)</formula>
+							<iftrueactions>
+								<action type="updateRow" fieldmodel="Inc_Datasource_Object" affectedrows="context">
+									<updates>
+										<update valuesource="fieldvalue" field="ui_all_allowed" enclosevalueinquotes="false" value="false"/>
+									</updates>
+								</action>
+							</iftrueactions>
+						</action>
+					</actions>
+					<events>
+						<event>row.updated</event>
+					</events>
+					<fields>
+						<field>ui_createable</field>
+						<field>ui_deleteable</field>
+						<field>ui_queryable</field>
+						<field>ui_updateable</field>
+					</fields>
+				</action>
+			</actions>
+		</model>
+		<model id="Inc_Datasource_Fields" query="false" createrowifnonefound="false" datasource="SkuidDataService" label="Data Source Field" labelplural="Data Source Fields" type="readwrite" namefield="name">
+			<methods>
+				<method type="query" verb="GET" endpoint="/api/v2/datasources/{{dataSourceId}}/entities/{{entityId}}/fields" payloadcontenttype="JSON"/>
+				<method type="insert" verb="POST" successif="requestsucceeds" sendchanges="asjsoninbody" insertresponse="recordinbody" endpoint="/api/v2/datasources/{{dataSourceId}}/entities/{{entityId}}/fields"/>
+				<method type="update" verb="PUT" successif="requestsucceeds" sendchanges="asjsoninbody" endpoint="/api/v2/datasources/{{dataSourceId}}/entities/{{entityId}}/fields/{{id}}"/>
+				<method type="delete" verb="DELETE" endpoint="/api/v2/datasources/{{dataSourceId}}/entities/{{entityId}}/fields/{{id}}" successif="requestsucceeds"/>
+			</methods>
+			<conditions>
+				<condition value="inc_entityId" field="entityId" sourcetype="param" sourceparam="entityId" novaluebehavior="noquery" type="param" operator="=" enclosevalueinquotes="true"/>
+				<condition type="modelmerge" value="id" enclosevalueinquotes="true" field="id" sourcetype="modelmerge" model="Inc_Warden_Datasource" sourceparam="dataSourceId" novaluebehavior="noquery"/>
+				<condition type="modelmerge" value="data_service_host" enclosevalueinquotes="true" field="data_service_host" sourcetype="modelmerge" model="Inc_Datasource" sourceparam="host" novaluebehavior="noquery"/>
+				<condition type="modelmerge" value="data_service_port" enclosevalueinquotes="true" field="data_service_port" sourcetype="modelmerge" model="Inc_Datasource" sourceparam="port" novaluebehavior="noquery"/>
+				<condition type="fieldvalue" value="{{id}}" enclosevalueinquotes="true" sourcetype="param" sourceparam="id"/>
+			</conditions>
+			<fields>
+				<field id="id" displaytype="TEXT" readonly="true" label="Id"/>
+				<field id="name" displaytype="TEXT" label="Name" length="255" required="true"/>
+				<field id="data_source_object_id" label="Data Source Object Id" ispolymorphic="false" isnamepointing="false" displaytype="STRING" accessible="true" filterable="true"/>
+				<field id="queryable" displaytype="BOOLEAN" label="Read" ogdisplaytype="TEXT"/>
+				<field id="createable" displaytype="BOOLEAN" label="Create" ogdisplaytype="TEXT"/>
+				<field id="updateable" displaytype="BOOLEAN" label="Update" ogdisplaytype="TEXT"/>
+			</fields>
+			<idfields>
+				<field>id</field>
+			</idfields>
+			<actions/>
+		</model>
+		<model id="Inc_Datasource_Conditions" query="false" createrowifnonefound="false" datasource="SkuidDataService" label="Data Source Condition" labelplural="Data Source Conditions" type="readwrite" namefield="name">
+			<methods>
+				<method type="query" verb="GET" endpoint="/api/v2/datasources/{{dataSourceId}}/entities/{{entityId}}/conditions" payloadcontenttype="JSON"/>
+				<method type="insert" verb="POST" successif="requestsucceeds" sendchanges="asjsoninbody" insertresponse="recordinbody" endpoint="/api/v2/datasources/{{dataSourceId}}/entities/{{entityId}}/conditions"/>
+				<method type="update" verb="PUT" successif="requestsucceeds" sendchanges="asjsoninbody" endpoint="/api/v2/datasources/{{dataSourceId}}/entities/{{entityId}}/conditions/{{id}}"/>
+				<method type="delete" verb="DELETE" endpoint="/api/v2/datasources/{{dataSourceId}}/entities/{{entityId}}/conditions/{{id}}" successif="requestsucceeds"/>
+			</methods>
+			<conditions>
+				<condition value="inc_entityId" field="entityId" sourcetype="param" sourceparam="entityId" novaluebehavior="noquery" type="param" operator="=" enclosevalueinquotes="true"/>
+				<condition type="modelmerge" value="id" enclosevalueinquotes="true" field="id" sourcetype="modelmerge" model="Inc_Warden_Datasource" sourceparam="dataSourceId" novaluebehavior="noquery"/>
+				<condition type="modelmerge" value="data_service_host" enclosevalueinquotes="true" field="data_service_host" sourcetype="modelmerge" model="Inc_Datasource" sourceparam="host" novaluebehavior="noquery"/>
+				<condition type="modelmerge" value="data_service_port" enclosevalueinquotes="true" field="data_service_port" sourcetype="modelmerge" model="Inc_Datasource" sourceparam="port" novaluebehavior="noquery"/>
+				<condition type="fieldvalue" value="{{id}}" enclosevalueinquotes="true" sourcetype="param" sourceparam="id"/>
+			</conditions>
+			<fields>
+				<field id="id" displaytype="TEXT" readonly="true" label="Id"/>
+				<field id="name" displaytype="TEXT" label="Name" length="255" required="true"/>
+				<field id="data_source_object_id" label="Data Source Object Id" ispolymorphic="false" isnamepointing="false" displaytype="STRING" accessible="true" filterable="true"/>
+				<field id="type" displaytype="PICKLIST" ogdisplaytype="TEXT" label="Type" required="true" picklistsource="manual">
+					<picklistentries>
+						<entry value="fieldvalue" label="Single specified value"/>
+						<entry value="userinfo" label="Skuid user attribute"/>
+						<entry value="blank" label="None - blank value"/>
+					</picklistentries>
+				</field>
+				<field id="field" displaytype="COMBOBOX" label="Field" ogdisplaytype="TEXT" picklistsource="rowsinmodel" required="true" limitentries="true" picklistmodel="Inc_Datasource_Fields" entryvalue="{{name}}" entrylabel="{{name}}"/>
+				<field id="value" displaytype="TEXT" label="Value"/>
+			</fields>
+			<idfields>
+				<field>id</field>
+			</idfields>
+			<actions/>
+		</model>
+		<model id="Inc_DataSourceObjectPermissions" query="false" createrowifnonefound="false" datasource="SkuidDataService" label="Data Source Object Access" labelplural="Data Source Object Access" payloadcontenttype="JSON" type="readwrite">
+			<fields>
+				<field id="id" label="Id" displaytype="TEXT" accessible="true" filterable="true"/>
+				<field id="data_source_object_id" label="Data_source_object_id" displaytype="TEXT" accessible="true" filterable="true"/>
+				<field id="permission_set_id" label="Permission_set_id" displaytype="TEXT" accessible="true" filterable="true"/>
+				<field id="createable" label="Create" displaytype="BOOLEAN" accessible="true" filterable="true"/>
+				<field id="deleteable" label="Delete" displaytype="BOOLEAN" accessible="true" filterable="true"/>
+				<field id="queryable" label="Read" displaytype="BOOLEAN" accessible="true" filterable="true"/>
+				<field id="updateable" label="Update" displaytype="BOOLEAN" accessible="true" filterable="true"/>
+				<field id="ui_all_allowed" displaytype="BOOLEAN" uionly="true" label="All operations allowed" ogdisplaytype="TEXT" defaultvaluetype="fieldvalue" defaultValue="false"/>
+			</fields>
+			<idfields>
+				<field>id</field>
+			</idfields>
+			<conditions>
+				<condition value="inc_entityId" field="entityId" sourcetype="param" sourceparam="entityId" novaluebehavior="noquery" type="param" operator="=" enclosevalueinquotes="true"/>
+				<condition type="modelmerge" value="id" enclosevalueinquotes="true" field="id" sourcetype="modelmerge" model="Inc_Warden_Datasource" sourceparam="dataSourceId" novaluebehavior="noquery"/>
+				<condition type="modelmerge" value="data_service_host" enclosevalueinquotes="true" field="data_service_host" sourcetype="modelmerge" model="Inc_Datasource" sourceparam="host" novaluebehavior="noquery"/>
+				<condition type="modelmerge" value="data_service_port" enclosevalueinquotes="true" field="data_service_port" sourcetype="modelmerge" model="Inc_Datasource" sourceparam="port" novaluebehavior="noquery"/>
+				<condition type="modelmerge" value="" sourcetype="param" sourceparam="perm_set_id" state="filterableon" inactive="false" name="perm_set_id" operator="=" model="Inc_PermissionSet" enclosevalueinquotes="true" mergefield="id" novaluebehavior="noquery"/>
+			</conditions>
+			<actions>
+				<action>
+					<actions>
+						<action type="branch" whenfinished="continue" model="Inc_DataSourceObjectPermissions" label="if allow all is set to true">
+							<formula>{{ui_all_allowed}} &amp;&amp; ( !{{queryable}} || !{{createable}} || !{{updateable}} || !{{deleteable}} )
+</formula>
+							<iftrueactions>
+								<action type="updateRow" fieldmodel="Inc_DataSourceObjectPermissions" affectedrows="context">
+									<updates>
+										<update valuesource="fieldvalue" field="queryable" enclosevalueinquotes="false" value="true"/>
+										<update valuesource="fieldvalue" field="createable" enclosevalueinquotes="false" value="true"/>
+										<update valuesource="fieldvalue" field="updateable" enclosevalueinquotes="false" value="true"/>
+										<update valuesource="fieldvalue" field="deleteable" enclosevalueinquotes="false" value="true"/>
+									</updates>
+								</action>
+							</iftrueactions>
+						</action>
+						<action type="branch" whenfinished="continue" model="Inc_DataSourceObjectPermissions" label="if allow all is set to false and all others are true">
+							<formula>!{{ui_all_allowed}} &amp;&amp; ( {{queryable}} &amp;&amp; {{createable}} &amp;&amp; {{updateable}} &amp;&amp; {{deleteable}} )</formula>
+							<iftrueactions>
+								<action type="updateRow" fieldmodel="Inc_DataSourceObjectPermissions" affectedrows="context">
+									<updates>
+										<update valuesource="fieldvalue" field="queryable" enclosevalueinquotes="false" value="false"/>
+										<update valuesource="fieldvalue" field="createable" enclosevalueinquotes="false" value="false"/>
+										<update valuesource="fieldvalue" field="updateable" enclosevalueinquotes="false" value="false"/>
+										<update valuesource="fieldvalue" field="deleteable" enclosevalueinquotes="false" value="false"/>
+									</updates>
+								</action>
+							</iftrueactions>
+						</action>
+						<action type="save">
+							<models>
+								<model>Inc_DataSourceObjectPermissions</model>
+							</models>
+						</action>
+					</actions>
+					<events>
+						<event>row.updated</event>
+					</events>
+					<fields>
+						<field>ui_all_allowed</field>
+					</fields>
+				</action>
+				<action>
+					<actions>
+						<action type="branch" whenfinished="continue" model="Inc_DataSourceObjectPermissions" label="if all are true">
+							<formula>!{{ui_all_allowed}} &amp;&amp; ( {{queryable}} &amp;&amp; {{createable}} &amp;&amp; {{updateable}} &amp;&amp; {{deleteable}} )
+
+</formula>
+							<iftrueactions>
+								<action type="updateRow" fieldmodel="Inc_DataSourceObjectPermissions" affectedrows="context">
+									<updates>
+										<update valuesource="fieldvalue" field="ui_all_allowed" enclosevalueinquotes="false" value="true"/>
+									</updates>
+								</action>
+							</iftrueactions>
+						</action>
+						<action type="branch" whenfinished="continue" model="Inc_DataSourceObjectPermissions" label="if allow all is true but one of the fields is changed to false">
+							<formula>{{ui_all_allowed}} &amp;&amp; 
+(
+    !{{queryable}} || !{{createable}} || !{{updateable}} || !{{deleteable}}
+)</formula>
+							<iftrueactions>
+								<action type="updateRow" fieldmodel="Inc_DataSourceObjectPermissions" affectedrows="context">
+									<updates>
+										<update valuesource="fieldvalue" field="ui_all_allowed" enclosevalueinquotes="false" value="false"/>
+									</updates>
+								</action>
+							</iftrueactions>
+						</action>
+						<action type="save">
+							<models>
+								<model>Inc_DataSourceObjectPermissions</model>
+							</models>
+						</action>
+					</actions>
+					<events>
+						<event>row.updated</event>
+					</events>
+					<fields>
+						<field>createable</field>
+						<field>deleteable</field>
+						<field>queryable</field>
+						<field>updateable</field>
+					</fields>
+				</action>
+				<action>
+					<actions>
+						<action type="branch" whenfinished="stop" model="Inc_DataSourceObjectPermissions" label="if all are true">
+							<formula>{{queryable}} &amp;&amp; {{createable}} &amp;&amp; {{updateable}} &amp;&amp; {{deleteable}}
+
+</formula>
+							<iftrueactions>
+								<action type="updateRow" fieldmodel="Inc_DataSourceObjectPermissions" affectedrows="context">
+									<updates>
+										<update valuesource="fieldvalue" field="ui_all_allowed" enclosevalueinquotes="false" value="true"/>
+									</updates>
+								</action>
+								<action type="save">
+									<models>
+										<model>Inc_DataSourceObjectPermissions</model>
+									</models>
+								</action>
+							</iftrueactions>
+						</action>
+					</actions>
+					<events>
+						<event>models.loaded</event>
+					</events>
+				</action>
+			</actions>
+			<methods>
+				<method type="query" verb="GET" endpoint="/api/v2/datasources/{{dataSourceId}}/entities/{{entityId}}/permissions/{{perm_set_id}}" payloadcontenttype="JSON"/>
+				<method type="insert" verb="POST" payloadcontenttype="JSON" successif="requestsucceeds" sendchanges="asjsoninbody" insertresponse="recordinbody" endpoint="/api/v2/datasources/{{dataSourceId}}/entities/{{entityId}}/permissions/{{perm_set_id}}"/>
+				<method type="update" verb="PUT" payloadcontenttype="JSON" sendchanges="asjsoninbody" successif="requestsucceeds" endpoint="/api/v2/datasources/{{dataSourceId}}/entities/{{entityId}}/permissions/{{perm_set_id}}/{{id}}"/>
+			</methods>
+		</model>
+		<model id="Inc_DataSourceFieldPermissions" query="false" createrowifnonefound="false" datasource="SkuidDataService" label="Data Source Field Access" labelplural="Data Source Field Access" payloadcontenttype="JSON" type="readwrite">
+			<fields>
+				<field id="id" label="Id" displaytype="TEXT" accessible="true" filterable="true"/>
+				<field id="data_source_field_id" label="Data_source_field_id" displaytype="PICKLIST" accessible="true" filterable="true" defaultvaluetype="fieldvalue" ogdisplaytype="TEXT" picklistsource="rowsinmodel" returntype="TEXT" picklistmodel="Inc_Datasource_Fields" entryvalue="{{id}}" entrylabel="{{name}}"/>
+				<field id="permission_set_id" label="Permission_set_id" displaytype="TEXT" accessible="true" filterable="true"/>
+				<field id="createable" label="Create" displaytype="BOOLEAN" accessible="true" filterable="true"/>
+				<field id="queryable" label="Read" displaytype="BOOLEAN" accessible="true" filterable="true"/>
+				<field id="updateable" label="Update" displaytype="BOOLEAN" accessible="true" filterable="true"/>
+			</fields>
+			<idfields>
+				<field>id</field>
+			</idfields>
+			<conditions>
+				<condition value="inc_entityId" field="entityId" sourcetype="param" sourceparam="entityId" novaluebehavior="noquery" type="param" operator="=" enclosevalueinquotes="true"/>
+				<condition type="modelmerge" value="id" enclosevalueinquotes="true" field="id" sourcetype="modelmerge" model="Inc_Warden_Datasource" sourceparam="dataSourceId" novaluebehavior="noquery"/>
+				<condition type="modelmerge" value="data_service_host" enclosevalueinquotes="true" field="data_service_host" sourcetype="modelmerge" model="Inc_Datasource" sourceparam="host" novaluebehavior="noquery"/>
+				<condition type="modelmerge" value="data_service_port" enclosevalueinquotes="true" field="data_service_port" sourcetype="modelmerge" model="Inc_Datasource" sourceparam="port" novaluebehavior="noquery"/>
+				<condition type="modelmerge" value="" sourcetype="param" sourceparam="perm_set_id" state="filterableon" inactive="false" name="perm_set_id" operator="=" model="Inc_PermissionSet" enclosevalueinquotes="true" mergefield="id" novaluebehavior="noquery"/>
+			</conditions>
+			<actions>
+				<action>
+					<actions>
+						<action type="save">
+							<models>
+								<model>Inc_DataSourceFieldPermissions</model>
+							</models>
+						</action>
+					</actions>
+					<events>
+						<event>row.updated</event>
+					</events>
+				</action>
+			</actions>
+			<methods>
+				<method type="query" verb="GET" endpoint="/api/v2/datasources/{{dataSourceId}}/entities/{{entityId}}/permissions/{{perm_set_id}}/fields" payloadcontenttype="JSON"/>
+				<method type="insert" verb="POST" payloadcontenttype="JSON" successif="requestsucceeds" sendchanges="asjsoninbody" insertresponse="recordinbody" endpoint="/api/v2/datasources/{{dataSourceId}}/entities/{{entityId}}/fields/{{data_source_field_id}}/permissions/{{perm_set_id}}"/>
+				<method type="update" verb="PUT" payloadcontenttype="JSON" sendchanges="asjsoninbody" successif="requestsucceeds" endpoint="/api/v2/datasources/{{dataSourceId}}/entities/{{entityId}}/fields/{{data_source_field_id}}/permissions/{{perm_set_id}}/{{id}}"/>
+				<method type="delete" verb="DELETE" payloadcontenttype="JSON" endpoint="/api/v2/datasources/{{dataSourceId}}/entities/{{entityId}}/fields/{{data_source_field_id}}/permissions/{{perm_set_id}}/{{id}}" successif="requestsucceeds"/>
+			</methods>
+		</model>
+		<model id="Inc_DataSourceConditionPermissions" query="false" createrowifnonefound="false" datasource="SkuidDataService" label="Data Source Condition Access" labelplural="Data Source Condition Access" payloadcontenttype="JSON" unloadwarningifunsavedchanges="false" type="readwrite">
+			<fields>
+				<field id="id" label="Id" displaytype="TEXT" accessible="true" filterable="true"/>
+				<field id="data_source_condition_id" label="Data_source_condition_id" displaytype="PICKLIST" accessible="true" filterable="true" ogdisplaytype="TEXT" picklistsource="rowsinmodel" returntype="TEXT" picklistmodel="Inc_Datasource_Conditions" entryvalue="{{id}}" entrylabel="{{name}}"/>
+				<field id="permission_set_id" label="Permission_set_id" displaytype="TEXT" accessible="true" filterable="true"/>
+				<field id="alwaysOn" label="Always On" displaytype="BOOLEAN" accessible="true" filterable="true"/>
+			</fields>
+			<idfields>
+				<field>id</field>
+			</idfields>
+			<conditions>
+				<condition value="inc_entityId" field="entityId" sourcetype="param" sourceparam="entityId" novaluebehavior="noquery" type="param" operator="=" enclosevalueinquotes="true"/>
+				<condition type="modelmerge" value="id" enclosevalueinquotes="true" field="id" sourcetype="modelmerge" model="Inc_Warden_Datasource" sourceparam="dataSourceId" novaluebehavior="noquery"/>
+				<condition type="modelmerge" value="data_service_host" enclosevalueinquotes="true" field="data_service_host" sourcetype="modelmerge" model="Inc_Datasource" sourceparam="host" novaluebehavior="noquery"/>
+				<condition type="modelmerge" value="data_service_port" enclosevalueinquotes="true" field="data_service_port" sourcetype="modelmerge" model="Inc_Datasource" sourceparam="port" novaluebehavior="noquery"/>
+				<condition type="modelmerge" value="" sourcetype="param" sourceparam="perm_set_id" state="filterableon" inactive="false" name="perm_set_id" operator="=" model="Inc_PermissionSet" enclosevalueinquotes="true" mergefield="id" novaluebehavior="noquery"/>
+			</conditions>
+			<actions>
+				<action>
+					<actions>
+						<action type="save">
+							<models>
+								<model>Inc_DataSourceConditionPermissions</model>
+							</models>
+						</action>
+					</actions>
+					<events>
+						<event>row.updated</event>
+					</events>
+				</action>
+			</actions>
+			<methods>
+				<method type="query" verb="GET" endpoint="/api/v2/datasources/{{dataSourceId}}/entities/{{entityId}}/permissions/{{perm_set_id}}/conditions" payloadcontenttype="JSON"/>
+				<method type="insert" verb="POST" payloadcontenttype="JSON" successif="requestsucceeds" sendchanges="asjsoninbody" insertresponse="recordinbody" endpoint="/api/v2/datasources/{{dataSourceId}}/entities/{{entityId}}/conditions/{{data_source_condition_id}}/permissions/{{perm_set_id}}"/>
+				<method type="update" verb="PUT" payloadcontenttype="JSON" sendchanges="asjsoninbody" successif="requestsucceeds" endpoint="/api/v2/datasources/{{dataSourceId}}/entities/{{entityId}}/conditions/{{data_source_condition_id}}/permissions/{{perm_set_id}}/{{id}}"/>
+			</methods>
+		</model>
+	</models>
+	<components>
+		<skuid__wrapper uniqueid="sk-1NEi-9172" overflowY="auto">
+			<components>
+				<skuid__wrapper uniqueid="sk-ar6-11805" styleSettingsVariant="b5342fe9-7125-4bf8-b20b-ade1825d7e72">
+					<components>
+						<skuid__grid uniqueid="grid-dso-profile-access-header" flexDirection="row" justifyContent="flex-start" alignItems="center" columnGutter="0" rowGutter="0">
+							<divisions>
+								<division minWidth="0" ratio="0" alignSelf="auto">
+									<components>
+										<skuid__text contents="{{name}}" uniqueid="sk-2loj-50757" model="Inc_PermissionSet" styleSettingsVariant="014b3346-10ed-4578-aa1a-cae68a21cc80">
+											<renderConditions logictype="and">
+												<renderCondition type="fieldvalue" operator="=" enclosevalueinquotes="true" fieldmodel="Include_UiControl" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="origin" value="dso"/>
+											</renderConditions>
+											<styleVariantConditions/>
+										</skuid__text>
+									</components>
+								</division>
+								<division alignSelf="auto" minWidth="0" ratio="0">
+									<components>
+										<skuid__text contents="{{name}}" uniqueid="sk-2low-58913" model="Inc_Datasource_Object" styleSettingsVariant="014b3346-10ed-4578-aa1a-cae68a21cc80">
+											<renderConditions logictype="and">
+												<renderCondition type="fieldvalue" operator="=" enclosevalueinquotes="true" fieldmodel="Include_UiControl" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="origin" value="profile"/>
+											</renderConditions>
+											<styleVariantConditions/>
+										</skuid__text>
+									</components>
+								</division>
+								<division alignSelf="auto" minWidth="100px" ratio="1">
+									<components>
+										<skuid__buttonSet uniqueid="sk-aqY-28826">
+											<groups>
+												<skuid__buttonGroup displayType="detached">
+													<buttons>
+														<skuid__button label="Save" uniqueid="button-dso-profile-access-header-save" styleSettingsVariant="primary">
+															<actions>
+																<action type="blockUI" message="Saving permissions..." showPlaceholder="true" styleSettingsVariant="dark"/>
+																<action type="save">
+																	<models>
+																		<model>Inc_DataSourceObjectPermissions</model>
+																		<model>Inc_DataSourceFieldPermissions</model>
+																		<model>Inc_DataSourceConditionPermissions</model>
+																	</models>
+																</action>
+																<action type="unblockUI"/>
+															</actions>
+															<renderConditions logictype="and"/>
+															<enableConditions logictype="or">
+																<condition type="fieldvalue" enclosevalueinquotes="false" fieldmodel="Inc_DataSourceObjectPermissions" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasChanged" value="true" operator="="/>
+																<condition type="fieldvalue" enclosevalueinquotes="false" fieldmodel="Inc_DataSourceFieldPermissions" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasChanged" value="true" operator="="/>
+																<condition type="fieldvalue" enclosevalueinquotes="false" fieldmodel="Inc_DataSourceConditionPermissions" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasChanged" value="true" operator="="/>
+															</enableConditions>
+															<styleVariantConditions/>
+														</skuid__button>
+														<skuid__button label="Cancel" uniqueid="button-dso-profile-access-header-cancel">
+															<actions>
+																<action type="cancel">
+																	<models>
+																		<model>Inc_DataSourceObjectPermissions</model>
+																		<model>Inc_DataSourceFieldPermissions</model>
+																		<model>Inc_DataSourceConditionPermissions</model>
+																	</models>
+																</action>
+															</actions>
+															<renderConditions logictype="and"/>
+															<enableConditions logictype="or">
+																<condition type="fieldvalue" enclosevalueinquotes="false" fieldmodel="Inc_DataSourceObjectPermissions" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasChanged" value="true" operator="="/>
+																<condition type="fieldvalue" enclosevalueinquotes="false" fieldmodel="Inc_DataSourceFieldPermissions" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasChanged" value="true" operator="="/>
+																<condition type="fieldvalue" enclosevalueinquotes="false" fieldmodel="Inc_DataSourceConditionPermissions" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasChanged" value="true" operator="="/>
+															</enableConditions>
+															<styleVariantConditions/>
+														</skuid__button>
+													</buttons>
+													<renderConditions logictype="and"/>
+													<styleVariantConditions/>
+												</skuid__buttonGroup>
+											</groups>
+											<renderConditions logictype="and">
+												<renderCondition type="fieldvalue" operator="=" enclosevalueinquotes="true"/>
+											</renderConditions>
+											<styleVariantConditions/>
+											<styles>
+												<spacing/>
+											</styles>
+										</skuid__buttonSet>
+									</components>
+									<renderConditions logictype="and"/>
+								</division>
+							</divisions>
+							<renderConditions logictype="and"/>
+							<styleVariantConditions/>
+							<styles>
+								<spacing bottom="3" left="3" right="3" top="3"/>
+							</styles>
+						</skuid__grid>
+					</components>
+					<background/>
+				</skuid__wrapper>
+				<skuid__wrapper uniqueid="sk-1ZRu-37726" overflowY="auto" heightStrategy="fixed" height="custom" heightCustom="calc(100vh - 360px)">
+					<components>
+						<skuid__wrapper uniqueid="sk-1aI4-35740" overflowY="auto">
+							<components>
+								<skuid__text contents="Object permissions" uniqueid="sk-2lqn-61529" styleSettingsVariant="53193c74-b77c-429e-8fed-09b73deaa10c">
+									<renderConditions logictype="and"/>
+									<styleVariantConditions/>
+									<styles>
+										<spacing bottom="2"/>
+									</styles>
+								</skuid__text>
+								<skuid__grid uniqueid="sk-x2C-33716" flexDirection="row" justifyContent="flex-start" alignItems="flex-start" columnGutter="0">
+									<divisions>
+										<division alignSelf="auto" ratio="1">
+											<components>
+												<skuid__grid uniqueid="sk-2gNp-22686" flexDirection="row" justifyContent="flex-start" alignItems="center">
+													<divisions>
+														<division minWidth="0" ratio="0" alignSelf="auto">
+															<components>
+																<skuid__form showErrorsInline="true" model="Inc_DataSourceObjectPermissions" uniqueid="sk-x3v-33270" mode="edit">
+																	<styles>
+																		<spacing right="2" top="-1"/>
+																	</styles>
+																	<renderConditions logictype="and"/>
+																	<styleVariantConditions/>
+																	<columns>
+																		<column verticalAlign="top" ratio="1">
+																			<sections>
+																				<section title="New Section" showHeading="false">
+																					<fields>
+																						<skuid__field id="ui_all_allowed" uniqueId="sk-x3v-33278" label=" "/>
+																					</fields>
+																				</section>
+																			</sections>
+																		</column>
+																	</columns>
+																</skuid__form>
+															</components>
+														</division>
+														<division alignSelf="auto" minWidth="0" ratio="1">
+															<components>
+																<skuid__text contents="Allow all" uniqueid="sk-x2C-33726" styleSettingsVariant="bcf356fb-cd9b-4b49-adb6-299b154f243f"/>
+															</components>
+														</division>
+													</divisions>
+													<styles>
+														<spacing bottom="2"/>
+													</styles>
+													<background/>
+												</skuid__grid>
+												<skuid__grid uniqueid="sk-2gO2-29032" flexDirection="row" justifyContent="flex-start" alignItems="center">
+													<divisions>
+														<division minWidth="0" ratio="0" alignSelf="auto">
+															<components>
+																<skuid__form showErrorsInline="true" model="Inc_DataSourceObjectPermissions" uniqueid="sk-wvR-51540" mode="edit">
+																	<columns>
+																		<column verticalAlign="top" ratio="1">
+																			<sections>
+																				<section title="New Section" showHeading="false">
+																					<fields>
+																						<skuid__field id="createable" uniqueId="sk-wvR-51544" label=" "/>
+																					</fields>
+																				</section>
+																			</sections>
+																		</column>
+																	</columns>
+																	<styles>
+																		<spacing top="-1" right="2"/>
+																	</styles>
+																</skuid__form>
+															</components>
+														</division>
+														<division alignSelf="auto" minWidth="0" ratio="1">
+															<components>
+																<skuid__text contents="Create" uniqueid="sk-x2C-33727" styleSettingsVariant="bcf356fb-cd9b-4b49-adb6-299b154f243f"/>
+															</components>
+														</division>
+													</divisions>
+													<styles>
+														<spacing bottom="2"/>
+													</styles>
+													<background/>
+												</skuid__grid>
+												<skuid__grid uniqueid="sk-2gO6-31821" flexDirection="row" justifyContent="flex-start" alignItems="center">
+													<divisions>
+														<division minWidth="0" ratio="0" alignSelf="auto">
+															<components>
+																<skuid__form showErrorsInline="true" model="Inc_DataSourceObjectPermissions" uniqueid="sk-x2N-46463" mode="edit">
+																	<columns>
+																		<column verticalAlign="top" ratio="1">
+																			<sections>
+																				<section title="New Section" showHeading="false">
+																					<fields>
+																						<skuid__field id="queryable" uniqueId="sk-x2N-46466" label=" "/>
+																					</fields>
+																				</section>
+																			</sections>
+																		</column>
+																	</columns>
+																	<styles>
+																		<spacing top="-1" right="2"/>
+																	</styles>
+																</skuid__form>
+															</components>
+														</division>
+														<division alignSelf="auto" minWidth="0" ratio="1">
+															<components>
+																<skuid__text contents="Read" uniqueid="sk-x2C-33728" styleSettingsVariant="bcf356fb-cd9b-4b49-adb6-299b154f243f"/>
+															</components>
+														</division>
+													</divisions>
+													<styles>
+														<spacing bottom="2"/>
+													</styles>
+													<background/>
+												</skuid__grid>
+												<skuid__grid uniqueid="sk-2gOA-34633" flexDirection="row" justifyContent="flex-start" alignItems="center">
+													<divisions>
+														<division minWidth="0" ratio="0" alignSelf="auto">
+															<components>
+																<skuid__form showErrorsInline="true" model="Inc_DataSourceObjectPermissions" uniqueid="sk-x2M-44604" mode="edit">
+																	<columns>
+																		<column verticalAlign="top" ratio="1">
+																			<sections>
+																				<section title="New Section" showHeading="false">
+																					<fields>
+																						<skuid__field id="updateable" uniqueId="sk-x2M-44608" label=" "/>
+																					</fields>
+																				</section>
+																			</sections>
+																		</column>
+																	</columns>
+																	<styles>
+																		<spacing top="-1" right="2"/>
+																	</styles>
+																</skuid__form>
+															</components>
+														</division>
+														<division alignSelf="auto" minWidth="0" ratio="1">
+															<components>
+																<skuid__text contents="Update" uniqueid="sk-x2C-33729" styleSettingsVariant="bcf356fb-cd9b-4b49-adb6-299b154f243f"/>
+															</components>
+														</division>
+													</divisions>
+													<styles>
+														<spacing bottom="2"/>
+													</styles>
+													<background/>
+												</skuid__grid>
+												<skuid__grid uniqueid="sk-2gOE-37486" flexDirection="row" justifyContent="flex-start" alignItems="center">
+													<divisions>
+														<division minWidth="0" ratio="0" alignSelf="auto">
+															<components>
+																<skuid__form showErrorsInline="true" model="Inc_DataSourceObjectPermissions" uniqueid="sk-x2M-42751" mode="edit">
+																	<columns>
+																		<column verticalAlign="top" ratio="1">
+																			<sections>
+																				<section title="New Section" showHeading="false">
+																					<fields>
+																						<skuid__field id="deleteable" uniqueId="sk-x2M-42753" label=" "/>
+																					</fields>
+																				</section>
+																			</sections>
+																		</column>
+																	</columns>
+																	<styles>
+																		<spacing top="-1" right="2"/>
+																	</styles>
+																</skuid__form>
+															</components>
+														</division>
+														<division alignSelf="auto" minWidth="0" ratio="1">
+															<components>
+																<skuid__text contents="Delete" uniqueid="sk-x2C-33730" styleSettingsVariant="bcf356fb-cd9b-4b49-adb6-299b154f243f"/>
+															</components>
+														</division>
+													</divisions>
+													<background/>
+												</skuid__grid>
+											</components>
+										</division>
+									</divisions>
+									<renderConditions logictype="and"/>
+									<styleVariantConditions/>
+									<background/>
+									<styles>
+										<spacing bottom="3"/>
+									</styles>
+								</skuid__grid>
+								<skuid__text contents="Field permissions" uniqueid="sk-2lrf-24663" styleSettingsVariant="53193c74-b77c-429e-8fed-09b73deaa10c">
+									<renderConditions logictype="and"/>
+									<styleVariantConditions/>
+									<styles>
+										<spacing bottom="2"/>
+									</styles>
+								</skuid__text>
+								<skuid__text contents="&lt;div style=&quot;text-align: center;&quot;&gt;There are no fields in this data source object&lt;/div&gt;&#10;" uniqueid="sk-2ZF-14311" styleSettingsVariant="bcf356fb-cd9b-4b49-adb6-299b154f243f">
+									<styles>
+										<spacing top="3" bottom="3" styleSettingsVariant="bcf356fb-cd9b-4b49-adb6-299b154f243f"/>
+									</styles>
+									<renderConditions logictype="and">
+										<renderCondition fieldmodel="Inc_Datasource_Fields" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasNoRows"/>
+									</renderConditions>
+									<styleVariantConditions/>
+								</skuid__text>
+								<skuid__table allowColumnFreezing="never" model="Inc_DataSourceFieldPermissions" uniqueid="sk-gl9-23014" mode="edit" pageSize="Infinity" rowHeightStrategy="fit" showSaveCancel="false" allowSortingByColumn="false" adaptiveColumns="true" styleSettingsVariant="6f64b91d-8879-45c0-b55b-59b914d9f401">
+									<fields>
+										<field id="data_source_field_id" label="Name" readOnly="true" uniqueid="fi-wsg-33723">
+											<renderConditions logictype="and" onhidedatabehavior="keep"/>
+											<enableConditions/>
+											<styleVariantConditions/>
+										</field>
+										<field id="createable" uniqueid="fi-gl9-23574"/>
+										<field id="queryable" uniqueid="fi-gl9-23575"/>
+										<field id="updateable" uniqueid="fi-gl9-23576"/>
+									</fields>
+									<filtering enableSearch="false" searchMethod="client" emptySearchBehavior="query" searchPlaceholder="Search"/>
+									<rowActions/>
+									<massActions>
+										<action type="multi" label="Mass update">
+											<actions>
+												<action type="massUpdate"/>
+											</actions>
+											<tooltip position="top"/>
+											<renderConditions logictype="and"/>
+										</action>
+									</massActions>
+									<actions/>
+									<renderConditions logictype="and">
+										<renderCondition type="fieldvalue" enclosevalueinquotes="true" fieldmodel="Inc_Datasource_Fields" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasRows"/>
+									</renderConditions>
+									<styleVariantConditions/>
+									<exportProperties useTableColumns="true"/>
+									<sorting enable="false"/>
+									<styles>
+										<spacing bottom="3"/>
+									</styles>
+								</skuid__table>
+								<skuid__text contents="Condition permissions" uniqueid="sk-2lse-24579" styleSettingsVariant="53193c74-b77c-429e-8fed-09b73deaa10c">
+									<renderConditions logictype="and"/>
+									<styleVariantConditions/>
+									<styles>
+										<spacing bottom="1"/>
+									</styles>
+								</skuid__text>
+								<skuid__grid uniqueid="sk-7W4-27061" flexDirection="row" justifyContent="flex-start" alignItems="flex-start">
+									<divisions>
+										<division minWidth="100px" ratio="1" alignSelf="auto" maxWidth="600px">
+											<components>
+												<skuid__text contents="&lt;!--(figmeta)eyJmaWxlS2V5IjoiamNiR1RTejJLTms0ZnFva0Nmb2k3UCIsInBhc3RlSUQiOi0xLCJkYXRhVHlwZSI6InNjZW5lIn0K(/figmeta)--&gt;&lt;!--(figma)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(/figma)--&gt;In contrast to object and field permissions, data source object conditions constrain data, enforcing rules for querying and updating. For more information, see our &lt;a href=&quot;https://docs.skuid.com/platform/en/data/data-source-objects/#conditions&quot;&gt;documentation&lt;/a&gt;." uniqueid="sk-7UL-97148" styleSettingsVariant="ef8d4ab0-3722-4e16-903c-ec582c9ca67f"/>
+											</components>
+										</division>
+									</divisions>
+									<styles>
+										<spacing/>
+									</styles>
+								</skuid__grid>
+								<skuid__wrapper uniqueid="sk-1p-v-22430" styleSettingsVariant="7d5572d7-ec59-43f0-9d03-5259d1980637">
+									<components>
+										<skuid__grid uniqueid="sk-1q0B-27752" flexDirection="row" justifyContent="flex-start" alignItems="flex-start">
+											<divisions>
+												<division minWidth="8px" ratio="1" alignSelf="auto">
+													<components/>
+												</division>
+												<division alignSelf="auto" minWidth="300px" ratio="0" maxWidth="600px">
+													<components>
+														<skuid__text contents="&lt;div style=&quot;text-align: center;&quot;&gt;You haven&amp;#39;t configured any data source object conditions&lt;/div&gt;&#10;" uniqueid="sk-2Z_-78956" styleSettingsVariant="53193c74-b77c-429e-8fed-09b73deaa10c">
+															<styles>
+																<spacing bottom="1" styleSettingsVariant="53193c74-b77c-429e-8fed-09b73deaa10c"/>
+															</styles>
+															<renderConditions logictype="and"/>
+															<styleVariantConditions/>
+														</skuid__text>
+														<skuid__grid uniqueid="sk-3LcS-23956" flexDirection="row" justifyContent="center" alignItems="flex-start">
+															<divisions>
+																<division minWidth="100px" ratio="1" alignSelf="auto" maxWidth="300px">
+																	<components>
+																		<skuid__text contents="&lt;div style=&quot;text-align: center;&quot;&gt;If needed, save your work and configure conditions from the data source&amp;#39;s detail screen.&lt;/div&gt;&#10;" uniqueid="sk-1q00-24573" styleSettingsVariant="ef8d4ab0-3722-4e16-903c-ec582c9ca67f"/>
+																	</components>
+																</division>
+															</divisions>
+														</skuid__grid>
+													</components>
+												</division>
+												<division alignSelf="auto" minWidth="8px" ratio="1">
+													<components/>
+												</division>
+											</divisions>
+											<renderConditions logictype="and"/>
+											<styleVariantConditions/>
+											<styles>
+												<spacing top="1" bottom="1"/>
+											</styles>
+										</skuid__grid>
+									</components>
+									<background/>
+									<styles>
+										<spacing top="3"/>
+									</styles>
+									<renderConditions logictype="and">
+										<renderCondition fieldmodel="Inc_Datasource_Conditions" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasNoRows"/>
+									</renderConditions>
+									<styleVariantConditions/>
+								</skuid__wrapper>
+								<skuid__wrapper uniqueid="sk-7UX-98946">
+									<components>
+										<skuid__grid uniqueid="sk-7UW-98411" flexDirection="row" justifyContent="flex-start" alignItems="flex-start">
+											<divisions>
+												<division alignSelf="auto" minWidth="100px" ratio="1">
+													<components/>
+												</division>
+												<division minWidth="0" ratio="0" alignSelf="auto">
+													<components>
+														<skuid__text contents="Always on" uniqueid="sk-7UZ-100214" styleSettingsVariant="bcf356fb-cd9b-4b49-adb6-299b154f243f">
+															<styles>
+																<spacing right="2" styleSettingsVariant="bcf356fb-cd9b-4b49-adb6-299b154f243f"/>
+															</styles>
+														</skuid__text>
+													</components>
+												</division>
+											</divisions>
+											<styles>
+												<spacing bottom="1"/>
+											</styles>
+											<background/>
+										</skuid__grid>
+										<skuid__deck columnGutter="0px" rowGutter="12px" model="Inc_DataSourceConditionPermissions" showSaveCancel="false" verticalAlign="top" minWidth="100%" uniqueid="sk-7UR-97911" setMaxWidth="auto" pageSize="25">
+											<components>
+												<skuid__wrapper uniqueid="sk-7Wo-35268" styleSettingsVariant="7d5572d7-ec59-43f0-9d03-5259d1980637">
+													<components>
+														<skuid__grid uniqueid="sk-7Ui-103163" flexDirection="row" justifyContent="flex-start" alignItems="center">
+															<divisions>
+																<division minWidth="0" ratio="1" alignSelf="auto">
+																	<components>
+																		<skuid__text contents="{{data_source_condition_id}}" uniqueid="sk-7Uj-104142" model="Inc_DataSourceConditionPermissions" styleSettingsVariant="bcf356fb-cd9b-4b49-adb6-299b154f243f">
+																			<styles>
+																				<spacing/>
+																			</styles>
+																		</skuid__text>
+																	</components>
+																</division>
+																<division alignSelf="auto" minWidth="40px" ratio="0">
+																	<components>
+																		<skuid__form showErrorsInline="true" model="Inc_DataSourceConditionPermissions" uniqueid="sk-7Us-106653" mode="edit">
+																			<columns>
+																				<column verticalAlign="top" ratio="1">
+																					<sections>
+																						<section title="New Section" showHeading="false">
+																							<fields>
+																								<skuid__field id="alwaysOn" uniqueId="sk-7TR-86978" label=" " displayAs="SWITCH"/>
+																							</fields>
+																						</section>
+																					</sections>
+																				</column>
+																			</columns>
+																			<styles>
+																				<spacing top="-1"/>
+																			</styles>
+																		</skuid__form>
+																	</components>
+																</division>
+															</divisions>
+															<background/>
+														</skuid__grid>
+													</components>
+													<background/>
+													<styles>
+														<spacing/>
+													</styles>
+												</skuid__wrapper>
+											</components>
+											<filtering enableSearch="false"/>
+											<styles>
+												<spacing right="0.5"/>
+											</styles>
+											<sorting enable="false"/>
+										</skuid__deck>
+									</components>
+									<styles>
+										<spacing/>
+									</styles>
+									<background/>
+									<renderConditions logictype="and">
+										<renderCondition type="fieldvalue" enclosevalueinquotes="true" fieldmodel="Inc_Datasource_Conditions" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasRows"/>
+									</renderConditions>
+									<styleVariantConditions/>
+								</skuid__wrapper>
+							</components>
+							<styles>
+								<spacing left="3" right="3" bottom="3" top="3"/>
+							</styles>
+							<background/>
+						</skuid__wrapper>
+					</components>
+					<background/>
+					<styles>
+						<spacing/>
+					</styles>
+				</skuid__wrapper>
+			</components>
+			<background/>
+			<styles>
+				<spacing/>
+			</styles>
+		</skuid__wrapper>
+	</components>
+	<resources>
+		<labels/>
+		<javascript>
+			<jsitem location="staticresource" namespace="skuid" filepath="js/skuidPages/dataSourceConfig.js" scope="api"/>
+			<jsitem location="inlinesnippet" name="createPermRows" cachelocation="false">const params = arguments[0],
+$ = skuid.$;
+
+let permSetId = skuid.$M("Inc_PermissionSet").getFirstRow().id,
+    objectId = skuid.$M("Inc_Datasource_Object").getFirstRow().id,
+    pageName = "DSODetails_PageInclude",
+    pageRef = skuid.runtime.getPage(pageName),
+    showError = pageRef.actionSequences.getByName('Show error message');
+
+function saveModel(model) {
+    model.save({callback: function(result){
+        if (!result.totalsuccess) {
+            showError.run();
+        }
+    }});
+}
+
+// Create object permissions
+let objectPermModel = skuid.$M("Inc_DataSourceObjectPermissions"),
+    objectPermRows = objectPermModel.getRows();
+
+if (objectPermRows.length == 0) {
+    objectPermModel.createRow({
+        additionalConditions: [
+            { field: 'permission_set_id', value: permSetId },
+            { field: 'data_source_object_id', value: objectId},
+            { field: 'createable', value: false },
+            { field: 'updateable', value: false },
+            { field: 'queryable', value: false },
+            { field: 'deleteable', value: false },
+        ], doAppend: true
+    });
+
+    saveModel(objectPermModel);
+}
+
+// Create field permissions
+let permModel =  skuid.$M("Inc_DataSourceFieldPermissions"),
+    permRows = permModel.getRows(),
+    permLength = permRows.length,
+    itemModel = skuid.$M("Inc_Datasource_Fields"),
+    itemRows = itemModel.getRows(),
+    itemLength = itemRows.length,
+    allPerms = [];
+
+// if there are fields
+if (itemLength &gt; 0) {
+    if (permLength == 0) {
+        $.each(itemRows, function(i,row) {
+            permModel.createRow({
+                additionalConditions: [
+                    { field: 'permission_set_id', value: permSetId },
+                    { field: 'data_source_field_id', value: row.id },
+                    { field: 'createable', value: false },
+                    { field: 'updateable', value: false },
+                    { field: 'queryable', value: false },
+                ], doAppend: true
+            });
+        });
+    } else if (permLength &lt; itemLength) {
+        $.each(permRows, function (i, row){
+            allPerms.push(row.data_source_field_id);
+        });
+
+        $.each(itemRows, function(i, row){
+            if (!allPerms.includes(row.id)) {
+                permModel.createRow({
+                    additionalConditions: [
+                        { field: 'permission_set_id', value: permSetId },
+                        { field: 'data_source_field_id', value: row.id },
+                        { field: 'createable', value: false },
+                        { field: 'updateable', value: false },
+                        { field: 'queryable', value: false },
+                    ], doAppend: true
+                });
+            }
+        });
+    }
+
+    saveModel(permModel);
+}
+
+
+// Create condition permissions
+let condPermModel =  skuid.$M("Inc_DataSourceConditionPermissions"),
+    condPermRows = condPermModel.getRows(),
+    condPermLength = condPermRows.length,
+    condModel = skuid.$M("Inc_Datasource_Conditions"),
+    condRows = condModel.getRows(),
+    condLength = condRows.length,
+    allCondPerms = [];
+
+// if there are conditions
+if (condLength &gt; 0) {
+    if (condPermLength == 0) {
+        $.each(condRows, function(i,row) {
+            condPermModel.createRow({
+                additionalConditions: [
+                    { field: 'permission_set_id', value: permSetId },
+                    { field: 'data_source_condition_id', value: row.id },
+                    { field: 'alwaysOn', value: false },
+                ], doAppend: true
+            });
+        });
+    } else if (condPermLength &lt; condLength) {
+        $.each(condPermRows, function (i, row){
+            allCondPerms.push(row.data_source_condition_id);
+        });
+
+        $.each(condRows, function(i, row){
+            if (!allCondPerms.includes(row.id)) {
+                condPermModel.createRow({
+                    additionalConditions: [
+                        { field: 'permission_set_id', value: permSetId },
+                        { field: 'data_source_condition_id', value: row.id },
+                        { field: 'always_on', value: false },
+                    ], doAppend: true
+                });
+            }
+        });
+    }
+
+    saveModel(condPermModel);
+}</jsitem>
+		</javascript>
+		<css/>
+		<actionsequences uniqueid="sk-3eXJ-317">
+			<actionsequence id="0306b8c2-7cfe-415f-9205-ceaa6c5bbbbe" label="Get Data Service and Load Models" type="event-triggered" event-scope="skuid" event-name="page.rendered">
+				<description/>
+				<actions>
+					<action type="blockUI" message="Loading..." showPlaceholder="false" styleSettingsVariant="dark"/>
+					<action type="custom" snippet="skuid.settings.dataSources.populateDefaultDataService"/>
+					<action type="requeryModels" behavior="standard">
+						<models>
+							<model>Inc_PermissionSet</model>
+							<model>Inc_Warden_Datasource</model>
+							<model>Inc_Datasource_Object</model>
+							<model>Inc_Datasource_Fields</model>
+							<model>Inc_Datasource_Conditions</model>
+							<model>Inc_DataSourceObjectPermissions</model>
+							<model>Inc_DataSourceFieldPermissions</model>
+							<model>Inc_DataSourceConditionPermissions</model>
+						</models>
+					</action>
+					<action type="custom" snippet="createPermRows">
+						<onerroractions/>
+					</action>
+					<action type="unblockUI"/>
+				</actions>
+			</actionsequence>
+			<actionsequence id="7432fda1-76d8-40c8-b394-c74353b96e82" label="Refresh components if changes made on parent page" type="event-triggered" event-scope="skuid" event-name="refreshPageInclude" event-channel="skuidAdminPages">
+				<description/>
+				<actions>
+					<action type="emptyModelData">
+						<models>
+							<model>Inc_Datasource_Object</model>
+							<model>Inc_Datasource_Fields</model>
+							<model>Inc_Datasource_Conditions</model>
+						</models>
+					</action>
+					<action type="requeryModels" behavior="standard">
+						<models>
+							<model>Inc_Datasource_Object</model>
+							<model>Inc_Datasource_Fields</model>
+							<model>Inc_Datasource_Conditions</model>
+						</models>
+					</action>
+				</actions>
+			</actionsequence>
+			<actionsequence id="87fe09a6-ba00-4036-a497-839cc8616473" label="Show error message" type="reusable">
+				<description/>
+				<actions>
+					<action type="blockUI" styleSettingsVariant="dark" message="Error configuring permissions" timeout="3000"/>
+				</actions>
+			</actionsequence>
+		</actionsequences>
+	</resources>
+	<styles>
+		<styleitem type="background" bgtype="none"/>
+	</styles>
+	<background type="color" color="white"/>
+</skuid__page>

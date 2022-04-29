@@ -21,6 +21,9 @@ ci:
 
 test:
 	go test -v ./...
+	
+bench:
+	go test -benchmem -v -run=Http -bench=.
 
 setup:
 	go get -u github.com/kardianos/govendor

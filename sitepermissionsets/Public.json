@@ -1,0 +1,16 @@
+{
+	"name": "Public",
+	"allowedEmailDomains": null,
+	"enableSignupApi": false,
+	"enableSignupUi": false,
+	"permissionSet": {
+		"name": "Public",
+		"appPermissions": {
+		},
+		"dataSourcePermissions": {
+		},
+		"description": null
+	},
+	"requireEmailVerificationOnSignup": true,
+	"signupUi": null
+}

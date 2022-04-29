@@ -1,0 +1,874 @@
+<skuid__page unsavedchangeswarning="yes">
+	<models>
+		<model id="Login_UI" limit="20" query="false" createrowifnonefound="true" datasource="SkuidLocal" type="readwrite" unloadwarningifunsavedchanges="false">
+			<fields>
+				<field id="username" displaytype="TEXT" label="Username"/>
+				<field id="password" displaytype="TEXT" label="Password"/>
+				<field id="redirect" displaytype="TEXT" label="Redirect"/>
+			</fields>
+			<conditions/>
+			<actions/>
+			<methods>
+				<method type="query" verb="GET" endpoint="/objects/page" payloadcontenttype="JSON"/>
+				<method type="insert" verb="POST" successif="responsefieldistrue" sendchanges="asformdatainbody" insertresponse="recordinbody" endpoint="/auth/login?next={{#encodeUrl}}{{$Param.next}}{{/encodeUrl}}" successfield="success"/>
+				<method type="update" verb="POST" successif="responsefieldistrue" sendchanges="asformdatainbody" endpoint="/auth/login?next={{#encodeUrl}}{{$Param.next}}{{/encodeUrl}}" successfield="success"/>
+			</methods>
+		</model>
+		<model id="SAMLLoginProviders" query="true" createrowifnonefound="false" datasource="SkuidLocal" verb="GET" endpoint="/auth/saml/providers" label="SAML Login Provider" labelplural="SAML Login Providers" namefield="name" unloadwarningifunsavedchanges="false" payloadcontenttype="JSON">
+			<fields>
+				<field id="id" label="Id" displaytype="TEXT" accessible="true" filterable="true"/>
+				<field id="name" label="Name" displaytype="TEXT" accessible="true" filterable="true"/>
+				<field id="login_button_text" label="Login Button Text" displaytype="TEXT" accessible="true" filterable="true"/>
+			</fields>
+			<idfields>
+				<field>id</field>
+			</idfields>
+			<conditions/>
+			<actions>
+				<action>
+					<actions>
+						<action type="custom" snippet="showSSO"/>
+					</actions>
+					<events>
+						<event>models.loaded</event>
+					</events>
+				</action>
+			</actions>
+		</model>
+		<model id="UI" query="true" createrowifnonefound="true" datasource="Ui-Only" processonclient="true" unloadwarningifunsavedchanges="false">
+			<fields>
+				<field id="login_status" displaytype="PICKLIST" ogdisplaytype="TEXT" picklistsource="manual" defaultvaluetype="fieldvalue" label="Login Status" returntype="TEXT">
+					<picklistentries>
+						<entry value="in_progress" label="In Progress"/>
+						<entry value="success" label="Success"/>
+						<entry value="failure" label="Failure"/>
+					</picklistentries>
+				</field>
+				<field id="noredirect" displaytype="BOOLEAN" label="Noredirect" defaultvaluetype="fieldvalue" defaultValue="false"/>
+				<field id="showuserpass" displaytype="BOOLEAN" label="Show Username/Password" defaultvaluetype="fieldvalue" mergefield="Id" userinfotype="userid" enclosevalueinquotes="false"/>
+				<field id="showPassword" displaytype="BOOLEAN" length="255" ogdisplaytype="TEXT" defaultvaluetype="fieldvalue" defaultValue="false"/>
+				<field id="isLockedOut" displaytype="BOOLEAN" length="255" ogdisplaytype="TEXT" defaultvaluetype="fieldvalue"/>
+				<field id="errorType" displaytype="PICKLIST" length="255" ogdisplaytype="TEXT" picklistsource="manual" returntype="TEXT" defaultvaluetype="fieldvalue">
+					<picklistentries>
+						<entry value="wrongCredentials" label="wrongCredentials"/>
+						<entry value="lastAttempt" label="lastAttempt"/>
+						<entry value="userDeactivated" label="userDeactivated"/>
+					</picklistentries>
+				</field>
+				<field id="siteInactive" displaytype="BOOLEAN" length="255" ogdisplaytype="TEXT" defaultvaluetype="fieldvalue"/>
+			</fields>
+			<conditions/>
+			<actions>
+				<action>
+					<actions>
+						<action type="custom" snippet="autoFocus"/>
+					</actions>
+					<events>
+						<event>row.updated</event>
+					</events>
+					<fields>
+						<field>showuserpass</field>
+					</fields>
+				</action>
+			</actions>
+		</model>
+		<model id="stng__Branding" query="true" createrowifnonefound="false" datasource="SkuidLocal" verb="GET" payloadcontenttype="JSON" endpoint="/site/branding" async="true" unloadwarningifunsavedchanges="false">
+			<fields>
+				<field id="logo.exists" label="Logo Exists" displaytype="BOOLEAN" accessible="true" filterable="true"/>
+				<field id="logo.modstamp" label="Logo Modstamp" displaytype="INTEGER" accessible="true" filterable="true"/>
+				<field id="logo.height" label="Logo Height" displaytype="JSON" accessible="true" filterable="true"/>
+				<field id="logo.height_ui" uionly="true" displaytype="FORMULA" readonly="true" returntype="TEXT" label="Logo Height Formula">
+					<formula>IF({{logo.exists}},{{logo.height}},"80")+"px"</formula>
+				</field>
+			</fields>
+			<conditions/>
+			<actions/>
+		</model>
+	</models>
+	<pageregioncontents>
+		<pageregioncontent regionid="sk-1fq-2169" uniqueid="sk-1gv-1481">
+			<components>
+				<skuid__wrapper uniqueid="sk-1hu-3953" overflowY="hidden" height="custom" heightCustom="128px" heightStrategy="fixed">
+					<components/>
+					<styles>
+						<spacing/>
+					</styles>
+					<background/>
+				</skuid__wrapper>
+				<skuid__grid uniqueid="sk-1iW-5188" flexDirection="row" justifyContent="space-around" alignItems="flex-start">
+					<divisions>
+						<division alignSelf="auto" minWidth="384px" ratio="0" maxWidth="384px">
+							<components>
+								<skuid__wrapper uniqueid="sk-2x1M-11601">
+									<components>
+										<skuid__grid uniqueid="sk-1ks-6227" flexDirection="row" justifyContent="space-around" alignItems="center">
+											<divisions>
+												<division ratio="0" alignSelf="auto">
+													<components>
+														<skuid__image source="url" uniqueid="sk-1il-6825" datasource="SkuidLocal" model="Login_UI" url="/api/v1/site/logo/large" imageHeight="64px" imageWidth="auto">
+															<styles>
+																<spacing/>
+															</styles>
+														</skuid__image>
+													</components>
+												</division>
+											</divisions>
+											<styles>
+												<spacing bottom="4"/>
+											</styles>
+										</skuid__grid>
+										<skuid__wrapper uniqueid="sk-83A-54231" styleSettingsVariant="c5a44cb4-0fb9-4631-a576-a20f998816e0">
+											<components>
+												<skuid__text contents="&lt;div style=&quot;text-align: center;&quot;&gt;This account has been locked&lt;/div&gt;&#10;" uniqueid="sk-83D-55270" styleSettingsVariant="53193c74-b77c-429e-8fed-09b73deaa10c" allowHtmlInBuilder="true">
+													<styles>
+														<spacing bottom="2" styleSettingsVariant="53193c74-b77c-429e-8fed-09b73deaa10c"/>
+													</styles>
+												</skuid__text>
+												<skuid__text contents="&lt;div&gt;For security reasons, we have to lock an account after five failed login attempts.&lt;br /&gt;&#10;&lt;br /&gt;&#10;Please contact a site administrator to reverse this.&lt;/div&gt;&#10;" uniqueid="sk-83P-57734">
+													<styles>
+														<spacing/>
+													</styles>
+												</skuid__text>
+											</components>
+											<background/>
+											<renderConditions logictype="and">
+												<renderCondition type="fieldvalue" operator="=" enclosevalueinquotes="false" fieldmodel="UI" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="isLockedOut" value="true"/>
+											</renderConditions>
+											<styleVariantConditions/>
+										</skuid__wrapper>
+										<skuid__wrapper uniqueid="sk-10nz-12308" styleSettingsVariant="c5a44cb4-0fb9-4631-a576-a20f998816e0">
+											<components>
+												<skuid__text contents="&lt;div style=&quot;text-align: center;&quot;&gt;This site has been deactivated&lt;/div&gt;&#10;" uniqueid="sk-10nz-12309" styleSettingsVariant="53193c74-b77c-429e-8fed-09b73deaa10c" allowHtmlInBuilder="true">
+													<styles>
+														<spacing bottom="2" styleSettingsVariant="53193c74-b77c-429e-8fed-09b73deaa10c"/>
+													</styles>
+												</skuid__text>
+												<skuid__text contents="To have this site reactivated, contact your Skuid account manager or email &lt;span style=&quot;font-weight:500&quot;&gt;salesops@skuid.com&lt;/span&gt;." uniqueid="sk-10nz-12310" allowHtmlInBuilder="true">
+													<styles>
+														<spacing/>
+													</styles>
+												</skuid__text>
+											</components>
+											<background/>
+											<renderConditions logictype="and">
+												<renderCondition type="fieldvalue" operator="=" enclosevalueinquotes="false" fieldmodel="UI" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="siteInactive" value="true"/>
+											</renderConditions>
+											<styleVariantConditions/>
+										</skuid__wrapper>
+										<skuid__wrapper uniqueid="public-main-wrapper" styleSettingsVariant="c5a44cb4-0fb9-4631-a576-a20f998816e0">
+											<components>
+												<skuid__wrapper uniqueid="sk-348-33666">
+													<components>
+														<skuid__text contents="&lt;div style=&quot;text-align: center;&quot;&gt;Log in to your account&lt;/div&gt;&#10;" uniqueid="sk-1kT-7091" styleSettingsVariant="53193c74-b77c-429e-8fed-09b73deaa10c">
+															<styles>
+																<spacing bottom="2" styleSettingsVariant="53193c74-b77c-429e-8fed-09b73deaa10c"/>
+															</styles>
+														</skuid__text>
+														<skuid__messageArea uniqueid="sk-7-8-10741" model="Login_UI">
+															<group>
+																<skuid__messageBlock title="Wrong username or password" description="You can try again or &lt;a href=&quot;/ui/forgotpassword&quot; style=&quot;color:inherit; text-decoration:underline; font-weight:400&quot;&gt;reset your password.&lt;/a&gt;" allowHTML="true" styleSettingsVariant="errorStrong" showClose="false" icon="sk-webicon-ink:warning">
+																	<renderConditions logictype="and">
+																		<renderCondition type="fieldvalue" operator="=" enclosevalueinquotes="true" fieldmodel="UI" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="errorType" value="wrongCredentials"/>
+																	</renderConditions>
+																</skuid__messageBlock>
+																<skuid__messageBlock model="UI" title="This account will be locked" description="You’ll need to contact a site administrator after another failed login attempt. If you’ve forgotten your password, you can &lt;a href=&quot;/ui/forgotpassword&quot; style=&quot;color:inherit; text-decoration:underline; font-weight:400&quot;&gt;reset it here.&lt;/a&gt;" allowHTML="true" styleSettingsVariant="errorStrong" icon="sk-webicon-ink:warning" showClose="false">
+																	<styles>
+																		<spacing styleSettingsVariant="errorStrong"/>
+																	</styles>
+																	<renderConditions logictype="and">
+																		<renderCondition type="fieldvalue" operator="=" enclosevalueinquotes="true" fieldmodel="UI" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="errorType" value="lastAttempt"/>
+																	</renderConditions>
+																</skuid__messageBlock>
+																<skuid__messageBlock model="UI" title="This user has been deactivated" description="Please contact a site administrator to have this user account reactivated." allowHTML="false" styleSettingsVariant="errorStrong" icon="sk-webicon-ink:warning">
+																	<renderConditions logictype="and">
+																		<renderCondition type="fieldvalue" operator="=" enclosevalueinquotes="true" fieldmodel="UI" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="errorType" value="userDeactivated"/>
+																	</renderConditions>
+																</skuid__messageBlock>
+																<skuid__messageBlock model="UI" title="Do not delete" description="fixes weird spacing issue..." allowHTML="false">
+																	<renderConditions logictype="and">
+																		<renderCondition type="fieldvalue" operator="=" enclosevalueinquotes="true" fieldmodel="UI" sourcetype="fieldvalue" nosourcerowbehavior="skipandnorender"/>
+																	</renderConditions>
+																</skuid__messageBlock>
+															</group>
+															<renderConditions logictype="and">
+																<renderCondition type="blank" operator="!=" fieldmodel="UI" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="errorType" value="null" enclosevalueinquotes="false"/>
+															</renderConditions>
+															<styles>
+																<spacing bottom="1"/>
+															</styles>
+														</skuid__messageArea>
+														<skuid__text contents="Username" uniqueid="sk-1o--26828" styleSettingsVariant="bcf356fb-cd9b-4b49-adb6-299b154f243f">
+															<renderConditions logictype="and"/>
+															<styleVariantConditions/>
+														</skuid__text>
+														<skuid__form showErrorsInline="true" model="Login_UI" uniqueid="username-form" mode="edit" styleSettingsVariant="3815a36b-52d9-4fa2-a3b9-bf4ec881a44f">
+															<columns>
+																<column verticalAlign="top" ratio="1">
+																	<sections>
+																		<section title="New Section" showHeading="false">
+																			<fields>
+																				<skuid__field id="username" uniqueId="username-input-field" label=" "/>
+																			</fields>
+																		</section>
+																	</sections>
+																</column>
+															</columns>
+														</skuid__form>
+														<skuid__wrapper uniqueid="sk-1l_-13883">
+															<components>
+																<skuid__grid uniqueid="sk-1o9-20536" flexDirection="row" justifyContent="flex-start" alignItems="center">
+																	<divisions>
+																		<division minWidth="100px" ratio="1" alignSelf="flex-end">
+																			<components>
+																				<skuid__text contents="Password" uniqueid="sk-1oB-21592" styleSettingsVariant="bcf356fb-cd9b-4b49-adb6-299b154f243f"/>
+																			</components>
+																		</division>
+																		<division alignSelf="auto" minWidth="100px" ratio="1">
+																			<components>
+																				<skuid__wrapper uniqueid="sk-Xiw-10697">
+																					<components>
+																						<skuid__buttonSet uniqueid="sk-1m3-14794">
+																							<groups>
+																								<skuid__buttonGroup uniqueId="sk-1m3-14792" displayType="detached">
+																									<buttons>
+																										<skuid__button label="Show Password" uniqueId="sk-1m3-14793" styleSettingsVariant="c217118d-b5a0-4759-b20f-01604730a904">
+																											<renderConditions logictype="and">
+																												<renderCondition type="fieldvalue" operator="!=" enclosevalueinquotes="false" fieldmodel="UI" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="showPassword" value="true"/>
+																											</renderConditions>
+																											<enableConditions/>
+																											<styleVariantConditions/>
+																											<actions>
+																												<action type="updateRow" fieldmodel="UI" affectedrows="context">
+																													<updates>
+																														<update valuesource="fieldvalue" field="showPassword" enclosevalueinquotes="false" value="true"/>
+																													</updates>
+																												</action>
+																												<action type="action-sequence" action-sequence-id="1bc75584-74bf-44d2-ad08-8b5880137db1">
+																													<inputs>
+																														<input name="test" value="test"/>
+																														<input name="id" value="#password-input-field"/>
+																													</inputs>
+																												</action>
+																											</actions>
+																										</skuid__button>
+																										<skuid__button label="Hide Password" uniqueId="sk-1os-25420" styleSettingsVariant="c217118d-b5a0-4759-b20f-01604730a904">
+																											<renderConditions logictype="and">
+																												<renderCondition type="fieldvalue" operator="=" enclosevalueinquotes="false" fieldmodel="UI" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="showPassword" value="true"/>
+																											</renderConditions>
+																											<enableConditions/>
+																											<styleVariantConditions/>
+																											<actions>
+																												<action type="updateRow" fieldmodel="UI" affectedrows="context">
+																													<updates>
+																														<update valuesource="fieldvalue" field="showPassword" enclosevalueinquotes="false" value="false"/>
+																													</updates>
+																												</action>
+																												<action type="action-sequence" action-sequence-id="1bc75584-74bf-44d2-ad08-8b5880137db1">
+																													<inputs>
+																														<input name="id" value="#password-input-field"/>
+																													</inputs>
+																												</action>
+																											</actions>
+																										</skuid__button>
+																									</buttons>
+																								</skuid__buttonGroup>
+																							</groups>
+																						</skuid__buttonSet>
+																					</components>
+																					<background/>
+																				</skuid__wrapper>
+																			</components>
+																		</division>
+																	</divisions>
+																	<background/>
+																</skuid__grid>
+																<skuid__form showErrorsInline="true" model="Login_UI" uniqueid="password-form" mode="edit" styleSettingsVariant="3815a36b-52d9-4fa2-a3b9-bf4ec881a44f">
+																	<columns>
+																		<column verticalAlign="top" ratio="1">
+																			<sections>
+																				<section title="New Section" showHeading="false">
+																					<renderConditions logictype="and"/>
+																					<fields>
+																						<skuid__field id="password" uniqueId="password-input-field" label=" " displayAs="PASSWORD" showLengthCounter="false">
+																							<renderConditions logictype="and" onhidedatabehavior="keep"/>
+																							<enableConditions/>
+																							<styleVariantConditions/>
+																						</skuid__field>
+																					</fields>
+																				</section>
+																			</sections>
+																		</column>
+																	</columns>
+																</skuid__form>
+															</components>
+															<styles>
+																<spacing top="3"/>
+															</styles>
+															<background/>
+														</skuid__wrapper>
+														<skuid__buttonSet uniqueid="sk-1pL-29379" expandToFill="true">
+															<groups>
+																<skuid__buttonGroup uniqueId="sk-1pL-29377" displayType="detached">
+																	<buttons>
+																		<skuid__button label="Log in" uniqueId="userpass-login-button" styleSettingsVariant="a8573762-83d9-40e1-bd77-e89a20e4c021">
+																			<actions>
+																				<action type="updateRow" fieldmodel="UI" affectedrows="context">
+																					<updates>
+																						<update valuesource="fieldvalue" field="login_status" enclosevalueinquotes="true" value="in_progress"/>
+																						<update valuesource="blank" field="errorType" enclosevalueinquotes="true"/>
+																					</updates>
+																				</action>
+																				<action type="save">
+																					<models>
+																						<model>Login_UI</model>
+																					</models>
+																					<onerroractions>
+																						<action type="branch" whenfinished="stop">
+																							<formula>
+CONTAINS({{messages.0.message}}, "Site Deactivated")</formula>
+																							<iftrueactions>
+																								<action type="updateRow" fieldmodel="UI" affectedrows="context">
+																									<updates>
+																										<update valuesource="fieldvalue" field="siteInactive" enclosevalueinquotes="false" value="true"/>
+																									</updates>
+																								</action>
+																							</iftrueactions>
+																						</action>
+																						<action type="branch" whenfinished="stop">
+																							<formula>CONTAINS({{messages.0.message}}, "user is locked out")</formula>
+																							<iftrueactions>
+																								<action type="updateRow" fieldmodel="UI" affectedrows="context">
+																									<updates>
+																										<update valuesource="fieldvalue" field="isLockedOut" enclosevalueinquotes="false" value="true"/>
+																									</updates>
+																								</action>
+																							</iftrueactions>
+																						</action>
+																						<action type="branch" whenfinished="stop">
+																							<formula>CONTAINS({{messages.0.message}}, "Bad Request: Login Failed")</formula>
+																							<iftrueactions>
+																								<action type="updateRow" fieldmodel="UI" affectedrows="context">
+																									<updates>
+																										<update valuesource="fieldvalue" field="errorType" enclosevalueinquotes="true" value="wrongCredentials"/>
+																										<update valuesource="fieldvalue" field="login_status" enclosevalueinquotes="true" value="failure"/>
+																									</updates>
+																								</action>
+																							</iftrueactions>
+																						</action>
+																						<action type="branch" whenfinished="stop">
+																							<formula>CONTAINS({{messages.0.message}}, "You have one attempt remaining")</formula>
+																							<iftrueactions>
+																								<action type="updateRow" fieldmodel="UI" affectedrows="context">
+																									<updates>
+																										<update valuesource="fieldvalue" field="errorType" enclosevalueinquotes="true" value="lastAttempt"/>
+																										<update valuesource="fieldvalue" field="login_status" enclosevalueinquotes="true" value="failure"/>
+																									</updates>
+																								</action>
+																							</iftrueactions>
+																						</action>
+																						<action type="branch" whenfinished="stop">
+																							<formula>CONTAINS({{messages.0.message}}, "Bad Request: User Deactivated")</formula>
+																							<iftrueactions>
+																								<action type="updateRow" fieldmodel="UI" affectedrows="context">
+																									<updates>
+																										<update valuesource="fieldvalue" field="errorType" enclosevalueinquotes="true" value="userDeactivated"/>
+																										<update valuesource="fieldvalue" field="login_status" enclosevalueinquotes="true" value="failure"/>
+																									</updates>
+																								</action>
+																							</iftrueactions>
+																						</action>
+																					</onerroractions>
+																				</action>
+																				<action type="branch" whenfinished="stop" model="UI">
+																					<formula>{{noredirect}}!=true</formula>
+																					<iftrueactions>
+																						<action type="redirect" window="self" url="{{$Model.Login_UI.data.0.redirect}}"/>
+																					</iftrueactions>
+																				</action>
+																				<actions>
+																					<action type="branch" label="If no UN / PW" model="Login_UI">
+																						<formula>ISBLANK({{username}}) || ISBLANK({{password}})</formula>
+																						<iftrueactions>
+																							<action type="blockUI" timeout="2000" message="Please enter a valid Username and Password."/>
+																						</iftrueactions>
+																					</action>
+																					<action type="updateRow" fieldmodel="UI" affectedrows="context" field="login_status" enclosevalueinquotes="true" value="in_progress"/>
+																					<action type="save">
+																						<models>
+																							<model>Login_UI</model>
+																						</models>
+																						<onerroractions>
+																							<action type="updateRow" fieldmodel="UI" affectedrows="context" field="login_status" enclosevalueinquotes="true" value="failure"/>
+																						</onerroractions>
+																					</action>
+																					<action type="updateRow" fieldmodel="UI" affectedrows="context" field="login_status" enclosevalueinquotes="true" value="success"/>
+																					<action type="branch" model="UI">
+																						<formula>{{noredirect}}!=true</formula>
+																						<iftrueactions>
+																							<action type="redirect" window="self" url="{{$Model.Login_UI.data.0.redirect}}"/>
+																						</iftrueactions>
+																					</action>
+																					<action type="branch" model="UI">
+																						<formula>{{noredirect}}==true</formula>
+																						<iftrueactions>
+																							<action type="custom" snippet="LoginClose"/>
+																						</iftrueactions>
+																					</action>
+																				</actions>
+																				<action type="updateRow" fieldmodel="UI" affectedrows="context">
+																					<updates>
+																						<update valuesource="fieldvalue" field="login_status" enclosevalueinquotes="true" value="success"/>
+																					</updates>
+																				</action>
+																				<action type="branch" whenfinished="stop" model="UI">
+																					<formula>{{noredirect}}==true</formula>
+																					<iftrueactions>
+																						<action type="custom" snippet="LoginClose"/>
+																					</iftrueactions>
+																				</action>
+																			</actions>
+																			<renderConditions logictype="and">
+																				<renderCondition type="fieldvalue" operator="!=" enclosevalueinquotes="true" fieldmodel="UI" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="login_status" value="in_progress"/>
+																			</renderConditions>
+																			<enableConditions logictype="and">
+																				<condition type="blank" fieldmodel="Login_UI" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" sourceproperty="hasRows" operator="!=" field="username" fieldtargetobjects="SkuidLocal" value="null" enclosevalueinquotes="false"/>
+																				<condition type="blank" operator="!=" fieldmodel="Login_UI" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="password" fieldtargetobjects="SkuidLocal" value="null" enclosevalueinquotes="false"/>
+																			</enableConditions>
+																			<styleVariantConditions/>
+																			<tooltip position="top"/>
+																			<hotkeys>
+																				<hotkey key="return" ignoretextinputs="false" modifiers=""/>
+																			</hotkeys>
+																		</skuid__button>
+																		<skuid__button label="Logging in..." uniqueId="sk-2aj-35452" styleSettingsVariant="a8573762-83d9-40e1-bd77-e89a20e4c021">
+																			<actions/>
+																			<renderConditions logictype="and">
+																				<renderCondition type="fieldvalue" operator="=" enclosevalueinquotes="true" fieldmodel="UI" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="login_status" value="in_progress"/>
+																			</renderConditions>
+																			<enableConditions logictype="and">
+																				<condition type="fieldvalue" operator="!=" enclosevalueinquotes="true" fieldmodel="UI" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="login_status" value="in_progress"/>
+																			</enableConditions>
+																			<styleVariantConditions/>
+																		</skuid__button>
+																	</buttons>
+																</skuid__buttonGroup>
+															</groups>
+															<styles>
+																<spacing top="2"/>
+															</styles>
+														</skuid__buttonSet>
+														<skuid__text contents="&lt;div style=&quot;text-align: center;&quot;&gt;&lt;a href=&quot;/ui/forgotpassword&quot; style=&quot;color:#797979; text-decoration:underline; font-weight:600&quot;&gt;Forgot password?&lt;/a&gt;&lt;/div&gt;&#10;" uniqueid="sk-1q3-31698" styleSettingsVariant="ef8d4ab0-3722-4e16-903c-ec582c9ca67f" allowHtmlInBuilder="true">
+															<styles>
+																<spacing top="2" styleSettingsVariant="ef8d4ab0-3722-4e16-903c-ec582c9ca67f"/>
+															</styles>
+															<renderConditions logictype="and"/>
+															<styleVariantConditions/>
+														</skuid__text>
+														<skuid__wrapper uniqueid="sk-32P-14924" overflowY="auto" heightStrategy="fixed" height="custom" heightCustom="4px">
+															<components/>
+															<styles>
+																<spacing/>
+															</styles>
+															<background/>
+															<renderConditions logictype="and">
+																<renderCondition fieldmodel="SAMLLoginProviders" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasNoRows"/>
+																<renderCondition type="fieldvalue" operator="=" enclosevalueinquotes="false" fieldmodel="UI" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="showuserpass" value="true"/>
+															</renderConditions>
+															<styleVariantConditions/>
+														</skuid__wrapper>
+														<skuid__wrapper uniqueid="sso-section">
+															<components>
+																<skuid__grid uniqueid="sk-1y9-35220" flexDirection="row" justifyContent="flex-start" alignItems="center">
+																	<divisions>
+																		<division ratio="1" alignSelf="auto">
+																			<components>
+																				<skuid__wrapper uniqueid="sk-1yF-37064" overflowY="hidden" heightStrategy="fixed" height="custom" heightCustom="1px">
+																					<components/>
+																					<styles>
+																						<spacing/>
+																					</styles>
+																					<background type="color" color="#e5e5e5"/>
+																				</skuid__wrapper>
+																			</components>
+																		</division>
+																		<division alignSelf="auto" ratio="0">
+																			<components>
+																				<skuid__text contents="or" uniqueid="sk-1yS-40394" styleSettingsVariant="bcf356fb-cd9b-4b49-adb6-299b154f243f">
+																					<styles>
+																						<spacing left="2" right="2" styleSettingsVariant="bcf356fb-cd9b-4b49-adb6-299b154f243f"/>
+																					</styles>
+																				</skuid__text>
+																			</components>
+																		</division>
+																		<division alignSelf="auto" ratio="1">
+																			<components>
+																				<skuid__wrapper uniqueid="sk-1yO-39728" overflowY="hidden" heightStrategy="fixed" height="custom" heightCustom="1px">
+																					<components/>
+																					<styles>
+																						<spacing/>
+																					</styles>
+																					<background type="color" color="#e5e5e5"/>
+																				</skuid__wrapper>
+																			</components>
+																		</division>
+																	</divisions>
+																	<styles>
+																		<spacing top="-.5"/>
+																	</styles>
+																	<background/>
+																</skuid__grid>
+																<skuid__buttonSet uniqueid="sk-1yq-43039" expandToFill="true">
+																	<groups>
+																		<skuid__buttonGroup uniqueId="sk-1yq-43037">
+																			<buttons>
+																				<skuid__button label="Log in with SSO" uniqueId="login-with-sso-button" styleSettingsVariant="9659f795-f6c7-4221-bcdb-3d63caff75a9">
+																					<actions>
+																						<action type="updateRow" fieldmodel="UI" affectedrows="context">
+																							<updates>
+																								<update valuesource="fieldvalue" field="showuserpass" enclosevalueinquotes="false" value="false"/>
+																							</updates>
+																						</action>
+																					</actions>
+																					<tooltip position="top"/>
+																				</skuid__button>
+																			</buttons>
+																		</skuid__buttonGroup>
+																	</groups>
+																	<styles>
+																		<spacing top="2"/>
+																	</styles>
+																</skuid__buttonSet>
+															</components>
+															<styles>
+																<spacing top="3"/>
+															</styles>
+															<background/>
+															<renderConditions logictype="and" logic="1 AND 2">
+																<renderCondition type="fieldvalue" enclosevalueinquotes="true" fieldmodel="SAMLLoginProviders" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasRows"/>
+																<renderCondition type="fieldvalue" operator="=" fieldmodel="UI" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="showuserpass" value="true" enclosevalueinquotes="false"/>
+															</renderConditions>
+															<styleVariantConditions/>
+														</skuid__wrapper>
+													</components>
+													<styles>
+														<spacing/>
+													</styles>
+													<background/>
+													<renderConditions logictype="or">
+														<renderCondition type="fieldvalue" operator="=" enclosevalueinquotes="false" fieldmodel="UI" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="showuserpass" value="true"/>
+														<renderCondition fieldmodel="SAMLLoginProviders" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasNoRows"/>
+													</renderConditions>
+													<styleVariantConditions/>
+												</skuid__wrapper>
+												<skuid__wrapper uniqueid="sk-33a-27052">
+													<components>
+														<skuid__text contents="&lt;div style=&quot;text-align: center;&quot;&gt;{{#$Site.SSO.LoginHeading}}{{$Site.SSO.LoginHeading}}{{/$Site.SSO.LoginHeading}}{{^$Site.SSO.LoginHeading}}Log in with SSO{{/$Site.SSO.LoginHeading}}&lt;/div&gt;&#10;" uniqueid="sso-subheading" styleSettingsVariant="53193c74-b77c-429e-8fed-09b73deaa10c" model="SAMLLoginProviders">
+															<renderConditions logictype="and"/>
+															<styleVariantConditions/>
+														</skuid__text>
+														<skuid__text contents="&lt;div style=&quot;text-align: center;&quot;&gt;{{#$Site.SSO.LoginSubHeading}}{{$Site.SSO.LoginSubHeading}}{{/$Site.SSO.LoginSubHeading}}&lt;/div&gt;&#10;" uniqueid="sso-heading" styleSettingsVariant="ef8d4ab0-3722-4e16-903c-ec582c9ca67f" model="SAMLLoginProviders">
+															<styles>
+																<spacing top="0.5" styleSettingsVariant="ef8d4ab0-3722-4e16-903c-ec582c9ca67f"/>
+															</styles>
+															<renderConditions logictype="and"/>
+															<styleVariantConditions/>
+														</skuid__text>
+														<skuid__deck rowGutter="16px" model="SAMLLoginProviders" showSaveCancel="false" verticalAlign="top" uniqueid="sk-2lax-11640" pageSize="10" showListHeader="false" showListFooter="false" setMaxWidth="auto" minWidth="auto">
+															<components>
+																<skuid__buttonSet uniqueid="sk-10uN-14277" expandToFill="true" model="SAMLLoginProviders">
+																	<groups>
+																		<skuid__buttonGroup uniqueId="sk-10uN-14275">
+																			<buttons>
+																				<skuid__button uniqueId="sk-10uN-14276" styleSettingsVariant="b8352c9c-30e0-4890-a8f5-95e2abd0c29b" iconPosition="right" icon="sk-webicon-ink:chevron-small-right" label="{{#login_button_text}}{{login_button_text}}{{/login_button_text}}{{^login_button_text}}Log in with my {{name}} account{{/login_button_text}}">
+																					<actions>
+																						<action type="action-sequence" action-sequence-id="1eafc582-c4cc-4658-aa7f-32eb132a94f6"/>
+																					</actions>
+																					<tooltip position="top" allowHTML="false"/>
+																					<hotkeys/>
+																				</skuid__button>
+																			</buttons>
+																		</skuid__buttonGroup>
+																	</groups>
+																	<renderConditions logictype="and"/>
+																	<styleVariantConditions/>
+																	<conditions>
+																		<condition type="contextrow" field="id" mergefield="id" operator="="/>
+																	</conditions>
+																</skuid__buttonSet>
+															</components>
+															<filtering enableSearch="false"/>
+															<sorting enable="false"/>
+															<styles>
+																<spacing top="2"/>
+															</styles>
+														</skuid__deck>
+														<skuid__wrapper uniqueid="sk-10xC-86702">
+															<components>
+																<skuid__grid uniqueid="sk-10xC-86703" flexDirection="row" justifyContent="flex-start" alignItems="center">
+																	<divisions>
+																		<division ratio="1" alignSelf="auto">
+																			<components>
+																				<skuid__wrapper uniqueid="sk-10xC-86704" overflowY="hidden" heightStrategy="fixed" height="custom" heightCustom="1px">
+																					<components/>
+																					<styles>
+																						<spacing/>
+																					</styles>
+																					<background type="color" color="#e5e5e5"/>
+																				</skuid__wrapper>
+																			</components>
+																		</division>
+																		<division alignSelf="auto" ratio="0">
+																			<components>
+																				<skuid__text contents="or" uniqueid="sk-10xC-86705" styleSettingsVariant="bcf356fb-cd9b-4b49-adb6-299b154f243f">
+																					<styles>
+																						<spacing left="2" right="2" styleSettingsVariant="bcf356fb-cd9b-4b49-adb6-299b154f243f"/>
+																					</styles>
+																				</skuid__text>
+																			</components>
+																		</division>
+																		<division alignSelf="auto" ratio="1">
+																			<components>
+																				<skuid__wrapper uniqueid="sk-10xC-86706" overflowY="hidden" heightStrategy="fixed" height="custom" heightCustom="1px">
+																					<components/>
+																					<styles>
+																						<spacing/>
+																					</styles>
+																					<background type="color" color="#e5e5e5"/>
+																				</skuid__wrapper>
+																			</components>
+																		</division>
+																	</divisions>
+																	<styles>
+																		<spacing top="-.5"/>
+																	</styles>
+																	<background/>
+																</skuid__grid>
+																<skuid__buttonSet uniqueid="sk-10xC-86707" expandToFill="true">
+																	<groups>
+																		<skuid__buttonGroup uniqueId="sk-10xC-86708">
+																			<buttons>
+																				<skuid__button label="Log in with username &amp; password" uniqueId="sk-33a-27059" iconPosition="right" styleSettingsVariant="9659f795-f6c7-4221-bcdb-3d63caff75a9">
+																					<actions>
+																						<action type="updateRow" fieldmodel="UI" affectedrows="context">
+																							<updates>
+																								<update valuesource="fieldvalue" field="showuserpass" enclosevalueinquotes="false" value="true"/>
+																							</updates>
+																						</action>
+																						<action type="action-sequence" action-sequence-id="bbe82f15-d033-436e-b17b-a7a6cff3fcc2">
+																							<inputs>
+																								<input name="usernameId" value="#username-input-field"/>
+																								<input name="passwordId" value="#password-input-field"/>
+																							</inputs>
+																						</action>
+																					</actions>
+																				</skuid__button>
+																			</buttons>
+																		</skuid__buttonGroup>
+																	</groups>
+																	<styles>
+																		<spacing top="2"/>
+																	</styles>
+																	<renderConditions logictype="and"/>
+																	<styleVariantConditions/>
+																</skuid__buttonSet>
+															</components>
+															<styles>
+																<spacing top="3"/>
+															</styles>
+															<background/>
+															<renderConditions logictype="and" logic="1 AND 2">
+																<renderCondition type="fieldvalue" operator="=" enclosevalueinquotes="true" fieldmodel="copyright_year" sourcetype="snippet" nosourcerowbehavior="deactivate" sourcesnippet="showSSOLoginLink"/>
+															</renderConditions>
+															<styleVariantConditions/>
+														</skuid__wrapper>
+													</components>
+													<background/>
+													<renderConditions logictype="and">
+														<renderCondition type="fieldvalue" enclosevalueinquotes="true" fieldmodel="SAMLLoginProviders" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasRows"/>
+														<renderCondition type="fieldvalue" operator="=" enclosevalueinquotes="false" fieldmodel="UI" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="showuserpass" value="false"/>
+													</renderConditions>
+													<styleVariantConditions/>
+													<styles>
+														<spacing/>
+													</styles>
+												</skuid__wrapper>
+											</components>
+											<background/>
+											<interactions/>
+											<renderConditions logictype="and">
+												<renderCondition type="fieldvalue" operator="!=" enclosevalueinquotes="false" fieldmodel="UI" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="isLockedOut" value="true"/>
+												<renderCondition type="fieldvalue" operator="!=" enclosevalueinquotes="false" fieldmodel="UI" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="siteInactive" value="true"/>
+											</renderConditions>
+											<styleVariantConditions/>
+										</skuid__wrapper>
+									</components>
+									<styles>
+										<spacing bottom="6"/>
+									</styles>
+									<background/>
+								</skuid__wrapper>
+							</components>
+						</division>
+					</divisions>
+				</skuid__grid>
+			</components>
+		</pageregioncontent>
+	</pageregioncontents>
+	<components/>
+	<resources>
+		<labels/>
+		<javascript>
+			<jsitem location="inline" name="LoginRedirectSetting" cachelocation="false">
+        (function(skuid){
+          var $ = skuid.$;
+          $(document.body).one('pageload',function(){
+            var params = skuid.utils.deparam(window.location.search);
+            if ((params &amp;&amp; params.noredirect) || skuid.utils.inPlatform(skuid.constants.CORDOVA)){
+              var uiModel = skuid.$M("UI");
+              if (!uiModel) {
+                // Login window has not fully loaded yet. Punt.
+                return false;
+              }
+
+              if (skuid.utils.inPlatform(skuid.constants.CORDOVA)) {
+                var loginUiModel = skuid.$M("Login_UI"),
+                    loginUiRow = loginUiModel.getFirstRow(),
+                    loginUiVal = loginUiModel.getFieldValue(loginUiRow, "redirect");
+
+                loginUiModel.updateRow(loginUiRow, "redirect", skuid.native.defaultPage + ".html");
+              } else {
+                // Check to see if we're already logged in. If, just close the window.
+                // this is useful if SAML has already logged us in and just redirected us here.
+
+            		var currentTime = new Date();
+								var jsFutureTime = new Date(skuid.utils.userInfo.sessionAbsoluteExpireTime);
+								var sFromNow = (jsFutureTime - currentTime) / 1000;
+                var minutesRemaining = sFromNow / 60;
+
+                if (skuid.utils.userInfo.isAuthenticated &amp;&amp; minutesRemaining &gt; 3) {
+                  // Run the login snippet.
+                  skuid.snippet.getSnippet("LoginClose")();
+                }
+                
+                var uiRow = uiModel.getFirstRow();
+                var uiVal = uiModel.getFieldValue(uiRow, "noredirect");
+                if (!uiVal || uiVal === "false") {
+                  uiModel.updateRow(uiRow, "noredirect", true);
+                }
+              }
+            }
+          });
+        })(skuid);
+      </jsitem>
+			<jsitem location="inlinesnippet" name="LoginClose" cachelocation="false">
+        if (window.opener &amp;&amp; window.opener.postMessage) {
+          window.opener.postMessage("login_success", window.location.origin);
+        }
+        window.close()
+      </jsitem>
+			<jsitem location="inlinesnippet" name="showSSO" cachelocation="false" url="" namespace="">const showUserPass = skuid.settings.login("ssoDefaultPage") == "ID/PW";
+const showSSO = skuid.settings.login("ssoDefaultPage") == "SSO";
+const uiRow = skuid.$M('UI').getFirstRow();
+const loginProviders = skuid.$M('SAMLLoginProviders').data;
+skuid.$M('UI').updateRow(uiRow, {
+    showuserpass: showUserPass || (showSSO &amp;&amp; loginProviders.length === 0)
+});
+</jsitem>
+			<jsitem location="inlinesnippet" name="showSSOLoginLink" cachelocation="false">
+const uiRow = skuid.$M('UI').getFirstRow();
+return !skuid.settings.login("ssoOnly") || uiRow.showuserpass || skuid.page.getParameter("method") === "any";
+</jsitem>
+			<jsitem location="inlinesnippet" name="showhidePassword" cachelocation="false">//Using this method because it's the standard method on other sites and it
+//works a bit better with autofill tools like LastPass and Chrome Passwords
+
+const input = arguments[0].$Input;
+
+var password = skuid.$(input.id).find('input');
+
+if (password.attr('type') == 'password') {
+    password.attr('type','text');
+} else {
+    password.attr('type','password');
+}</jsitem>
+			<jsitem location="inlinesnippet" name="autoFocus" cachelocation="false">setTimeout( function() {skuid.$('#username-input-field').find('input').focus()}, 1)</jsitem>
+			<jsitem location="inlinesnippet" name="addNamesToInputs" cachelocation="false">//This snippet adds a name attribute to the username and password inputs
+//so that they will work better with plugins like LastPass
+
+const input = arguments[0].$Input;
+
+setTimeout( function() {
+
+var password = skuid.$(input.passwordId).find('input'),
+    username = skuid.$(input.usernameId).find('input');
+
+    password.attr('name','password');
+    username.attr('name','username');
+
+}, 1)</jsitem>
+		</javascript>
+		<css>
+			<cssitem location="inline" name="login-css" cachelocation="false">.nx-editor.small-note.saml-login &gt; div &gt; div.nx-template &gt; a {
+    font-size: 1.2em;
+}
+
+.display-none {
+    display: none;
+}
+
+.center-buttons .nx-header-right {
+    text-align: center;
+    float: none;
+}</cssitem>
+		</css>
+		<actionsequences>
+			<actionsequence id="21ba44f8-ee44-46a6-bfe9-3db894bc7af6" label="Page Load" type="event-triggered" event-scope="component" event-name="page.rendered">
+				<description/>
+				<actions>
+					<action type="action-sequence" action-sequence-id="bbe82f15-d033-436e-b17b-a7a6cff3fcc2">
+						<inputs>
+							<input name="passwordId" value="#password-input-field"/>
+							<input name="usernameId" value="#username-input-field"/>
+						</inputs>
+					</action>
+					<action type="custom" snippet="autoFocus"/>
+				</actions>
+			</actionsequence>
+			<actionsequence id="1bc75584-74bf-44d2-ad08-8b5880137db1" label="Show / Hide Password" type="reusable">
+				<description/>
+				<actions>
+					<action type="custom" snippet="showhidePassword"/>
+				</actions>
+				<inputs>
+					<input type="value" name="id"/>
+				</inputs>
+			</actionsequence>
+			<actionsequence id="1eafc582-c4cc-4658-aa7f-32eb132a94f6" label="Log in with SSO" type="reusable">
+				<actions>
+					<action type="branch" whenfinished="stop" model="UI">
+						<iftrueactions>
+							<action type="redirect" window="self" url="/auth/saml/sp/{{{id}}}/login{{#$Param.next}}?next={{#encodeUrl}}{{$Param.next}}{{/encodeUrl}}{{/$Param.next}}"/>
+						</iftrueactions>
+						<formula>{{noredirect}}!=true</formula>
+					</action>
+					<action type="branch" whenfinished="stop" model="UI">
+						<formula>{{noredirect}}==true</formula>
+						<iftrueactions>
+							<action type="custom" snippet="LoginClose"/>
+						</iftrueactions>
+					</action>
+				</actions>
+				<description/>
+			</actionsequence>
+			<actionsequence id="bbe82f15-d033-436e-b17b-a7a6cff3fcc2" label="Add Name Attributes" type="reusable">
+				<description/>
+				<actions>
+					<action type="custom" snippet="addNamesToInputs"/>
+				</actions>
+				<inputs>
+					<input type="value" name="passwordId"/>
+					<input type="value" name="usernameId"/>
+				</inputs>
+			</actionsequence>
+		</actionsequences>
+	</resources>
+</skuid__page>

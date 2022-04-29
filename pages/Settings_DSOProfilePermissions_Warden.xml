@@ -1,0 +1,419 @@
+<skuidpage unsavedchangeswarning="yes" personalizationmode="client" title="{{^$Model.Profile.data}}Data Source Object Permissions{{/$Model.Profile.data}}{{#$Model.Profile.data}}{{name}}: {{/$Model.Profile.data}}{{#$Model.stng__DataSourceObjects.data}}{{name}}{{/$Model.stng__DataSourceObjects.data}}">
+	<models>
+		<model id="stng__SiteEnv" label="SiteEnvironment" labelplural="SiteEnvironment" limit="20" query="false" createrowifnonefound="false" datasource="Ui-Only" processonclient="true">
+			<fields>
+				<field id="PLINY_WARDEN_HOST" displaytype="TEXT" label="PLINYWARDENHOST"/>
+				<field id="PLINY_WARDEN_PORT" displaytype="TEXT" label="PLINYWARDENPORT"/>
+				<field id="PLINY_WARDEN_VERSION" displaytype="TEXT" label="PLINYWARDENVERSION"/>
+			</fields>
+			<conditions/>
+			<actions/>
+		</model>
+		<model id="stng__DataSources" query="false" createrowifnonefound="false" datasource="SkuidLocal" label="Data Source" labelplural="Data Sources" type="readwrite" namefield="name" unloadwarningifunsavedchanges="true">
+			<methods>
+				<method type="query" verb="GET" endpoint="/objects/datasource/{{dataSourceName}}?fields=id,name,external_id,data_service_id,data_service.host,data_service.port,data_service.version"/>
+			</methods>
+			<conditions>
+				<condition type="param" value="dataSourceId" enclosevalueinquotes="true" field="dataSourceId" sourcetype="param" sourceparam="dataSourceName" novaluebehavior="noquery"/>
+			</conditions>
+			<fields>
+				<field id="id" displaytype="TEXT" readonly="true" label="Id"/>
+				<field id="name" displaytype="TEXT" label="Name" length="255" required="true"/>
+				<field id="data_service_id" displaytype="TEXT" label="Data Service Id"/>
+				<field id="data_service.host" displaytype="TEXT" label="Data Service Host"/>
+				<field id="data_service.port" displaytype="TEXT" label="Data Service Port"/>
+				<field id="data_service.version" displaytype="TEXT" label="Version"/>
+				<field id="external_id" displaytype="TEXT" label="External Id"/>
+				<field id="data_service_host" uionly="true" displaytype="FORMULA" readonly="true" returntype="TEXT" defaultvaluetype="fieldvalue">
+					<formula>IF(ISBLANK({{data_service_id}}),{{$Model.stng__SiteEnv.data.0.PLINY_WARDEN_HOST}},{{data_service.host}})</formula>
+				</field>
+				<field id="data_service_port" uionly="true" displaytype="FORMULA" readonly="true" returntype="TEXT" defaultvaluetype="fieldvalue">
+					<formula>IF(ISBLANK({{data_service_id}}),{{$Model.stng__SiteEnv.data.0.PLINY_WARDEN_PORT}},{{data_service.port}})</formula>
+				</field>
+				<field id="data_service_version" uionly="true" displaytype="FORMULA" readonly="true" returntype="TEXT" defaultvaluetype="fieldvalue">
+					<formula>IF(ISBLANK({{data_service_id}}),{{$Model.stng__SiteEnv.data.0.PLINY_WARDEN_VERSION}},{{data_service.version}})</formula>
+				</field>
+				<field id="external_key" uionly="true" displaytype="FORMULA" readonly="true" returntype="TEXT" defaultvaluetype="fieldvalue">
+					<formula>IF((ISBLANK({{data_service_version}})||{{data_service_version}}="0.2.0"||{{data_service_version}}="0.2.1"),{{external_id}},{{name}})</formula>
+				</field>
+			</fields>
+			<idfields>
+				<field>id</field>
+			</idfields>
+			<actions/>
+		</model>
+		<model id="stng__DataSource_Warden" query="false" createrowifnonefound="false" datasource="SkuidDataService" label="Data Source" labelplural="Data Sources" type="readwrite" namefield="name" unloadwarningifunsavedchanges="true">
+			<methods>
+				<method type="query" verb="GET" endpoint="/api/v2/datasources/{{dataSourceName}}"/>
+			</methods>
+			<conditions>
+				<condition type="modelmerge" value="external_key" enclosevalueinquotes="true" field="external_key" sourcetype="modelmerge" model="stng__DataSources" sourceparam="dataSourceName" novaluebehavior="noquery"/>
+				<condition type="modelmerge" value="data_service_host" enclosevalueinquotes="true" field="data_service_host" sourcetype="modelmerge" model="stng__DataSources" sourceparam="host" novaluebehavior="noquery"/>
+				<condition type="modelmerge" value="data_service_port" enclosevalueinquotes="true" field="data_service_port" sourcetype="modelmerge" model="stng__DataSources" sourceparam="port" novaluebehavior="noquery"/>
+			</conditions>
+			<fields>
+				<field id="id" displaytype="TEXT" readonly="true" label="Id"/>
+				<field id="name" displaytype="TEXT" label="Name" length="255" required="true"/>
+			</fields>
+			<idfields>
+				<field>id</field>
+			</idfields>
+			<actions/>
+		</model>
+		<model id="stng__DataSourceObjects" query="false" createrowifnonefound="false" datasource="SkuidDataService" label="Data Source Object" labelplural="Data Source Objects" type="readwrite" namefield="name">
+			<methods>
+				<method type="query" verb="GET" endpoint="/api/v2/datasources/{{dataSourceId}}/entities/{{entityId}}"/>
+				<method type="update" verb="PUT" successif="requestsucceeds" sendchanges="asjsoninbody" endpoint="/api/v2/datasources/{{dataSourceId}}/entities/{{entityId}}"/>
+				<method type="delete" verb="DELETE" endpoint="/api/v2/datasources/{{dataSourceId}}/entities/{{entityId}}" successif="requestsucceeds"/>
+			</methods>
+			<conditions>
+				<condition value="entityId" field="entityId" sourcetype="param" sourceparam="entityId" novaluebehavior="noquery" type="param" operator="=" enclosevalueinquotes="true"/>
+				<condition type="modelmerge" value="id" enclosevalueinquotes="true" field="id" sourcetype="modelmerge" model="stng__DataSource_Warden" sourceparam="dataSourceId" novaluebehavior="noquery"/>
+				<condition type="modelmerge" value="data_service_host" enclosevalueinquotes="true" field="data_service_host" sourcetype="modelmerge" model="stng__DataSources" sourceparam="host" novaluebehavior="noquery"/>
+				<condition type="modelmerge" value="data_service_port" enclosevalueinquotes="true" field="data_service_port" sourcetype="modelmerge" model="stng__DataSources" sourceparam="port" novaluebehavior="noquery"/>
+			</conditions>
+			<fields>
+				<field id="id" displaytype="TEXT" readonly="true" label="Id"/>
+				<field id="name" displaytype="TEXT" label="Name" length="255" required="true"/>
+				<field id="custom_config" displaytype="TEXT" label="Custom Config"/>
+				<field id="data_source_id" displaytype="TEXT" label="Name" length="255" required="true"/>
+				<field id="schema" label="Schema" ispolymorphic="false" isnamepointing="false" displaytype="STRING" accessible="true" filterable="true" defaultvaluetype="fieldvalue"/>
+				<field id="queryable" displaytype="BOOLEAN" label="Read" ogdisplaytype="TEXT"/>
+				<field id="createable" displaytype="BOOLEAN" label="Create" ogdisplaytype="TEXT"/>
+				<field id="updateable" displaytype="BOOLEAN" label="Update" ogdisplaytype="TEXT"/>
+				<field id="deleteable" displaytype="BOOLEAN" label="Delete" ogdisplaytype="TEXT"/>
+			</fields>
+			<idfields>
+				<field>id</field>
+			</idfields>
+			<actions/>
+		</model>
+		<model id="stng__DataSourceFields" query="false" createrowifnonefound="false" datasource="SkuidDataService" label="Data Source Field" labelplural="Data Source Fields" type="readwrite" namefield="name">
+			<methods>
+				<method type="query" verb="GET" endpoint="/api/v2/datasources/{{dataSourceId}}/entities/{{entityId}}/fields"/>
+				<method type="insert" verb="POST" successif="requestsucceeds" sendchanges="asjsoninbody" insertresponse="recordinbody" endpoint="/api/v2/datasources/{{dataSourceId}}/entities/{{entityId}}/fields"/>
+				<method type="update" verb="PUT" successif="requestsucceeds" sendchanges="asjsoninbody" endpoint="/api/v2/datasources/{{dataSourceId}}/entities/{{entityId}}/fields/{{id}}"/>
+				<method type="delete" verb="DELETE" endpoint="/api/v2/datasources/{{dataSourceId}}/entities/{{entityId}}/fields/{{id}}" successif="requestsucceeds"/>
+			</methods>
+			<conditions>
+				<condition value="entityId" field="entityId" sourcetype="param" sourceparam="entityId" novaluebehavior="noquery" type="param" operator="=" enclosevalueinquotes="true"/>
+				<condition type="modelmerge" value="id" enclosevalueinquotes="true" field="id" sourcetype="modelmerge" model="stng__DataSource_Warden" sourceparam="dataSourceId" novaluebehavior="noquery"/>
+				<condition type="modelmerge" value="data_service_host" enclosevalueinquotes="true" field="data_service_host" sourcetype="modelmerge" model="stng__DataSources" sourceparam="host" novaluebehavior="noquery"/>
+				<condition type="modelmerge" value="data_service_port" enclosevalueinquotes="true" field="data_service_port" sourcetype="modelmerge" model="stng__DataSources" sourceparam="port" novaluebehavior="noquery"/>
+				<condition type="fieldvalue" value="{{id}}" enclosevalueinquotes="true" sourcetype="param" sourceparam="id"/>
+			</conditions>
+			<fields>
+				<field id="id" displaytype="TEXT" readonly="true" label="Id"/>
+				<field id="name" displaytype="TEXT" label="Name" length="255" required="true"/>
+				<field id="data_source_object_id" label="Data Source Object Id" ispolymorphic="false" isnamepointing="false" displaytype="STRING" accessible="true" filterable="true"/>
+				<field id="queryable" displaytype="BOOLEAN" label="Read" ogdisplaytype="TEXT"/>
+				<field id="createable" displaytype="BOOLEAN" label="Create" ogdisplaytype="TEXT"/>
+				<field id="updateable" displaytype="BOOLEAN" label="Update" ogdisplaytype="TEXT"/>
+			</fields>
+			<idfields>
+				<field>id</field>
+			</idfields>
+			<actions/>
+		</model>
+		<model id="stng__DataSourceConditions" query="false" createrowifnonefound="false" datasource="SkuidDataService" label="Data Source Condition" labelplural="Data Source Conditions" type="readwrite" namefield="name">
+			<methods>
+				<method type="query" verb="GET" endpoint="/api/v2/datasources/{{dataSourceId}}/entities/{{entityId}}/conditions"/>
+				<method type="insert" verb="POST" successif="requestsucceeds" sendchanges="asjsoninbody" insertresponse="recordinbody" endpoint="/api/v2/datasources/{{dataSourceId}}/entities/{{entityId}}/conditions"/>
+				<method type="update" verb="PUT" successif="requestsucceeds" sendchanges="asjsoninbody" endpoint="/api/v2/datasources/{{dataSourceId}}/entities/{{entityId}}/conditions/{{id}}"/>
+				<method type="delete" verb="DELETE" endpoint="/api/v2/datasources/{{dataSourceId}}/entities/{{entityId}}/conditions/{{id}}" successif="requestsucceeds"/>
+			</methods>
+			<conditions>
+				<condition value="entityId" field="entityId" sourcetype="param" sourceparam="entityId" novaluebehavior="noquery" type="param" operator="=" enclosevalueinquotes="true"/>
+				<condition type="modelmerge" value="id" enclosevalueinquotes="true" field="id" sourcetype="modelmerge" model="stng__DataSource_Warden" sourceparam="dataSourceId" novaluebehavior="noquery"/>
+				<condition type="modelmerge" value="data_service_host" enclosevalueinquotes="true" field="data_service_host" sourcetype="modelmerge" model="stng__DataSources" sourceparam="host" novaluebehavior="noquery"/>
+				<condition type="modelmerge" value="data_service_port" enclosevalueinquotes="true" field="data_service_port" sourcetype="modelmerge" model="stng__DataSources" sourceparam="port" novaluebehavior="noquery"/>
+				<condition type="fieldvalue" value="{{id}}" enclosevalueinquotes="true" sourcetype="param" sourceparam="id"/>
+			</conditions>
+			<fields>
+				<field id="id" displaytype="TEXT" readonly="true" label="Id"/>
+				<field id="name" displaytype="TEXT" label="Name" length="255" required="true"/>
+				<field id="data_source_object_id" label="Data Source Object Id" ispolymorphic="false" isnamepointing="false" displaytype="STRING" accessible="true" filterable="true"/>
+				<field id="type" displaytype="PICKLIST" ogdisplaytype="TEXT" label="Type" required="true" picklistsource="manual">
+					<picklistentries>
+						<entry value="fieldvalue" label="Single specified value"/>
+						<entry value="userinfo" label="Skuid user attribute"/>
+						<entry value="blank" label="None - blank value"/>
+					</picklistentries>
+				</field>
+				<field id="field" displaytype="COMBOBOX" label="Field" ogdisplaytype="TEXT" picklistsource="rowsinmodel" required="true" limitentries="true" picklistmodel="stng__DataSourceFields" entryvalue="{{name}}" entrylabel="{{name}}"/>
+				<field id="value" displaytype="TEXT" label="Value"/>
+				<field id="execute_on_query" displaytype="BOOLEAN" label="Enforce on Query"/>
+				<field id="execute_on_insert" displaytype="BOOLEAN" label="Enforce on Insert"/>
+				<field id="execute_on_update" displaytype="BOOLEAN" label="Enforce on Update"/>
+				<field id="always_on" displaytype="BOOLEAN" label="Always On" ogdisplaytype="TEXT"/>
+			</fields>
+			<idfields>
+				<field>id</field>
+			</idfields>
+			<actions/>
+		</model>
+		<model id="Profile" limit="1" query="false" createrowifnonefound="false" datasource="SkuidLocal" type="readwrite" namefield="name">
+			<fields>
+				<field id="name" label="Name" displaytype="STRING" accessible="true" filterable="true"/>
+				<field id="permission_set_id" label="Permission Set" displaytype="TEXT" accessible="true" filterable="true"/>
+				<field id="is_system" label="Is_system" displaytype="BOOLEAN" accessible="true" filterable="true"/>
+			</fields>
+			<idfields>
+				<field>id</field>
+			</idfields>
+			<conditions>
+				<condition type="param" value="profileId" sourcetype="param" sourceparam="id" operator="=" enclosevalueinquotes="true" novaluebehavior=""/>
+			</conditions>
+			<actions>
+				<action>
+					<actions>
+						<action type="setCondition" model="DataSourceObjectPermissions" condition="perm_set_id" value="{{{name}}}"/>
+						<action type="setCondition" model="DataSourceFieldPermissions" condition="perm_set_id" value="{{{name}}}"/>
+						<action type="setCondition" model="DataSourceConditionPermissions" condition="perm_set_id" value="{{{name}}}"/>
+						<action type="requeryModels" behavior="standard">
+							<models>
+								<model>DataSourceObjectPermissions</model>
+								<model>DataSourceFieldPermissions</model>
+								<model>DataSourceConditionPermissions</model>
+							</models>
+						</action>
+					</actions>
+					<events>
+						<event>models.loaded</event>
+					</events>
+				</action>
+			</actions>
+			<methods>
+				<method type="query" verb="GET" endpoint="/objects/profile/{{id}}?fields=id,name,is_system,permission_set_id"/>
+			</methods>
+		</model>
+		<model id="DataSourceObjectPermissions" limit="20" query="false" createrowifnonefound="false" datasource="SkuidDataService" type="" verb="GET" endpoint="/api/v2/datasources/{{dataSourceId}}/entities/{{entityId}}/permissions/{{perm_set_id}}" label="Data Source Object Access" labelplural="Data Source Object Access">
+			<fields>
+				<field id="id" label="Id" displaytype="TEXT" accessible="true" filterable="true"/>
+				<field id="data_source_object_id" label="Data_source_object_id" displaytype="TEXT" accessible="true" filterable="true"/>
+				<field id="permission_set_id" label="Permission_set_id" displaytype="TEXT" accessible="true" filterable="true"/>
+				<field id="createable" label="Create" displaytype="BOOLEAN" accessible="true" filterable="true"/>
+				<field id="deleteable" label="Delete" displaytype="BOOLEAN" accessible="true" filterable="true"/>
+				<field id="queryable" label="Read" displaytype="BOOLEAN" accessible="true" filterable="true"/>
+				<field id="updateable" label="Update" displaytype="BOOLEAN" accessible="true" filterable="true"/>
+			</fields>
+			<idfields>
+				<field>id</field>
+			</idfields>
+			<conditions>
+				<condition value="entityId" field="entityId" sourcetype="param" sourceparam="entityId" novaluebehavior="noquery" type="param" operator="=" enclosevalueinquotes="true"/>
+				<condition type="modelmerge" value="id" enclosevalueinquotes="true" field="id" sourcetype="modelmerge" model="stng__DataSource_Warden" sourceparam="dataSourceId" novaluebehavior="noquery"/>
+				<condition type="modelmerge" value="data_service_host" enclosevalueinquotes="true" field="data_service_host" sourcetype="modelmerge" model="stng__DataSources" sourceparam="host" novaluebehavior="noquery"/>
+				<condition type="modelmerge" value="data_service_port" enclosevalueinquotes="true" field="data_service_port" sourcetype="modelmerge" model="stng__DataSources" sourceparam="port" novaluebehavior="noquery"/>
+				<condition type="fieldvalue" value="" enclosevalueinquotes="true" sourcetype="param" sourceparam="perm_set_id" state="filterableoff" inactive="true" name="perm_set_id"/>
+			</conditions>
+			<actions>
+				<action>
+					<actions>
+						<action type="custom" snippet="buildPermissionCache"/>
+					</actions>
+					<events>
+						<event>models.loaded</event>
+						<event>models.cancelled</event>
+					</events>
+				</action>
+			</actions>
+		</model>
+		<model id="DataSourceFieldPermissions" limit="20" query="false" createrowifnonefound="false" datasource="SkuidDataService" type="" verb="GET" endpoint="/api/v2/datasources/{{dataSourceId}}/entities/{{entityId}}/permissions/{{perm_set_id}}/fields" label="Data Source Field Access" labelplural="Data Source Field Access">
+			<fields>
+				<field id="id" label="Id" displaytype="TEXT" accessible="true" filterable="true"/>
+				<field id="data_source_field_id" label="Data_source_field_id" displaytype="TEXT" accessible="true" filterable="true"/>
+				<field id="permission_set_id" label="Permission_set_id" displaytype="TEXT" accessible="true" filterable="true"/>
+				<field id="createable" label="Create" displaytype="BOOLEAN" accessible="true" filterable="true"/>
+				<field id="queryable" label="Read" displaytype="BOOLEAN" accessible="true" filterable="true"/>
+				<field id="updateable" label="Update" displaytype="BOOLEAN" accessible="true" filterable="true"/>
+			</fields>
+			<idfields>
+				<field>id</field>
+			</idfields>
+			<conditions>
+				<condition value="entityId" field="entityId" sourcetype="param" sourceparam="entityId" novaluebehavior="noquery" type="param" operator="=" enclosevalueinquotes="true"/>
+				<condition type="modelmerge" value="id" enclosevalueinquotes="true" field="id" sourcetype="modelmerge" model="stng__DataSource_Warden" sourceparam="dataSourceId" novaluebehavior="noquery"/>
+				<condition type="modelmerge" value="data_service_host" enclosevalueinquotes="true" field="data_service_host" sourcetype="modelmerge" model="stng__DataSources" sourceparam="host" novaluebehavior="noquery"/>
+				<condition type="modelmerge" value="data_service_port" enclosevalueinquotes="true" field="data_service_port" sourcetype="modelmerge" model="stng__DataSources" sourceparam="port" novaluebehavior="noquery"/>
+				<condition type="fieldvalue" value="" enclosevalueinquotes="true" sourcetype="param" sourceparam="perm_set_id" state="filterableoff" inactive="true" name="perm_set_id"/>
+			</conditions>
+			<actions>
+				<action>
+					<actions>
+						<action type="custom" snippet="buildPermissionCache"/>
+					</actions>
+					<events>
+						<event>models.loaded</event>
+						<event>models.cancelled</event>
+					</events>
+				</action>
+			</actions>
+		</model>
+		<model id="DataSourceConditionPermissions" limit="20" query="false" createrowifnonefound="false" datasource="SkuidDataService" type="" verb="GET" endpoint="/api/v2/datasources/{{dataSourceId}}/entities/{{entityId}}/permissions/{{perm_set_id}}/conditions" label="Data Source Condition Access" labelplural="Data Source Condition Access">
+			<fields>
+				<field id="id" label="Id" displaytype="TEXT" accessible="true" filterable="true"/>
+				<field id="data_source_condition_id" label="Data_source_condition_id" displaytype="TEXT" accessible="true" filterable="true"/>
+				<field id="permission_set_id" label="Permission_set_id" displaytype="TEXT" accessible="true" filterable="true"/>
+				<field id="always_on" label="Always On" displaytype="BOOLEAN" accessible="true" filterable="true"/>
+			</fields>
+			<idfields>
+				<field>id</field>
+			</idfields>
+			<conditions>
+				<condition value="entityId" field="entityId" sourcetype="param" sourceparam="entityId" novaluebehavior="noquery" type="param" operator="=" enclosevalueinquotes="true"/>
+				<condition type="modelmerge" value="id" enclosevalueinquotes="true" field="id" sourcetype="modelmerge" model="stng__DataSource_Warden" sourceparam="dataSourceId" novaluebehavior="noquery"/>
+				<condition type="modelmerge" value="data_service_host" enclosevalueinquotes="true" field="data_service_host" sourcetype="modelmerge" model="stng__DataSources" sourceparam="host" novaluebehavior="noquery"/>
+				<condition type="modelmerge" value="data_service_port" enclosevalueinquotes="true" field="data_service_port" sourcetype="modelmerge" model="stng__DataSources" sourceparam="port" novaluebehavior="noquery"/>
+				<condition type="fieldvalue" value="" enclosevalueinquotes="true" sourcetype="param" sourceparam="perm_set_id" state="filterableoff" inactive="true" name="perm_set_id"/>
+			</conditions>
+			<actions>
+				<action>
+					<actions>
+						<action type="custom" snippet="buildPermissionCache"/>
+					</actions>
+					<events>
+						<event>models.loaded</event>
+						<event>models.cancelled</event>
+					</events>
+				</action>
+			</actions>
+		</model>
+	</models>
+	<pageregioncontents>
+		<pageregioncontent regionid="sk-1uFo3V-67" uniqueid="sk-1uLp4g-23" defaultcontent="true">
+			<components>
+				<wrapper uniqueid="sk-2nCEhk-379">
+					<components>
+						<template multiple="false" uniqueid="sk-xxOCz-217" allowhtml="true" model="stng__DataSourceObjects">
+							<contents>&lt;a href="/ui/configure"&gt;Profiles&lt;/a&gt; &gt; &lt;a href="/ui/configure/profile/{{{$Model.Profile.data.0.id}}}"&gt;{{{$Model.Profile.data.0.name}}}&lt;/a&gt; &gt; &lt;a href="/ui/datasource_warden/{{{$Model.stng__DataSources.data.0.id}}}"&gt;{{{$Model.stng__DataSource_Warden.data.0.name}}}&lt;/a&gt; &gt; &lt;a href="/ui/datasource_warden/{{{$Model.stng__DataSources.data.0.id}}}/object/{{{$Model.stng__DataSourceObjects.data.0.id}}}"&gt;{{{name}}}&lt;/a&gt;</contents>
+						</template>
+						<pagetitle uniqueid="sk-nJ0I2-509" model="stng__DataSourceObjects">
+							<subtitle/>
+							<actions>
+								<action type="multi" label="Save" icon="sk-icon-save" uniqueid="sk-niaA7-115">
+									<actions>
+										<action type="blockUI" message="Saving Configuration..." timeout="3000"/>
+										<action type="custom" snippet="saveScheme"/>
+										<action type="unblockUI"/>
+										<action type="requeryModels" behavior="standard">
+											<models>
+												<model>DataSourceObjectPermissions</model>
+												<model>DataSourceFieldPermissions</model>
+												<model>DataSourceConditionPermissions</model>
+											</models>
+										</action>
+									</actions>
+									<hotkeys>
+										<hotkey modifiers="ctrl" key="s"/>
+										<hotkey modifiers="meta" key="s"/>
+									</hotkeys>
+									<renderconditions logictype="and"/>
+									<enableconditions logictype="or">
+										<condition type="fieldvalue" enclosevalueinquotes="false" fieldmodel="stng__DataSourceObjects" sourcetype="modelproperty" sourceproperty="hasChanged" value="true" operator="="/>
+										<condition type="fieldvalue" enclosevalueinquotes="false" fieldmodel="stng__DataSourceFields" sourcetype="modelproperty" sourceproperty="hasChanged" value="true" operator="="/>
+										<condition type="fieldvalue" enclosevalueinquotes="false" fieldmodel="stng__DataSourceConditions" sourcetype="modelproperty" sourceproperty="hasChanged" value="true" operator="="/>
+									</enableconditions>
+								</action>
+								<action type="cancel" label="Cancel" window="self" uniqueid="sk-niaAB-117">
+									<models>
+										<model>DataSourceObjectPermissions</model>
+										<model>DataSourceFieldPermissions</model>
+										<model>DataSourceConditionPermissions</model>
+									</models>
+									<renderconditions logictype="and"/>
+									<enableconditions logictype="or">
+										<condition type="fieldvalue" enclosevalueinquotes="false" fieldmodel="stng__DataSourceObjects" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasChanged" value="true" operator="="/>
+										<condition type="fieldvalue" enclosevalueinquotes="false" fieldmodel="stng__DataSourceFields" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasChanged" value="true" operator="="/>
+										<condition type="fieldvalue" enclosevalueinquotes="false" fieldmodel="stng__DataSourceConditions" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasChanged" value="true" operator="="/>
+									</enableconditions>
+								</action>
+							</actions>
+							<renderconditions logictype="and"/>
+							<maintitle>Object Permissions: {{name}}</maintitle>
+						</pagetitle>
+						<skootable showconditions="true" showsavecancel="false" showerrorsinline="true" searchmethod="server" searchbox="false" showexportbuttons="false" pagesize="10" alwaysresetpagination="false" createrecords="false" model="stng__DataSourceObjects" buttonposition="" mode="edit" allowcolumnreordering="false" responsive="false" uniqueid="sk--u95Y-231" emptysearchbehavior="query" hidefooter="true">
+							<fields>
+								<field id="name" hideable="false" uniqueid="fi-103VH7-239" valuehalign="" type="" showbydefault="true" readonly="true" columnwidth="20%"/>
+								<field id="createable" hideable="false" uniqueid="fi--uV-X-353" type="" valuehalign="" showbydefault="false" columnwidth="20%"/>
+								<field id="queryable" hideable="false" uniqueid="fi--uCmM-250" valuehalign="" type="" showbydefault="true" columnwidth="20%"/>
+								<field id="updateable" hideable="false" uniqueid="fi--uWUI-361" type="" valuehalign="" showbydefault="true" columnwidth="20%"/>
+								<field id="deleteable" hideable="false" uniqueid="fi--uWv0-369" type="" valuehalign="" showbydefault="true" columnwidth="20%"/>
+							</fields>
+							<rowactions/>
+							<massactions usefirstitemasdefault="true"/>
+							<views>
+								<view type="standard"/>
+							</views>
+						</skootable>
+						<pagetitle model="stng__DataSourceObjects" uniqueid="sk--_sqx-432">
+							<maintitle>{{name}} Field Permissions</maintitle>
+							<actions/>
+						</pagetitle>
+						<skootable showconditions="true" showsavecancel="false" showerrorsinline="true" searchmethod="server" searchbox="false" showexportbuttons="false" pagesize="10" alwaysresetpagination="false" createrecords="false" model="stng__DataSourceFields" buttonposition="" mode="edit" allowcolumnreordering="false" responsive="false" uniqueid="sk--_x4u-438" emptysearchbehavior="query">
+							<fields>
+								<field id="name" hideable="false" uniqueid="fi--__sZ-460" valuehalign="" type="" showbydefault="true" columnwidth="20%" readonly="true"/>
+								<field id="createable" hideable="false" uniqueid="fi-100r3L-670" valuehalign="" type="" showbydefault="true" columnwidth="20%"/>
+								<field id="queryable" hideable="false" uniqueid="fi-100rYp-680" valuehalign="" type="" showbydefault="true" columnwidth="20$"/>
+								<field id="updateable" hideable="false" uniqueid="fi-100ruc-690" valuehalign="" type="" showbydefault="true" columnwidth="40%"/>
+							</fields>
+							<rowactions/>
+							<massactions usefirstitemasdefault="true">
+								<action type="massupdate"/>
+							</massactions>
+							<views>
+								<view type="standard"/>
+							</views>
+						</skootable>
+						<pagetitle model="stng__DataSourceObjects" uniqueid="sk---K7--520">
+							<maintitle>{{name}} Condition Permissions</maintitle>
+							<actions/>
+						</pagetitle>
+						<skootable showconditions="true" showsavecancel="false" showerrorsinline="true" searchmethod="server" searchbox="false" showexportbuttons="false" pagesize="10" alwaysresetpagination="false" createrecords="false" model="stng__DataSourceConditions" buttonposition="" mode="edit" allowcolumnreordering="false" responsive="false" uniqueid="sk---Pv9-530" emptysearchbehavior="query" hidefooter="true">
+							<fields>
+								<field id="name" hideable="false" uniqueid="fi---XvN-571" valuehalign="" type="" showbydefault="true" columnwidth="40%" readonly="true"/>
+								<field id="always_on" hideable="false" uniqueid="fi-100Zy3-614" valuehalign="" type="" showbydefault="true" columnwidth="60%"/>
+							</fields>
+							<rowactions/>
+							<massactions usefirstitemasdefault="true">
+								<action type="massupdate"/>
+							</massactions>
+							<views>
+								<view type="standard"/>
+							</views>
+						</skootable>
+					</components>
+					<renderconditions logictype="and">
+						<rendercondition type="fieldvalue" enclosevalueinquotes="true" fieldmodel="stng__DataSources" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasRows"/>
+					</renderconditions>
+				</wrapper>
+			</components>
+		</pageregioncontent>
+	</pageregioncontents>
+	<resources>
+		<labels/>
+		<javascript>
+			<jsitem location="staticresource" namespace="skuid" filepath="js/skuidPages/dataSourceConfig.js" scope="api"/>
+		</javascript>
+		<css></css>
+		<actionsequences uniqueid="sk-3eXJ-317">
+			<actionsequence id="0306b8c2-7cfe-415f-9205-ceaa6c5bbbbe" label="Get Data Service and Load Models" type="event-triggered" event-scope="component" event-name="page.rendered">
+				<description/>
+				<actions>
+					<action type="custom" snippet="skuid.settings.dataSources.populateDefaultDataService"/>
+					<action type="requeryModels" behavior="standard">
+						<models>
+							<model>stng__DataSources</model>
+							<model>stng__DataSource_Warden</model>
+							<model>stng__DataSourceObjects</model>
+							<model>stng__DataSourceFields</model>
+							<model>stng__DataSourceConditions</model>
+							<model>Profile</model>
+						</models>
+					</action>
+				</actions>
+			</actionsequence>
+		</actionsequences>
+	</resources>
+	<styles/>
+</skuidpage>

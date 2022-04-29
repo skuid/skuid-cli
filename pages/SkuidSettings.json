@@ -1,0 +1,23 @@
+{
+	"name": "SkuidSettings",
+	"apiVersion": "v2",
+	"composerSettings": {
+		"skuid.model(stng__LoginHistoryForUser)": {
+			"userid": "758e8545-828a-46b9-bc10-1aef5d361bfc"
+		},
+		"skuid.model(stng__Users)": {
+			"ActiveUser": null,
+			"CreationMethod": null,
+			"InactiveUser": null,
+			"UserProfile": null,
+			"UserType": null
+		}
+	},
+	"isMasterPage": false,
+	"isPublic": false,
+	"masterPageUniqueId": "SkuidCoreMasterV2",
+	"maxAutoSaves": 25,
+	"module": "",
+	"type": "Desktop",
+	"uniqueId": "SkuidSettings"
+}

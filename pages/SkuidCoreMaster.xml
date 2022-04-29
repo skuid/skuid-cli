@@ -1,0 +1,300 @@
+<skuidpage unsavedchangeswarning="yes" enablepersonalization="yes" personalizationmode="client" hideeditbutton="true" useviewportmeta="true" theme="SkuidAppV1">
+	<models/>
+	<components>
+		<pageregion uniqueid="sk-1uFo3V-67" label="region1" cssclass="">
+			<styles>
+				<styleitem type="background" bgtype="none"/>
+				<styleitem property="margin" value="17px"/>
+			</styles>
+		</pageregion>
+	</components>
+	<resources>
+		<labels/>
+		<javascript>
+			<jsitem location="staticresource" namespace="skuid" filepath="js/builderReqs.js"/>
+			<jsitem location="staticresource" namespace="skuid" filepath="js/skuidPages/skuidPageUtils.js"/>
+			<jsitem location="staticresource" namespace="skuid" filepath="js/skuidPages/skuidCoreMaster.js"/>
+		</javascript>
+		<css>
+			<cssitem location="inline" name="other" cachelocation="false">#sk-1uFo3V-67{
+                 -webkit-animation: fadein .5s; /* Safari, Chrome and Opera &gt; 12.1 */
+                 animation: fadein .5s;
+             }
+             
+             .nx-page{
+                 padding: 0 0 10px 0;
+             }
+             
+             @keyframes fadein {
+                 from { opacity: 0; }
+                 to   { opacity: 1; }
+             }
+             
+             /* Safari, Chrome and Opera &gt; 12.1 */
+             @-webkit-keyframes fadein {
+                 from { opacity: 0; }
+                 to   { opacity: 1; }
+             }
+             
+             /* If header is present */
+             .bodyDiv .sk-headerwrapper {
+                 display: none;
+             }
+             
+             .bodyDiv .nx-pagebuilder-toolbar-wrapper-fixed {
+                 padding: 0 27px;
+             }
+.fieldeditor-new-page-right {
+    width: 50%;
+}
+
+.sk-navigation-item-label{
+    font-weight: 500;
+    letter-spacing: .8px;
+}
+
+.sk-navigation-item-iconlabel {
+     font-weight: 500;
+    letter-spacing: .8px;
+}
+
+</cssitem>
+		</css>
+		<actionsequences uniqueid="sk-18o-2-463"/>
+	</resources>
+	<styles>
+		<styleitem type="background" bgtype="none"/>
+	</styles>
+	<pageregioncontents>
+		<pageregioncontent uniqueid="__header">
+			<components>
+				<skuidheader>
+					<components>
+						<grid uniqueid="sk-343QOP-33" columngutter="0px" rowgutter="8px">
+							<divisions>
+								<division behavior="specified" verticalalign="center" width="80px">
+									<components>
+										<image source="url" url="/assets/images/SkuidLogo_mark.svg" uniqueid="sk-wJC-430">
+											<styles>
+												<styleitem type="itemsize" width="custom" height="custom">
+													<styles>
+														<styleitem property="height" value="32px"/>
+													</styles>
+												</styleitem>
+												<styleitem type="border"/>
+											</styles>
+										</image>
+									</components>
+								</division>
+								<division behavior="flex" verticalalign="center" minwidth="0px" ratio="1">
+									<components>
+										<navigation uniqueid="skuid-nav" responsivebreakpoint="small" alternateformat="collapse">
+											<navigationitems>
+												<navigationitem label="APPS">
+													<actions>
+														<action type="redirect" window="self" url="/ns/skuid/ui/apps"/>
+													</actions>
+													<renderconditions logictype="and">
+														<rendercondition sourcetype="userhaspermission" permissionnamespace="skuid" value="configure_site" type="fieldvalue" operator="="/>
+													</renderconditions>
+												</navigationitem>
+												<navigationitem label="PAGES">
+													<actions>
+														<action type="redirect" window="self" url="/ns/skuid/ui/pages"/>
+													</actions>
+													<navigationitems/>
+													<renderconditions logictype="and">
+														<rendercondition sourcetype="userhaspermission" permissionnamespace="skuid" value="configure_site" type="fieldvalue" operator="="/>
+													</renderconditions>
+												</navigationitem>
+												<navigationitem label="DESIGN SYSTEMS">
+													<actions>
+														<action type="redirect" window="self" url="/ns/skuid/ui/design"/>
+													</actions>
+													<navigationitems/>
+													<renderconditions logictype="and">
+														<rendercondition sourcetype="userhaspermission" permissionnamespace="skuid" value="configure_site" type="fieldvalue" operator="="/>
+													</renderconditions>
+												</navigationitem>
+												<navigationitem label="DATA SOURCES">
+													<actions>
+														<action type="redirect" window="self" url="/ns/skuid/ui/datasources"/>
+													</actions>
+													<renderconditions logictype="and">
+														<rendercondition sourcetype="userhaspermission" permissionnamespace="skuid" value="configure_site" type="fieldvalue" operator="="/>
+													</renderconditions>
+												</navigationitem>
+												<navigationitem label="SETTINGS">
+													<actions>
+														<action type="redirect" window="self" url="/ns/skuid/ui/settings#users"/>
+													</actions>
+													<renderconditions logictype="and">
+														<rendercondition sourcetype="userhaspermission" permissionnamespace="skuid" value="configure_site" type="fieldvalue" operator="="/>
+													</renderconditions>
+												</navigationitem>
+												<navigationitem label="HELP">
+													<actions>
+														<action type="pageredirect" redirectType="route" route="/ui/help" namespace="skuid"/>
+													</actions>
+													<navigationitems>
+														<navigationitem label="Basic Resources" uniqueid="sk-wJM-567">
+															<actions>
+																<action type="redirect" window="self" url="/ns/skuid/ui/help"/>
+															</actions>
+														</navigationitem>
+														<navigationitem label="Getting Started">
+															<actions>
+																<action type="redirect" window="self" url="/ns/skuid/ui/welcome"/>
+															</actions>
+														</navigationitem>
+														<navigationitem label="Documentation">
+															<actions>
+																<action type="redirect" window="blank" url="https://docs.skuid.com/platform/en/"/>
+															</actions>
+														</navigationitem>
+														<navigationitem label="Community">
+															<actions>
+																<action type="redirect" window="blank" url="https://community.skuid.com/skuid"/>
+															</actions>
+														</navigationitem>
+														<navigationitem label="Skuid Learn">
+															<actions>
+																<action type="redirect" window="blank" url="https://portal.skuidsite.com/learning"/>
+															</actions>
+														</navigationitem>
+														<navigationitem label="Templates">
+															<actions>
+																<action type="redirect" window="self" url="/ns/skuid/ui/app-templates"/>
+															</actions>
+														</navigationitem>
+													</navigationitems>
+													<renderconditions logictype="and">
+														<rendercondition sourcetype="userhaspermission" permissionnamespace="skuid" value="configure_site" type="fieldvalue" operator="="/>
+													</renderconditions>
+												</navigationitem>
+											</navigationitems>
+											<styles>
+												<styleitem property="padding" value="0"/>
+												<styleitem property="margin-left" value="16px"/>
+											</styles>
+										</navigation>
+									</components>
+								</division>
+								<division behavior="flex" verticalalign="center" minwidth="220px" ratio="0.001" cssclass="sk-master-grid-division-rightside  sk-master-grid-division-search">
+									<components>
+										<search uniqueid="sk-1qmLAj-65" soslfields="Name Fields" placeholdertext="Search Skuid" boxwidth="220px">
+											<renderconditions logictype="and">
+												<rendercondition type="fieldvalue" operator="=" enclosevalueinquotes="true" sourcetype="userhaspermission" permissionnamespace="skuid" value="configure_site"/>
+											</renderconditions>
+											<objects>
+												<object datasource="SkuidLocal" id="/objects/page" param="search" fieldsParam="fields" displaytemplate="{{name}}" headername="Pages">
+													<fields>
+														<field id="id"/>
+														<field id="name"/>
+														<field id="updated_at"/>
+													</fields>
+													<resultactions>
+														<action label="Edit Page" icon="sk-icon-page-edit">
+															<actions>
+																<action type="redirect" window="self" url="/ui/page/compose/{{id}}"/>
+															</actions>
+														</action>
+														<action label="Preview" icon="sk-icon-preview">
+															<actions>
+																<action type="custom" snippet="skuid.core.actions.previewPage"/>
+															</actions>
+														</action>
+													</resultactions>
+												</object>
+												<object datasource="SkuidLocal" id="/objects/app" param="search" fieldsParam="fields" displaytemplate="{{name}}" headername="Apps">
+													<fields>
+														<field id="id"/>
+														<field id="name"/>
+														<field id="default_route_id"/>
+														<field id="defaultRoute.fq_route"/>
+													</fields>
+													<resultactions>
+														<action label="Edit App" icon="sk-icon-edit">
+															<actions>
+																<action type="redirect" window="self" url="/ns/skuid/ui/apps/{{id}}"/>
+															</actions>
+														</action>
+														<action label="Open App" icon="sk-icon-preview">
+															<actions>
+																<action type="redirect" window="self" url="{{{defaultRoute.fq_route}}}"/>
+															</actions>
+														</action>
+													</resultactions>
+												</object>
+												<object datasource="SkuidLocal" id="/objects/theme" param="search" fieldsParam="fields" displaytemplate="{{name}}" headername="Themes">
+													<fields>
+														<field id="id"/>
+														<field id="name"/>
+														<field id="type"/>
+														<field id="updated_at"/>
+													</fields>
+													<resultactions>
+														<action label="Edit Theme" icon="sk-icon-edit">
+															<actions>
+																<action type="redirect" window="self" url="/ui/theme/compose/{{id}}"/>
+															</actions>
+														</action>
+													</resultactions>
+												</object>
+											</objects>
+											<selectactions/>
+											<resultactions/>
+											<focushotkeys>
+												<hotkey modifiers="ctrl,shift" key="l"/>
+												<hotkey modifiers="meta,shift" key="l"/>
+											</focushotkeys>
+										</search>
+									</components>
+								</division>
+								<division behavior="fit" verticalalign="center">
+									<components>
+										<image source="url" uniqueid="skuid-header-avatar" url="/api/v1/me/{{$User.userId}}/avatar/medium" datasource="SkuidLocal" behavior="none" model="pgs__NewPage" cssclass="fs-block">
+											<styles>
+												<styleitem type="border" margin="left,">
+													<styles>
+														<styleitem property="margin-left" value="30px"/>
+														<styleitem property="box-sizing" value="border-box"/>
+													</styles>
+												</styleitem>
+												<styleitem type="itemsize"/>
+												<styleitem property="width" value="30"/>
+												<styleitem property="height" value="30"/>
+												<styleitem property="overflow" value="hidden"/>
+												<styleitem property="border-radius" value="40px"/>
+												<styleitem property="border" value="1px solid rgba(255,255,255,0.4)"/>
+											</styles>
+										</image>
+									</components>
+								</division>
+								<division behavior="specified" verticalalign="center" width="150px">
+									<components>
+										<navigation uniqueid="sk-343gma-69" source="usermenu" type="dropdown" cssclass="fs-block" label="{{$User.name}}" useicon="false" maxheight="true"/>
+									</components>
+								</division>
+							</divisions>
+							<styles>
+								<styleitem type="background" bgtype="none"/>
+								<styleitem property="padding-right" value="8px"/>
+								<styleitem property="padding-left" value="8px"/>
+								<styleitem property="padding-bottom" value="6px"/>
+								<styleitem property="padding-top" value="8px"/>
+							</styles>
+						</grid>
+					</components>
+					<styles>
+						<styleitem type="background" bgtype="none"/>
+						<styleitem type="border" borders="bottom,">
+							<styleitem property="border-bottom" value="1px solid #d1d3d5"/>
+							<styleitem property="box-sizing" value="border-box"/></styleitem>
+					</styles>
+					<renderconditions logictype="and"/>
+				</skuidheader>
+			</components>
+		</pageregioncontent>
+	</pageregioncontents>
+</skuidpage>

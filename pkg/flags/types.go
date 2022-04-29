@@ -75,17 +75,21 @@ func FlagFunctions[T any](flags ...*Flag[T]) (adds []func(*cobra.Command) error)
 
 // If we find an environment variable indicate that in the usage text so that there
 // is some additional information given
-func EnvironmentVariableFound(environmentVariableName, usageText string) string {
+func environmentVariableDetectionString(environmentVariableName, usageText string) string {
 	environmentVariableValue := os.Getenv(environmentVariableName)
-	usageText = color.Gray.Sprint(usageText)
+	usageText = color.White.Sprint(usageText)
 	if environmentVariableValue != "" {
 		usageText = usageText + "\n" +
-			color.Green.Sprintf(`(Environment Variable: "$%v" FOUND)`, environmentVariableName)
+			color.Gray.Sprintf("%v %v", color.Green.Sprint(environmentVariableName), color.Green.Sprint(`✔`))
 	} else {
 		usageText = usageText + "\n" +
-			color.Yellow.Sprintf(`(Environment Variable: "$%v")`, environmentVariableName)
+			color.Gray.Sprintf("Available as environment variable: %v", color.Yellow.Sprint(environmentVariableName))
 	}
 	return usageText
+}
+
+func aliasInformationString(flagName, usageText string) string {
+	return color.Gray.Sprintf("Alias for '--%v'\n", flagName) + usageText
 }
 
 // TODO: when they add type switching
@@ -125,7 +129,7 @@ func AddString(flag *Flag[string]) func(*cobra.Command) error {
 		// there is an environment variable provided
 		if flag.EnvVarName != "" {
 			defaultVar = os.Getenv(flag.EnvVarName)
-			usageText = EnvironmentVariableFound(flag.EnvVarName, flag.Usage)
+			usageText = environmentVariableDetectionString(flag.EnvVarName, flag.Usage)
 			if defaultVar != "" {
 				// the only time we disabled required
 				// is when we have the environment variable name
@@ -158,6 +162,17 @@ func AddString(flag *Flag[string]) func(*cobra.Command) error {
 			)
 		}
 
+		if len(flag.Aliases) > 0 {
+			for _, alias := range flag.Aliases {
+				flags.StringVar(
+					flag.argument,
+					alias,
+					defaultVar,
+					aliasInformationString(flag.Name, usageText),
+				)
+			}
+		}
+
 		if required {
 			return to.MarkFlagRequired(flag.Name)
 		} else {
@@ -187,7 +202,7 @@ func AddStringArray(flag *Flag[[]string]) func(*cobra.Command) error {
 		// there is an environment variable provided
 		if flag.EnvVarName != "" {
 			defaultVar = strings.Split(os.Getenv(flag.EnvVarName), ",")
-			usageText = EnvironmentVariableFound(flag.EnvVarName, flag.Usage)
+			usageText = environmentVariableDetectionString(flag.EnvVarName, flag.Usage)
 			if len(defaultVar) > 0 {
 				// the only time we disabled required
 				// is when we have the environment variable name
@@ -218,6 +233,17 @@ func AddStringArray(flag *Flag[[]string]) func(*cobra.Command) error {
 				defaultVar,
 				usageText,
 			)
+		}
+
+		if len(flag.Aliases) > 0 {
+			for _, alias := range flag.Aliases {
+				flags.StringArrayVar(
+					flag.argument,
+					alias,
+					defaultVar,
+					aliasInformationString(flag.Name, usageText),
+				)
+			}
 		}
 
 		if required {
@@ -264,7 +290,7 @@ func AddBool(flag *Flag[bool]) func(cmd *cobra.Command) error {
 				// otherwise, it's false
 				return false
 			}()
-			usageText = EnvironmentVariableFound(flag.EnvVarName, flag.Usage)
+			usageText = environmentVariableDetectionString(flag.EnvVarName, flag.Usage)
 		}
 
 		var flags *pflag.FlagSet
@@ -289,6 +315,17 @@ func AddBool(flag *Flag[bool]) func(cmd *cobra.Command) error {
 				defaultValue,
 				usageText,
 			)
+		}
+
+		if len(flag.Aliases) > 0 {
+			for _, alias := range flag.Aliases {
+				flags.BoolVar(
+					flag.argument,
+					alias,
+					defaultValue,
+					aliasInformationString(flag.Name, usageText),
+				)
+			}
 		}
 
 		if required {

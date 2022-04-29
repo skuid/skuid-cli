@@ -1,0 +1,249 @@
+<skuidpage unsavedchangeswarning="yes" personalizationmode="client" showsidebar="true" showheader="true">
+	<models>
+		<model id="stng__OrganizationLink" limit="20" query="true" createrowifnonefound="false" datasource="SkuidLocal" payloadcontenttype="JSON" type="readwrite" label="Sandbox" labelplural="Sandboxes">
+			<fields>
+				<field id="name" label="Sandbox Name" ispolymorphic="false" isnamepointing="false" displaytype="STRING" accessible="true" filterable="true"/>
+				<field id="instance.host" label="Sandbox Location" ispolymorphic="false" displaytype="STRING" accessible="true" filterable="true"/>
+			</fields>
+			<conditions/>
+			<actions/>
+			<methods>
+				<method type="query" verb="GET" payloadcontenttype="JSON" endpoint="/objects/organizationlink?fields=name,type,instance_id,instance.host&amp;where={organization_link.type:&quot;MASTER_TO_SANDBOX&quot;}&amp;scopes=instanceActive" useresponsesnippet="false"/>
+			</methods>
+		</model>
+		<model id="stng__GenerateSandboxName" limit="20" query="true" createrowifnonefound="false" datasource="SkuidLocal" payloadcontenttype="JSON" verb="GET" endpoint="/organizationlink/sandboxname">
+			<fields>
+				<field id="name" displaytype="TEXT" label="Name"/>
+				<field id="type" displaytype="TEXT" uionly="true" label="Type" placeholder="sandbox"/>
+			</fields>
+			<conditions/>
+			<actions/>
+		</model>
+		<model id="stng__InstanceLink" limit="20" query="false" createrowifnonefound="false" datasource="SkuidLocal" verb="GET" payloadcontenttype="JSON" endpoint="/instancelink?active=true">
+			<fields>
+				<field id="name" label="Name" ispolymorphic="false" isnamepointing="false" displaytype="TEXT" accessible="true" filterable="true" ogdisplaytype="STRING" picklistsource="manual" returntype="TEXT" picklistmodel="stng__InstanceLink" defaultvaluetype="fieldvalue" entryvalue="{{name}">
+					<picklistentries/>
+				</field>
+			</fields>
+			<conditions/>
+			<actions/>
+		</model>
+		<model id="stng__ChooseInstance" limit="20" query="true" createrowifnonefound="true" datasource="Ui-Only" processonclient="true">
+			<fields>
+				<field id="name" displaytype="PICKLIST" label="Name" ogdisplaytype="TEXT" picklistsource="rowsinmodel" returntype="TEXT" picklistmodel="stng__InstanceLink" entryvalue="{{name}}" entrylabel="{{name}}" required="true"/>
+			</fields>
+			<conditions/>
+			<actions/>
+		</model>
+	</models>
+	<components>
+		<pagetitle uniqueid="sk-2bTVa7-110" model="stng__OrganizationLink">
+			<maintitle>Sandboxes</maintitle>
+			<actions/>
+		</pagetitle>
+		<skootable showconditions="true" showsavecancel="false" showerrorsinline="true" searchmethod="server" searchbox="true" showexportbuttons="false" hideheader="false" hidefooter="false" pagesize="10" alwaysresetpagination="false" createrecords="false" model="stng__OrganizationLink" buttonposition="" mode="read" allowcolumnreordering="false" responsive="false" uniqueid="sk-20ZZ-111">
+			<fields>
+				<field id="name" hideable="false" uniqueid="fi-2SWS-177" showbydefault="true"/>
+				<field id="instance.host" hideable="false" uniqueid="fi-2SWS-178" showbydefault="true"/>
+			</fields>
+			<massactions usefirstitemasdefault="true">
+				<action type="massupdate">
+					<hotkeys/>
+					<renderconditions logictype="and"/>
+				</action>
+				<action type="massdelete"/>
+			</massactions>
+			<views>
+				<view type="standard"/>
+			</views>
+			<actions defaultlabel="Global Actions" defaulticon="sk-icon-magic" usefirstitemasdefault="true">
+				<action type="multi" icon="sk-icon-magic" label="Create New Sandbox">
+					<actions>
+						<action type="requeryModel" model="stng__InstanceLink" behavior="standard"/>
+						<action type="updateRow" fieldmodel="stng__ChooseInstance">
+							<updates>
+								<update valuesource="modelmerge" field="name" enclosevalueinquotes="true" sourcemodel="stng__InstanceLink" sourcefield="name"/>
+							</updates>
+						</action>
+						<action type="showPopup">
+							<popup title="New Sandbox" width="90%">
+								<components>
+									<wrapper uniqueid="sk-32Nc-303">
+										<components>
+											<basicfieldeditor showheader="true" showsavecancel="false" showerrorsinline="true" model="stng__GenerateSandboxName" uniqueid="sk-2Soi-233" mode="read">
+												<columns>
+													<column width="50%" uniqueid="sk-2Soi-229">
+														<sections>
+															<section title="Choose Sandbox Name" collapsible="no" uniqueid="sk-2Som-253" showheader="true">
+																<fields>
+																	<field uniqueid="sk-2Sow-269" id="name">
+																		<label>Sandbox Name</label>
+																	</field>
+																</fields>
+																<renderconditions logictype="and"/>
+															</section>
+														</sections>
+													</column>
+													<column width="50%" uniqueid="sk-2Srz-201">
+														<sections/>
+													</column>
+												</columns>
+											</basicfieldeditor>
+											<basicfieldeditor showheader="true" showsavecancel="false" showerrorsinline="true" model="stng__ChooseInstance" uniqueid="sk-2dNl-315" mode="edit">
+												<columns layoutmode="fixed">
+													<column width="50%" uniqueid="sk-2dNl-316">
+														<sections>
+															<section title="Choose Instance" collapsible="no" uniqueid="sk-2dOv-400">
+																<fields>
+																	<field uniqueid="sk-2dSm-422" id="name" type="RADIO_BUTTONS" required="true">
+																		<renderconditions logictype="and" onhidedatabehavior="keep"/>
+																		<enableconditions/>
+																		<label>Sandbox Destination</label>
+																	</field>
+																</fields>
+																<renderconditions logictype="and"/>
+															</section>
+														</sections>
+													</column>
+													<column width="50%" uniqueid="sk-2dNl-319">
+														<sections/>
+													</column>
+												</columns>
+												<renderconditions logictype="and">
+													<rendercondition type="fieldvalue" enclosevalueinquotes="false" fieldmodel="stng__InstanceLink" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="data.length" operator="gt" value="1"/>
+												</renderconditions>
+												<conditions/>
+											</basicfieldeditor>
+											<buttonset model="stng__OrganizationLink" uniqueid="sk-2dNo-329" position="left">
+												<buttons>
+													<button type="multi" label="Generate New Name" uniqueid="sk-2SsI-234" icon="sk-icon-refresh">
+														<actions>
+															<action type="requeryModel" model="stng__GenerateSandboxName" behavior="standard"/>
+														</actions>
+													</button>
+													<button type="multi" label="Create" uniqueid="sk-2dNo-331" icon="sk-icon-magic">
+														<actions>
+															<action type="showPopup">
+																<popup width="30%">
+																	<components>
+																		<richtext multiple="false" uniqueid="sk-2dNo-332">
+																			<contents>
+																				&lt;p&gt;Are you sure you want to create a sandbox named &lt;em&gt;&lt;strong&gt;{{$Model.stng__GenerateSandboxName.data.0.name}}&lt;/strong&gt;&lt;/em&gt;&amp;nbsp;in instance &lt;em&gt;&lt;strong&gt;{{$Model.stng__ChooseInstance.data.0.name}}&lt;/strong&gt;&lt;/em&gt;?&lt;/p&gt;
+																			</contents>
+																		</richtext>
+																		<buttonset model="stng__OrganizationLink" uniqueid="sk-2dNo-333">
+																			<buttons>
+																				<button type="multi" label="Yes" uniqueid="sk-2dNo-334">
+																					<actions>
+																						<action type="custom" snippet="createSandbox">
+																							<onerroractions>
+																								<action type="blockUI" message="There was an error creating your sandbox for {{$Model.stng__GenerateSandboxName.data.0.name}}" timeout="3000"/>
+																							</onerroractions>
+																						</action>
+																						<action type="blockUI" timeout="3000" message="Success! Sandbox created for {{$Model.stng__GenerateSandboxName.data.0.name}}. A verification email has been sent."/>
+																						<action type="requeryModel" model="stng__OrganizationLink" behavior="standard"/>
+																						<action type="closeAllPopups"/>
+																					</actions>
+																				</button>
+																				<button type="multi" label="No" uniqueid="sk-2dNo-335">
+																					<actions>
+																						<action type="closeTopmostPopup"/>
+																					</actions>
+																				</button>
+																			</buttons>
+																		</buttonset>
+																	</components>
+																</popup>
+															</action>
+														</actions>
+														<hotkeys/>
+														<renderconditions logictype="and"/>
+														<enableconditions logictype="and" message="Select an Instance">
+															<condition type="blank" operator="!=" fieldmodel="stng__ChooseInstance" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="name" fieldtargetobjects="SkuidLocal: GET" value="null" enclosevalueinquotes="false"/>
+														</enableconditions>
+													</button>
+												</buttons>
+												<renderconditions logictype="and"/>
+												<conditions/>
+											</buttonset>
+										</components>
+										<styles>
+											<styleitem type="background"/>
+											<styleitem type="border"/>
+											<styleitem type="size"/>
+										</styles>
+										<renderconditions logictype="and">
+											<rendercondition type="fieldvalue" enclosevalueinquotes="true" fieldmodel="stng__InstanceLink" sourcetype="modelproperty" sourceproperty="hasRows"/>
+										</renderconditions>
+									</wrapper>
+									<wrapper uniqueid="sk-32Ny-338">
+										<components>
+											<template multiple="false" uniqueid="sk-32Nn-329">
+												<contents>This instance of Skuid Platform has not been configured to create Sandboxes.</contents>
+											</template>
+										</components>
+										<styles>
+											<styleitem type="background"/>
+											<styleitem type="border" padding="all">
+												<styles>
+													<styleitem property="padding" value="10px"/>
+													<styleitem property="box-sizing" value="border-box"/>
+												</styles>
+											</styleitem>
+											<styleitem type="size"/>
+										</styles>
+										<renderconditions logictype="and">
+											<rendercondition fieldmodel="stng__InstanceLink" sourcetype="modelproperty" sourceproperty="hasNoRows"/>
+										</renderconditions>
+									</wrapper>
+								</components>
+								<afterclose>
+									<action type="requeryModel" model="stng__OrganizationLink" behavior="standard"/>
+									<action type="requeryModel" model="stng__GenerateSandboxName" behavior="standard"/>
+								</afterclose>
+							</popup>
+						</action>
+					</actions>
+					<hotkeys/>
+					<renderconditions logictype="and"/>
+				</action>
+			</actions>
+			<rowactions>
+				<action type="redirect" label="Go to Sandbox" icon="sk-icon-popup" window="blank" url="https://{{name}}.{{instance.host}}">
+					<renderconditions/>
+				</action>
+			</rowactions>
+		</skootable>
+	</components>
+	<resources>
+		<labels/>
+		<javascript>
+			<jsitem location="inlinesnippet" name="createSandbox" cachelocation="false">var params = arguments[0],
+	$ = skuid.$;
+	dfd = $.Deferred(),
+    generateNameModel = skuid.$M("stng__GenerateSandboxName");
+    instanceModel = skuid.$M("stng__ChooseInstance");
+
+$.ajax({
+    url: "/api/v1/organizationlink/sandbox",
+    type: "POST",
+    contentType: "application/json",
+    data: JSON.stringify({
+        name: generateNameModel.getFirstRow().name,
+        instance_name: instanceModel.getFirstRow().name,
+    }),
+    dataType: "json"
+}).then(function(){
+    dfd.resolve()
+}).catch(function(err){
+    dfd.reject(err.responseJSON);
+});
+return dfd;</jsitem>
+		</javascript>
+		<css/>
+		<actionsequences uniqueid="sk-2SWD-109"/>
+	</resources>
+	<styles>
+		<styleitem type="background" bgtype="none"/>
+	</styles>
+</skuidpage>

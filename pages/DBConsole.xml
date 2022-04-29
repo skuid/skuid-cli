@@ -1,0 +1,1197 @@
+<skuid__page personalizationmode="client" unsavedchangeswarning="yes" hideeditbutton="true">
+	<models>
+		<model id="FeatureFlags" limit="20" query="true" createrowifnonefound="true" datasource="Ui-Only">
+			<fields>
+				<field id="NewField" displaytype="BOOLEAN" length="255" label="appPermSetsEnabled" ogdisplaytype="TEXT"/>
+			</fields>
+			<conditions/>
+			<actions/>
+		</model>
+		<model id="stng__SiteEnv" label="SiteEnvironment" labelplural="SiteEnvironment" limit="20" query="false" createrowifnonefound="false" datasource="Ui-Only" processonclient="true">
+			<fields>
+				<field id="PLINY_WARDEN_HOST" displaytype="TEXT" label="PLINYWARDENHOST"/>
+				<field id="PLINY_WARDEN_PORT" displaytype="TEXT" label="PLINYWARDENPORT"/>
+				<field id="PLINY_WARDEN_VERSION" displaytype="TEXT" label="PLINYWARDENVERSION"/>
+			</fields>
+			<conditions/>
+			<actions/>
+		</model>
+		<model id="stng__DataSources" query="true" createrowifnonefound="false" datasource="SkuidLocal" label="Data Source" labelplural="Data Sources" type="readwrite" namefield="name" unloadwarningifunsavedchanges="false">
+			<methods>
+				<method type="query" verb="GET" endpoint="/objects/datasource/{{dataSourceId}}?fields=id,name,type,data_service_id,data_service.host,data_service.port,data_service.version,external_id,is_controlled" payloadcontenttype="JSON"/>
+			</methods>
+			<conditions>
+				<condition type="param" value="dataSourceId" enclosevalueinquotes="true" field="dataSourceId" sourcetype="param" sourceparam="dataSourceId" novaluebehavior="noquery"/>
+			</conditions>
+			<fields>
+				<field id="id" displaytype="TEXT" readonly="true" label="Id"/>
+				<field id="name" displaytype="TEXT" label="Name" length="255" required="true"/>
+				<field id="type" label="Type" ispolymorphic="false" isnamepointing="false" displaytype="STRING" accessible="true" filterable="true"/>
+				<field id="data_service_id" displaytype="TEXT" label="Data Service Id"/>
+				<field id="data_service.host" displaytype="TEXT" label="Proxy Host"/>
+				<field id="data_service.port" displaytype="TEXT" label="Proxy Port"/>
+				<field id="data_service.version" displaytype="TEXT" label="Version"/>
+				<field id="external_id" displaytype="TEXT" label="External Id"/>
+				<field id="data_service_host" uionly="true" displaytype="FORMULA" readonly="true" returntype="TEXT" defaultvaluetype="fieldvalue">
+					<formula>IF(ISBLANK({{data_service_id}}),{{$Model.stng__SiteEnv.data.0.PLINY_WARDEN_HOST}},{{data_service.host}})</formula>
+				</field>
+				<field id="data_service_port" uionly="true" displaytype="FORMULA" readonly="true" returntype="TEXT" defaultvaluetype="fieldvalue">
+					<formula>IF(ISBLANK({{data_service_id}}),{{$Model.stng__SiteEnv.data.0.PLINY_WARDEN_PORT}},{{data_service.port}})</formula>
+				</field>
+				<field id="data_service_version" uionly="true" displaytype="FORMULA" readonly="true" returntype="TEXT" defaultvaluetype="fieldvalue">
+					<formula>IF(ISBLANK({{data_service_id}}),{{$Model.stng__SiteEnv.data.0.PLINY_WARDEN_VERSION}},{{data_service.version}})</formula>
+				</field>
+				<field id="external_key" uionly="true" displaytype="FORMULA" readonly="true" returntype="TEXT" defaultvaluetype="fieldvalue">
+					<formula>IF((ISBLANK({{data_service_version}})||{{data_service_version}}="0.2.0"||{{data_service_version}}="0.2.1"),{{external_id}},{{name}})</formula>
+				</field>
+				<field id="IsStorageDataSource__ui" displaytype="FORMULA" uionly="true" length="255" ogdisplaytype="TEXT" readonly="true" returntype="TEXT">
+					<formula>{{type}}=='BrowserStorage'</formula>
+				</field>
+				<field id="is_controlled" label="Is Skuid-managed" displaytype="BOOLEAN" accessible="true" filterable="true"/>
+			</fields>
+			<idfields>
+				<field>id</field>
+			</idfields>
+			<actions/>
+		</model>
+		<model id="stng__DataSource_Warden" query="false" createrowifnonefound="false" datasource="SkuidDataService" label="Data Source" labelplural="Data Sources" type="readwrite" namefield="name" unloadwarningifunsavedchanges="true">
+			<methods>
+				<method type="query" verb="GET" endpoint="/api/v2/datasources/{{dataSourceId}}" payloadcontenttype="JSON"/>
+			</methods>
+			<conditions>
+				<condition type="modelmerge" value="external_key" enclosevalueinquotes="true" field="external_key" sourcetype="modelmerge" model="stng__DataSources" sourceparam="dataSourceId" novaluebehavior="noquery"/>
+				<condition type="modelmerge" value="data_service_host" enclosevalueinquotes="true" field="data_service_host" sourcetype="modelmerge" model="stng__DataSources" sourceparam="host" novaluebehavior="noquery"/>
+				<condition type="modelmerge" value="data_service_port" enclosevalueinquotes="true" field="data_service_port" sourcetype="modelmerge" model="stng__DataSources" sourceparam="port" novaluebehavior="noquery"/>
+			</conditions>
+			<fields>
+				<field id="id" displaytype="TEXT" readonly="true" label="Id"/>
+				<field id="name" displaytype="TEXT" label="Name" length="255" required="true"/>
+				<field id="datasource_image" displaytype="FORMULA" uionly="true" ogdisplaytype="TEXT" readonly="true" returntype="TEXT">
+					<formula>JOIN_TEXT("","/assets/images/datasources/",LOWER({{type}}),".svg")</formula>
+				</field>
+				<field id="is_controlled" displaytype="BOOLEAN" defaultValue="true" label="Is Skuid-managed"/>
+			</fields>
+			<idfields>
+				<field>id</field>
+			</idfields>
+			<actions/>
+		</model>
+		<model id="stng__DataSourceObjects" query="false" createrowifnonefound="false" datasource="SkuidDataService" label="Data Source Object" labelplural="Data Source Objects" type="readwrite" namefield="name">
+			<methods>
+				<method type="query" verb="GET" endpoint="/api/v2/datasources/{{dataSourceId}}/entities/{{entityId}}" payloadcontenttype="JSON"/>
+				<method type="insert" verb="POST" successif="requestsucceeds" sendchanges="asjsoninbody" insertresponse="recordinbody" endpoint="/api/v2/datasources/{{dataSourceId}}/entities"/>
+				<method type="update" verb="PUT" successif="requestsucceeds" sendchanges="asjsoninbody" endpoint="/api/v2/datasources/{{dataSourceId}}/entities/{{entityId}}"/>
+				<method type="delete" verb="DELETE" endpoint="/api/v2/datasources/{{dataSourceId}}/entities/{{entityId}}" successif="requestsucceeds"/>
+			</methods>
+			<conditions>
+				<condition type="modelmerge" value="" sourcetype="param" sourceparam="dataSourceId" operator="=" mergefield="selected_ds" novaluebehavior="noquery" model="dsodetail_uionly" enclosevalueinquotes="true"/>
+				<condition type="modelmerge" value="" sourcetype="param" sourceparam="entityId" operator="=" mergefield="selected_dso" novaluebehavior="noquery" model="dsodetail_uionly" enclosevalueinquotes="true"/>
+				<condition type="modelmerge" value="external_key" enclosevalueinquotes="true" field="external_key" sourcetype="modelmerge" model="stng__DataSources" sourceparam="dataSourceId" novaluebehavior="noquery"/>
+				<condition type="modelmerge" value="data_service_host" enclosevalueinquotes="true" field="data_service_host" sourcetype="modelmerge" model="stng__DataSources" sourceparam="host" novaluebehavior="noquery"/>
+				<condition type="modelmerge" value="data_service_port" enclosevalueinquotes="true" field="data_service_port" sourcetype="modelmerge" model="stng__DataSources" sourceparam="port" novaluebehavior="noquery"/>
+			</conditions>
+			<fields>
+				<field id="id" displaytype="TEXT" readonly="true" label="Id"/>
+				<field id="name" displaytype="TEXT" label="Name" length="255" required="true"/>
+				<field id="custom_config" displaytype="TEXT" label="Custom Config"/>
+				<field id="data_source_id" displaytype="TEXT" label="Name" length="255" required="true"/>
+				<field id="schema" label="Schema" displaytype="TEXT" accessible="true" filterable="true" defaultvaluetype="fieldvalue"/>
+				<field id="table_name" label="Table Name" displaytype="TEXT" accessible="true" filterable="true" required="true"/>
+				<field id="label" displaytype="TEXT" label="Label" length="255" required="true"/>
+				<field id="label_plural" displaytype="TEXT" label="Label Plural" length="255" required="true"/>
+				<field id="description" displaytype="TEXTAREA" label="Description"/>
+				<field id="conditions_logic" displaytype="TEXT" label="Condition Logic" length="255" required="false" helptext="By default, all conditions will be enforced on queries. However, custom logic can be used to allow for results to be returned if only some conditions are met." placeholder="e.g. 1 AND (2 OR 3)" ogdisplaytype="TEXT" readonly="false" returntype="TEXT" defaultvaluetype="fieldvalue"/>
+				<field id="batchable" displaytype="BOOLEAN" label="Batchable" ogdisplaytype="TEXT" required="false" defaultvaluetype="fieldvalue" defaultValue="true" helptext="Default setting for model: if false, do not group requests for this model with other requests."/>
+				<field id="UpdatedDate" label="Last Modified" displaytype="DATETIME"/>
+				<field id="CreatedDate" label="Created" displaytype="DATETIME"/>
+				<field id="CreatedByID" label="Created By" displaytype="TEXT" accessible="true" filterable="true"/>
+				<field id="UpdatedByID" label="Last Modified By" displaytype="TEXT" accessible="true" filterable="true"/>
+			</fields>
+			<idfields>
+				<field>id</field>
+			</idfields>
+			<actions>
+				<action>
+					<actions>
+						<action type="updateRow" fieldmodel="stng__DataSourceObjects" affectedrows="context">
+							<updates>
+								<update field="conditions_logic" valuesource="formula">
+									<formula>UPPER({{conditions_logic}})</formula>
+								</update>
+							</updates>
+						</action>
+					</actions>
+					<events>
+						<event>row.updated</event>
+					</events>
+					<fields>
+						<field>conditions_logic</field>
+					</fields>
+				</action>
+				<action>
+					<actions>
+						<action type="publish" scope="skuid" event="refreshPageInclude" channel="skuidAdminPages">
+							<params/>
+						</action>
+					</actions>
+					<events>
+						<event>models.saved</event>
+					</events>
+				</action>
+			</actions>
+		</model>
+		<model id="stng__DataSourceFields" query="false" createrowifnonefound="false" datasource="SkuidDataService" label="Data Source Field" labelplural="Data Source Fields" type="readwrite" namefield="name">
+			<methods>
+				<method type="query" verb="GET" endpoint="/api/v2/datasources/{{dataSourceId}}/entities/{{entityId}}/fields" payloadcontenttype="JSON"/>
+				<method type="insert" verb="POST" successif="requestsucceeds" sendchanges="asjsoninbody" insertresponse="recordinbody" endpoint="/api/v2/datasources/{{dataSourceId}}/entities/{{entityId}}/fields"/>
+				<method type="update" verb="PUT" successif="requestsucceeds" sendchanges="asjsoninbody" endpoint="/api/v2/datasources/{{dataSourceId}}/entities/{{entityId}}/fields/{{id}}"/>
+				<method type="delete" verb="DELETE" endpoint="/api/v2/datasources/{{dataSourceId}}/entities/{{entityId}}/fields/{{id}}" successif="requestsucceeds"/>
+			</methods>
+			<conditions>
+				<condition type="modelmerge" value="" sourcetype="param" sourceparam="dataSourceId" operator="=" mergefield="selected_ds" novaluebehavior="noquery" model="dsodetail_uionly" enclosevalueinquotes="true"/>
+				<condition type="modelmerge" value="" sourcetype="param" sourceparam="entityId" operator="=" mergefield="selected_dso" novaluebehavior="noquery" model="dsodetail_uionly" enclosevalueinquotes="true"/>
+				<condition type="modelmerge" value="external_key" enclosevalueinquotes="true" field="external_key" sourcetype="modelmerge" model="stng__DataSources" sourceparam="dataSourceId" novaluebehavior="noquery"/>
+				<condition type="modelmerge" value="data_service_host" enclosevalueinquotes="true" field="data_service_host" sourcetype="modelmerge" model="stng__DataSources" sourceparam="host" novaluebehavior="noquery"/>
+				<condition type="modelmerge" value="data_service_port" enclosevalueinquotes="true" field="data_service_port" sourcetype="modelmerge" model="stng__DataSources" sourceparam="port" novaluebehavior="noquery"/>
+				<condition type="fieldvalue" value="{{id}}" enclosevalueinquotes="true" sourcetype="param" sourceparam="id" inactive="true" state="filterableoff" name="id"/>
+				<condition type="fieldvalue" value="" enclosevalueinquotes="true" sourcetype="fieldvalue" field="display_type" clientorserver="client" state="filterableoff" inactive="true" name="display_type" operator="="/>
+			</conditions>
+			<fields>
+				<field id="id" displaytype="TEXT" readonly="true" label="Id"/>
+				<field id="name" displaytype="TEXT" label="Name" length="255" required="true"/>
+				<field id="data_source_object_id" label="Data Source Object Id" ispolymorphic="false" isnamepointing="false" displaytype="STRING" accessible="true" filterable="true"/>
+				<field id="display_type" displaytype="PICKLIST" ogdisplaytype="TEXT" label="Display Type" required="true" picklistsource="manual" returntype="TEXT">
+					<picklistentries>
+						<entry value="BOOLEAN" label="Checkbox"/>
+						<entry value="COMBOBOX" label="Combobox"/>
+						<entry value="CURRENCY" label="Currency"/>
+						<entry value="DATE" label="Date"/>
+						<entry value="DATETIME" label="Datetime"/>
+						<entry value="EMAIL" label="Email"/>
+						<entry value="PERCENT" label="Percent"/>
+						<entry value="PICKLIST" label="Picklist"/>
+						<entry value="MULTIPICKLIST" label="Multi-select Picklist"/>
+						<entry value="DOUBLE" label="Number"/>
+						<entry value="INTEGER" label="Integer"/>
+						<entry value="REFERENCE" label="Reference"/>
+						<entry value="TEXT" label="Text"/>
+						<entry value="TEXTAREA" label="Textarea"/>
+						<entry value="URL" label="Url"/>
+						<entry value="UUID" label="UniqueId (UUID)"/>
+					</picklistentries>
+				</field>
+				<field id="label" displaytype="TEXT" label="Field Name"/>
+				<field id="length" displaytype="DOUBLE" label="Length" ogdisplaytype="TEXT" precision="2" scale="0"/>
+				<field id="is_id_field" displaytype="BOOLEAN" label="Id Field"/>
+				<field id="is_name_field" displaytype="BOOLEAN" label="Name Field"/>
+				<field id="filterable" displaytype="BOOLEAN" label="Filterable"/>
+				<field id="groupable" displaytype="BOOLEAN" label="Groupable"/>
+				<field id="required" displaytype="BOOLEAN" label="Required"/>
+				<field id="standard" displaytype="BOOLEAN" label="Standard" readonly="true"/>
+				<field id="readonly" displaytype="BOOLEAN" label="Readonly"/>
+				<field id="sortable" displaytype="BOOLEAN" label="Sortable"/>
+				<field id="precision" displaytype="DOUBLE" label="Precision" ogdisplaytype="TEXT" precision="2" scale="0"/>
+				<field id="scale" displaytype="DOUBLE" label="Scale" ogdisplaytype="TEXT" precision="2" scale="0"/>
+				<field id="reference_to" displaytype="OBJECT" label="Reference"/>
+				<field id="reference_to.0.reference_field.name" displaytype="Text" label="Reference Key Field"/>
+				<field id="reference_to.0.reference_field.entity.name" displaytype="Text" label="Referenced Object"/>
+				<field id="is_selected" displaytype="BOOLEAN" uionly="true" ogdisplaytype="TEXT" defaultvaluetype="fieldvalue" defaultValue="false" enclosevalueinquotes="false"/>
+				<field id="queryable" displaytype="BOOLEAN" label="Read" ogdisplaytype="TEXT"/>
+				<field id="createable" displaytype="BOOLEAN" label="Create" ogdisplaytype="TEXT"/>
+				<field id="updateable" displaytype="BOOLEAN" label="Update" ogdisplaytype="TEXT"/>
+			</fields>
+			<idfields>
+				<field>id</field>
+			</idfields>
+			<actions>
+				<action>
+					<actions>
+						<action type="custom" snippet="buildPermissionCache"/>
+						<action type="publish" scope="skuid" event="refreshPageInclude" channel="skuidAdminPages">
+							<params/>
+						</action>
+					</actions>
+					<events>
+						<event>models.saved</event>
+					</events>
+				</action>
+			</actions>
+		</model>
+		<model id="stng__DataSourceFields_Standard" query="false" createrowifnonefound="false" datasource="SkuidDataService" label="Data Source Field" labelplural="Data Source Fields" type="readwrite" namefield="name">
+			<methods>
+				<method type="query" verb="GET" endpoint="/api/v2/datasources/{{dataSourceId}}/entities/{{entityId}}/fields" payloadcontenttype="JSON"/>
+			</methods>
+			<conditions>
+				<condition type="modelmerge" value="" sourcetype="param" sourceparam="dataSourceId" operator="=" mergefield="selected_ds" novaluebehavior="noquery" model="dsodetail_uionly" enclosevalueinquotes="true"/>
+				<condition type="modelmerge" value="" sourcetype="param" sourceparam="entityId" operator="=" mergefield="selected_dso" novaluebehavior="noquery" model="dsodetail_uionly" enclosevalueinquotes="true"/>
+				<condition type="modelmerge" value="external_key" enclosevalueinquotes="true" field="external_key" sourcetype="modelmerge" model="stng__DataSources" sourceparam="dataSourceId" novaluebehavior="noquery"/>
+				<condition type="modelmerge" value="data_service_host" enclosevalueinquotes="true" field="data_service_host" sourcetype="modelmerge" model="stng__DataSources" sourceparam="host" novaluebehavior="noquery"/>
+				<condition type="modelmerge" value="data_service_port" enclosevalueinquotes="true" field="data_service_port" sourcetype="modelmerge" model="stng__DataSources" sourceparam="port" novaluebehavior="noquery"/>
+				<condition type="fieldvalue" value="{{id}}" enclosevalueinquotes="true" sourcetype="param" sourceparam="id" inactive="true" state="filterableoff" name="id"/>
+				<condition type="fieldvalue" value="" enclosevalueinquotes="true" sourcetype="fieldvalue" field="display_type" clientorserver="client" state="filterableoff" inactive="true" name="display_type" operator="="/>
+				<condition type="fieldvalue" field="standard" operator="=" value="true" clientorserver="client" inactive="false" sourcetype="fieldvalue" enclosevalueinquotes="false"/>
+			</conditions>
+			<fields>
+				<field id="id" displaytype="TEXT" readonly="true" label="Id"/>
+				<field id="name" displaytype="TEXT" label="Name" length="255" required="true"/>
+				<field id="data_source_object_id" label="Data Source Object Id" ispolymorphic="false" isnamepointing="false" displaytype="STRING" accessible="true" filterable="true"/>
+				<field id="display_type" displaytype="PICKLIST" ogdisplaytype="TEXT" label="Display Type" required="true" picklistsource="manual" returntype="TEXT">
+					<picklistentries>
+						<entry value="BOOLEAN" label="Checkbox"/>
+						<entry value="COMBOBOX" label="Combobox"/>
+						<entry value="CURRENCY" label="Currency"/>
+						<entry value="DATE" label="Date"/>
+						<entry value="DATETIME" label="Datetime"/>
+						<entry value="EMAIL" label="Email"/>
+						<entry value="PERCENT" label="Percent"/>
+						<entry value="PICKLIST" label="Picklist"/>
+						<entry value="MULTIPICKLIST" label="Multi-select Picklist"/>
+						<entry value="DOUBLE" label="Number"/>
+						<entry value="INTEGER" label="Integer"/>
+						<entry value="REFERENCE" label="Reference"/>
+						<entry value="TEXT" label="Text"/>
+						<entry value="TEXTAREA" label="Textarea"/>
+						<entry value="URL" label="Url"/>
+						<entry value="UUID" label="UniqueId (UUID)"/>
+					</picklistentries>
+				</field>
+				<field id="label" displaytype="TEXT" label="Label"/>
+				<field id="length" displaytype="DOUBLE" label="Length" ogdisplaytype="TEXT" precision="2" scale="0"/>
+				<field id="is_id_field" displaytype="BOOLEAN" label="Id Field"/>
+				<field id="is_name_field" displaytype="BOOLEAN" label="Name Field"/>
+				<field id="filterable" displaytype="BOOLEAN" label="Filterable"/>
+				<field id="groupable" displaytype="BOOLEAN" label="Groupable"/>
+				<field id="required" displaytype="BOOLEAN" label="Required"/>
+				<field id="readonly" displaytype="BOOLEAN" label="Readonly"/>
+				<field id="sortable" displaytype="BOOLEAN" label="Sortable"/>
+				<field id="standard" displaytype="BOOLEAN" label="Standard" readonly="true"/>
+				<field id="scale" displaytype="DOUBLE" label="Scale" ogdisplaytype="TEXT" precision="2" scale="0"/>
+			</fields>
+			<idfields>
+				<field>id</field>
+			</idfields>
+			<actions/>
+		</model>
+		<model id="stng__DataSourceConditions" query="false" createrowifnonefound="false" datasource="SkuidDataService" label="Data Source Condition" labelplural="Data Source Conditions" type="readwrite" namefield="name">
+			<methods>
+				<method type="query" verb="GET" endpoint="/api/v2/datasources/{{dataSourceId}}/entities/{{entityId}}/conditions" payloadcontenttype="JSON"/>
+				<method type="insert" verb="POST" successif="requestsucceeds" sendchanges="asjsoninbody" insertresponse="recordinbody" endpoint="/api/v2/datasources/{{dataSourceId}}/entities/{{entityId}}/conditions"/>
+				<method type="update" verb="PUT" successif="requestsucceeds" sendchanges="asjsoninbody" endpoint="/api/v2/datasources/{{dataSourceId}}/entities/{{entityId}}/conditions/{{id}}"/>
+				<method type="delete" verb="DELETE" endpoint="/api/v2/datasources/{{dataSourceId}}/entities/{{entityId}}/conditions/{{id}}" successif="requestsucceeds"/>
+			</methods>
+			<conditions>
+				<condition type="modelmerge" value="" sourcetype="param" sourceparam="dataSourceId" operator="=" mergefield="selected_ds" novaluebehavior="noquery" model="dsodetail_uionly" enclosevalueinquotes="true"/>
+				<condition type="modelmerge" value="" sourcetype="param" sourceparam="entityId" operator="=" mergefield="selected_dso" novaluebehavior="noquery" model="dsodetail_uionly" enclosevalueinquotes="true"/>
+				<condition type="modelmerge" value="external_key" enclosevalueinquotes="true" field="external_key" sourcetype="modelmerge" model="stng__DataSources" sourceparam="dataSourceId" novaluebehavior="noquery"/>
+				<condition type="modelmerge" value="data_service_host" enclosevalueinquotes="true" field="data_service_host" sourcetype="modelmerge" model="stng__DataSources" sourceparam="host" novaluebehavior="noquery"/>
+				<condition type="modelmerge" value="data_service_port" enclosevalueinquotes="true" field="data_service_port" sourcetype="modelmerge" model="stng__DataSources" sourceparam="port" novaluebehavior="noquery"/>
+				<condition type="fieldvalue" value="{{id}}" enclosevalueinquotes="true" sourcetype="param" sourceparam="id"/>
+			</conditions>
+			<fields>
+				<field id="id" displaytype="TEXT" readonly="true" label="Id"/>
+				<field id="name" displaytype="TEXT" label="Name" length="255" required="true"/>
+				<field id="data_source_object_id" label="Data Source Object Id" ispolymorphic="false" isnamepointing="false" displaytype="STRING" accessible="true" filterable="true"/>
+				<field id="type" displaytype="PICKLIST" ogdisplaytype="TEXT" label="Source" required="true" picklistsource="manual" defaultValue="fieldvalue" returntype="TEXT">
+					<picklistentries>
+						<entry value="fieldvalue" label="Single specified value"/>
+						<entry value="userinfo" label="Skuid user attribute"/>
+						<entry value="blank" label="None - blank value"/>
+					</picklistentries>
+				</field>
+				<field id="field" displaytype="COMBOBOX" label="Field" ogdisplaytype="TEXT" picklistsource="rowsinmodel" required="true" limitentries="true" picklistmodel="stng__DataSourceFields" entryvalue="{{name}}" entrylabel="{{name}}" returntype="TEXT" defaultvaluetype="fieldvalue"/>
+				<field id="value" displaytype="TEXT" label="Value" ogdisplaytype="TEXT" picklistsource="rowsinmodel" returntype="TEXT" picklistmodel="stng__DataSourceFields" entryvalue="{{name}}" entrylabel="{{label}}">
+					<picklistentries/>
+				</field>
+				<field id="execute_on_query" displaytype="BOOLEAN" label="Enforce on Query"/>
+				<field id="execute_on_insert" displaytype="BOOLEAN" label="Enforce on Insert"/>
+				<field id="execute_on_update" displaytype="BOOLEAN" label="Enforce on Update"/>
+				<field id="execute_on_delete" displaytype="BOOLEAN" label="Enforce on Delete"/>
+				<field id="value_user_attributes" uionly="true" displaytype="PICKLIST" picklistsource="manual" label="Value" defaultValue="email" returntype="TEXT">
+					<picklistentries>
+						<entry value="email" label="Email"/>
+						<entry value="federation_id" label="Federation Id"/>
+						<entry value="first_name" label="First Name"/>
+						<entry value="last_name" label="Last Name"/>
+						<entry value="site_id" label="Site Id"/>
+						<entry value="user_name" label="User Name"/>
+						<entry value="user_id" label="User Id"/>
+					</picklistentries>
+				</field>
+				<field id="is_user_info" displaytype="FORMULA" uionly="true" ogdisplaytype="TEXT" readonly="true" returntype="BOOLEAN">
+					<formula>{{type}} === "userinfo"</formula>
+				</field>
+			</fields>
+			<idfields>
+				<field>id</field>
+			</idfields>
+			<actions>
+				<action>
+					<actions>
+						<action type="updateRow" fieldmodel="stng__DataSourceConditions" affectedrows="context">
+							<updates>
+								<update valuesource="fieldvalue" field="value" value="{{value_user_attributes}}"/>
+							</updates>
+						</action>
+					</actions>
+					<events>
+						<event>row.updated</event>
+					</events>
+					<fields>
+						<field>value_user_attributes</field>
+					</fields>
+				</action>
+				<action>
+					<actions>
+						<action type="branch" whenfinished="stop" model="stng__DataSourceConditions" label="if type is updated to blank or fieldvalue, clear the value">
+							<iftrueactions>
+								<action type="updateRow" fieldmodel="stng__DataSourceConditions" affectedrows="context">
+									<updates>
+										<update field="value" valuesource="blank"/>
+										<update field="value_user_attributes" valuesource="blank"/>
+									</updates>
+								</action>
+							</iftrueactions>
+							<formula>{{type}} === "blank" || {{type}} === "fieldvalue"</formula>
+						</action>
+						<action type="branch" whenfinished="stop" model="stng__DataSourceConditions" label="If type is user attributes and value is blank, pre-populate value">
+							<formula>{{type}} === "userinfo" &amp;&amp; ISBLANK({{value}})</formula>
+							<iftrueactions>
+								<action type="updateRow" fieldmodel="stng__DataSourceConditions" affectedrows="context">
+									<updates>
+										<update field="value_user_attributes" valuesource="fieldvalue" value="email"/>
+									</updates>
+								</action>
+							</iftrueactions>
+						</action>
+					</actions>
+					<events>
+						<event>row.updated</event>
+					</events>
+					<fields>
+						<field>type</field>
+					</fields>
+				</action>
+				<action>
+					<actions>
+						<action type="custom" snippet="updateUserAttributePicklistField">
+							<onerroractions>
+								<action type="blockUI" message="There was an error" timeout="3000"/>
+							</onerroractions>
+						</action>
+					</actions>
+					<events>
+						<event>models.saved</event>
+						<event>models.loaded</event>
+						<event>models.cancelled</event>
+					</events>
+				</action>
+			</actions>
+		</model>
+		<model id="Profile" query="false" createrowifnonefound="false" datasource="SkuidLocal" verb="GET" endpoint="/objects/profile?fields=id,name,is_system,permission_set_id" label="Profile" labelplural="Profiles" payloadcontenttype="JSON" unloadwarningifunsavedchanges="false">
+			<fields>
+				<field id="name" label="Name" ispolymorphic="false" isnamepointing="false" displaytype="STRING" accessible="true" filterable="true"/>
+				<field id="id" label="Id" ispolymorphic="false" isnamepointing="false" displaytype="STRING" accessible="true" filterable="true"/>
+				<field id="permission_set_id" label="Permission Set Id" ispolymorphic="false" isnamepointing="false" displaytype="STRING" accessible="true" filterable="true"/>
+				<field id="is_system" label="Is System" ispolymorphic="false" isnamepointing="false" displaytype="BOOLEAN" accessible="true" filterable="true"/>
+				<field id="createable" displaytype="BOOLEAN" label="Create" ogdisplaytype="TEXT" readonly="true"/>
+				<field id="deleteable" displaytype="BOOLEAN" ogdisplaytype="TEXT" label="Delete" readonly="true"/>
+				<field id="queryable" displaytype="BOOLEAN" label="Read" ogdisplaytype="TEXT" readonly="true"/>
+				<field id="updateable" displaytype="BOOLEAN" label="Update" ogdisplaytype="TEXT" readonly="true"/>
+				<field id="is_selected" displaytype="BOOLEAN" uionly="true" ogdisplaytype="TEXT" defaultvaluetype="fieldvalue" defaultValue="false"/>
+				<field id="conditions" displaytype="MULTIPICKLIST" label="Conditions" ogdisplaytype="TEXT" picklistsource="rowsinmodel" picklistmodel="stng__DataSourceConditions" entryvalue="{{data_source_condition_id}}" entrylabel="{{name}}"/>
+			</fields>
+			<conditions/>
+			<actions/>
+		</model>
+		<model id="NamedPermissions" query="true" createrowifnonefound="false" datasource="SkuidLocal" verb="GET" endpoint="/objects/permission/named?fields=id,permission,permission_set_id&amp;where={permission: &quot;configure_site&quot; }" label="Site Permission" labelplural="Site Permissions" payloadcontenttype="JSON" unloadwarningifunsavedchanges="false">
+			<fields>
+				<field id="id" label="Id" displaytype="TEXT" accessible="true" filterable="true"/>
+				<field id="permission" label="Permission" displaytype="STRING" accessible="true" filterable="true"/>
+				<field id="permission_set_id" label="Permission Set Id" displaytype="TEXT" accessible="true" filterable="true"/>
+			</fields>
+			<idfields>
+				<field>id</field>
+			</idfields>
+			<conditions>
+				<condition type="fieldvalue" value="" enclosevalueinquotes="true" sourcetype="param" sourceparam="perm_set_id" state="filterableoff" inactive="true" name="perm_set_id"/>
+			</conditions>
+			<actions>
+				<action>
+					<actions>
+						<action type="custom" snippet="buildPermissionCache"/>
+					</actions>
+					<events>
+						<event>models.loaded</event>
+					</events>
+				</action>
+			</actions>
+		</model>
+		<model id="DataSourceObjectPermissions" query="false" createrowifnonefound="false" datasource="SkuidDataService" type="readwrite" unloadwarningifunsavedchanges="false">
+			<fields/>
+			<conditions>
+				<condition type="modelmerge" value="" sourcetype="param" sourceparam="dataSourceId" operator="=" mergefield="selected_ds" novaluebehavior="noquery" model="dsodetail_uionly" enclosevalueinquotes="true"/>
+				<condition type="modelmerge" value="" sourcetype="param" sourceparam="entityId" operator="=" mergefield="selected_dso" novaluebehavior="noquery" model="dsodetail_uionly" enclosevalueinquotes="true"/>
+				<condition type="modelmerge" value="data_service_host" enclosevalueinquotes="true" field="data_service_host" sourcetype="modelmerge" model="stng__DataSources" sourceparam="host" novaluebehavior="noquery"/>
+				<condition type="modelmerge" value="data_service_port" enclosevalueinquotes="true" field="data_service_port" sourcetype="modelmerge" model="stng__DataSources" sourceparam="port" novaluebehavior="noquery"/>
+			</conditions>
+			<actions>
+				<action>
+					<actions>
+						<action type="custom" snippet="BuildProfilePermissionSummary"/>
+						<action type="updateRow" fieldmodel="Profile" affectedrows="all">
+							<updates>
+								<update valuesource="fieldvalue" field="is_selected" enclosevalueinquotes="false" value="false"/>
+							</updates>
+						</action>
+					</actions>
+					<events>
+						<event>models.loaded</event>
+					</events>
+				</action>
+			</actions>
+			<methods>
+				<method type="query" verb="GET" endpoint="/api/v2/datasources/{{dataSourceId}}/entities/{{entityId}}/permissions" payloadcontenttype="JSON"/>
+			</methods>
+		</model>
+		<model id="stng__DataSourceObjectList" query="false" createrowifnonefound="false" datasource="SkuidDataService" label="Data Source Object" labelplural="Data Source Objects" type="readwrite" namefield="name" unloadwarningifunsavedchanges="false">
+			<methods>
+				<method type="query" verb="GET" endpoint="/api/v2/datasources/{{dataSourceId}}/entities" payloadcontenttype="JSON"/>
+				<method type="update" verb="PUT" successif="requestsucceeds" sendchanges="asjsoninbody" endpoint="/api/v2/datasources/{{dataSourceId}}/entities/{{entityId}}"/>
+				<method type="delete" verb="DELETE" endpoint="/api/v2/datasources/{{dataSourceId}}/entities/{{entityId}}" successif="requestsucceeds"/>
+			</methods>
+			<conditions>
+				<condition name="dataSourceId" type="modelmerge" value="" sourcetype="param" sourceparam="dataSourceId" operator="=" mergefield="id" novaluebehavior="deactivate" model="stng__DataSource_Warden" enclosevalueinquotes="true"/>
+				<condition type="modelmerge" value="data_service_host" enclosevalueinquotes="true" field="data_service_host" sourcetype="modelmerge" model="stng__DataSources" sourceparam="host" novaluebehavior="noquery"/>
+				<condition type="modelmerge" value="data_service_port" enclosevalueinquotes="true" field="data_service_port" sourcetype="modelmerge" model="stng__DataSources" sourceparam="port" novaluebehavior="noquery"/>
+			</conditions>
+			<fields>
+				<field id="id" displaytype="TEXT" readonly="true" label="Id"/>
+				<field id="name" displaytype="TEXT" label="Name" length="255" required="true"/>
+				<field id="custom_config" displaytype="TEXT" label="Custom Config"/>
+				<field id="data_source_id" displaytype="TEXT" label="Name" length="255" required="true"/>
+				<field id="schema" label="Schema" displaytype="TEXT" accessible="true" filterable="true" defaultvaluetype="fieldvalue"/>
+				<field id="table_name" label="Table Name" displaytype="TEXT" accessible="true" filterable="true" required="true"/>
+				<field id="label" displaytype="TEXT" label="Label" length="255" required="true"/>
+				<field id="label_plural" displaytype="TEXT" label="Label Plural" length="255" required="true"/>
+				<field id="conditions_logic" displaytype="TEXT" label="Condition Logic" length="255" required="false" helptext="By default, all conditions will be enforced on queries. However, custom logic can be used to allow for results to be returned if only some conditions are met." placeholder="e.g. 1 AND (2 OR 3)"/>
+				<field id="batchable" displaytype="BOOLEAN" label="Batchable" ogdisplaytype="TEXT" required="false" defaultvaluetype="fieldvalue" defaultValue="true" helptext="Default setting for model: if false, do not group requests for this model with other requests."/>
+				<field id="UpdatedDate" label="Last Modified" displaytype="DATETIME"/>
+				<field id="CreatedDate" label="Created" displaytype="DATETIME"/>
+				<field id="CreatedByID" label="Created By" displaytype="TEXT" accessible="true" filterable="true"/>
+				<field id="UpdatedByID" label="Last Modified By" displaytype="TEXT" accessible="true" filterable="true"/>
+			</fields>
+			<idfields>
+				<field>id</field>
+			</idfields>
+			<actions/>
+		</model>
+		<model id="DataSourceFieldPermissions" limit="20" query="false" createrowifnonefound="false" datasource="SkuidDataService" type="" verb="GET" endpoint="/api/v2/datasources/{{dataSourceId}}/entities/{{entityId}}/permissions/{{perm_set_id}}/fields" label="Data Source Field Access" labelplural="Data Source Field Access">
+			<methods>
+				<method type="update" verb="PUT" successif="requestsucceeds" sendchanges="asjsoninbody" endpoint="/api/v2/datasources/{{dataSourceId}}/entities/{{entityId}}/permissions/{{perm_set_id}}/fields"/>
+			</methods>
+			<fields>
+				<field id="id" label="Id" displaytype="TEXT" accessible="true" filterable="false"/>
+				<field id="label" displaytype="TEXT" label="Name" length="255" readonly="true" filterable="true"/>
+				<field id="data_source_field_id" label="Data_source_field_id" displaytype="TEXT" accessible="true" filterable="true"/>
+				<field id="permission_set_id" label="Permission_set_id" displaytype="TEXT" accessible="true" filterable="true"/>
+				<field id="createable" label="Create" displaytype="BOOLEAN" createable="true" editable="true" accessible="true" filterable="true"/>
+				<field id="queryable" label="Read" displaytype="BOOLEAN" createable="true" editable="true" accessible="true" filterable="true"/>
+				<field id="updateable" label="Update" displaytype="BOOLEAN" createable="true" editable="true" accessible="true" filterable="true"/>
+			</fields>
+			<idfields>
+				<field>id</field>
+			</idfields>
+			<conditions>
+				<condition type="modelmerge" value="" sourcetype="param" sourceparam="entityId" operator="=" mergefield="selected_dso" novaluebehavior="noquery" model="dsodetail_uionly" enclosevalueinquotes="true"/>
+				<condition type="modelmerge" value="id" enclosevalueinquotes="true" field="id" sourcetype="modelmerge" model="stng__DataSource_Warden" sourceparam="dataSourceId" novaluebehavior="noquery"/>
+				<condition type="modelmerge" value="data_service_host" enclosevalueinquotes="true" field="data_service_host" sourcetype="modelmerge" model="stng__DataSources" sourceparam="host" novaluebehavior="noquery"/>
+				<condition type="modelmerge" value="data_service_port" enclosevalueinquotes="true" field="data_service_port" sourcetype="modelmerge" model="stng__DataSources" sourceparam="port" novaluebehavior="noquery"/>
+				<condition type="fieldvalue" value="" enclosevalueinquotes="true" sourcetype="param" sourceparam="perm_set_id" state="filterableoff" inactive="true" name="perm_set_id"/>
+			</conditions>
+			<actions>
+				<action>
+					<actions>
+						<action type="custom" snippet="buildPermissionCache"/>
+					</actions>
+					<events>
+						<event>models.loaded</event>
+						<event>models.cancelled</event>
+					</events>
+				</action>
+			</actions>
+		</model>
+		<model id="dsodetail_uionly" query="true" createrowifnonefound="false" datasource="Ui-Only">
+			<fields>
+				<field id="selected_ds" displaytype="TEXT" length="255" enclosevalueinquotes="true"/>
+				<field id="selected_dso" displaytype="TEXT" length="255" enclosevalueinquotes="true"/>
+				<field id="selected_field" displaytype="TEXT" length="255" enclosevalueinquotes="true"/>
+				<field id="dso_field_view" displaytype="PICKLIST" length="255" ogdisplaytype="TEXT" defaultvaluetype="fieldvalue" defaultValue="DBConsole" picklistsource="manual" returntype="TEXT">
+					<picklistentries>
+						<entry value="Table" label="Table"/>
+						<entry value="List" label="List"/>
+						<entry value="DBConsole" label="DBConsole"/>
+					</picklistentries>
+				</field>
+				<field id="counter" displaytype="BOOLEAN" length="255" ogdisplaytype="TEXT" defaultvaluetype="fieldvalue" defaultValue="false"/>
+				<field id="dso_profile_view" displaytype="PICKLIST" length="255" ogdisplaytype="TEXT" defaultvaluetype="fieldvalue" defaultValue="DBConsole" picklistsource="manual" returntype="TEXT">
+					<picklistentries>
+						<entry value="Table" label="Table"/>
+						<entry value="List" label="List"/>
+						<entry value="DBConsole" label="DBConsole"/>
+					</picklistentries>
+				</field>
+				<field id="no_query_conditions" displaytype="DOUBLE" length="255" ogdisplaytype="TEXT" precision="9" scale="2" defaultvaluetype="fieldvalue" defaultValue="0"/>
+			</fields>
+			<conditions/>
+			<actions>
+				<action>
+					<actions>
+						<action type="branch" whenfinished="stop">
+							<formula>{{counter}}===false</formula>
+							<iftrueactions>
+								<action type="updateRow" fieldmodel="dsodetail_uionly" affectedrows="context">
+									<updates>
+										<update valuesource="fieldvalue" field="counter" enclosevalueinquotes="false" value="true"/>
+									</updates>
+								</action>
+							</iftrueactions>
+						</action>
+						<action type="emptyModelData">
+							<models>
+								<model>stng__DataSourceObjects</model>
+								<model>stng__DataSourceFields</model>
+								<model>stng__DataSourceConditions</model>
+								<model>DataSourceObjectPermissions</model>
+							</models>
+						</action>
+						<action type="custom" snippet="skuid.settings.dataSources.populateDefaultDataService">
+							<onerroractions>
+								<action type="blockUI" message="There was an error" timeout="3000"/>
+							</onerroractions>
+						</action>
+						<action type="requeryModels" model="NavUiControl" behavior="standard">
+							<models>
+								<model>stng__DataSourceObjects</model>
+								<model>stng__DataSourceFields</model>
+								<model>stng__DataSourceConditions</model>
+								<model>Profile</model>
+								<model>DataSourceObjectPermissions</model>
+							</models>
+						</action>
+						<!-- 
+						<action type="setCondition" model="stng__DataSourceField_Detail" condition="fieldId" value="{{$Model.stng__DataSourceFields.data.0.id}}"/><action type="requeryModel" model="stng__DataSourceField_Detail" behavior="standard"/>
+						-->
+						<action type="updateRow" fieldmodel="dsodetail_uionly" affectedrows="context">
+							<updates>
+								<update valuesource="fieldvalue" field="dso_profile_view" enclosevalueinquotes="true" value="List"/>
+							</updates>
+						</action>
+						<action type="updateRow" fieldmodel="stng__DataSourceFields">
+							<updates>
+								<update valuesource="fieldvalue" field="is_selected" enclosevalueinquotes="false" value="false"/>
+							</updates>
+						</action>
+						<action type="updateRow" fieldmodel="Profile" affectedrows="all">
+							<updates>
+								<update valuesource="fieldvalue" field="is_selected" enclosevalueinquotes="false" value="false"/>
+							</updates>
+						</action>
+						<action type="save">
+							<models>
+								<model>stng__DataSourceFields</model>
+								<model>Profile</model>
+							</models>
+							<onerroractions/>
+						</action>
+					</actions>
+					<events>
+						<event>row.updated</event>
+					</events>
+					<fields>
+						<field>selected_dso</field>
+					</fields>
+				</action>
+				<action>
+					<actions>
+						<action type="branch" whenfinished="stop" model="dsodetail_uionly">
+							<formula>{{dso_field_view}} === "List"</formula>
+							<iftrueactions>
+								<action type="branch" whenfinished="stop">
+									<formula>{{$Model.stng__DataSourceField_Detail.data.length}} === 0</formula>
+									<iftrueactions>
+										<action type="setCondition" model="stng__DataSourceField_Detail" value="{{$Model.stng__DataSourceFields.data.0.id}}" condition="fieldId"/>
+										<action type="requeryModel" model="stng__DataSourceField_Detail" behavior="standard"/>
+										<action type="updateRow" fieldmodel="stng__DataSourceFields" affectedrows="all">
+											<updates>
+												<update valuesource="fieldvalue" field="is_selected" enclosevalueinquotes="false" value="false"/>
+											</updates>
+										</action>
+										<action type="custom" snippet="highlightFirstRow">
+											<onerroractions>
+												<action type="blockUI" message="There was an error" timeout="3000" styleSettingsVariant="dark"/>
+											</onerroractions>
+										</action>
+									</iftrueactions>
+								</action>
+							</iftrueactions>
+						</action>
+					</actions>
+					<events>
+						<event>row.updated</event>
+					</events>
+					<fields>
+						<field>dso_field_view</field>
+					</fields>
+				</action>
+				<action>
+					<actions>
+						<action type="custom" snippet="doNotQueryConditions"/>
+					</actions>
+					<events>
+						<event>row.created</event>
+					</events>
+				</action>
+				<action>
+					<actions>
+						<action type="branch" whenfinished="stop" model="dsodetail_uionly">
+							<formula>{{dso_profile_view}} === "Table"</formula>
+							<iftrueactions>
+								<action type="requeryModel" snippet="BuildProfilePermissionSummary" model="DataSourceObjectPermissions" behavior="standard"/>
+								<action type="unblockUI"/>
+							</iftrueactions>
+						</action>
+					</actions>
+					<events>
+						<event>row.updated</event>
+					</events>
+					<fields>
+						<field>dso_profile_view</field>
+					</fields>
+				</action>
+			</actions>
+		</model>
+		<model id="stng__DataSourceField_Detail" query="false" createrowifnonefound="false" datasource="SkuidDataService" label="Data Source Field" labelplural="Data Source Fields" type="readwrite" namefield="name">
+			<methods>
+				<method type="query" verb="GET" endpoint="/api/v2/datasources/{{dataSourceId}}/entities/{{entityId}}/fields/{{fieldId}}" payloadcontenttype="JSON"/>
+				<method type="insert" verb="POST" successif="requestsucceeds" sendchanges="asjsoninbody" insertresponse="recordinbody" endpoint="/api/v2/datasources/{{dataSourceId}}/entities/{{entityId}}/fields"/>
+				<method type="update" verb="PUT" successif="requestsucceeds" sendchanges="asjsoninbody" endpoint="/api/v2/datasources/{{dataSourceId}}/entities/{{entityId}}/fields/{{id}}"/>
+				<method type="delete" verb="DELETE" endpoint="/api/v2/datasources/{{dataSourceId}}/entities/{{entityId}}/fields/{{id}}" successif="requestsucceeds"/>
+			</methods>
+			<conditions>
+				<condition type="modelmerge" value="" sourcetype="param" sourceparam="dataSourceId" operator="=" mergefield="selected_ds" novaluebehavior="noquery" model="dsodetail_uionly" enclosevalueinquotes="true"/>
+				<condition type="modelmerge" value="" sourcetype="param" sourceparam="entityId" operator="=" mergefield="selected_dso" novaluebehavior="noquery" model="dsodetail_uionly" enclosevalueinquotes="true"/>
+				<condition type="modelmerge" value="" sourcetype="param" sourceparam="fieldId" operator="=" mergefield="selected_field" novaluebehavior="noquery" model="dsodetail_uionly" enclosevalueinquotes="true"/>
+				<condition type="modelmerge" value="data_service_host" enclosevalueinquotes="true" field="data_service_host" sourcetype="modelmerge" model="stng__DataSources" sourceparam="host" novaluebehavior="noquery"/>
+				<condition type="modelmerge" value="data_service_port" enclosevalueinquotes="true" field="data_service_port" sourcetype="modelmerge" model="stng__DataSources" sourceparam="port" novaluebehavior="noquery"/>
+				<condition type="fieldvalue" value="" enclosevalueinquotes="true" sourcetype="fieldvalue" field="display_type" clientorserver="client" state="filterableoff" inactive="true" name="display_type" operator="="/>
+			</conditions>
+			<fields>
+				<field id="id" displaytype="TEXT" readonly="true" label="Id"/>
+				<field id="name" displaytype="TEXT" label="Name" length="255" required="true"/>
+				<field id="data_source_object_id" label="Data Source Object Id" ispolymorphic="false" isnamepointing="false" displaytype="STRING" accessible="true" filterable="true"/>
+				<field id="display_type" displaytype="PICKLIST" ogdisplaytype="TEXT" label="Display Type" required="false" picklistsource="manual" returntype="TEXT" defaultvaluetype="fieldvalue" defaultValue="TEXT">
+					<picklistentries>
+						<entry value="BOOLEAN" label="Checkbox"/>
+						<entry value="COMBOBOX" label="Combobox"/>
+						<entry value="CURRENCY" label="Currency"/>
+						<entry value="DATE" label="Date"/>
+						<entry value="DATETIME" label="Datetime"/>
+						<entry value="EMAIL" label="Email"/>
+						<entry value="PERCENT" label="Percent"/>
+						<entry value="PICKLIST" label="Picklist"/>
+						<entry value="MULTIPICKLIST" label="Multi-select Picklist"/>
+						<entry value="DOUBLE" label="Number"/>
+						<entry value="INTEGER" label="Integer"/>
+						<entry value="REFERENCE" label="Reference"/>
+						<entry value="TEXT" label="Text"/>
+						<entry value="TEXTAREA" label="Textarea"/>
+						<entry value="URL" label="Url"/>
+						<entry value="UUID" label="UniqueId (UUID)"/>
+					</picklistentries>
+				</field>
+				<field id="constrain_to_picklist" displaytype="BOOLEAN" label="Constrain field values to picklist entries"/>
+				<field id="alphabetical_picklist" displaytype="BOOLEAN" label="Sort picklist entries alphabetically"/>
+				<field id="label" displaytype="TEXT" label="Label"/>
+				<field id="length" displaytype="NUMBER" label="Length"/>
+				<field id="is_id_field" displaytype="BOOLEAN" label="Id Field"/>
+				<field id="is_name_field" displaytype="BOOLEAN" label="Name Field"/>
+				<field id="filterable" displaytype="BOOLEAN" label="Filterable"/>
+				<field id="groupable" displaytype="BOOLEAN" label="Groupable"/>
+				<field id="required" displaytype="BOOLEAN" label="Required"/>
+				<field id="readonly" displaytype="BOOLEAN" label="Readonly"/>
+				<field id="sortable" displaytype="BOOLEAN" label="Sortable"/>
+				<field id="precision" displaytype="DOUBLE" label="Precision" ogdisplaytype="TEXT" precision="2" scale="0"/>
+				<field id="scale" displaytype="DOUBLE" label="Scale" ogdisplaytype="TEXT" precision="2" scale="0"/>
+				<field id="reference_to" displaytype="OBJECT" label="Reference"/>
+				<field id="reference_to.0.reference_field.name" displaytype="Text" label="Reference Key Field"/>
+				<field id="reference_to.0.reference_field.entity.name" displaytype="Text" label="Referenced Object"/>
+				<field id="UpdatedDate" label="Last Modified" displaytype="DATETIME"/>
+				<field id="CreatedDate" label="Created" displaytype="DATETIME"/>
+			</fields>
+			<idfields>
+				<field>id</field>
+			</idfields>
+			<actions>
+				<action>
+					<actions>
+						<action type="branch" whenfinished="stop" model="stng__DataSourceField_Detail" label="if field is picklist or mutipicklist, query picklist entries">
+							<formula>{{display_type}} === 'PICKLIST' || {{display_type}} === 'MULTIPICKLIST'</formula>
+							<iftrueactions>
+								<action type="setCondition" model="stng__DataSourceFieldPicklistEntries" condition="fieldId" value="{{id}}" valuesource="fieldvalue"/>
+								<action type="requeryModel" model="stng__DataSourceFieldPicklistEntries" behavior="standard">
+									<onerroractions>
+										<action type="blockUI" message="There was an error" timeout="3000"/>
+									</onerroractions>
+								</action>
+							</iftrueactions>
+						</action>
+					</actions>
+					<events>
+						<event>models.loaded</event>
+					</events>
+				</action>
+				<action>
+					<actions>
+						<action type="publish" scope="skuid" event="refreshPageInclude" channel="skuidAdminPages">
+							<params/>
+						</action>
+					</actions>
+					<events>
+						<event>models.saved</event>
+					</events>
+				</action>
+				<action>
+					<actions>
+						<action type="blockUI" styleSettingsVariant="dark" message="Loading..."/>
+						<action type="branch" whenfinished="continue" label="if display type is picklist">
+							<iftrueactions>
+								<action type="setCondition" model="stng__DataSourceFieldPicklistEntries" valuesource="fieldvalue" condition="fieldId" value="{{id}}"/>
+								<action type="requeryModel" model="stng__DataSourceFieldPicklistEntries" behavior="standard"/>
+							</iftrueactions>
+							<formula>{{display_type}} == "PICKLIST"</formula>
+						</action>
+						<action type="unblockUI"/>
+					</actions>
+					<events>
+						<event>row.updated</event>
+					</events>
+					<fields>
+						<field>display_type</field>
+					</fields>
+				</action>
+			</actions>
+		</model>
+		<model id="stng__DataSourceFieldPicklistEntries" query="false" createrowifnonefound="false" datasource="SkuidDataService" label="Data Source Field Picklist Entry" labelplural="Data Source Field Picklist Entries" type="readwrite" namefield="label">
+			<methods>
+				<method type="query" verb="GET" endpoint="/api/v2/datasources/{{dataSourceId}}/entities/{{entityId}}/fields/{{fieldId}}/picklistEntries?order=created_at" payloadcontenttype="JSON"/>
+				<method type="insert" verb="POST" payloadcontenttype="JSON" successif="requestsucceeds" sendchanges="asjsoninbody" insertresponse="recordinbody" endpoint="/api/v2/datasources/{{dataSourceId}}/entities/{{entityId}}/fields/{{fieldId}}/picklistEntries"/>
+				<method type="update" verb="PUT" payloadcontenttype="JSON" sendchanges="asjsoninbody" successif="requestsucceeds" endpoint="/api/v2/datasources/{{dataSourceId}}/entities/{{entityId}}/fields/{{fieldId}}/picklistEntries/{{id}}" batch="false"/>
+				<method type="delete" verb="DELETE" payloadcontenttype="JSON" successif="requestsucceeds" endpoint="/api/v2/datasources/{{dataSourceId}}/entities/{{entityId}}/fields/{{fieldId}}/picklistEntries/{{id}}"/>
+			</methods>
+			<conditions>
+				<condition type="modelmerge" value="" sourcetype="param" sourceparam="dataSourceId" operator="=" mergefield="selected_ds" novaluebehavior="noquery" model="dsodetail_uionly" enclosevalueinquotes="true"/>
+				<condition type="modelmerge" value="" sourcetype="param" sourceparam="entityId" operator="=" mergefield="selected_dso" novaluebehavior="noquery" model="dsodetail_uionly" enclosevalueinquotes="true"/>
+				<condition type="modelmerge" value="" sourcetype="param" sourceparam="fieldId" operator="=" mergefield="selected_field" novaluebehavior="noquery" model="dsodetail_uionly" enclosevalueinquotes="true"/>
+				<condition type="modelmerge" value="data_service_host" enclosevalueinquotes="true" field="data_service_host" sourcetype="modelmerge" model="stng__DataSources" sourceparam="host" novaluebehavior="noquery"/>
+				<condition type="modelmerge" value="data_service_port" enclosevalueinquotes="true" field="data_service_port" sourcetype="modelmerge" model="stng__DataSources" sourceparam="port" novaluebehavior="noquery"/>
+			</conditions>
+			<fields>
+				<field id="value" displaytype="TEXT" label="Value"/>
+				<field id="label" displaytype="TEXT" label="Label"/>
+				<field id="active" displaytype="BOOLEAN" label="Active" defaultvaluetype="fieldvalue" defaultValue="true"/>
+				<field id="is_default" displaytype="BOOLEAN" label="Default" defaultvaluetype="fieldvalue" defaultValue="false"/>
+				<field id="id" displaytype="TEXT"/>
+			</fields>
+			<idfields>
+				<field>id</field>
+			</idfields>
+			<actions/>
+		</model>
+		<model id="stng__ReferenceField" query="false" createrowifnonefound="false" datasource="SkuidDataService" label="Reference Field" labelplural="Reference Fields" type="readwrite" namefield="name">
+			<methods>
+				<method type="query" verb="GET" endpoint="/api/v2/datasources/{{dataSourceId}}/entities/{{entityId}}/fields/{{fieldId}}/references" payloadcontenttype="JSON"/>
+			</methods>
+			<conditions>
+				<condition type="modelmerge" value="" sourcetype="param" sourceparam="dataSourceId" operator="=" mergefield="selected_ds" novaluebehavior="noquery" model="dsodetail_uionly" enclosevalueinquotes="true"/>
+				<condition type="modelmerge" value="" sourcetype="param" sourceparam="entityId" operator="=" mergefield="selected_dso" novaluebehavior="noquery" model="dsodetail_uionly" enclosevalueinquotes="true"/>
+				<condition type="modelmerge" value="" sourcetype="param" sourceparam="fieldId" operator="=" mergefield="selected_field" novaluebehavior="noquery" model="dsodetail_uionly" enclosevalueinquotes="true"/>
+				<condition type="modelmerge" value="data_service_host" enclosevalueinquotes="true" field="data_service_host" sourcetype="modelmerge" model="stng__DataSources" sourceparam="host" novaluebehavior="noquery"/>
+				<condition type="modelmerge" value="data_service_port" enclosevalueinquotes="true" field="data_service_port" sourcetype="modelmerge" model="stng__DataSources" sourceparam="port" novaluebehavior="noquery"/>
+			</conditions>
+			<fields>
+				<field id="id" displaytype="TEXT" readonly="true" label="Id"/>
+				<field id="reference_field_id" displaytype="TEXT" label="Name" length="255"/>
+				<field id="datasource_field_id" displaytype="TEXT" label="Name" length="255"/>
+			</fields>
+			<idfields>
+				<field>id</field>
+			</idfields>
+		</model>
+		<model id="stng__ReferenceField_Detail" query="false" createrowifnonefound="false" datasource="SkuidDataService" label="Data Source Field" labelplural="Data Source Fields" namefield="name" type="readwrite" unloadwarningifunsavedchanges="false">
+			<methods>
+				<method type="query" verb="GET" endpoint="/api/v2/datasources/{{dataSourceId}}/entities/{{entityId}}/fields/{{fieldId}}/references/{{referenceId}}" payloadcontenttype="JSON"/>
+				<method type="insert" verb="POST" successif="requestsucceeds" sendchanges="asjsoninbody" insertresponse="recordinbody" endpoint="/api/v2/datasources/{{dataSourceId}}/entities/{{entityId}}/fields/{{fieldId}}/references"/>
+				<method type="update" verb="PUT" successif="requestsucceeds" sendchanges="asjsoninbody" endpoint="/api/v2/datasources/{{dataSourceId}}/entities/{{entityId}}/fields/{{fieldId}}/references/{{referenceId}}"/>
+				<method type="delete" verb="DELETE" endpoint="/api/v2/datasources/{{dataSourceId}}/entities/{{entityId}}/fields/{{fieldId}}/references/{{referenceId}}" successif="requestsucceeds"/>
+			</methods>
+			<conditions>
+				<condition type="modelmerge" value="" sourcetype="param" sourceparam="dataSourceId" operator="=" mergefield="selected_ds" novaluebehavior="noquery" model="dsodetail_uionly" enclosevalueinquotes="true"/>
+				<condition type="modelmerge" value="" sourcetype="param" sourceparam="entityId" operator="=" mergefield="selected_dso" novaluebehavior="noquery" model="dsodetail_uionly" enclosevalueinquotes="true"/>
+				<condition type="modelmerge" value="" sourcetype="param" sourceparam="fieldId" operator="=" mergefield="selected_field" novaluebehavior="noquery" model="dsodetail_uionly" enclosevalueinquotes="true"/>
+				<condition type="modelmerge" sourcetype="param" sourceparam="referenceId" inactive="false" value="" operator="=" model="stng__ReferenceField" enclosevalueinquotes="true" mergefield="id" novaluebehavior="noquery"/>
+				<condition type="modelmerge" value="external_key" enclosevalueinquotes="true" field="external_key" sourcetype="modelmerge" model="stng__DataSources" sourceparam="dataSourceId" novaluebehavior="noquery"/>
+				<condition type="modelmerge" value="data_service_host" enclosevalueinquotes="true" field="data_service_host" sourcetype="modelmerge" model="stng__DataSources" sourceparam="host" novaluebehavior="noquery"/>
+				<condition type="modelmerge" value="data_service_port" enclosevalueinquotes="true" field="data_service_port" sourcetype="modelmerge" model="stng__DataSources" sourceparam="port" novaluebehavior="noquery"/>
+			</conditions>
+			<fields>
+				<field id="id" displaytype="TEXT" readonly="true" label="Id"/>
+				<field id="reference_field_id" displaytype="PICKLIST" label="Key Field" ogdisplaytype="BOOLEAN" picklistsource="rowsinmodel" returntype="TEXT" picklistmodel="stng__DataSourceObjectListFields" entryvalue="{{id}}" entrylabel="{{name}}"/>
+				<field id="datasource_field_id" displaytype="TEXT" label="Name" length="255"/>
+				<field id="object" displaytype="PICKLIST" label="Object" ogdisplaytype="BOOLEAN" picklistsource="rowsinmodel" returntype="TEXT" picklistmodel="stng__DataSourceObjectList" entryvalue="{{id}}" entrylabel="{{name}}"/>
+			</fields>
+			<idfields>
+				<field>id</field>
+			</idfields>
+		</model>
+		<model id="no_loopy" limit="20" query="true" datasource="Ui-Only" createrowifnonefound="true">
+			<fields>
+				<field id="running" displaytype="BOOLEAN" length="255" ogdisplaytype="TEXT"/>
+			</fields>
+			<conditions/>
+			<actions/>
+		</model>
+		<model id="autosave" limit="20" query="true" datasource="Ui-Only" createrowifnonefound="true">
+			<fields>
+				<field id="status" displaytype="PICKLIST" ogdisplaytype="TEXT" label="Status" required="false" picklistsource="manual" returntype="TEXT" defaultvaluetype="fieldvalue" defaultValue="saved">
+					<picklistentries>
+						<entry value="saved" label="Saved"/>
+						<entry value="saving" label="Saving"/>
+						<entry value="error" label="Error"/>
+					</picklistentries>
+				</field>
+			</fields>
+			<conditions/>
+			<actions/>
+		</model>
+	</models>
+	<components/>
+	<pageregioncontents>
+		<pageregioncontent regionid="sk-2w1w-1416" uniqueid="sk-1uLo4g-22">
+			<components>
+				<skuid__composer>
+					<header>
+						<components>
+							<skuid__masthead uniqueid="sk-3rFl-1777">
+								<divisions>
+									<division type="navigation" flex="0">
+										<components>
+											<skuid__navigation uniqueid="db-nav" type="dropdown" styleSettingsVariant="app-nav" dropdownIcon="sk-webicon-ink:hamburger-menu">
+												<itemGroups>
+													<itemGroup>
+														<items>
+															<item label="Apps" uniqueid="nav-apps">
+																<actions>
+																	<action type="redirect" window="self" url="/ns/skuid/ui/apps"/>
+																</actions>
+																<renderConditions logictype="and"/>
+																<selectedConditions logictype="and">
+																	<condition type="fieldvalue" operator="=" enclosevalueinquotes="true" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" fieldmodel="NavUiControl" field="GlobalNavController" value="APPS"/>
+																</selectedConditions>
+															</item>
+															<item label="Pages" uniqueid="nav-pages">
+																<actions>
+																	<action type="redirect" url="/ns/skuid/ui/pages"/>
+																</actions>
+																<renderConditions logictype="and"/>
+																<selectedConditions logictype="and">
+																	<condition type="fieldvalue" operator="=" enclosevalueinquotes="true" fieldmodel="NavUiControl" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="GlobalNavController" value="PAGES"/>
+																</selectedConditions>
+															</item>
+															<item label="Design Systems" uniqueid="nav-designsystems">
+																<actions>
+																	<action type="redirect" window="self" url="/ns/skuid/ui/design"/>
+																</actions>
+																<renderConditions logictype="and"/>
+																<selectedConditions logictype="and">
+																	<condition type="fieldvalue" operator="=" enclosevalueinquotes="true" fieldmodel="NavUiControl" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="GlobalNavController" value="DESIGN"/>
+																</selectedConditions>
+															</item>
+															<item label="Data Sources" uniqueid="nav-datasources">
+																<actions>
+																	<action type="redirect" window="self" url="/ns/skuid/ui/datasources"/>
+																</actions>
+																<renderConditions logictype="and"/>
+																<selectedConditions logictype="and">
+																	<condition type="fieldvalue" operator="=" enclosevalueinquotes="true" fieldmodel="NavUiControl" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="GlobalNavController" value="DATA"/>
+																</selectedConditions>
+															</item>
+															<item label="Settings" uniqueid="nav-settings">
+																<actions>
+																	<action type="redirect" window="self" url="/ns/skuid/ui/settings#users"/>
+																</actions>
+																<renderConditions logictype="and"/>
+																<selectedConditions logictype="and">
+																	<condition type="fieldvalue" enclosevalueinquotes="true" fieldmodel="NavUiControl" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" sourceproperty="hasRows" operator="=" field="GlobalNavController" value="SETTINGS"/>
+																</selectedConditions>
+															</item>
+															<item label="Help" uniqueid="nav-help">
+																<actions>
+																	<action type="updateRow" fieldmodel="NavUiControl" affectedrows="context">
+																		<updates>
+																			<update valuesource="fieldvalue" field="GlobalNavController" enclosevalueinquotes="true" value="HELP"/>
+																		</updates>
+																	</action>
+																</actions>
+																<itemGroups>
+																	<itemGroup>
+																		<items>
+																			<item label="Basic Resources" uniqueid="sk-2Mk0-12772">
+																				<actions>
+																					<action type="redirect" window="self" url="/ns/skuid/ui/help"/>
+																				</actions>
+																			</item>
+																			<item label="Getting Started" uniqueid="sk-2Mk0-12774">
+																				<actions>
+																					<action type="redirect" window="self" url="/ns/skuid/ui/welcome"/>
+																				</actions>
+																				<renderConditions logictype="and">
+																					<renderCondition type="fieldvalue" operator="=" enclosevalueinquotes="true" fieldmodel="NavUiControl" sourcetype="fieldvalue" nosourcerowbehavior="deactivate"/>
+																				</renderConditions>
+																				<selectedConditions/>
+																				<styleVariantConditions/>
+																			</item>
+																			<item label="Documentation" uniqueid="sk-6nq-1778">
+																				<actions>
+																					<action type="redirect" window="blank" url="https://docs.skuid.com/platform/en/"/>
+																				</actions>
+																			</item>
+																			<item label="Community" uniqueid="sk-6nx-2011">
+																				<actions>
+																					<action type="redirect" window="blank" url="https://community.skuid.com/skuid"/>
+																				</actions>
+																			</item>
+																			<item label="Skuid Learn" uniqueid="sk-6nx-2075">
+																				<actions>
+																					<action type="redirect" window="blank" url="https://portal.skuidsite.com/learning"/>
+																				</actions>
+																			</item>
+																			<item label="Templates" uniqueid="sk-6nx-2140">
+																				<actions>
+																					<action type="redirect" window="self" url="/ns/skuid/ui/app-templates"/>
+																				</actions>
+																			</item>
+																		</items>
+																	</itemGroup>
+																</itemGroups>
+																<renderConditions logictype="and"/>
+																<selectedConditions logictype="and">
+																	<condition type="fieldvalue" operator="=" enclosevalueinquotes="true" fieldmodel="NavUiControl" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="GlobalNavController" value="HELP"/>
+																</selectedConditions>
+															</item>
+														</items>
+													</itemGroup>
+												</itemGroups>
+												<styles>
+													<spacing/>
+												</styles>
+											</skuid__navigation>
+											<!-- navigation items for usermenu are loaded server side so this is necessary for the usermenu options in the left side bar -->
+											<skuid__navigation type="dropdown" source="usermenu" show="false"/>
+										</components>
+										<styles>
+											<spacing right="2"/>
+										</styles>
+									</division>
+									<division type="navigation" flex="0">
+										<components>
+											<skuid__text model="stng__DataSource_Warden" contents="&lt;span style=&quot;font-weight: 500;&quot;&gt;{{name}}&lt;/span&gt;" allowHtmlInBuilder="true" uniqueid="sk-3rIC-10772"/>
+										</components>
+									</division>
+									<division type="separator" flex="1"/>
+									<division type="navigation" flex="0" uniqueid="advanced-options-division" show="false">
+										<components>
+											<skuid__text contents="Site Permission Sets /">
+												<styles>
+													<spacing right="0" top="0.25"/>
+												</styles>
+												<styleVariantConditions/>
+											</skuid__text>
+											<skuid__navigation uniqueid="advanced-options-dropdown" type="dropdown" styleSettingsVariant="profile-dropdown">
+												<itemGroups/>
+											</skuid__navigation>
+										</components>
+									</division>
+									<division type="separator" flex="1"/>
+									<division type="navigation" flex="1" minWidth="130px" maxWidth="130px">
+										<components>
+											<skuid__buttonSet uniqueid="sk-29HL-9425">
+												<groups>
+													<skuid__buttonGroup uniqueId="sk-29HL-9425" displayType="menu" iconPosition="right" icon="sk-webicon-ink:warning" label="Unable to save" styleSettingsVariant="saver-error">
+														<buttons>
+															<skuid__button label="&lt;div style=&quot;padding: 0 8px 8px 8px; border-bottom: solid 1px #E2E2E2&quot;&gt;&lt;strong&gt;Currently unable to save changes&lt;/strong&gt;&lt;/div&gt;&#10;&lt;div style=&quot;padding: 0 8px;margin-top: -4px&quot;&gt;One or more issues on this page are preventing Skuid from saving your progress. Make sure you are connected to the internet and check your table for validation issues.&lt;/div&gt;" uniqueId="sk-29HL-9426" allowHTML="true">
+																<tooltip position="top"/>
+															</skuid__button>
+														</buttons>
+														<renderConditions logictype="and">
+															<renderCondition type="fieldvalue" operator="=" enclosevalueinquotes="true" fieldmodel="autosave" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="status" value="error"/>
+														</renderConditions>
+													</skuid__buttonGroup>
+													<skuid__buttonGroup uniqueId="sk-29HL-9424" displayType="menu" iconPosition="right" icon="sk-webicon-ink:sync" label="Saving changes" styleSettingsVariant="saver-saving">
+														<buttons>
+															<skuid__button label="&lt;div style=&quot;padding: 0 8px 8px 8px; border-bottom: solid 1px #E2E2E2&quot;&gt;&lt;strong&gt;Saving in progress&lt;/strong&gt;&lt;/div&gt;&#10;&lt;div style=&quot;padding: 0 8px;margin-top: -4px&quot;&gt;All changes in the Database Console are automatically saved as you work.&lt;/div&gt;" uniqueId="sk-29HL-9425" allowHTML="true">
+																<tooltip position="top"/>
+															</skuid__button>
+														</buttons>
+														<renderConditions logictype="and">
+															<renderCondition type="fieldvalue" operator="=" enclosevalueinquotes="true" fieldmodel="autosave" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="status" value="saving"/>
+														</renderConditions>
+													</skuid__buttonGroup>
+													<skuid__buttonGroup uniqueId="sk-29HL-9423" displayType="menu" iconPosition="right" icon="sk-webicon-ink:saved" styleSettingsVariant="saver">
+														<buttons>
+															<skuid__button label="&lt;div style=&quot;padding: 0 8px 8px 8px; border-bottom: solid 1px #E2E2E2&quot;&gt;&lt;strong&gt;Changes have been saved&lt;/strong&gt;&lt;/div&gt;&#10;&lt;div style=&quot;padding: 0 8px;margin-top: -4px&quot;&gt;You’re all set! All changes in the Database Console are automatically saved as you work.&lt;/div&gt;" uniqueId="sk-29HL-9424" allowHTML="true">
+																<tooltip position="top"/>
+															</skuid__button>
+														</buttons>
+														<renderConditions logictype="and">
+															<renderCondition type="fieldvalue" operator="=" enclosevalueinquotes="true" fieldmodel="autosave" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="status" value="saved"/>
+														</renderConditions>
+													</skuid__buttonGroup>
+												</groups>
+												<styles>
+													<spacing right="2" left="auto"/>
+												</styles>
+											</skuid__buttonSet>
+										</components>
+									</division>
+								</divisions>
+							</skuid__masthead>
+						</components>
+					</header>
+					<leftsidebar>
+						<components>
+							<skuidbuilder__composerLeftSidebar uniqueid="sk-3rIC-10709" behavior="push" closeOnPageClick="false" activeTabIndex="0" startOpen="true">
+								<tabs>
+									<tab type="icon" icon="sk-webicon-ink:object" label="Data source objects">
+										<components>
+											<skuidbuilder__dsoManager
+												dsoListModel="stng__DataSourceObjectList"
+												dsoModel="stng__DataSourceObjects"
+												uiControllerModel="dsodetail_uionly"
+												dsModel="stng__DataSources"
+											/>
+										</components>
+									</tab>
+									<tab type="separator" />
+									<tab type="user-menu" />
+								</tabs>
+							</skuidbuilder__composerLeftSidebar>
+						</components>
+					</leftsidebar>
+					<canvas>
+						<components>
+							<skuidbuilder__dbConsole
+								uniqueid="dbConsole"
+								uiControllerModel="dsodetail_uionly"
+								autosaveModel="autosave"
+								dsModel="stng__DataSources"
+								dsoListModel="stng__DataSourceObjectList"
+								dsoModel="stng__DataSourceObjects"
+								dsoFieldsModel="stng__DataSourceFields"
+								dsoPicklistEntriesModel="stng__DataSourceFieldPicklistEntries"
+								dsoReferenceFieldModel="stng__ReferenceField"
+								dsoReferenceFieldDetailModel="stng__ReferenceField_Detail"
+								profileModel="Profile"
+								wardenModel="stng__DataSource_Warden"
+								conditionsModel="stng__DataSourceConditions"
+								objectPermissionsModel="DataSourceObjectPermissions"
+								fieldPermissionsModel="DataSourceFieldPermissions"
+								namedPermissionsModel="NamedPermissions"
+							/>
+						</components>
+					</canvas>
+					<rightsidebar>
+						<components>
+							<skuidbuilder__composerProperties hasEmptyState="true" styleSettingsVariant="fullHeight"/>
+						</components>
+					</rightsidebar>
+				</skuid__composer>
+			</components>
+		</pageregioncontent>
+	</pageregioncontents>
+	<resources>
+		<labels/>
+		<javascript>
+			<jsitem location="staticresource" namespace="skuid" filepath="js/skuidPages/skuidSettings.js" scope="api"/>
+			<jsitem location="staticresource" namespace="skuid" filepath="js/skuidPages/dataSourceConfig.js" scope="api"/>
+			<jsitem location="inlinesnippet" name="doNotQueryConditions" cachelocation="false">var params = arguments[0],
+	$ = skuid.$;
+	
+var conditionModel = skuid.model.getModel('stng__DataSourceConditions');
+var uiModel = skuid.model.getModel('dsodetail_uionly');
+var rows = conditionModel.getRows();
+var no_query_conditions = 0;
+
+$.each(rows, function(i, row) {
+    if (row.execute_on_query) {
+        no_query_conditions ++;
+    }
+});
+
+uiModel.updateRow(uiModel.getFirstRow(), {no_query_conditions: no_query_conditions});
+			</jsitem>
+			<jsitem location="inlinesnippet" name="checkForFeatureFlags" cachelocation="false">var params = arguments[0],
+   $ = skuid.$;
+  
+var model = skuid.$M("FeatureFlags")
+model.updateRow(model.getFirstRow(),{
+   appPermSetsEnabled: skuid.platform.hasFeature("Permission Sets"),
+});
+			</jsitem>
+			<jsitem location="inlinesnippet" name="updateUserAttributePicklistField" cachelocation="false">
+				var params = arguments[0],
+				$ = skuid.$;
+				
+				var conditionModel = skuid.model.getModel('stng__DataSourceConditions');
+				var rows = conditionModel.getRows();
+
+				$.each(rows, function(i, row) {
+					if (row.type === "userinfo") {
+						conditionModel.updateRow(row, {value_user_attributes: row.value});
+					}
+				});
+				if (conditionModel.hasChanged) {
+					conditionModel.hasChanged = false;
+				}
+		</jsitem>
+		</javascript>
+		<css/>
+		<actionsequences>
+			<actionsequence id="0306b8c2-7cfe-415f-9205-ceaa6c5bbbbe" label="Get Data Service and Load Models" type="event-triggered" event-scope="component" event-name="page.rendered">
+				<description/>
+				<actions>
+					<action type="custom" snippet="skuid.settings.dataSources.populateDefaultDataService"/>
+					<action type="custom" snippet="checkForFeatureFlags"/>
+					<action type="requeryModels" behavior="standard">
+						<models>
+							<model>stng__DataSource_Warden</model>
+							<model>stng__DataSourceObjectList</model>
+							<model>Profile</model>
+						</models>
+						<onerroractions>
+							<action type="blockUI" message="There was an error" timeout="3000"/>
+						</onerroractions>
+					</action>
+					<action type="createRow" fieldmodel="dsodetail_uionly" affectedrows="context" model="dsodetail_uionly" appendorprepend="prepend" defaultmodefornewitems="edit">
+						<defaults>
+							<default valuesource="modelmerge" field="selected_ds" enclosevalueinquotes="true" sourcemodel="stng__DataSource_Warden" sourcefield="id"/>
+							<default valuesource="fieldvalue" field="selected_dso" enclosevalueinquotes="true" value=""/>
+						</defaults>
+					</action>
+				</actions>
+			</actionsequence>
+		</actionsequences>
+	</resources>
+	<styles>
+		<styleitem type="background" bgtype="none"/>
+	</styles>
+</skuid__page>

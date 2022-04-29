@@ -1,0 +1,430 @@
+<skuid__page personalizationmode="client" unsavedchangeswarning="yes" theme="Skuid Admin" title="Skuid Settings">
+	<models>
+		<model id="FeatureFlags" limit="20" query="true" createrowifnonefound="true" datasource="Ui-Only">
+			<fields>
+				<field id="appPermSetsEnabled" displaytype="BOOLEAN" length="255" ogdisplaytype="TEXT"/>
+			</fields>
+			<conditions/>
+			<actions/>
+		</model>
+	</models>
+	<pageregioncontents>
+		<pageregioncontent regionid="sk-2w1w-1416" uniqueid="set-sk-2w3a-1376">
+			<components>
+				<skuid__wrapper uniqueid="set-sk-3qd0-607" overflowY="visible">
+					<components>
+						<skuid__wrapper uniqueid="sk-1BY2-11467" styleSettingsVariant="b5342fe9-7125-4bf8-b20b-ade1825d7e72">
+							<components>
+								<skuid__grid uniqueid="sk-1iTc-5178" flexDirection="row" justifyContent="space-around" alignItems="flex-start" columnGutter="0" rowGutter="0">
+									<divisions>
+										<division alignSelf="auto" minWidth="100%" ratio="1" maxWidth="1440px">
+											<components>
+												<skuid__header title="Settings" uniqueid="set-sk-3qd8-653"/>
+											</components>
+										</division>
+									</divisions>
+									<styles>
+										<spacing top="4" bottom="4" left="4" right="4"/>
+									</styles>
+									<background/>
+								</skuid__grid>
+							</components>
+							<background/>
+							<styles>
+								<spacing/>
+							</styles>
+						</skuid__wrapper>
+						<skuid__wrapper uniqueid="set-sk-3t6O-1674" overflowY="visible">
+							<components>
+								<skuid__grid uniqueid="sk-1iTx-15527" flexDirection="row" justifyContent="space-around" alignItems="flex-start" columnGutter="0" rowGutter="0">
+									<divisions>
+										<division alignSelf="auto" minWidth="100%" ratio="1" maxWidth="1440px">
+											<components>
+												<skuid__grid uniqueid="set-sk-1peS-20623" flexDirection="row" justifyContent="flex-start" alignItems="stretch" columnGutter="3" rowGutter="0">
+													<divisions>
+														<division minWidth="200px" ratio="0" alignSelf="auto" maxWidth="204px">
+															<components>
+																<skuid__wrapper uniqueid="sk-2zK0-9141" height="custom" heightCustom="80vh" overflowY="visible" styleSettingsVariant="cb912890-8bf9-4451-8e7d-f13990092b83">
+																	<components>
+																		<skuid__verticalNavigation uniqueid="vertical-nav-settings" styleSettingsVariant="borderless">
+																			<items>
+																				<item label="People" uniqueid="people" type="section"/>
+																				<item label="Users" uniqueid="users" type="action">
+																					<actions uniqueId="set-sk-1uWa-17807">
+																						<action type="updateRow" fieldmodel="NavUiControl" affectedrows="context">
+																							<updates>
+																								<update valuesource="fieldvalue" field="VerticalNavController" enclosevalueinquotes="true" value="users"/>
+																							</updates>
+																						</action>
+																						<action type="redirect" window="self" url="#users"/>
+																						<action type="runComponentAction" componentid="pageinclude-settings" action="loadNewPage" pageName="Settings_Users" namespace="skuid"/>
+																					</actions>
+																					<renderConditions logictype="and">
+																						<renderCondition type="blank" operator="!=" sourcetype="userinfo" nosourcerowbehavior="deactivate" sourceuserinfotype="lastname" value="null" enclosevalueinquotes="false"/>
+																					</renderConditions>
+																					<selectedConditions logictype="and">
+																						<condition type="fieldvalue" operator="=" enclosevalueinquotes="true" fieldmodel="NavUiControl" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="VerticalNavController" value="users"/>
+																					</selectedConditions>
+																				</item>
+																				<item uniqueid="profiles" type="action" label="Profiles">
+																					<actions uniqueId="set-sk-1uWk-18126">
+																						<action type="updateRow" fieldmodel="NavUiControl" affectedrows="context">
+																							<updates>
+																								<update valuesource="fieldvalue" field="VerticalNavController" enclosevalueinquotes="true" value="profiles"/>
+																							</updates>
+																						</action>
+																						<action type="redirect" window="self" url="#profiles"/>
+																						<action type="runComponentAction" componentid="pageinclude-settings" action="loadNewPage" pageName="Settings_Profiles" namespace="skuid"/>
+																					</actions>
+																					<renderConditions logictype="and">
+																						<renderCondition type="fieldvalue" operator="!=" enclosevalueinquotes="false" fieldmodel="FeatureFlags" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="appPermSetsEnabled" value="true"/>
+																					</renderConditions>
+																					<selectedConditions logictype="and">
+																						<condition type="fieldvalue" operator="=" enclosevalueinquotes="true" fieldmodel="NavUiControl" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="VerticalNavController" value="profiles"/>
+																					</selectedConditions>
+																				</item>
+																				<item type="action" label="Site Permission Sets" uniqueid="sitepermissionsets">
+																					<actions uniqueId="set-sk-1uWk-18127">
+																						<action type="updateRow" fieldmodel="NavUiControl" affectedrows="context">
+																							<updates>
+																								<update valuesource="fieldvalue" field="VerticalNavController" enclosevalueinquotes="true" value="sitepermissionsets"/>
+																							</updates>
+																						</action>
+																						<action type="redirect" window="self" url="#sitepermissionsets"/>
+																						<action type="runComponentAction" componentid="pageinclude-settings" action="loadNewPage" pageName="Settings_Profiles" namespace="skuid"/>
+																					</actions>
+																					<renderConditions logictype="and">
+																						<renderCondition type="fieldvalue" operator="=" enclosevalueinquotes="false" fieldmodel="FeatureFlags" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="appPermSetsEnabled" value="true"/>
+																					</renderConditions>
+																					<selectedConditions logictype="and">
+																						<condition type="fieldvalue" operator="=" enclosevalueinquotes="true" fieldmodel="NavUiControl" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="VerticalNavController" value="sitepermissionsets"/>
+																					</selectedConditions>
+																				</item>
+																				<item label="Subscriptions" uniqueid="subscriptions" type="action">
+																					<actions uniqueId="set-sk-1uWk-18190">
+																						<action type="updateRow" fieldmodel="NavUiControl" affectedrows="context">
+																							<updates>
+																								<update valuesource="fieldvalue" field="VerticalNavController" enclosevalueinquotes="true" value="subscriptions"/>
+																							</updates>
+																						</action>
+																						<action type="redirect" window="self" url="#subscriptions"/>
+																						<action type="runComponentAction" componentid="pageinclude-settings" action="loadNewPage" pageName="Settings_Subscriptions" namespace="skuid"/>
+																					</actions>
+																					<renderConditions logictype="and"/>
+																					<selectedConditions logictype="and">
+																						<condition type="fieldvalue" operator="=" enclosevalueinquotes="true" fieldmodel="NavUiControl" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="VerticalNavController" value="subscriptions"/>
+																					</selectedConditions>
+																				</item>
+																				<item label="Login History" uniqueid="loginhistory" type="action">
+																					<actions uniqueId="set-sk-1pnP-18497">
+																						<action type="updateRow" fieldmodel="NavUiControl" affectedrows="context">
+																							<updates>
+																								<update valuesource="fieldvalue" field="VerticalNavController" enclosevalueinquotes="true" value="loginhistory"/>
+																							</updates>
+																						</action>
+																						<action type="redirect" window="self" url="#loginhistory"/>
+																						<action type="runComponentAction" componentid="pageinclude-settings" action="loadNewPage" pageName="Settings_LoginHistory" namespace="skuid"/>
+																					</actions>
+																					<renderConditions logictype="and"/>
+																					<selectedConditions logictype="and">
+																						<condition type="fieldvalue" operator="=" enclosevalueinquotes="true" fieldmodel="NavUiControl" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="VerticalNavController" value="loginhistory"/>
+																					</selectedConditions>
+																				</item>
+																				<item label="  " uniqueid="spacing-one" type="section"/>
+																				<item label="Extensions" uniqueid="extensions" type="section"/>
+																				<item label="Files" uniqueid="files" type="action">
+																					<actions>
+																						<action type="updateRow" fieldmodel="NavUiControl" affectedrows="context">
+																							<updates>
+																								<update valuesource="fieldvalue" field="VerticalNavController" enclosevalueinquotes="true" value="files"/>
+																							</updates>
+																						</action>
+																						<action type="redirect" window="self" url="#files"/>
+																						<action type="runComponentAction" componentid="pageinclude-settings" action="loadNewPage" pageName="Settings_Files" namespace="skuid"/>
+																					</actions>
+																					<renderConditions logictype="and"/>
+																					<selectedConditions logictype="and">
+																						<condition type="fieldvalue" operator="=" enclosevalueinquotes="true" fieldmodel="NavUiControl" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="VerticalNavController" value="files"/>
+																					</selectedConditions>
+																				</item>
+																				<item label="Component Packs" uniqueid="componentpacks" type="action">
+																					<actions uniqueId="set-sk-1ugB-8523">
+																						<action type="updateRow" fieldmodel="NavUiControl" affectedrows="context">
+																							<updates>
+																								<update valuesource="fieldvalue" field="VerticalNavController" enclosevalueinquotes="true" value="componentpacks"/>
+																							</updates>
+																						</action>
+																						<action type="redirect" window="self" url="#componentpacks"/>
+																						<action type="runComponentAction" componentid="pageinclude-settings" action="loadNewPage" pageName="Settings_ComponentPacks" namespace="skuid"/>
+																					</actions>
+																					<renderConditions logictype="or">
+																						<renderCondition value="EnableV1" sourcetype="feature" operator="=" fieldmodel="NavUiControl"/>
+																						<renderCondition value="CustomComponent" sourcetype="feature" operator="=" fieldmodel="NavUiControl"/>
+																					</renderConditions>
+																					<selectedConditions logictype="and">
+																						<condition type="fieldvalue" operator="=" enclosevalueinquotes="true" fieldmodel="NavUiControl" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="VerticalNavController" value="componentpacks"/>
+																					</selectedConditions>
+																				</item>
+																				<item label="  " uniqueid="spacing-two" type="section">
+																					<actions/>
+																				</item>
+																				<item label="Site Details" type="section" uniqueid="site-details">
+																					<actions/>
+																					<items/>
+																				</item>
+																				<item label="Site Profile" uniqueid="siteprofile" type="action">
+																					<actions>
+																						<action type="updateRow" fieldmodel="NavUiControl" affectedrows="context">
+																							<updates>
+																								<update valuesource="fieldvalue" field="VerticalNavController" enclosevalueinquotes="true" value="siteprofile"/>
+																							</updates>
+																						</action>
+																						<action type="redirect" window="self" url="#siteprofile"/>
+																						<action type="runComponentAction" componentid="pageinclude-settings" action="loadNewPage" pageName="Settings_SiteProfile" namespace="skuid"/>
+																					</actions>
+																					<renderConditions logictype="and"/>
+																					<selectedConditions logictype="and">
+																						<condition type="fieldvalue" operator="=" enclosevalueinquotes="true" fieldmodel="NavUiControl" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="VerticalNavController" value="siteprofile"/>
+																					</selectedConditions>
+																				</item>
+																				<item label="Locale" uniqueid="locale" type="action">
+																					<actions>
+																						<action type="updateRow" fieldmodel="NavUiControl" affectedrows="context">
+																							<updates>
+																								<update valuesource="fieldvalue" field="VerticalNavController" enclosevalueinquotes="true" value="locale"/>
+																							</updates>
+																						</action>
+																						<action type="redirect" window="self" url="#locale"/>
+																						<action type="runComponentAction" componentid="pageinclude-settings" action="loadNewPage" pageName="Settings_Site_Locale" namespace="skuid"/>
+																					</actions>
+																					<renderConditions logictype="and"/>
+																					<selectedConditions logictype="and">
+																						<condition type="fieldvalue" operator="=" enclosevalueinquotes="true" fieldmodel="NavUiControl" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="VerticalNavController" value="locale"/>
+																					</selectedConditions>
+																				</item>
+																				<item uniqueid="sitebranding" type="action" label="Site Branding">
+																					<actions>
+																						<action type="updateRow" fieldmodel="NavUiControl" affectedrows="context">
+																							<updates>
+																								<update valuesource="fieldvalue" field="VerticalNavController" enclosevalueinquotes="true" value="sitebranding"/>
+																							</updates>
+																						</action>
+																						<action type="redirect" window="self" url="#sitebranding"/>
+																						<action type="runComponentAction" componentid="pageinclude-settings" action="loadNewPage" pageName="Settings_Branding" namespace="skuid"/>
+																					</actions>
+																					<renderConditions logictype="and"/>
+																					<selectedConditions logictype="and">
+																						<condition type="fieldvalue" operator="=" enclosevalueinquotes="true" fieldmodel="NavUiControl" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="VerticalNavController" value="sitebranding"/>
+																					</selectedConditions>
+																				</item>
+																				<item label="Version" uniqueid="versiondetails" type="action">
+																					<actions uniqueId="set-sk-1ugN-10344">
+																						<action type="updateRow" fieldmodel="NavUiControl" affectedrows="context">
+																							<updates>
+																								<update valuesource="fieldvalue" field="VerticalNavController" enclosevalueinquotes="true" value="versiondetails"/>
+																							</updates>
+																						</action>
+																						<action type="redirect" window="self" url="#versiondetails"/>
+																						<action type="runComponentAction" componentid="pageinclude-settings" action="loadNewPage" pageName="Settings_AboutSkuid" namespace="skuid"/>
+																					</actions>
+																					<renderConditions logictype="and"/>
+																					<selectedConditions logictype="and">
+																						<condition type="fieldvalue" operator="=" enclosevalueinquotes="true" fieldmodel="NavUiControl" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="VerticalNavController" value="versiondetails"/>
+																					</selectedConditions>
+																				</item>
+																				<item label="  " uniqueid="spacing-three" type="section"/>
+																				<item label="Security" uniqueid="security" type="section"/>
+																				<item label="Site Security" uniqueid="sitesecurity" type="action">
+																					<actions uniqueId="set-sk-1ugN-10344">
+																						<action type="updateRow" fieldmodel="NavUiControl" affectedrows="context">
+																							<updates>
+																								<update valuesource="fieldvalue" field="VerticalNavController" enclosevalueinquotes="true" value="sitesecurity"/>
+																							</updates>
+																						</action>
+																						<action type="redirect" window="self" url="#sitesecurity"/>
+																						<action type="runComponentAction" componentid="pageinclude-settings" action="loadNewPage" pageName="Settings_Site_Security" namespace="skuid"/>
+																					</actions>
+																					<renderConditions logictype="and"/>
+																					<selectedConditions logictype="and">
+																						<condition type="fieldvalue" operator="=" enclosevalueinquotes="true" fieldmodel="NavUiControl" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="VerticalNavController" value="sitesecurity"/>
+																					</selectedConditions>
+																				</item>
+																				<item label="Certificates" uniqueid="certificates" type="action">
+																					<actions>
+																						<action type="updateRow" fieldmodel="NavUiControl" affectedrows="context">
+																							<updates>
+																								<update valuesource="fieldvalue" field="VerticalNavController" enclosevalueinquotes="true" value="certificates"/>
+																							</updates>
+																						</action>
+																						<action type="redirect" window="self" url="#certificates"/>
+																						<action type="runComponentAction" componentid="pageinclude-settings" action="loadNewPage" pageName="Settings_Site_Certificates" namespace="skuid"/>
+																					</actions>
+																					<renderConditions logictype="and"/>
+																					<selectedConditions logictype="and">
+																						<condition type="fieldvalue" operator="=" enclosevalueinquotes="true" fieldmodel="NavUiControl" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="VerticalNavController" value="certificates"/>
+																					</selectedConditions>
+																				</item>
+																				<item label="Offline" uniqueid="offline" type="action">
+																					<actions>
+																						<action type="updateRow" fieldmodel="NavUiControl" affectedrows="context">
+																							<updates>
+																								<update valuesource="fieldvalue" field="VerticalNavController" enclosevalueinquotes="true" value="offline"/>
+																							</updates>
+																						</action>
+																						<action type="redirect" window="self" url="#offline"/>
+																						<action type="runComponentAction" componentid="pageinclude-settings" action="loadNewPage" pageName="Settings_Site_Offline" namespace="skuid"/>
+																					</actions>
+																					<renderConditions logictype="and">
+																						<rendercondition value="Offline" sourcetype="feature" enclosevalueinquotes="false" operator="="/>
+																					</renderConditions>
+																					<selectedConditions logictype="and">
+																						<condition type="fieldvalue" operator="=" enclosevalueinquotes="true" fieldmodel="NavUiControl" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="VerticalNavController" value="offline"/>
+																					</selectedConditions>
+																				</item>
+																				<item label="Single Sign-on" uniqueid="singlesignon" type="action">
+																					<actions>
+																						<action type="updateRow" fieldmodel="NavUiControl" affectedrows="context">
+																							<updates>
+																								<update valuesource="fieldvalue" field="VerticalNavController" enclosevalueinquotes="true" value="singlesignon"/>
+																							</updates>
+																						</action>
+																						<action type="redirect" window="self" url="#singlesignon"/>
+																						<action type="runComponentAction" componentid="pageinclude-settings" action="loadNewPage" pageName="Settings_Site_SSO" namespace="skuid"/>
+																					</actions>
+																					<renderConditions logictype="and"/>
+																					<selectedConditions logictype="and">
+																						<condition type="fieldvalue" operator="=" enclosevalueinquotes="true" fieldmodel="NavUiControl" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="VerticalNavController" value="singlesignon"/>
+																					</selectedConditions>
+																				</item>
+																				<item label="Feature Flags (DEV ONLY)" uniqueid="featureflags" type="action">
+																					<actions>
+																						<action type="runComponentAction" componentid="pageinclude-settings" action="loadNewPage" pageName="Settings_FeatureFlags" namespace="skuid"/>
+																					</actions>
+																					<renderConditions logictype="and">
+																						<renderCondition sourcetype="snippet" sourcesnippet="skuid.settings.inDevelopmentMode"/>
+																					</renderConditions>
+																				</item>
+																				<item label="Environment Variables" uniqueid="variables" type="action">
+																					<actions uniqueId="set-sk-1ugB-8524">
+																						<action type="updateRow" fieldmodel="NavUiControl" affectedrows="context">
+																							<updates>
+																								<update valuesource="fieldvalue" field="VerticalNavController" enclosevalueinquotes="true" value="variables"/>
+																							</updates>
+																						</action>
+																						<action type="redirect" window="self" url="#variables"/>
+																						<action type="runComponentAction" componentid="pageinclude-settings" action="loadNewPage" pageName="Settings_EnvironmentVariables" namespace="skuid"/>
+																					</actions>
+																					<renderConditions logictype="and">
+																						<rendercondition value="Environment Specific Config" sourcetype="feature" enclosevalueinquotes="false" operator="="/>
+																					</renderConditions>
+																					<selectedConditions logictype="and">
+																						<condition type="fieldvalue" operator="=" enclosevalueinquotes="true" fieldmodel="NavUiControl" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="VerticalNavController" value="variables"/>
+																					</selectedConditions>
+																				</item>
+																				<item label="  " uniqueid="spacing-four" type="section"/>
+																				<item label="About" uniqueid="about" type="section">
+																					<renderConditions logictype="and">
+																						<renderCondition type="fieldvalue" operator="=" enclosevalueinquotes="true" fieldmodel="NavUiControl" sourcetype="fieldvalue" nosourcerowbehavior="deactivate"/>
+																					</renderConditions>
+																					<selectedConditions/>
+																				</item>
+																			</items>
+																			<renderConditions logictype="and"/>
+																			<styles>
+																				<spacing/>
+																			</styles>
+																		</skuid__verticalNavigation>
+																	</components>
+																	<background/>
+																	<styles>
+																		<spacing/>
+																	</styles>
+																</skuid__wrapper>
+															</components>
+															<renderConditions logictype="and"/>
+														</division>
+														<division alignSelf="auto" minWidth="300px" ratio="5">
+															<components>
+																<skuid__wrapper uniqueid="sk-1BYT-16561" overflowY="visible">
+																	<components>
+																		<skuid__pageInclude includeType="skuid" uniqueid="pageinclude-settings" lazyLoad="true" showLoadingIndicator="false">
+																			<renderConditions logictype="and"/>
+																		</skuid__pageInclude>
+																	</components>
+																	<background/>
+																	<styles>
+																		<spacing/>
+																	</styles>
+																</skuid__wrapper>
+															</components>
+														</division>
+													</divisions>
+													<interactions/>
+													<renderConditions logictype="and"/>
+													<background/>
+													<styles>
+														<spacing/>
+													</styles>
+												</skuid__grid>
+											</components>
+										</division>
+									</divisions>
+									<styles>
+										<spacing left="4" right="4"/>
+									</styles>
+									<background/>
+								</skuid__grid>
+							</components>
+							<background/>
+							<styles>
+								<spacing top="4" bottom="4"/>
+							</styles>
+						</skuid__wrapper>
+					</components>
+					<background/>
+				</skuid__wrapper>
+			</components>
+		</pageregioncontent>
+	</pageregioncontents>
+	<components/>
+	<resources>
+		<labels/>
+		<javascript>
+			<jsitem location="inlinesnippet" name="skuid.settings.inDevelopmentMode">
+return skuid.environment === "development";</jsitem>
+			<jsitem location="inlinesnippet" name="checkForFeatureFlags" cachelocation="false">var params = arguments[0],
+   $ = skuid.$;
+  
+var model = skuid.$M("FeatureFlags")
+model.updateRow(model.getFirstRow(),{
+   appPermSetsEnabled: skuid.platform.hasFeature("Permission Sets"),
+});</jsitem>
+		</javascript>
+		<actionsequences uniqueid="set-sk-1E6Fou-601">
+			<actionsequence id="5b3b69e1-b1dd-4991-9e94-9c659911a2cd" label="SelectedNav" type="event-triggered" event-scope="component" event-name="page.rendered">
+				<description/>
+				<actions>
+					<action type="updateRow" fieldmodel="NavUiControl" affectedrows="context">
+						<updates>
+							<update valuesource="fieldvalue" field="GlobalNavController" enclosevalueinquotes="true" value="SETTINGS"/>
+						</updates>
+					</action>
+					<action type="branch" whenfinished="continue" model="NavUiControl" label="No tab is defined">
+						<iftrueactions>
+							<action type="redirect" window="self" url="#users"/>
+							<action type="updateRow" fieldmodel="NavUiControl" affectedrows="context">
+								<updates>
+									<update valuesource="fieldvalue" field="VerticalNavController" enclosevalueinquotes="true" value="users"/>
+								</updates>
+							</action>
+							<action type="runComponentAction" componentid="pageinclude-settings" action="loadNewPage" pageName="Settings_Users" namespace="skuid"/>
+						</iftrueactions>
+						<formula>!{{VerticalNavController}}</formula>
+					</action>
+					<action type="custom" snippet="checkForFeatureFlags"/>
+				</actions>
+				<inputs/>
+			</actionsequence>
+		</actionsequences>
+	</resources>
+</skuid__page>

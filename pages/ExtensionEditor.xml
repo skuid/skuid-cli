@@ -1,0 +1,685 @@
+<skuid__page unsavedchangeswarning="yes" personalizationmode="client" showsidebar="true" showheader="true" theme="Skuid App" title="Component Pack Editor" pageProblemsLocation="console">
+	<models>
+		<model id="ComponentPack" limit="" query="true" createrowifnonefound="false" datasource="SkuidLocal" type="readwrite" label="Component Pack" labelplural="Component Packs" namefield="name">
+			<fields>
+				<field id="id" label="Id" displaytype="TEXT" accessible="true" filterable="true"/>
+				<field id="name" label="Name" displaytype="TEXT" accessible="true" createable="true" filterable="true" required="false" length="80" placeholder="Example: krakenvisualizations" helptext="Choose a unique name for your component pack."/>
+				<field id="active" label="Active" displaytype="BOOLEAN" accessible="true" filterable="true" required="false"/>
+				<field id="file_id" label="File Id" displaytype="TEXT" accessible="true" filterable="true"/>
+				<field id="last_modified_at" label="Updated At" displaytype="DATETIME" accessible="true" filterable="true" readonly="true"/>
+				<field id="last_modified_by" label="Updated By" displaytype="TEXT" accessible="true" filterable="true" readonly="true"/>
+				<field id="load_order" label="Display Order" displaytype="DOUBLE" precision="4" scale="0" accessible="true" filterable="true" required="false" helptext="Set the order in which your custom component packs will display under the Skuid default component packs in the Elements Pane."/>
+				<field id="resource_name" label="ResourceName" displaytype="TEXT" accessible="true" createable="true" editable="false" filterable="true"/>
+				<field id="created_by_id" label="Created By" displaytype="TEXT" accessible="true" filterable="true" readonly="true"/>
+				<field id="created_at" label="Created At" displaytype="DATETIME" accessible="true" filterable="true" readonly="true"/>
+				<field id="updated_at" label="Updated At" displaytype="DATETIME" accessible="true" filterable="true" readonly="true"/>
+				<field id="created_by.name" label="Created By" displaytype="TEXT" accessible="true" filterable="true" readonly="true"/>
+				<field id="pretty_update_date" displaytype="FORMULA" ogdisplaytype="TEXT" readonly="true" returntype="TEXT" uionly="true">
+					<formula>IF({{created_at}}={{updated_at}},
+JOIN_TEXT( " ","Created", DATE_DIFF({{updated_at}}) ),
+JOIN_TEXT( " ","Updated", DATE_DIFF({{updated_at}}) )
+)</formula>
+				</field>
+				<field id="api_version" displaytype="PICKLIST" label="API Version" ogdisplaytype="TEXT" picklistsource="manual" returntype="TEXT" defaultvaluetype="fieldvalue" defaultValue="v1" enclosevalueinquotes="true">
+					<picklistentries>
+						<entry value="v1" label="v1"/>
+						<entry value="v2" label="v2"/>
+					</picklistentries>
+				</field>
+			</fields>
+			<idfields>
+				<field>id</field>
+			</idfields>
+			<conditions>
+				<condition type="param" value="componentPack" sourcetype="param" sourceparam="componentPack" inactive="false" operator="=" enclosevalueinquotes="true"/>
+			</conditions>
+			<actions/>
+			<methods>
+				<method type="query" verb="GET" endpoint="/objects/componentpack?fields=id,name,api_version,active,resource_name,file_id,load_order,created_by_id,created_by.first_name,created_by.last_name,updated_by_id,updated_by.first_name,updated_by.last_name,created_at,updated_at,file.updated_at,file.updated_by_id,file.updated_by.first_name,file.updated_by.last_name&amp;where={name:&quot;{{componentPack}}&quot;}" payloadcontenttype="JSON" limitmethod="simple" simplerecordslimitparameter="limit" limit="20" paginationmethod="simple" offsetparameter="offset"/>
+				<method type="insert" verb="POST" successif="requestsucceeds" sendchanges="asjsoninbody" insertresponse="recordinbody" endpoint="/objects/componentpack"/>
+				<method type="update" verb="PATCH" endpoint="/objects/componentpack/{{id}}" successif="requestsucceeds" sendchanges="asjsoninbody"/>
+				<method type="delete" verb="DELETE" endpoint="/objects/componentpack/{{id}}" successif="requestsucceeds"/>
+			</methods>
+		</model>
+		<model id="UiFiles" limit="20" query="true" createrowifnonefound="true" datasource="Ui-Only">
+			<fields>
+				<field id="path" displaytype="TEXT" length=""/>
+				<field id="content" displaytype="TEXT" length=""/>
+				<field id="isFile" displaytype="BOOLEAN" length=""/>
+			</fields>
+			<conditions/>
+			<actions/>
+		</model>
+		<model id="NewFile" limit="20" query="true" createrowifnonefound="true" datasource="Ui-Only">
+			<fields>
+				<field id="name" displaytype="TEXT" length=""/>
+			</fields>
+			<conditions/>
+			<actions/>
+		</model>
+		<model id="Ui" limit="20" query="true" createrowifnonefound="true" datasource="Ui-Only">
+			<fields>
+				<field id="hasUnsavedChanges" displaytype="BOOLEAN"/>
+				<field id="previewXml" displaytype="TEXT" length="255" label="Preview XML" defaultvaluetype="fieldvalue"/>
+				<field id="showXML" displaytype="BOOLEAN"/>
+				<field id="showSampleModels" displaytype="BOOLEAN"/>
+				<field id="newFilePath" displaytype="TEXT" length="255" label="New path" defaultvaluetype="fieldvalue" defaultValue="src/foo.js"/>
+				<field id="modalItemName" displaytype="TEXT" length="255" label="Current path" defaultvaluetype="fieldvalue" defaultValue="src/foo.js"/>
+			</fields>
+			<conditions/>
+			<actions/>
+		</model>
+		<model id="SampleModels" limit="20" query="false" datasource="Ui-Only" createrowifnonefound="false">
+			<fields>
+				<field id="id" displaytype="TEXT" length="255" label="Model name"/>
+				<field id="label" displaytype="TEXT" length="255" label="Label"/>
+				<field id="limit" displaytype="NUMBER" label="Max number of records"/>
+				<field id="createrowifnonefound" displaytype="BOOLEAN" label="Create default row if model has none"/>
+				<field id="show" displaytype="BOOLEAN" length="255"/>
+			</fields>
+			<conditions/>
+			<actions/>
+		</model>
+		<model id="SampleModelFields" limit="20" query="true" createrowifnonefound="false" datasource="Ui-Only">
+			<fields>
+				<field id="id" displaytype="TEXT" length="255" label="ID"/>
+				<field id="displaytype" displaytype="PICKLIST" length="255" label="Type" ogdisplaytype="TEXT" picklistsource="manual" returntype="TEXT" defaultvaluetype="fieldvalue">
+					<picklistentries>
+						<entry value="BOOLEAN" label="Checkbox"/>
+						<entry value="COMBOBOX" label="Combobox"/>
+						<entry value="CURRENCY" label="Currency"/>
+						<entry value="DATE" label="Date"/>
+						<entry value="DATETIME" label="Datetime"/>
+						<entry value="EMAIL" label="Email"/>
+						<entry value="FORMULA" label="Formula"/>
+						<entry value="PERCENT" label="Percent"/>
+						<entry value="PICKLIST" label="Picklist"/>
+						<entry value="MULTIPICKLIST" label="Multi-select Picklist"/>
+						<entry value="DOUBLE" label="Number"/>
+						<entry value="REFERENCE" label="Reference"/>
+						<entry value="TEXT" label="Text"/>
+						<entry value="TEXTAREA" label="Textarea"/>
+						<entry value="URL" label="Url"/>
+						<entry value="UUID" label="Unique Id (UUID)"/>
+					</picklistentries>
+				</field>
+				<field id="sampledatatype" displaytype="PICKLIST" length="255" label="Sample Data" ogdisplaytype="TEXT" picklistsource="manual" returntype="TEXT" defaultvaluetype="fieldvalue">
+					<picklistentries>
+						<entry value="animal" label="Animal"/>
+						<entry value="city" label="City"/>
+						<entry value="country" label="Country"/>
+						<entry value="date" label="Date"/>
+						<entry value="food" label="Food"/>
+						<entry value="firstName" label="First name"/>
+						<entry value="lastName" label="Last name"/>
+						<entry value="fullName" label="Full name"/>
+						<entry value="integer" label="Number (integer)"/>
+						<entry value="float" label="Number (floating point)"/>
+						<entry value="uuid" label="UUID"/>
+					</picklistentries>
+				</field>
+				<field id="modelId" displaytype="TEXT" length="255"/>
+				<field id="inlinehelptext" label="Inline help text" displaytype="TEXT" length="255"/>
+				<field id="placeholder" label="Placeholder" displaytype="TEXT" length="255"/>
+				<field id="length" label="Length" displaytype="INTEGER"/>
+				<field id="toggles" displaytype="MULTIPICKLIST">
+					<picklistentries>
+						<entry vale="required" label="Required"/>
+						<entry vale="readonly" label="Read-only"/>
+					</picklistentries>
+				</field>
+			</fields>
+			<conditions/>
+			<actions/>
+		</model>
+	</models>
+	<components>
+		<skuidbuilder__cssGrid uniqueid="sk-2YZG-1433" columnGutter="1px" rowGutter="1px" columnTemplate="250px 1fr 1fr" rowTemplate="50px 1fr 50px" height="100vh">
+			<divisions>
+				<division gridArea="1/1/1/4">
+					<components>
+						<skuid__wrapper overflowY="hidden" heightStrategy="fixed" height="custom" heightCustom="100%">
+							<components>
+								<skuidbuilder__cssGrid columnTemplate="1fr auto">
+									<divisions>
+										<division>
+											<components>
+												<skuid__text contents="&lt;p&gt;&lt;strong style='font-weight:500;'&gt;Editing Component Pack: &lt;/strong&gt; {{name}}" uniqueid="sk-2QXe-10\355" model="ComponentPack">
+													<styles>
+														<spacing left="2"/>
+													</styles>
+												</skuid__text>
+											</components>
+										</division>
+										<division>
+											<components>
+												<skuid__buttonSet model="ComponentPack">
+													<groups>
+														<skuid__buttonGroup uniqueId="sk-2Zjq-32826" displayType="detached" maxSelected="Infinity">
+															<buttons>
+																<skuid__button label="Save" uniqueId="sk-2Zjq-32827" styleSettingsVariant="primary">
+																	<actions>
+																		<action type="action-sequence" action-sequence-id="3bf941ee-2f12-4f9e-8d37-f49b4e543c80"/>
+																		<action type="updateRow" fieldmodel="Ui" affectedrows="context">
+																			<updates>
+																				<update valuesource="fieldvalue" field="hasUnsavedChanges" enclosevalueinquotes="false" value="false"/>
+																			</updates>
+																		</action>
+																	</actions>
+																	<renderConditions logictype="and"/>
+																	<enableConditions logictype="and"></enableConditions>
+																	<enableConditions logictype="or">
+																		<condition type="fieldvalue" enclosevalueinquotes="false" fieldmodel="UiFiles" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasChanged" value="true" operator="="/>
+																		<condition type="fieldvalue" enclosevalueinquotes="false" fieldmodel="SampleModels" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasChanged" value="true" operator="="/>
+																		<condition type="fieldvalue" enclosevalueinquotes="false" fieldmodel="SampleModelFields" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasChanged" value="true" operator="="/>
+																		<!-- <condition type="fieldvalue" operator="=" enclosevalueinquotes="true" fieldmodel="Ui" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="hasUnsavedChanges" value="true"/> -->
+																	</enableConditions>
+																	<styleVariantConditions/>
+																	<hotkeys>
+																		<hotkey modifiers="ctrl" key="s"/>
+																		<hotkey modifiers="meta" key="s"/>
+																	</hotkeys>
+																</skuid__button>
+																<skuid__button label="Cancel" uniqueId="sk-2Zjq-33308">
+																	<actions>
+																		<action type="cancel">
+																			<models>
+																				<model>UiFiles</model>
+																				<model>SampleModels</model>
+																				<model>SampleModelFields</model>
+																			</models>
+																		</action>
+																		<action type="custom" snippet="cancelComponentPack">
+																			<onerroractions>
+																				<action type="blockUI" message="There was an error cancelling" timeout="2000"/>
+																			</onerroractions>
+																		</action>
+																		<action type="updateRow" fieldmodel="Ui" affectedrows="context">
+																			<updates>
+																				<update valuesource="fieldvalue" field="hasUnsavedChanges" enclosevalueinquotes="false" value="false"/>
+																			</updates>
+																		</action>
+																	</actions>
+																	<renderConditions logictype="and"/>
+																	<enableConditions logictype="or">
+																		<condition type="fieldvalue" enclosevalueinquotes="false" fieldmodel="UiFiles" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasChanged" value="true" operator="="/>
+																		<condition type="fieldvalue" enclosevalueinquotes="false" fieldmodel="SampleModels" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasChanged" value="true" operator="="/>
+																		<condition type="fieldvalue" enclosevalueinquotes="false" fieldmodel="SampleModelFields" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasChanged" value="true" operator="="/>
+																		<!-- <condition type="fieldvalue" operator="=" enclosevalueinquotes="true" fieldmodel="Ui" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="hasUnsavedChanges" value="true"/> -->
+																	</enableConditions>
+																	<styleVariantConditions/>
+																</skuid__button>
+															</buttons>
+														</skuid__buttonGroup>
+														<skuid__buttonGroup uniqueId="sk-2Zjq-32826" displayType="detached" maxSelected="Infinity">
+															<buttons>
+																<skuid__button label="Publish" uniqueId="sk-2Zow-39926">
+																	<renderConditions logictype="and"/>
+																	<enableConditions logictype="and">
+																		<condition type="fieldvalue" enclosevalueinquotes="false" fieldmodel="UiFiles" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasChanged" value="true" operator="!="/>
+																		<condition type="fieldvalue" enclosevalueinquotes="false" fieldmodel="SampleModels" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasChanged" value="true" operator="!="/>
+																		<condition type="fieldvalue" enclosevalueinquotes="false" fieldmodel="SampleModelFields" sourcetype="modelproperty" nosourcerowbehavior="deactivate" sourceproperty="hasChanged" value="true" operator="!="/>
+																		<!-- <condition type="fieldvalue" operator="!=" enclosevalueinquotes="true" fieldmodel="Ui" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="hasUnsavedChanges" value="true"/> -->
+																	</enableConditions>
+																	<styleVariantConditions/>
+																	<actions>
+																		<action type="action-sequence" action-sequence-id="3bf941ee-2f12-4f9e-8d37-f49b4e543c80"/>
+																		<action type="save">
+																			<models>
+																				<model>UiFiles</model>
+																				<model>SampleModels</model>
+																				<model>SampleModelFields</model>
+																			</models>
+																		</action>
+																		<action type="custom" snippet="publishComponentPack">
+																			<onerroractions>
+																				<action type="blockUI" message="There was an error publishing" timeout="2000"/>
+																			</onerroractions>
+																		</action>
+																		<action type="showToast" position="br" duration="2" styleSettingsVariant="default" message="Published"/>
+																	</actions>
+																</skuid__button>
+															</buttons>
+														</skuid__buttonGroup>
+													</groups>
+													<styles>
+														<spacing top="0" right="2"/>
+													</styles>
+												</skuid__buttonSet>
+											</components>
+										</division>
+									</divisions>
+								</skuidbuilder__cssGrid>
+							</components>
+							<background type="color" color="white"/>
+						</skuid__wrapper>
+					</components>
+				</division>
+				<division gridArea="2/1/4/1">
+					<components>
+						<skuid__wrapper overflowY="hidden" heightStrategy="fixed" height="custom" heightCustom="100%">
+							<components>
+								<skuidbuilder__cssGrid uniqueid="sk-2YZG-1433" columnTemplate="1fr" rowTemplate="auto 1fr auto 1fr" rowGutter="1px" height="100%">
+									<divisions>
+										<division>
+											<components>
+												<skuid__header title="Files" uniqueid="sk-22i-_I-1839" styleSettingsVariant="vSmallHeader">
+													<styles>
+														<spacing right="1" left="2" top="2"/>
+													</styles>
+													<skuid__buttonSet uniqueid="sk-2_gc-1767">
+														<groups>
+															<skuid__buttonGroup uniqueId="sk-3kGM-1455">
+																<buttons>
+																	<skuid__button uniqueid="sk-22j1E--1861" styleSettingsVariant="borderless-icon-grey" icon="sk-webicon-ink:add">
+																		<tooltip position="top" text="New file" compact="true"/>
+																		<actions>
+																			<action type="updateRow" fieldmodel="NewFile" affectedrows="context">
+																				<updates>
+																					<update valuesource="blank" field="name" enclosevalueinquotes="true"/>
+																				</updates>
+																			</action>
+																			<action type="showModal">
+																				<skuid__modal width="640px" showHeader="false">
+																					<components>
+																						<skuid__form showErrorsInline="true" model="NewFile" uniqueid="sk-2a8x-11612" mode="edit" styleSettingsVariant="0293cfb5-2aa6-4405-8177-3547782f27b4">
+																							<sections>
+																								<section showHeading="false">
+																									<rows>
+																										<row>
+																											<fields>
+																												<skuid__field id="name" label="New file name"/>
+																											</fields>
+																										</row>
+																									</rows>
+																								</section>
+																							</sections>
+																							<styles>
+																								<spacing top="3"/>
+																							</styles>
+																						</skuid__form>
+																					</components>
+																					<buttons>
+																						<skuid__button label="Create" uniqueId="sk-2a91-16308" styleSettingsVariant="primary">
+																							<actions>
+																								<action type="custom" snippet="createFile" />
+																								<action type="closeTopmostPopup"/>
+																							</actions>
+																						</skuid__button>
+																						<skuid__button label="Cancel" uniqueId="sk-2a91-16605">
+																							<actions>
+																								<action type="closeTopmostPopup"/>
+																							</actions>
+																						</skuid__button>
+																					</buttons>
+																				</skuid__modal>
+																			</action>
+																		</actions>
+																	</skuid__button>
+																</buttons>
+															</skuid__buttonGroup>
+														</groups>
+													</skuid__buttonSet>
+												</skuid__header>
+											</components>
+										</division>
+										<division>
+											<components>
+												<skuid__wrapper overflowY="auto" heightStrategy="fixed" height="custom" heightCustom="100%">
+													<components>
+														<skuidbuilder__composerTree uniqueId="fileTree" minIndent="1" styleSettingsVariant="extensionEditor" selectableFolders="false">
+															<sections/>
+														</skuidbuilder__composerTree>
+													</components>
+													<styles>
+														<spacing right="1" left="1"/>
+													</styles>
+												</skuid__wrapper>
+											</components>
+										</division>
+										<division>
+											<components>
+												<!-- This wrapper is to create a horizontal line. Don't delete it -->
+												<skuid__wrapper overflowY="auto" heightStrategy="fixed" height="custom" heightCustom="1px">
+													<components />
+													<background type="color" color="#f2f2f2"/>
+												</skuid__wrapper>
+												<skuid__header title="Sample models" styleSettingsVariant="vSmallHeader" uniqueid="sk-22i-_I-1834">
+													<styles>
+														<spacing right="1" left="2" top="2"/>
+													</styles>
+													<skuid__buttonSet uniqueid="sk-2_gc-1727">
+														<groups>
+															<skuid__buttonGroup uniqueId="sk-3kGM-1255">
+																<buttons>
+																	<skuid__button uniqueid="sk-22j1E--1261" styleSettingsVariant="borderless-icon-grey" icon="sk-webicon-ink:add">
+																		<tooltip position="top" text="New sample model" compact="true"/>
+																		<actions>
+																			<action type="createRow" model="SampleModels" appendorprepend="prepend" affectedrows="context">
+																				<defaults>
+																					<default valuesource="fieldvalue" field="id" enclosevalueinquotes="true" value="Untitled model" />
+																				</defaults>
+																			</action>
+																		</actions>
+																	</skuid__button>
+																</buttons>
+															</skuid__buttonGroup>
+														</groups>
+													</skuid__buttonSet>
+												</skuid__header>
+											</components>
+										</division>
+										<division>
+											<components>
+												<skuid__wrapper overflowY="auto" heightStrategy="fixed" height="custom" heightCustom="100%">
+													<components>
+														<skuidbuilder__composerTree uniqueId="modelsTree" minIndent="1" styleSettingsVariant="extensionEditor" selectableFolders="true">
+															<sections/>
+														</skuidbuilder__composerTree>
+													</components>
+													<styles>
+														<spacing right="1" left="1"/>
+													</styles>
+												</skuid__wrapper>
+											</components>
+										</division>
+									</divisions>
+								</skuidbuilder__cssGrid>
+							</components>
+							<background type="color" color="white"/>
+						</skuid__wrapper>
+					</components>
+				</division>
+				<division overflow="hidden" gridArea="2/2/4/2">
+					<components>
+						<skuidbuilder__code styleSettingsVariant="borderless" mode="edit" model="UiFiles" id="content" height="500" uniqueid="codeComponent">
+							<renderConditions logictype="and">
+								<renderCondition type="fieldvalue" operator="!=" enclosevalueinquotes="true" fieldmodel="Ui" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="showSampleModels" value="true"/>
+							</renderConditions>>
+						</skuidbuilder__code>
+						<skuid__wrapper overflowY="hidden" heightStrategy="fixed" height="custom" heightCustom="100%">
+							<components>
+								<skuid__form showErrorsInline="true" model="SampleModels" uniqueid="sample-model-form" mode="edit">
+									<sections>
+										<section title="New Section" showHeading="false">
+											<rows>
+												<row>
+													<fields>
+														<skuid__field id="id" uniqueId="sk-3jri-3789"/>
+													</fields>
+												</row>
+												<row>
+													<fields>
+														<skuid__field id="label" uniqueId="sk-3jri-3779"/>
+													</fields>
+												</row>
+												<row>
+													<fields>
+														<skuid__field id="limit" uniqueId="sk-3jri-3784" placeholder="10"/>
+													</fields>
+												</row>
+												<row>
+													<fields>
+														<skuid__field id="createrowifnonefound" uniqueId="sk-3jri-3794"/>
+													</fields>
+												</row>
+											</rows>
+										</section>
+									</sections>
+									<styles>
+										<spacing right="2" left="2" top="2" bottom="2"/>
+									</styles>
+								</skuid__form>
+								<skuid__deck styleSettingsVariant="borderless" model="SampleModels" columnGutter="0" rowGutter="0" showSaveCancel="false" verticalAlign="top" minWidth="100%" uniqueid="sk-CGc-69426" pageSize="Infinity" setMaxWidth="auto" showListHeader="false" showListFooter="false" showLoadMore="false" maxWidth="100%">
+									<components>
+										<skuid__wrapper uniqueid="sk-CP8-50326">
+											<components>
+												<skuid__table styleSettingsVariant="borderless" allowColumnFreezing="never" showSaveCancel="false" model="SampleModelFields" uniqueid="sk-3E3-27109" mode="edit" pageSize="10" showListFooter="false" allowSortingByColumn="false" overflowY="auto" allowColumnAdjusting="false">
+													<fields>
+														<field id="id" uniqueid="fi-CE5-32555"/>
+														<field id="displaytype" uniqueid="fi-CE5-32556" addNoneOption="true"/>
+														<field id="sampledatatype" uniqueid="fi-CFX-6751" addNoneOption="true"/>
+													</fields>
+													<filtering enableSearch="false"/>
+													<rowActions displayType="detached">
+														<action uniqueId="sk-CEh-15678" type="multi" icon="sk-webicon-ink:dots-vertical" styleSettingsVariant="borderless-no-padding">
+															<actions>
+																<action type="custom" snippet="showFieldPopover"/>
+															</actions>
+														</action>
+													</rowActions>
+													<massActions/>
+													<conditions>
+														<condition type="contextrow" field="modelId" mergefield="id" operator="="/>
+													</conditions>
+													<renderConditions logictype="and"/>
+													<styleVariantConditions/>
+												</skuid__table>
+												<skuid__buttonSet uniqueid="sk-CFA-7172" position="left">
+													<groups>
+														<skuid__buttonGroup uniqueId="sk-CFA-7170">
+															<buttons>
+																<skuid__button label="Add sample field" uniqueId="sk-CFA-7171" styleSettingsVariant="borderless" icon="sk-webicon-ink:add-circle">
+																	<actions>
+																		<action type="custom" snippet="createRowWithModelId"/>
+																	</actions>
+																</skuid__button>
+															</buttons>
+														</skuid__buttonGroup>
+													</groups>
+													<styles>
+														<spacing right="1" left="1" />
+													</styles>
+												</skuid__buttonSet>
+											</components>
+											<styles>
+												<spacing/>
+											</styles>
+											<background/>
+											<renderConditions logictype="and">
+												<renderCondition type="fieldvalue" enclosevalueinquotes="false" fieldmodel="SampleModels" sourcetype="fieldvalue" sourcesnippet="cardRenderSnippet" sourceproperty="isMarkedForDeletion" value="true" operator="=" field="show"/>
+											</renderConditions>
+											<styleVariantConditions/>
+										</skuid__wrapper>
+									</components>
+									<filtering enableSearch="false"/>
+									<renderConditions logictype="and"/>
+									<styleVariantConditions/>
+									<conditions/>
+								</skuid__deck>
+							</components>
+							<background type="color" color="white"/>
+							<renderConditions logictype="and">
+								<renderCondition type="fieldvalue" operator="=" enclosevalueinquotes="true" fieldmodel="Ui" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="showSampleModels" value="true"/>
+							</renderConditions>>
+						</skuid__wrapper>
+					</components>
+				</division>
+				<division gridArea="2/3/3/3" overflow="hidden">
+					<components>
+						<skuid__wrapper overflowY="auto" heightStrategy="fixed" height="custom" heightCustom="100%">
+							<components>
+								<skuidbuilder__extensionEditorPreview uniqueid="previewWrapper">
+									<components/>
+									<renderConditions logictype="and">
+										<renderCondition type="fieldvalue" operator="!=" enclosevalueinquotes="true" fieldmodel="Ui" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="showXML" value="true"/>
+									</renderConditions>
+								</skuidbuilder__extensionEditorPreview>
+								<skuidbuilder__code styleSettingsVariant="borderless" mode="edit" language="xml" model="Ui" id="previewXml" height="500" uniqueid="codeComponentXML">
+									<styles>
+										<spacing right="0.5"/>
+									</styles>
+									<renderConditions logictype="and">
+										<renderCondition type="fieldvalue" operator="=" enclosevalueinquotes="true" fieldmodel="Ui" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="showXML" value="true"/>
+									</renderConditions>
+								</skuidbuilder__code>
+							</components>
+							<background type="color" color="white"/>
+						</skuid__wrapper>
+					</components>
+				</division>
+				<division gridArea="3/3/4/3">
+					<components>
+						<skuid__wrapper overflowY="hidden" heightStrategy="fixed" height="custom" heightCustom="100%">
+							<components>
+								<skuid__buttonSet uniqueid="sk-2QMv-6682">
+									<groups>
+										<skuid__buttonGroup uniqueId="sk-2QMv-6680">
+											<buttons>
+												<skuid__button label="Show XML" uniqueId="sk-2QMv-6681">
+													<actions>
+														<action type="updateRow" fieldmodel="Ui" affectedrows="context">
+															<updates>
+																<update valuesource="fieldvalue" field="showXML" enclosevalueinquotes="false" value="true"/>
+															</updates>
+														</action>
+													</actions>
+													<renderConditions logictype="and">
+														<renderCondition type="fieldvalue" operator="!=" enclosevalueinquotes="true" fieldmodel="Ui" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="showXML" value="true"/>
+													</renderConditions>
+												</skuid__button>
+												<skuid__button label="Show Preview" uniqueId="sk-2QMv-6631">
+													<actions>
+														<action type="updateRow" fieldmodel="Ui" affectedrows="context">
+															<updates>
+																<update valuesource="fieldvalue" field="showXML" enclosevalueinquotes="false" value="false"/>
+															</updates>
+														</action>
+													</actions>
+													<renderConditions logictype="and">
+														<renderCondition type="fieldvalue" operator="=" enclosevalueinquotes="true" fieldmodel="Ui" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="showXML" value="true"/>
+													</renderConditions>
+												</skuid__button>
+											</buttons>
+										</skuid__buttonGroup>
+									</groups>
+									<styles>
+										<spacing top="0" right="2"/>
+									</styles>
+								</skuid__buttonSet>
+							</components>
+							<background type="color" color="white"/>
+						</skuid__wrapper>
+					</components>
+				</division>
+			</divisions>
+		</skuidbuilder__cssGrid>
+	</components>
+	<resources>
+		<labels/>
+		<javascript>
+			<jsitem location="staticresource" namespace="skuid" filepath="js/lib/jSZip.js"/>
+			<jsitem location="staticresource" namespace="skuid" filepath="js/skuidPages/skuidPageCustomExtensionCreator.js" scope="api"/>
+		</javascript>
+		<actionsequences>
+			<actionsequence id="3bf941ee-2f12-4f9e-8d37-f49b4e543c80" label="Save">
+				<actions>
+					<action type="custom" snippet="saveComponentPack">
+						<onerroractions>
+							<action type="blockUI" message="There was an error saving" timeout="2000"/>
+						</onerroractions>
+					</action>
+					<action type="save">
+						<models>
+							<model>UiFiles</model>
+							<model>SampleModelFields</model>
+						</models>
+					</action>
+					<action type="showToast" position="br" duration="2" styleSettingsVariant="default" message="Saved"/>
+				</actions>
+				<description/>
+			</actionsequence>
+			<actionsequence id="show-delete-modal" label="Show Delete Modal">
+				<actions>
+					<action type="showModal">
+						<skuid__modal title="New Modal" width="480px" showHeader="false" showCloseIcon="false">
+							<components>
+								<skuid__text contents="Are you sure you want to delete &lt;strong&gt;{{modalItemName}}&lt;/strong&gt;?" uniqueid="sk-2fOB-9752" model="Ui">
+									<styles>
+										<spacing top="3"/>
+									</styles>
+								</skuid__text>
+							</components>
+							<buttons>
+								<skuid__button label="Delete" uniqueId="sk-2fO4-8215" styleSettingsVariant="destructive">
+									<actions>
+										<action type="publish" scope="global" event="extensionCreator.deleteFile">
+											<params/>
+										</action>
+										<action type="closeTopmostPopup"/>
+									</actions>
+								</skuid__button>
+								<skuid__button label="Cancel" uniqueId="sk-2fO5-8495">
+									<actions>
+										<action type="publish" scope="global" event="extensionCreator.cancelFileOperation"/>
+										<action type="closeTopmostPopup"/>
+									</actions>
+								</skuid__button>
+							</buttons>
+							<afterCloseActions>
+								<action type="publish" scope="global" event="extensionCreator.cancelFileOperation"/>
+							</afterCloseActions>
+						</skuid__modal>
+					</action>
+				</actions>
+				<description/>
+			</actionsequence>
+			<actionsequence id="show-rename-modal" label="Show Rename Modal" type="reusable">
+				<actions>
+					<action type="showModal">
+						<skuid__modal width="480px" showHeader="true" showCloseIcon="false" title="Move file">
+							<components>
+								<skuid__form showErrorsInline="true" model="Ui" uniqueid="sk-2fZP-13282" mode="edit" minLabelWidth="90px" flexRatioLabel="0" minValueWidth="200px" flexRatioValue="2" labelPlacement="beside" styleSettingsVariant="0293cfb5-2aa6-4405-8177-3547782f27b4">
+									<sections>
+										<section title="New Section" showHeading="false">
+											<rows>
+												<row>
+													<fields>
+														<skuid__field id="modalItemName" readOnly="true"/>
+													</fields>
+												</row>
+												<row>
+													<fields>
+														<skuid__field id="newFilePath"/>
+													</fields>
+												</row>
+											</rows>
+										</section>
+									</sections>
+								</skuid__form>
+								<skuid__text contents="File will be moved from&amp;nbsp;&lt;strong&gt;{{modalItemName}}&lt;/strong&gt;&amp;nbsp;to&amp;nbsp;&lt;strong&gt;{{newFilePath}}&lt;/strong&gt;" uniqueid="sk-2fZ1-9218" model="Ui">
+									<styles>
+										<spacing top="3"/>
+									</styles>
+								</skuid__text>
+							</components>
+							<buttons>
+								<skuid__button label="Update" uniqueId="sk-2fO4-8215" styleSettingsVariant="primary">
+									<actions>
+										<action type="publish" scope="global" event="extensionCreator.moveFile">
+											<params/>
+										</action>
+										<action type="closeTopmostPopup"/>
+									</actions>
+								</skuid__button>
+								<skuid__button label="Cancel" uniqueId="sk-2fO5-8495">
+									<actions>
+										<action type="publish" scope="global" event="extensionCreator.cancelFileOperation">
+											<params/>
+										</action>
+										<action type="closeTopmostPopup"/>
+									</actions>
+								</skuid__button>
+							</buttons>
+							<afterCloseActions>
+								<action type="publish" scope="global" event="extensionCreator.cancelFileOperation"/>
+							</afterCloseActions>
+						</skuid__modal>
+					</action>
+				</actions>
+				<description/>
+			</actionsequence>
+		</actionsequences>
+	</resources>
+	<background type="color" color="#F2F2F2"/>
+</skuid__page>

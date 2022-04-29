@@ -1,6 +1,7 @@
 package logging
 
 import (
+	"fmt"
 	"log"
 	"strings"
 	"time"
@@ -21,29 +22,29 @@ func init() {
 // Println redirects through the color package
 // to print a gray colored line
 func Println(args ...interface{}) {
-	color.Gray.Println(args...)
+	fmt.Println(args...)
 }
 
 // Printf redirects through the color package
 // to print a gray colored message
 func Printf(formatString string, args ...interface{}) {
-	color.Gray.Printf(formatString, args...)
+	fmt.Printf(formatString, args...)
 }
 
-// Separator creates some visual space
-func Separator() {
-	Println(strings.Repeat("-", SEPARATOR_LENGTH))
+// PrintSeparator creates some visual space
+func PrintSeparator() {
+	fmt.Println(strings.Repeat("-", SEPARATOR_LENGTH))
 }
 
-// ErrorSeparator creates some visual space
-func ErrorSeparator() {
+// PrintErrorSeparator creates some visual space
+func PrintErrorSeparator() {
 	color.Red.Println(strings.Repeat("*", SEPARATOR_LENGTH))
 }
 
 // Printcommand is a command that outputs separated
 // version and command information based on what we're running
 func PrintCommand(commandName string) {
-	Separator()
+	PrintSeparator()
 
 	vName := func() string {
 		if constants.VERSION_NAME != "unknown" {
@@ -53,23 +54,23 @@ func PrintCommand(commandName string) {
 		}
 	}()
 
-	Println(color.Blue.Sprintf("Skuid Tides Version:\t%v", vName))
-	Println(color.Yellow.Sprintf("Running Command:  \t%v", color.Green.Sprint(commandName)))
+	Println(color.Cyan.Sprintf("Skuid Tides Version:\t%v", vName))
+	Println(color.Cyan.Sprintf("Running Command:  \t%v", color.Green.Sprint(commandName)))
 
-	Separator()
+	PrintSeparator()
 }
 
 // PrintError formats an error with a description and message
 func PrintError(description string, err error) {
-	ErrorSeparator()
+	PrintErrorSeparator()
 	color.Red.Println(description)
 	color.Red.Println(err.Error())
-	ErrorSeparator()
+	PrintErrorSeparator()
 }
 
 // SuccessWithTime Returns a formatted string with a duration since a start time
 func SuccessWithTime(description string, timeStart time.Time) {
-	color.Gray.Printf("%-30s:\t(%v)\n", description, color.Green.Sprint(time.Since(timeStart)))
+	color.Gray.Printf("%-25s\t%v\n", fmt.Sprintf("%v:", description), color.Green.Sprint(time.Since(timeStart)))
 }
 
 func Fatal(err error) {

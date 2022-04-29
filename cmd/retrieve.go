@@ -25,7 +25,7 @@ var (
 		PersistentPreRunE: validation.PrerunValidation,
 		RunE: func(cmd *cobra.Command, _ []string) (err error) {
 
-			logging.VerboseCommand("Retrieve Metadata")
+			logging.VerboseCommand("Retrieve Skuid NLX Metadata")
 
 			api, err := pkg.SkuidNlxLogin(cmd)
 
@@ -69,9 +69,7 @@ var (
 				return
 			}
 
-			successMessage := "Successfully retrieved metadata from Skuid Site"
-
-			logging.VerboseSuccess(successMessage, retrieveStart)
+			logging.VerboseSuccess("Skuid NLX Metadata Retrieved", retrieveStart)
 
 			return
 		},

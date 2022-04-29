@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/gookit/color"
+
 	"github.com/skuid/tides/pkg/logging"
 )
 
@@ -104,11 +106,11 @@ func (api *NlxApi) ExecutePlanItem(plan Plan, targetDir string) (*io.ReadCloser,
 	deployStart := time.Now()
 
 	if plan.Host == "" {
-		logging.VerboseLn(fmt.Sprintf("Making Deploy Request: URL: [%s] Type: [%s]", plan.URL, plan.Type))
+		logging.VerboseLn(fmt.Sprintf("Making Deploy Request: URL: [%s] Type: [%s]", plan.Url, plan.Type))
 
 		planResult, err = api.Connection.MakeRequest(
 			http.MethodPost,
-			plan.URL,
+			plan.Url,
 			bufDeploy,
 			"application/zip",
 		)
@@ -117,8 +119,8 @@ func (api *NlxApi) ExecutePlanItem(plan Plan, targetDir string) (*io.ReadCloser,
 		}
 	} else {
 
-		url := fmt.Sprintf("%s:%s/api/v2%s", plan.Host, plan.Port, plan.URL)
-		logging.VerboseLn(fmt.Sprintf("Making Deploy Request: URL: [%s] Type: [%s]", url, plan.Type))
+		url := fmt.Sprintf("%s:%s/api/v2%s", plan.Host, plan.Port, plan.Url)
+		logging.VerboseF("Making Deploy Request: URL: [%s] Type: [%s]", color.Yellow.Sprint(url), color.Cyan.Sprint(plan.Type))
 
 		planResult, err = api.Connection.MakeJWTRequest(
 			http.MethodPost,

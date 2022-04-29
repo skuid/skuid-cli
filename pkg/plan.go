@@ -11,13 +11,15 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gookit/color"
+
 	"github.com/skuid/tides/pkg/logging"
 )
 
 type Plan struct {
 	Host     string   `json:"host"`
 	Port     string   `json:"port"`
-	URL      string   `json:"url"`
+	Url      string   `json:"url"`
 	Type     string   `json:"type"`
 	Metadata Metadata `json:"metadata"`
 	Warnings []string `json:"warnings"`
@@ -42,6 +44,58 @@ type Metadata struct {
 	SitePermissionSets []string `json:"sitepermissionsets"`
 	Site               []string `json:"site"`
 	Themes             []string `json:"themes"`
+}
+
+// for backwards compatibility
+func (m *Metadata) UnmarshalJSON(data []byte) error {
+	// unmarshal the old fields
+	old := struct {
+		Apps           []string `json:"apps"`
+		AuthProviders  []string `json:"authproviders"`
+		ComponentPacks []string `json:"componentpacks"`
+		DataServices   []string `json:"dataservices"`
+		DataSources    []string `json:"datasources"`
+		DesignSystems  []string `json:"designsystems"`
+		Variables      []string `json:"variables"`
+		Files          []string `json:"files"`
+		Pages          []string `json:"pages"`
+		PermissionSets []string `json:"permissionsets"`
+		Profiles       []string `json:"profiles"`
+		Site           []string `json:"site"`
+		Themes         []string `json:"themes"`
+	}{}
+	err := json.Unmarshal(data, &old)
+	if err != nil {
+		return err
+	} else {
+		m.Apps = old.Apps
+		m.AuthProviders = old.AuthProviders
+		m.ComponentPacks = old.ComponentPacks
+		m.DataServices = old.DataServices
+		m.DataSources = old.DataSources
+		m.DesignSystems = old.DesignSystems
+		m.Variables = old.Variables
+		m.Files = old.Files
+		m.Pages = old.Pages
+		m.PermissionSets = old.PermissionSets
+		m.Site = old.Site
+		m.Themes = old.Themes
+		m.SitePermissionSets = old.Profiles
+	}
+
+	// unmarshal the current fields and join them
+	current := struct {
+		Profiles []string `json:"sitepermissionsets"`
+	}{}
+	err = json.Unmarshal(data, &current)
+	if err != nil {
+		return err
+	} else {
+		// just append
+		m.SitePermissionSets = append(m.SitePermissionSets, current.Profiles...)
+	}
+
+	return nil
 }
 
 type RetrieveFilter struct {
@@ -162,9 +216,9 @@ func (m Metadata) FilterMetadataItem(relativeFilePath string) (keep bool) {
 	return
 }
 
-func GetRetrievePlan(api *NlxApi, appName string) (map[string]Plan, error) {
+func GetRetrievePlan(api *NlxApi, appName string) (results map[string]Plan, err error) {
 
-	logging.VerboseSection("Getting Retrieve Plan")
+	logging.VerboseSection("Skuid NLX Retrieval Plan")
 
 	var postBody io.Reader
 	if appName != "" {
@@ -187,65 +241,58 @@ func GetRetrievePlan(api *NlxApi, appName string) (map[string]Plan, error) {
 	)
 
 	if err != nil {
-		return nil, err
+		return
 	}
 
-	logging.VerboseSuccess("Success Getting Retrieve Plan", planStart)
+	logging.VerboseSuccess("Plan Retrieved", planStart)
 
 	defer (*planResult).Close()
 
-	var plans map[string]Plan
-	if err := json.NewDecoder(*planResult).Decode(&plans); err != nil {
-		return nil, err
-	}
-	return plans, nil
+	err = json.NewDecoder(*planResult).Decode(&results)
+
+	return
 }
 
 func ExecuteRetrievePlan(api *NlxApi, plans map[string]Plan, noZip bool) (planResults []*io.ReadCloser, err error) {
 
-	logging.VerboseSection("Executing Retrieve Plan")
+	logging.VerboseSection("Executing Skuid NLX Retrieve Plan")
 
 	for _, plan := range plans {
-		metadataBytes, err := json.Marshal(RetrieveRequest{
+		var metadataBytes []byte
+		if metadataBytes, err = json.Marshal(RetrieveRequest{
 			Metadata: plan.Metadata,
 			DoZip:    !noZip,
-		})
-		if err != nil {
-			return nil, err
+		}); err != nil {
+			return
 		}
+
 		retrieveStart := time.Now()
-		if plan.Host == "" {
 
-			logging.VerboseF("Making Retrieve Request: URL: [%s] Type: [%s]\n", plan.URL, plan.Type)
-
-			planResult, err := api.Connection.MakeRequest(
-				http.MethodPost,
-				plan.URL,
-				bytes.NewReader(metadataBytes),
-				"application/json",
-			)
-			if err != nil {
-				return nil, err
-			}
-			planResults = append(planResults, planResult)
+		var url string
+		var req func(string, string, io.Reader, string) (*io.ReadCloser, error)
+		if plan.Host != "" {
+			url = fmt.Sprintf("%s:%s/api/v2%s", plan.Host, plan.Port, plan.Url)
+			req = api.Connection.MakeJWTRequest
 		} else {
-			url := fmt.Sprintf("%s:%s/api/v2%s", plan.Host, plan.Port, plan.URL)
-
-			logging.VerboseF("Making Retrieve Request: URL: [%s] Type: [%s]\n", url, plan.Type)
-
-			planResult, err := api.Connection.MakeJWTRequest(
-				http.MethodPost,
-				url,
-				bytes.NewReader(metadataBytes),
-				"application/json",
-			)
-			if err != nil {
-				return nil, err
-			}
-			planResults = append(planResults, planResult)
+			url = plan.Url
+			req = api.Connection.MakeRequest
 		}
 
-		logging.VerboseSuccess("Success Retrieving from Source", retrieveStart)
+		logging.VerboseF("Retrieval => %s (%s)\n", color.Yellow.Sprint(url), color.Cyan.Sprint(plan.Type))
+
+		var planResult *io.ReadCloser
+		if planResult, err = req(
+			http.MethodPost,
+			url,
+			bytes.NewReader(metadataBytes),
+			"application/json",
+		); err != nil {
+			return
+		}
+
+		planResults = append(planResults, planResult)
+
+		logging.VerboseSuccess("Retrieve Plan Executed", retrieveStart)
 
 	}
 	return planResults, nil

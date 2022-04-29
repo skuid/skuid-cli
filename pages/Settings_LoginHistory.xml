@@ -1,0 +1,300 @@
+<skuid__page personalizationmode="client" unsavedchangeswarning="yes" showsidebar="true" showheader="true" theme="Skuid Admin">
+	<models>
+		<model id="page_ui_control" query="true" createrowifnonefound="true" datasource="Ui-Only">
+			<fields>
+				<field id="sortby" displaytype="PICKLIST" ogdisplaytype="TEXT" picklistsource="manual" returntype="TEXT" defaultvaluetype="fieldvalue" defaultValue="-created_at">
+					<picklistentries>
+						<entry value="-created_at" label="Last Login"/>
+						<entry value="username" label="User Name A-Z"/>
+					</picklistentries>
+				</field>
+			</fields>
+			<conditions/>
+			<actions>
+				<action>
+					<actions>
+						<action type="requeryModel" model="stng__LoginHistory" behavior="standard"/>
+					</actions>
+					<events>
+						<event>row.updated</event>
+					</events>
+					<fields>
+						<field>sortby</field>
+					</fields>
+				</action>
+			</actions>
+		</model>
+		<model id="stng__LoginHistory" query="true" createrowifnonefound="false" datasource="SkuidLocal" type="readwrite" label="Login Record" labelplural="Login Records" unloadwarningifunsavedchanges="false">
+			<fields>
+				<field id="created_at" label="Created At" displaytype="DATETIME" accessible="true" filterable="true"/>
+				<field id="ip_address" label="IP Address" displaytype="STRING" accessible="true" filterable="true"/>
+				<field id="login_type" label="Login Type" displaytype="PICKLIST" accessible="true" filterable="true" picklistsource="manual" defaultvaluetype="fieldvalue">
+					<picklistentries>
+						<entry label="Email Verification" value="email_verification"/>
+						<entry label="OAuth" value="oauth"/>
+						<entry label="Password Reset" value="password_reset"/>
+						<entry label="SAML" value="SAML"/>
+						<entry label="Username/Password" value="user/pass"/>
+					</picklistentries>
+				</field>
+				<field id="success" label="Success?" displaytype="BOOLEAN" accessible="true" filterable="true"/>
+				<field id="updated_at" label="Updated At" displaytype="DATETIME" accessible="true" filterable="true"/>
+				<field id="username" label="Username" displaytype="STRING" accessible="true" filterable="true"/>
+				<field id="user.first_name" label="First Name" displaytype="STRING" accessible="true" filterable="true"/>
+				<field id="user.id" label="Id" displaytype="TEXT" accessible="true" filterable="true"/>
+				<field id="user.last_name" label="Last Name" displaytype="STRING" accessible="true" filterable="true"/>
+				<field id="error_msg" label="Error Message" displaytype="STRING" accessible="true" filterable="true"/>
+				<field id="error_saml" label="SAML Error" displaytype="STRING" accessible="true" filterable="true"/>
+				<field id="saml_type" label="SAML Type" displaytype="STRING" accessible="true" filterable="true"/>
+				<field id="session_id" label="Session Id" displaytype="STRING" accessible="true" filterable="true"/>
+				<field id="saml_details" label="SAML Details" displaytype="STRING" accessible="true" filterable="true"/>
+			</fields>
+			<conditions>
+				<condition type="fieldvalue" value="" sourcetype="param" sourceparam="search" operator="=" mergefield="Id" novaluebehavior="deactivate" enclosevalueinquotes="true" state="filterableoff" inactive="true" name="search"/>
+				<condition type="modelmerge" value="" sourcetype="param" sourceparam="sortby" operator="=" model="page_ui_control" enclosevalueinquotes="true" mergefield="sortby" novaluebehavior="deactivate"/>
+				<condition type="fieldvalue" enclosevalueinquotes="true" sourcetype="param" sourceparam="profile" state="filterableoff" inactive="true" name="profile"/>
+			</conditions>
+			<actions/>
+			<methods>
+				<method type="query" verb="GET" endpoint="/objects/loginhistory?order={{sortby}}&amp;fields=login_type,ip_address,success,username,user_id,user.first_name,user.last_name,created_at,updated_at,saml_type,error_msg,saml_details,session_id{{#search}}&amp;search={{.}}{{/search}}{{#profile}}&amp;where={&quot;user.profile_id&quot;:&quot;{{profile}}&quot;}{{/profile}}" payloadcontenttype="JSON" limitmethod="simple" limit="50" simplerecordslimitparameter="limit" paginationmethod="simple" offsetparameter="offset"/>
+			</methods>
+		</model>
+		<model id="stng__Profile" limit="20" query="true" createrowifnonefound="false" datasource="SkuidLocal" type="readwrite" label="Profile" labelplural="Profiles" namefield="name" unloadwarningifunsavedchanges="false">
+			<fields>
+				<field id="name" label="Name" displaytype="TEXT" accessible="true" filterable="true"/>
+				<field id="id" label="Id" displaytype="TEXT" readonly="true" accessible="true" filterable="true"/>
+			</fields>
+			<idfields>
+				<field>id</field>
+			</idfields>
+			<conditions/>
+			<actions/>
+			<methods>
+				<method type="query" verb="GET" endpoint="/objects/profile?order=name&amp;fields=name,id&amp;whereNot={&quot;name&quot;:&quot;Public&quot;}" payloadcontenttype="JSON" limitmethod="simple" simplerecordslimitparameter="limit" limit="20" paginationmethod="simple" offsetparameter="offset"/>
+			</methods>
+		</model>
+		<model id="FeatureFlags" limit="20" query="true" datasource="Ui-Only" createrowifnonefound="true">
+			<fields>
+				<field id="appPermSetsEnabled" displaytype="BOOLEAN" length="255" label="appPermSetsEnabled" ogdisplaytype="TEXT"/>
+			</fields>
+			<conditions/>
+			<actions/>
+		</model>
+	</models>
+	<components>
+		<skuid__text contents="{{Model.labelPlural}}" uniqueid="sk-3EYd-6998" model="stng__LoginHistory" styleSettingsVariant="014b3346-10ed-4578-aa1a-cae68a21cc80">
+			<styles>
+				<spacing bottom="4"/>
+			</styles>
+		</skuid__text>
+		<skuid__wrapper uniqueid="sk-3su2-1528" styleSettingsVariant="c5a44cb4-0fb9-4631-a576-a20f998816e0">
+			<components>
+				<skuid__grid uniqueid="grid-filterset" flexDirection="row" justifyContent="flex-start" alignItems="center" columnGutter="0" rowGutter="0" fullWidth="true">
+					<divisions>
+						<division minWidth="100px" ratio="1" alignSelf="auto">
+							<components/>
+						</division>
+						<division alignSelf="auto" minWidth="0" ratio="0">
+							<components>
+								<skuid__text contents="&lt;div style=&quot;text-align: right;&quot;&gt;Order by:&lt;/div&gt;&#10;" uniqueid="sk-1ggP-13493"/>
+							</components>
+						</division>
+						<division alignSelf="auto" ratio="0">
+							<components>
+								<skuid__form showErrorsInline="true" model="page_ui_control" uniqueid="form-users-orderby" mode="edit">
+									<styles>
+										<spacing bottom="1" right="3" left="2"/>
+									</styles>
+									<columns>
+										<column verticalAlign="top" ratio="1">
+											<sections>
+												<section showHeading="false">
+													<fields>
+														<skuid__field id="sortby" uniqueid="sk-1ggZ-16917" label=" "/>
+													</fields>
+												</section>
+											</sections>
+										</column>
+									</columns>
+								</skuid__form>
+							</components>
+						</division>
+						<division alignSelf="auto" ratio="0" minWidth="0">
+							<components>
+								<skuid__text contents="&lt;div style=&quot;text-align: right;&quot;&gt;Filter by:&lt;/div&gt;&#10;" uniqueid="sk-1K75-11794">
+									<styles/>
+								</skuid__text>
+							</components>
+						</division>
+						<division alignSelf="auto" ratio="0">
+							<components>
+								<skuid__filterSet model="stng__LoginHistory" uniqueid="filterset-loginhistory" styleSettingsVariant="553e09ff-ac79-4e66-ba87-af6f80ff4bc7" resetButtonBehavior="hide">
+									<filters>
+										<skuid__filter uniqueId="sk-1K3H-18215" type="select" conditionSource="manual" labelMode="manual" conditionName="profile" createFilterOffOption="true" filterOffOptionLabel="All Profiles">
+											<sources>
+												<source type="model" effectsbehavior="justdefault" model="stng__Profile" labeltemplate="{{{name}}}" valuetemplate="{{id}}"/>
+											</sources>
+											<renderConditions logictype="and">
+												<renderCondition type="fieldvalue" operator="!=" enclosevalueinquotes="false" fieldmodel="FeatureFlags" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="appPermSetsEnabled" value="true"/>
+											</renderConditions>
+											<styleVariantConditions/>
+										</skuid__filter>
+										<skuid__filter uniqueId="sk-pz_-14506" type="select" conditionSource="manual" labelMode="manual" conditionName="profile" createFilterOffOption="true" filterOffOptionLabel="All Site Permission Sets">
+											<sources>
+												<source type="model" effectsbehavior="justdefault" model="stng__Profile" labeltemplate="{{{name}}}" valuetemplate="{{id}}"/>
+											</sources>
+											<renderConditions logictype="and">
+												<renderCondition type="fieldvalue" operator="=" enclosevalueinquotes="false" fieldmodel="FeatureFlags" sourcetype="fieldvalue" nosourcerowbehavior="deactivate" field="appPermSetsEnabled" value="true"/>
+											</renderConditions>
+											<styleVariantConditions/>
+										</skuid__filter>
+									</filters>
+									<filtering enableSearch="true" instantSearch="true" instantFilters="true" searchMethod="server" emptySearchBehavior="query" searchPlaceholder="Search" searchConditionName="search"/>
+									<styles>
+										<spacing right="1" left="2"/>
+									</styles>
+									<positioning/>
+									<sorting enable="false"/>
+								</skuid__filterSet>
+							</components>
+						</division>
+					</divisions>
+					<interactions/>
+					<renderConditions logictype="and"/>
+					<styles>
+						<spacing bottom="2"/>
+					</styles>
+					<styleVariantConditions/>
+					<background/>
+				</skuid__grid>
+				<skuid__table model="stng__LoginHistory" uniqueid="table-loginhistory" mode="readonly" showSaveCancel="false" allowSortingByColumn="false" pageSize="25" enableDrawers="false" adaptiveColumns="true" styleSettingsVariant="7696934d-1a9e-4e54-9828-9dbc594ad961">
+					<fields>
+						<field id="created_at" uniqueid="field-table-loginhistory-createdat" label="Login Time"/>
+						<field id="login_type" uniqueid="field-table-loginhistory-type"/>
+						<field type="COMBO" label="Status" template="{{#success}}Success{{/success}}{{^success}}Failed{{/success}}" uniqueid="field-table-loginhistory-status"/>
+						<field id="username" uniqueid="field-table-loginhistory-username"/>
+						<field id="user.first_name" uniqueid="field-table-loginhistory-firstname"/>
+						<field id="user.last_name" uniqueid="field-table-loginhistory-lastname"/>
+						<field id="ip_address" uniqueid="field-table-loginhistory-ipaddress"/>
+					</fields>
+					<filtering enableSearch="false" instantSearch="false"/>
+					<rowActions>
+						<action type="multi" icon="sk-webicon-ink:chevron-small-down">
+							<actions>
+								<action type="drawer"/>
+							</actions>
+							<tooltip position="top" text="Login details" compact="true"/>
+							<renderConditions logictype="or">
+								<renderCondition type="fieldvalue" operator="=" enclosevalueinquotes="true" fieldmodel="stng__LoginHistory" sourcetype="fieldvalue" field="login_type" fieldtargetobjects="SkuidLocal" value="SAML"/>
+								<renderCondition type="fieldvalue" operator="!=" enclosevalueinquotes="false" fieldmodel="stng__LoginHistory" sourcetype="fieldvalue" field="success" fieldtargetobjects="SkuidLocal" value="true"/>
+							</renderConditions>
+						</action>
+					</rowActions>
+					<massActions/>
+					<drawer>
+						<components>
+							<skuid__form showErrorsInline="true" model="stng__LoginHistory" uniqueid="sk-wol-2459" mode="read">
+								<sections>
+									<section showHeading="false">
+										<rows>
+											<row uniqueid="sk-4sO-10359">
+												<fields>
+													<skuid__field id="session_id" uniqueid="field-drawer-loginhistory-sessionid">
+														<renderConditions logictype="and" onhidedatabehavior="keep">
+															<renderCondition type="blank" operator="!=" fieldmodel="stng__LoginHistory" sourcetype="fieldvalue" field="session_id" fieldtargetobjects="SkuidLocal" value="null" enclosevalueinquotes="false"/>
+														</renderConditions>
+														<enableConditions/>
+													</skuid__field>
+												</fields>
+											</row>
+											<row uniqueid="sk-4sO-10604">
+												<fields>
+													<skuid__field id="error_msg" uniqueid="field-drawer-loginhistory-errormsg">
+														<renderConditions logictype="and" onhidedatabehavior="keep">
+															<renderCondition type="blank" operator="!=" fieldmodel="stng__LoginHistory" sourcetype="fieldvalue" field="error_msg" fieldtargetobjects="SkuidLocal" value="null" enclosevalueinquotes="false"/>
+														</renderConditions>
+														<enableConditions logictype="and"/>
+													</skuid__field>
+												</fields>
+											</row>
+											<row uniqueid="sk-4sO-10849">
+												<fields>
+													<skuid__field id="saml_type" uniqueid="field-drawer-loginhistory-samltype">
+														<renderConditions logictype="and" onhidedatabehavior="keep">
+															<renderCondition type="blank" operator="!=" fieldmodel="stng__LoginHistory" sourcetype="fieldvalue" field="saml_type" fieldtargetobjects="SkuidLocal" value="null" enclosevalueinquotes="false"/>
+														</renderConditions>
+														<enableConditions/>
+													</skuid__field>
+												</fields>
+											</row>
+											<row uniqueid="sk-4sO-11094">
+												<fields>
+													<skuid__field id="saml_details" uniqueid="field-drawer-loginhistory-details" showHelp="true" displayAs="CUSTOM" fieldRenderer="prettyJSON">
+														<renderConditions logictype="and" onhidedatabehavior="keep">
+															<renderCondition type="blank" operator="!=" fieldmodel="stng__LoginHistory" sourcetype="fieldvalue" field="saml_details" fieldtargetobjects="SkuidLocal" value="null" enclosevalueinquotes="false"/>
+														</renderConditions>
+														<enableConditions/>
+													</skuid__field>
+												</fields>
+											</row>
+										</rows>
+									</section>
+								</sections>
+								<styles>
+									<spacing top="2" bottom="2"/>
+								</styles>
+							</skuid__form>
+						</components>
+					</drawer>
+					<renderConditions logictype="and"/>
+					<exportProperties useTableColumns="true"/>
+					<sorting enable="false"/>
+				</skuid__table>
+			</components>
+			<background/>
+			<renderConditions logictype="and"/>
+			<interactions/>
+			<styles>
+				<spacing/>
+			</styles>
+		</skuid__wrapper>
+	</components>
+	<resources>
+		<labels/>
+		<javascript>
+			<jsitem location="fieldrenderer" name="prettyJSON" cachelocation="false" url="">var FieldRenderer = skuid.component.FieldRenderer;
+
+return new FieldRenderer({
+	// Options are "virtual", or "element"
+	readModeStrategy: "virtual",
+    read: function (fieldComponent, starterDefinition) {
+		var h = fieldComponent.h;
+        // contains model, row, value, element, and field
+        var context = fieldComponent.cpi.getContext();
+		return h("pre", {}, [
+			JSON.stringify(context.value, null, 2),
+		]);
+	}
+});</jsitem>
+			<jsitem location="inlinesnippet" name="checkForFeatureFlags" cachelocation="false">var params = arguments[0],
+   $ = skuid.$;
+  
+var model = skuid.$M("FeatureFlags")
+model.updateRow(model.getFirstRow(),{
+   appPermSetsEnabled: skuid.platform.hasFeature("Permission Sets"),
+});</jsitem>
+		</javascript>
+		<css/>
+		<actionsequences>
+			<actionsequence id="bd8fb23c-b835-4540-bfa9-591ade550369" label="On page load" type="event-triggered" event-scope="component" event-name="page.rendered">
+				<description/>
+				<actions>
+					<action type="custom" snippet="checkForFeatureFlags"/>
+				</actions>
+			</actionsequence>
+		</actionsequences>
+	</resources>
+	<styles>
+		<styleitem type="background" bgtype="none"/>
+	</styles>
+</skuid__page>

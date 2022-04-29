@@ -15,7 +15,7 @@ func SetVerbose(verbosity bool) {
 // VerboseSection creates some visual space for a title in verbose mode
 func VerboseSection(description string) {
 	if isVerbose {
-		Separator()
+		PrintSeparator()
 		Println(description)
 	}
 }
@@ -32,9 +32,10 @@ func VerboseLn(args ...interface{}) {
 func VerboseSuccess(msg string, t time.Time) {
 	if isVerbose {
 		SuccessWithTime(msg, t)
-	} else {
-		Println(msg + ".")
 	}
+	// } else {
+	// 	Println(msg + ".")
+	// }
 }
 
 // VerboseCommand only prints the command if ArgVerbose is true.
@@ -61,6 +62,6 @@ func VerboseF(msg string, args ...interface{}) {
 // VerboseSeparator is a gated separator
 func VerboseSeparator() {
 	if isVerbose {
-		Separator()
+		PrintSeparator()
 	}
 }
