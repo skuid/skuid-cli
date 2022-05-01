@@ -20,25 +20,32 @@ const (
 	DEFAULT_API_VERSION = "2"
 )
 
-func QuickGet[T any](
+// FastJsonBodyRequest takes a type parameter and automatically
+// Unmarshals the body of the payload response into a value of that type.
+//
+// Leveraging the fasthttp lib, this should outperform the stdlib http package.
+//
+// Some patterns require acquiring and releasing resources from fasthttp.
+//
+// The package 'fasthttp' handles multithreading for us and removes
+// allocs during processes.
+//
+// For instance, this login operation
+// takes about 44 allocs. The http standard lib requires about 221 allocs.
+func FastJsonBodyRequest[T any](
 	route string,
 	method string,
 	body []byte,
-	auth ...string,
-	// optional
+	additionalHeaders map[string]string,
 ) (r T, err error) {
 	logging.VerboseSeparator()
-	logging.VerboseLn(color.Cyan.Sprintf("Skuid NLX Request: %v", route))
+	logging.VerboseLn(color.Gray.Sprint("Skuid NLX Request:"), color.Cyan.Sprint(route))
 
-	// prepare the http request
+	// Prepare resources for the http request
 	req := fasthttp.AcquireRequest()
 	defer fasthttp.ReleaseRequest(req)
-	// Need to acquire and release resources from fasthttp
-	// fasthttp handles multithreading for us and removes
-	// allocs during processes. For instance, this login operation
-	// takes about 44 allocs. The http standard lib requires about 221 allocs.
 
-	// Determine the URI
+	// Prepare resources for the URI
 	uri := fasthttp.AcquireURI()
 	defer fasthttp.ReleaseURI(uri)
 	// by passing `nil` as the first argument, the whole url will be parsed
@@ -46,11 +53,14 @@ func QuickGet[T any](
 	if err = uri.Parse(nil, []byte(route)); err != nil {
 		return
 	}
+	// Set the URI for the request
 	req.SetURI(uri)
 
-	// set the body
-	// For login, this is the url encoded bytes that we prepared
-	// with login credentials and information
+	// Set the body for the request (if found)
+	// (empty bodies will be discarded)
+	//
+	// ...For login: this is the url encoded bytes that we prepared beforehand
+	// ...along with the grant_type: password
 	if len(body) > 0 {
 		logging.VerboseF("With body: %v\n", string(body))
 		req.SetBody(body)
@@ -58,12 +68,11 @@ func QuickGet[T any](
 
 	// prep the request headers
 	req.Header.SetMethod(method)
-	req.Header.Add(fasthttp.HeaderContentType, "application/x-www-form-urlencoded")
 	req.Header.Add(fasthttp.HeaderUserAgent, SkuidUserAgent)
-
-	// if it has authorization, put that as the header
-	if len(auth) > 0 {
-		req.Header.Add(fasthttp.HeaderAuthorization, fmt.Sprintf("Bearer %v", auth[0]))
+	if additionalHeaders != nil {
+		for headerName, headerValue := range additionalHeaders {
+			req.Header.Add(headerName, headerValue)
+		}
 	}
 
 	// prep for the response
@@ -99,24 +108,27 @@ func QuickGet[T any](
 	return
 }
 
+// GetAccessToken
 func GetAccessToken(host, username, password string) (accessToken string, err error) {
 	// prep the body
-	urlValues := url.Values{}
-	urlValues.Set("grant_type", "password")
-	urlValues.Set("username", username)
-	urlValues.Set("password", password)
-
-	body := []byte(urlValues.Encode())
+	body := []byte(url.Values{
+		"grant_type": []string{"password"},
+		"username":   []string{username},
+		"password":   []string{password},
+	}.Encode())
 
 	type AccessTokenResponse struct {
 		AccessToken string `json:"access_token"`
 	}
 
 	var resp AccessTokenResponse
-	if resp, err = QuickGet[AccessTokenResponse](
+	if resp, err = FastJsonBodyRequest[AccessTokenResponse](
 		host+"/auth/oauth/token",
 		fasthttp.MethodPost,
 		body,
+		map[string]string{
+			fasthttp.HeaderContentType: "application/x-www-form-urlencoded",
+		},
 	); err != nil {
 		return
 	}
@@ -132,11 +144,13 @@ func GetAuthorizationToken(host, accessToken string) (authToken string, err erro
 	}
 
 	var resp AuthorizationTokenResponse
-	if resp, err = QuickGet[AuthorizationTokenResponse](
+	if resp, err = FastJsonBodyRequest[AuthorizationTokenResponse](
 		host+"/api/v2/auth/token",
 		fasthttp.MethodGet,
 		[]byte{},
-		accessToken,
+		map[string]string{
+			fasthttp.HeaderAuthorization: fmt.Sprintf("Bearer %v", string(accessToken)),
+		},
 	); err != nil {
 		return
 	}

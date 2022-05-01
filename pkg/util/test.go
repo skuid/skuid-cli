@@ -13,3 +13,8 @@ func SkipBenchmark(b *testing.B) {
 		b.Skip()
 	}
 }
+
+func LoadTestEnvironment() (err error) {
+
+	return
+}

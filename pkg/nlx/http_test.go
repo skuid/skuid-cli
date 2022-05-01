@@ -11,10 +11,11 @@ import (
 )
 
 type DeploymentPlan struct {
-	Host     string `json:"host"`
-	Port     string `json:"port"`
-	Url      string `json:"url"`
-	Type     string `json:"type"`
+	Host     string   `json:"host"`
+	Port     string   `json:"port"`
+	Url      string   `json:"url"`
+	Type     string   `json:"type"`
+	Warnings []string `json:"warnings"`
 	Metadata struct {
 		Apps               []string `json:"apps"`
 		AuthProviders      []string `json:"authproviders"`
@@ -30,7 +31,6 @@ type DeploymentPlan struct {
 		Site               []string `json:"site"`
 		Themes             []string `json:"themes"`
 	} `json:"metadata"`
-	Warnings []string `json:"warnings"`
 }
 
 func GetDeployPlans(host, authToken string) (plans map[string]DeploymentPlan, err error) {
