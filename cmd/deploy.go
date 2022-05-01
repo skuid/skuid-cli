@@ -139,6 +139,6 @@ var deployCmd = &cobra.Command{
 
 func init() {
 	TidesCmd.AddCommand(deployCmd)
-	flags.AddFlagFunctions(deployCmd, flags.PlatformLoginFlags...)
+	flags.AddFlags(deployCmd, flags.PlatformLoginFlags...)
 	flags.AddFlags(deployCmd, flags.Directory, flags.AppName)
 }

@@ -3,7 +3,7 @@ package flags
 var (
 	// PlatformLoginFlags adds the required necessary flags to a command
 	// for the function PlatformLogin
-	PlatformLoginFlags = FlagFunctions(
+	PlatformLoginFlags = []*Flag[string]{
 		Host, Username, Password,
-	)
+	}
 )

@@ -57,6 +57,6 @@ var varSetCmd = &cobra.Command{
 
 func init() {
 	TidesCmd.AddCommand(varSetCmd)
-	flags.AddFlagFunctions(varSetCmd, flags.PlatformLoginFlags...)
+	flags.AddFlags(varSetCmd, flags.PlatformLoginFlags...)
 	flags.AddFlags(varSetCmd, flags.VariableName, flags.VariableValue, flags.VariableDataService)
 }

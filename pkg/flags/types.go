@@ -58,19 +58,13 @@ func AddFlagFunctions(cmd *cobra.Command, adds ...func(*cobra.Command) error) {
 	}
 }
 
+// Same as AddFlagFunctions but for any type of flag (of consistent type... ugh)
 func AddFlags[T any](cmd *cobra.Command, flags ...*Flag[T]) {
 	for _, flag := range flags {
 		if err := Add(flag)(cmd); err != nil {
 			log.Fatalf("Unable to set up flag (%v) for command (%v): %v", flag.Name, cmd.Name(), err.Error())
 		}
 	}
-}
-
-func FlagFunctions[T any](flags ...*Flag[T]) (adds []func(*cobra.Command) error) {
-	for _, f := range flags {
-		adds = append(adds, Add(f))
-	}
-	return
 }
 
 // If we find an environment variable indicate that in the usage text so that there
@@ -92,26 +86,7 @@ func aliasInformationString(flagName, usageText string) string {
 	return color.Gray.Sprintf("Alias for '--%v'\n", flagName) + usageText
 }
 
-// TODO: when they add type switching
 func Add[T any](flag *Flag[T]) func(*cobra.Command) error {
-	switch f := any(flag).(type) {
-	case *Flag[string]:
-		return AddString(f)
-	case *Flag[bool]:
-		return AddBool(f)
-	case *Flag[[]string]:
-		return AddStringArray(f)
-	default:
-		return func(cmd *cobra.Command) error {
-			return fmt.Errorf("No type definition found")
-		}
-	}
-}
-
-// AddTo takes a StringFlag and adds it to a command.
-// There's a lot of duplicate logic that can be handled
-// by this stuff
-func AddString(flag *Flag[string]) func(*cobra.Command) error {
 	return func(to *cobra.Command) error {
 		// three required fields
 		if err := CheckRequiredFields(flag); err != nil {
@@ -123,20 +98,6 @@ func AddString(flag *Flag[string]) func(*cobra.Command) error {
 		// we're getting
 		required := flag.Required
 		usageText := flag.Usage
-		defaultVar := flag.Default
-
-		// override default values and usage text if
-		// there is an environment variable provided
-		if flag.EnvVarName != "" {
-			defaultVar = os.Getenv(flag.EnvVarName)
-			usageText = environmentVariableDetectionString(flag.EnvVarName, flag.Usage)
-			if defaultVar != "" {
-				// the only time we disabled required
-				// is when we have the environment variable name
-				// and we find an environment variable value
-				required = false
-			}
-		}
 
 		var flags *pflag.FlagSet
 		if flag.Global {
@@ -145,187 +106,103 @@ func AddString(flag *Flag[string]) func(*cobra.Command) error {
 			flags = to.Flags()
 		}
 
-		if flag.Shorthand != "" {
-			flags.StringVarP(
-				flag.argument,
-				flag.Name,
-				flag.Shorthand,
-				defaultVar,
-				usageText,
-			)
-		} else {
-			flags.StringVar(
-				flag.argument,
-				flag.Name,
-				defaultVar,
-				usageText,
-			)
-		}
-
-		if len(flag.Aliases) > 0 {
-			for _, alias := range flag.Aliases {
-				flags.StringVar(
-					flag.argument,
-					alias,
-					defaultVar,
-					aliasInformationString(flag.Name, usageText),
-				)
-			}
-		}
-
-		if required {
-			return to.MarkFlagRequired(flag.Name)
-		} else {
-			return nil
-		}
-	}
-}
-
-// AddTo takes a StringArrayFlag and adds it to a command.
-// There's a lot of duplicate logic that can be handled
-// by this stuff
-func AddStringArray(flag *Flag[[]string]) func(*cobra.Command) error {
-	return func(to *cobra.Command) error {
-		// three required fields
-		if err := CheckRequiredFields(flag); err != nil {
-			return err
-		}
-
-		// these are the three variables
-		// that are going to change based on what
-		// we're getting
-		required := flag.Required
-		usageText := flag.Usage
-		defaultVar := flag.Default
-
-		// override default values and usage text if
-		// there is an environment variable provided
-		if flag.EnvVarName != "" {
-			defaultVar = strings.Split(os.Getenv(flag.EnvVarName), ",")
-			usageText = environmentVariableDetectionString(flag.EnvVarName, flag.Usage)
-			if len(defaultVar) > 0 {
-				// the only time we disabled required
-				// is when we have the environment variable name
-				// and we find an environment variable value
-				required = false
-			}
-		}
-
-		var flags *pflag.FlagSet
-		if flag.Global {
-			flags = to.PersistentFlags()
-		} else {
-			flags = to.Flags()
-		}
-
-		if flag.Shorthand != "" {
-			flags.StringArrayVarP(
-				flag.argument,
-				flag.Name,
-				flag.Shorthand,
-				defaultVar,
-				usageText,
-			)
-		} else {
-			flags.StringArrayVar(
-				flag.argument,
-				flag.Name,
-				defaultVar,
-				usageText,
-			)
-		}
-
-		if len(flag.Aliases) > 0 {
-			for _, alias := range flag.Aliases {
-				flags.StringArrayVar(
-					flag.argument,
-					alias,
-					defaultVar,
-					aliasInformationString(flag.Name, usageText),
-				)
-			}
-		}
-
-		if required {
-			return to.MarkFlagRequired(flag.Name)
-		} else {
-			return nil
-		}
-	}
-}
-
-func AddBool(flag *Flag[bool]) func(cmd *cobra.Command) error {
-	return func(to *cobra.Command) error {
-		// three required fields
-		if err := CheckRequiredFields(flag); err != nil {
-			return err
-		}
-
-		// these are the three variables
-		// that are going to change based on what
-		// we're getting
-		required := flag.Required
-		usageText := flag.Usage
-		defaultValue := flag.Default
-
-		// override default values and usage text if
-		// there is an environment variable provided
-		if flag.EnvVarName != "" {
-			defaultValue = func() bool {
-				val := strings.ToLower(os.Getenv(flag.EnvVarName))
-				// if there's something set
-				// disable requirement, we're going to use
-				// the environment variable as the default value
-				if val != "" && required {
+		switch f := any(flag).(type) {
+		// handle string
+		case *Flag[string]:
+			defaultVar := f.Default
+			// override default values and usage text if
+			// there is an environment variable provided
+			if flag.EnvVarName != "" {
+				defaultVar = os.Getenv(flag.EnvVarName)
+				usageText = environmentVariableDetectionString(flag.EnvVarName, flag.Usage)
+				if defaultVar != "" {
+					// the only time we disabled required
+					// is when we have the environment variable name
+					// and we find an environment variable value
 					required = false
 				}
-				// we will accept VALUE == "true/TRUE/tRuE"
-				if strings.EqualFold(val, "true") {
-					return true
-				}
-				// we will accept VALUE != 0 (VALUE=1)
-				if i, err := strconv.Atoi(val); err == nil && i != 0 {
-					return true
-				}
-				// otherwise, it's false
-				return false
-			}()
-			usageText = environmentVariableDetectionString(flag.EnvVarName, flag.Usage)
-		}
-
-		var flags *pflag.FlagSet
-		if flag.Global {
-			flags = to.PersistentFlags()
-		} else {
-			flags = to.Flags()
-		}
-
-		if flag.Shorthand != "" {
-			flags.BoolVarP(
-				flag.argument,
-				flag.Name,
-				flag.Shorthand,
-				defaultValue,
-				usageText,
-			)
-		} else {
-			flags.BoolVar(
-				flag.argument,
-				flag.Name,
-				defaultValue,
-				usageText,
-			)
-		}
-
-		if len(flag.Aliases) > 0 {
-			for _, alias := range flag.Aliases {
-				flags.BoolVar(
-					flag.argument,
-					alias,
-					defaultValue,
-					aliasInformationString(flag.Name, usageText),
-				)
 			}
+			if flag.Shorthand != "" {
+				flags.StringVarP(f.argument, flag.Name, flag.Shorthand, defaultVar, usageText)
+			} else {
+				flags.StringVar(f.argument, flag.Name, defaultVar, usageText)
+			}
+			if len(flag.Aliases) > 0 {
+				for _, alias := range flag.Aliases {
+					flags.StringVar(f.argument, alias, defaultVar, aliasInformationString(flag.Name, usageText))
+				}
+			}
+
+		// handle bools
+		case *Flag[bool]:
+			defaultValue := f.Default
+			// override default values and usage text if
+			// there is an environment variable provided
+			if flag.EnvVarName != "" {
+				defaultValue = func() bool {
+					val := strings.ToLower(os.Getenv(flag.EnvVarName))
+					// if there's something set
+					// disable requirement, we're going to use
+					// the environment variable as the default value
+					if val != "" && required {
+						required = false
+					}
+					// we will accept VALUE == "true/TRUE/tRuE"
+					if strings.EqualFold(val, "true") {
+						return true
+					}
+					// we will accept VALUE != 0 (VALUE=1)
+					if i, err := strconv.Atoi(val); err == nil && i != 0 {
+						return true
+					}
+					// otherwise, it's false
+					return false
+				}()
+				usageText = environmentVariableDetectionString(flag.EnvVarName, flag.Usage)
+			}
+
+			if flag.Shorthand != "" {
+				flags.BoolVarP(f.argument, flag.Name, flag.Shorthand, defaultValue, usageText)
+			} else {
+				flags.BoolVar(f.argument, flag.Name, defaultValue, usageText)
+			}
+
+			if len(flag.Aliases) > 0 {
+				for _, alias := range flag.Aliases {
+					flags.BoolVar(f.argument, alias, defaultValue, aliasInformationString(flag.Name, usageText))
+				}
+			}
+
+		// handle string arrays
+		case *Flag[[]string]:
+			defaultVar := f.Default
+			// override default values and usage text if
+			// there is an environment variable provided
+			if flag.EnvVarName != "" {
+				defaultVar = strings.Split(os.Getenv(flag.EnvVarName), ",")
+				usageText = environmentVariableDetectionString(flag.EnvVarName, flag.Usage)
+				if len(defaultVar) > 0 {
+					// the only time we disabled required
+					// is when we have the environment variable name
+					// and we find an environment variable value
+					required = false
+				}
+			}
+
+			if flag.Shorthand != "" {
+				flags.StringArrayVarP(f.argument, flag.Name, flag.Shorthand, defaultVar, usageText)
+			} else {
+				flags.StringArrayVar(f.argument, flag.Name, defaultVar, usageText)
+			}
+
+			if len(flag.Aliases) > 0 {
+				for _, alias := range flag.Aliases {
+					flags.StringArrayVar(f.argument, alias, defaultVar, aliasInformationString(flag.Name, usageText))
+				}
+			}
+
+		default:
+			return fmt.Errorf("No type definition found")
 		}
 
 		if required {

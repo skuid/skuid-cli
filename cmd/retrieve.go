@@ -79,7 +79,7 @@ var (
 func init() {
 	TidesCmd.AddCommand(retrieveCmd)
 
-	flags.AddFlagFunctions(retrieveCmd, flags.PlatformLoginFlags...)
+	flags.AddFlags(retrieveCmd, flags.PlatformLoginFlags...)
 	flags.AddFlags(retrieveCmd, flags.Directory, flags.AppName)
 	flags.AddFlags(retrieveCmd, flags.NoZip)
 }

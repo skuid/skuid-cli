@@ -136,5 +136,5 @@ var watchCmd = &cobra.Command{
 
 func init() {
 	TidesCmd.AddCommand(watchCmd)
-	flags.AddFlagFunctions(watchCmd, flags.PlatformLoginFlags...)
+	flags.AddFlags(watchCmd, flags.PlatformLoginFlags...)
 }
