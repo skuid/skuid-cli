@@ -7,6 +7,31 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
+type Authorization struct {
+	username string // private
+	password string // private
+
+	Host               string
+	AccessToken        string
+	AuthorizationToken string
+}
+
+func (a *Authorization) Refresh() (err error) {
+	access, err := GetAccessToken(a.Host, a.username, a.password)
+	if err != nil {
+		return
+	}
+	a.AccessToken = access
+
+	auth, err := GetAuthorizationToken(a.Host, a.AccessToken)
+	if err != nil {
+		return
+	}
+	a.AuthorizationToken = auth
+
+	return
+}
+
 // GetAccessToken
 func GetAccessToken(host, username, password string) (accessToken string, err error) {
 	// prep the body
@@ -17,6 +42,7 @@ func GetAccessToken(host, username, password string) (accessToken string, err er
 	}.Encode())
 
 	type AccessTokenResponse struct {
+		ExpiresIn   int    `json:"expires_in"`
 		AccessToken string `json:"access_token"`
 	}
 
@@ -55,6 +81,22 @@ func GetAuthorizationToken(host, accessToken string) (authToken string, err erro
 	}
 
 	authToken = resp.AuthorizationToken
+
+	return
+}
+
+func Authorize(host, username, password string) (info *Authorization, err error) {
+	info = &Authorization{
+		Host:     host,
+		username: username,
+		password: password,
+	}
+
+	if info.AccessToken, err = GetAccessToken(host, username, password); err != nil {
+		return
+	}
+
+	info.AuthorizationToken, err = GetAuthorizationToken(host, info.AccessToken)
 
 	return
 }

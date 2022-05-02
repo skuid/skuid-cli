@@ -1,6 +1,12 @@
 package util
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/joho/godotenv"
+
+	"github.com/skuid/tides/pkg/constants"
+)
 
 func SkipIntegrationTest(t *testing.T) {
 	if testing.Short() {
@@ -14,7 +20,6 @@ func SkipBenchmark(b *testing.B) {
 	}
 }
 
-func LoadTestEnvironment() (err error) {
-
-	return
+func LoadTestEnvironment() error {
+	return godotenv.Load(constants.TEST_ENVIRONMENT_FILE)
 }

@@ -12,4 +12,6 @@ skuid_windows_amd64.exe
 .scripts
 .test
 .testenv
+# all test environment files lol
+**/**/.testenv
 .coverage

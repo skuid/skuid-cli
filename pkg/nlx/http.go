@@ -42,6 +42,28 @@ func FastJsonBodyRequest[T any](
 	body []byte,
 	additionalHeaders map[string]string,
 ) (r T, err error) {
+	var responseBody []byte
+	if responseBody, err = FastRequest(route, method, body, additionalHeaders); err != nil {
+		return
+	}
+
+	logging.VerboseLn("Unmarshalling data")
+
+	if err = json.Unmarshal(responseBody, &r); err != nil {
+		return
+	}
+
+	logging.VerboseF("(Response: %v)\n", r)
+
+	return
+}
+
+func FastRequest(
+	route string,
+	method string,
+	body []byte,
+	additionalHeaders map[string]string,
+) (response []byte, err error) {
 	// only https
 	if strings.HasPrefix(route, "http://") {
 		route = strings.Replace(route, "http://", "https://", 1)
@@ -112,11 +134,7 @@ func FastJsonBodyRequest[T any](
 
 	logging.VerboseLn("Successful Request")
 
-	if err = json.Unmarshal(responseBody, &r); err != nil {
-		return
-	}
-
-	logging.VerboseF("(Response: %v)\n", r)
+	response = responseBody
 
 	return
 }

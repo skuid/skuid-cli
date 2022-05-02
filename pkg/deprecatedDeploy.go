@@ -28,7 +28,7 @@ func (api *NlxApi) GetDeployPlan(payload io.Reader, mimeType string) (map[string
 
 	planStart := time.Now()
 	// Get a deploy plan
-	planResult, err := api.Connection.MakeRequest(
+	planResult, err := api.Connection.MakeAccessTokenRequest(
 		http.MethodPost,
 		"/metadata/deploy/plan",
 		payload,
@@ -108,7 +108,7 @@ func (api *NlxApi) ExecutePlanItem(plan Plan, targetDir string) (*io.ReadCloser,
 	if plan.Host == "" {
 		logging.VerboseLn(fmt.Sprintf("Making Deploy Request: URL: [%s] Type: [%s]", plan.Url, plan.Type))
 
-		planResult, err = api.Connection.MakeRequest(
+		planResult, err = api.Connection.MakeAccessTokenRequest(
 			http.MethodPost,
 			plan.Url,
 			bufDeploy,
@@ -122,7 +122,7 @@ func (api *NlxApi) ExecutePlanItem(plan Plan, targetDir string) (*io.ReadCloser,
 		url := fmt.Sprintf("%s:%s/api/v2%s", plan.Host, plan.Port, plan.Url)
 		logging.VerboseF("Making Deploy Request: URL: [%s] Type: [%s]", color.Yellow.Sprint(url), color.Cyan.Sprint(plan.Type))
 
-		planResult, err = api.Connection.MakeJWTRequest(
+		planResult, err = api.Connection.MakeAuthorizationBearerRequest(
 			http.MethodPost,
 			url,
 			bufDeploy,

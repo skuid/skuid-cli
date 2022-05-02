@@ -7,21 +7,15 @@ import (
 	"testing"
 
 	"github.com/gookit/color"
-	"github.com/joho/godotenv"
+
+	"github.com/skuid/tides/pkg/util"
 )
 
-func loadEnv() error {
-	return godotenv.Load(".testenv")
-}
-
-func init() {
-	err := loadEnv()
-	if err != nil {
+func TestMain(m *testing.M) {
+	if err := util.LoadTestEnvironment(); err != nil {
 		log.Fatal(err)
 	}
-}
 
-func TestMain(m *testing.M) {
 	// call flag.Parse() here if TestMain uses flags
 	rc := m.Run()
 
@@ -47,4 +41,8 @@ func TestMain(m *testing.M) {
 	}
 	os.Exit(rc)
 
+}
+
+func TestRun(t *testing.T) {
+	// TODO
 }

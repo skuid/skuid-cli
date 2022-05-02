@@ -18,3 +18,8 @@ const (
 const (
 	ENV_VERBOSE = "TIDES_VERBOSE"
 )
+
+const (
+	TEST_ENVIRONMENT_FILE = ".testenv"
+	ENVIRONMENT_FILE      = ".env"
+)

@@ -54,7 +54,7 @@ func SkuidNlxLogin2(host, username, password string) (api *NlxApi, err error) {
 		return
 	}
 
-	err = conn.GetJWT()
+	err = conn.GetJWTAuthorizationToken()
 
 	if err != nil {
 		return

@@ -14,14 +14,14 @@ import (
 )
 
 type NlxConnection struct {
-	AccessToken  string
-	APIVersion   string
-	ClientId     string
-	ClientSecret string
-	Host         string
-	Password     string
-	Username     string
-	JWT          string
+	AccessToken        string
+	APIVersion         string
+	ClientId           string
+	ClientSecret       string
+	Host               string
+	Password           string
+	Username           string
+	AuthorizationToken string
 }
 
 type NlxAuthResponse struct {
@@ -77,8 +77,8 @@ type JWTResponse struct {
 	Token string `json:"token"`
 }
 
-func (conn *NlxConnection) GetJWT() error {
-	jwtResult, err := conn.MakeRequest(
+func (conn *NlxConnection) GetJWTAuthorizationToken() error {
+	jwtResult, err := conn.MakeAccessTokenRequest(
 		http.MethodGet,
 		"/auth/token",
 		nil,
@@ -95,13 +95,13 @@ func (conn *NlxConnection) GetJWT() error {
 		return err
 	}
 
-	conn.JWT = result.Token
+	conn.AuthorizationToken = result.Token
 
 	return nil
 }
 
-// MakeRequest Executes an HTTP request using a session token
-func (conn *NlxConnection) MakeRequest(method string, url string, payload io.Reader, contentType string) (result *io.ReadCloser, err error) {
+// MakeAccessTokenRequest Executes an HTTP request using a session token
+func (conn *NlxConnection) MakeAccessTokenRequest(method string, url string, payload io.Reader, contentType string) (result *io.ReadCloser, err error) {
 	endpoint := fmt.Sprintf("%s/api/v%s%s", conn.Host, conn.APIVersion, url)
 
 	req, err := http.NewRequest(method, endpoint, payload)
@@ -156,8 +156,8 @@ func (conn *NlxConnection) MakeRequest(method string, url string, payload io.Rea
 	return &resp.Body, nil
 }
 
-// MakeJWTRequest Executes HTTP request using a jwt
-func (conn *NlxConnection) MakeJWTRequest(method string, url string, payload io.Reader, contentType string) (result *io.ReadCloser, err error) {
+// MakeAuthorizationBearerRequest Executes HTTP request using a jwt
+func (conn *NlxConnection) MakeAuthorizationBearerRequest(method string, url string, payload io.Reader, contentType string) (result *io.ReadCloser, err error) {
 	endpoint := fmt.Sprintf("https://%s", url)
 	req, err := http.NewRequest(method, endpoint, payload)
 
@@ -165,7 +165,7 @@ func (conn *NlxConnection) MakeJWTRequest(method string, url string, payload io.
 		return nil, err
 	}
 
-	req.Header.Add("Authorization", "Bearer "+conn.JWT)
+	req.Header.Add("Authorization", "Bearer "+conn.AuthorizationToken)
 	if contentType != "" {
 		req.Header.Add("Content-Type", contentType)
 	}

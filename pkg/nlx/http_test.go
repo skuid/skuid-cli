@@ -47,7 +47,7 @@ func TestFasthttpMethods(t *testing.T) {
 		{
 			description:      "301 redirect to 404 page",
 			givenHost:        "https://skuid.com/google",
-			expectedErrorMsg: "Status Code: 301",
+			expectedErrorMsg: "301",
 		},
 		{
 			description:      "bad unmarshal",

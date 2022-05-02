@@ -216,43 +216,6 @@ func (m Metadata) FilterMetadataItem(relativeFilePath string) (keep bool) {
 	return
 }
 
-func GetRetrievePlan(api *NlxApi, appName string) (results map[string]Plan, err error) {
-
-	logging.VerboseSection("Skuid NLX Retrieval Plan")
-
-	var postBody io.Reader
-	if appName != "" {
-		retFilter, err := json.Marshal(RetrieveFilter{
-			AppName: appName,
-		})
-		if err != nil {
-			return nil, err
-		}
-		postBody = bytes.NewReader(retFilter)
-	}
-
-	planStart := time.Now()
-	// Get a retrieve plan
-	planResult, err := api.Connection.MakeRequest(
-		http.MethodPost,
-		"/metadata/retrieve/plan",
-		postBody,
-		"application/json",
-	)
-
-	if err != nil {
-		return
-	}
-
-	logging.VerboseSuccess("Plan Retrieved", planStart)
-
-	defer (*planResult).Close()
-
-	err = json.NewDecoder(*planResult).Decode(&results)
-
-	return
-}
-
 func ExecuteRetrievePlan(api *NlxApi, plans map[string]Plan, noZip bool) (planResults []*io.ReadCloser, err error) {
 
 	logging.VerboseSection("Executing Skuid NLX Retrieve Plan")
@@ -272,10 +235,10 @@ func ExecuteRetrievePlan(api *NlxApi, plans map[string]Plan, noZip bool) (planRe
 		var req func(string, string, io.Reader, string) (*io.ReadCloser, error)
 		if plan.Host != "" {
 			url = fmt.Sprintf("%s:%s/api/v2%s", plan.Host, plan.Port, plan.Url)
-			req = api.Connection.MakeJWTRequest
+			req = api.Connection.MakeAuthorizationBearerRequest
 		} else {
 			url = plan.Url
-			req = api.Connection.MakeRequest
+			req = api.Connection.MakeAccessTokenRequest
 		}
 
 		logging.VerboseF("Retrieval => %s (%s)\n", color.Yellow.Sprint(url), color.Cyan.Sprint(plan.Type))
@@ -296,6 +259,43 @@ func ExecuteRetrievePlan(api *NlxApi, plans map[string]Plan, noZip bool) (planRe
 
 	}
 	return planResults, nil
+}
+
+func GetRetrievePlan(api *NlxApi, appName string) (results map[string]Plan, err error) {
+
+	logging.VerboseSection("Skuid NLX Retrieval Plan")
+
+	var postBody io.Reader
+	if appName != "" {
+		retFilter, err := json.Marshal(RetrieveFilter{
+			AppName: appName,
+		})
+		if err != nil {
+			return nil, err
+		}
+		postBody = bytes.NewReader(retFilter)
+	}
+
+	planStart := time.Now()
+	// Get a retrieve plan
+	planResult, err := api.Connection.MakeAccessTokenRequest(
+		http.MethodPost,
+		"/metadata/retrieve/plan",
+		postBody,
+		"application/json",
+	)
+
+	if err != nil {
+		return
+	}
+
+	logging.VerboseSuccess("Plan Retrieved", planStart)
+
+	defer (*planResult).Close()
+
+	err = json.NewDecoder(*planResult).Decode(&results)
+
+	return
 }
 
 func DeployModifiedFiles(api *NlxApi, targetDir, modifiedFile string) (err error) {

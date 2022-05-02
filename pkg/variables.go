@@ -55,7 +55,7 @@ func isDefaultDs(ds string) bool {
 
 func getDataServices(api *NlxApi) (map[string]DataService, error) {
 	dspath := "/objects/dataservice"
-	dsStream, err := api.Connection.MakeRequest(
+	dsStream, err := api.Connection.MakeAccessTokenRequest(
 		http.MethodGet,
 		dspath,
 		nil,
@@ -101,7 +101,7 @@ func GetEnvironmentSpecificConfigurations(api *NlxApi, mapDsName bool) ([]EnvSpe
 
 	escStart := time.Now()
 	api.Connection.APIVersion = "1"
-	result, err := api.Connection.MakeRequest(
+	result, err := api.Connection.MakeAccessTokenRequest(
 		http.MethodGet,
 		"/ui/variables",
 		nil,
@@ -200,7 +200,7 @@ func SetEnvironmentSpecificConfiguration(api *NlxApi, variableName, variableValu
 		return err
 	}
 	escStart := time.Now()
-	_, err = api.Connection.MakeRequest(
+	_, err = api.Connection.MakeAccessTokenRequest(
 		verb,
 		path,
 		strings.NewReader(payload),
@@ -256,7 +256,7 @@ func RemoveEnvironmentSpecificConfigurations(api *NlxApi, variableName, variable
 		return err
 	}
 	escStart := time.Now()
-	_, err = api.Connection.MakeRequest(
+	_, err = api.Connection.MakeAccessTokenRequest(
 		http.MethodDelete,
 		path,
 		strings.NewReader(payload),
