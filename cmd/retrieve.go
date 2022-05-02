@@ -27,23 +27,44 @@ var (
 
 			logging.VerboseCommand("Retrieve Skuid NLX Metadata")
 
-			api, err := pkg.SkuidNlxLogin(cmd)
-
 			retrieveStart := time.Now()
 
-			if err != nil {
-				err = fmt.Errorf("Error logging in to Skuid site: %v", err)
-				return
-			}
+			// var host, username, password string
+
+			// if host, err = cmd.Flags().GetString(flags.Host.Name); err != nil {
+			// 	return
+			// }
+
+			// if username, err = cmd.Flags().GetString(flags.Username.Name); err != nil {
+			// 	return
+			// }
+
+			// if password, err = cmd.Flags().GetString(flags.Password.Name); err != nil {
+			// 	return
+			// }
+
+			// var accessToken string
+			// if accessToken, err = nlx.GetAccessToken(host, username, password); err != nil {
+			// 	return
+			// }
+
+			// var authToken string
+			// if authToken, err = nlx.GetAuthorizationToken(accessToken ); err != nil {
+			// 	return
+			// }
 
 			var appName string
 			if appName, err = cmd.Flags().GetString(flags.AppName.Name); err != nil {
 				return
 			}
 
+			api, err := pkg.SkuidNlxLogin(cmd)
+			if err != nil {
+				return
+			}
+
 			plan, err := pkg.GetRetrievePlan(api, appName)
 			if err != nil {
-				err = fmt.Errorf("Error getting retrieve plan: %v", err)
 				return
 			}
 

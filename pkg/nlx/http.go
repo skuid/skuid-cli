@@ -3,6 +3,7 @@ package nlx
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/gookit/color"
 	"github.com/valyala/fasthttp"
@@ -12,7 +13,11 @@ import (
 )
 
 var (
-	SkuidUserAgent = fmt.Sprintf("Skuid-CLI/%s", constants.VERSION_NAME)
+	SkuidUserAgent = fmt.Sprintf("Tides/%s", constants.VERSION_NAME)
+
+	AcceptableProtocols = []string{
+		"http", "https",
+	}
 )
 
 const (
@@ -37,8 +42,17 @@ func FastJsonBodyRequest[T any](
 	body []byte,
 	additionalHeaders map[string]string,
 ) (r T, err error) {
+	// only https
+	if strings.HasPrefix(route, "http://") {
+		route = strings.Replace(route, "http://", "https://", 1)
+	}
+	// only https
+	if !strings.HasPrefix(route, "https://") {
+		route = fmt.Sprintf("https://%v", route)
+	}
+
 	logging.VerboseSeparator()
-	logging.VerboseLn(color.Gray.Sprint("Skuid NLX Request:"), color.Cyan.Sprint(route))
+	logging.VerboseLn(color.Gray.Sprint("HTTPS Request:"), color.Cyan.Sprint(route))
 
 	// Prepare resources for the http request
 	req := fasthttp.AcquireRequest()
@@ -80,7 +94,7 @@ func FastJsonBodyRequest[T any](
 
 	// perform the request. errors only pop up if there's an issue
 	// with assembly/resources.
-	logging.VerboseLn("Login Attempt...")
+	logging.VerboseLn("Making Request")
 	if err = fasthttp.Do(req, resp); err != nil {
 		return
 	}

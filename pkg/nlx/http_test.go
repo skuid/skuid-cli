@@ -1,57 +1,82 @@
 package nlx_test
 
 import (
+	"fmt"
 	"testing"
 
-	"github.com/gookit/color"
+	"github.com/stretchr/testify/assert"
+	"github.com/valyala/fasthttp"
 
-	"github.com/skuid/tides/pkg/logging"
 	"github.com/skuid/tides/pkg/nlx"
 	"github.com/skuid/tides/pkg/util"
 )
 
-type DeploymentPlan struct {
-	Host     string   `json:"host"`
-	Port     string   `json:"port"`
-	Url      string   `json:"url"`
-	Type     string   `json:"type"`
-	Warnings []string `json:"warnings"`
-	Metadata struct {
-		Apps               []string `json:"apps"`
-		AuthProviders      []string `json:"authproviders"`
-		ComponentPacks     []string `json:"componentpacks"`
-		DataServices       []string `json:"dataservices"`
-		DataSources        []string `json:"datasources"`
-		DesignSystems      []string `json:"designsystems"`
-		Variables          []string `json:"variables"`
-		Files              []string `json:"files"`
-		Pages              []string `json:"pages"`
-		PermissionSets     []string `json:"permissionsets"`
-		SitePermissionSets []string `json:"sitepermissionsets"`
-		Site               []string `json:"site"`
-		Themes             []string `json:"themes"`
-	} `json:"metadata"`
-}
-
-func GetDeployPlans(host, authToken string) (plans map[string]DeploymentPlan, err error) {
-
-	return
-}
-
 func TestFasthttpMethods(t *testing.T) {
 	util.SkipIntegrationTest(t)
-	host := "https://jredhoop-subdomain.pliny.webserver:3000"
-	logging.SetVerbose(true)
+	const YES_NO_API = "yesno.wtf/api"
 
-	if at, err := nlx.GetAccessToken(
-		host, "jredhoop", "SkuidLocalDevelopment",
-	); err != nil {
-		color.Red.Println(err)
-		t.FailNow()
-	} else if _, err := nlx.GetAuthorizationToken(
-		host, at,
-	); err != nil {
-		color.Red.Println(err)
-		t.FailNow()
+	type YesNoResponse struct {
+		Answer string `json:"answer"`
+		Forced bool   `json:"forced"`
 	}
+
+	for _, tc := range []struct {
+		description  string
+		givenHost    string
+		givenHeaders map[string]string // should ignore nil map
+
+		expectedErrorMsg string
+	}{
+		{
+			description: "https",
+			givenHost:   fmt.Sprintf("https://%v", YES_NO_API),
+		},
+		{
+			description:  "empty header map",
+			givenHost:    fmt.Sprintf("https://%v", YES_NO_API),
+			givenHeaders: make(map[string]string),
+		},
+		{
+			description: "no https, should add",
+			givenHost:   YES_NO_API,
+		},
+		{
+			description: "http should replace",
+			givenHost:   fmt.Sprintf("http://%v", YES_NO_API),
+		},
+		{
+			description:      "301 redirect to 404 page",
+			givenHost:        "https://skuid.com/google",
+			expectedErrorMsg: "Status Code: 301",
+		},
+		{
+			description:      "bad unmarshal",
+			givenHost:        "https://www.uuidtools.com/api/generate/v1",
+			expectedErrorMsg: "json: cannot unmarshal",
+		},
+	} {
+		t.Run(tc.description, func(subtest *testing.T) {
+			actual, actualError := nlx.FastJsonBodyRequest[YesNoResponse](
+				tc.givenHost,
+				fasthttp.MethodGet,
+				[]byte{},
+				tc.givenHeaders,
+			)
+
+			if actualError != nil && tc.expectedErrorMsg == "" {
+				subtest.Log(actualError)
+				subtest.FailNow()
+			}
+
+			if tc.expectedErrorMsg == "" && actual.Answer == "" {
+				subtest.Log(actualError)
+				subtest.FailNow()
+			}
+
+			if tc.expectedErrorMsg != "" {
+				assert.Contains(subtest, actualError.Error(), tc.expectedErrorMsg)
+			}
+		})
+	}
+
 }
