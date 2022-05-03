@@ -2,7 +2,6 @@ package nlx_test
 
 import (
 	"encoding/json"
-	"log"
 	"testing"
 
 	"github.com/skuid/tides/pkg/logging"
@@ -10,21 +9,14 @@ import (
 	"github.com/skuid/tides/pkg/util"
 )
 
-var (
-	auth *nlx.Authorization
-)
-
-func init() {
-	logging.SetVerbose(true)
-	var err error
-	auth, err = nlx.Authorize(authHost, authUser, authPass)
-	if err != nil {
-		log.Fatal(err)
-	}
-}
-
 func TestRetrievePlan(t *testing.T) {
 	util.SkipIntegrationTest(t)
+
+	logging.SetVerbose(true)
+	auth, err := nlx.Authorize(authHost, authUser, authPass)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	for _, tc := range []struct {
 		description string
@@ -56,6 +48,13 @@ func TestRetrievePlan(t *testing.T) {
 }
 
 func TestExecuteRetrieval(t *testing.T) {
+
+	logging.SetVerbose(true)
+	auth, err := nlx.Authorize(authHost, authUser, authPass)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	for _, tc := range []struct {
 		description string
 

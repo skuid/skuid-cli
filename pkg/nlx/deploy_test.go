@@ -3,6 +3,8 @@ package nlx_test
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -125,6 +127,7 @@ currentDirectory, err := os.Getwd()
 */
 
 func TestGetDeployPlan(t *testing.T) {
+
 	auth, err := nlx.Authorize(authHost, authUser, authPass)
 	if err != nil {
 		t.Log(err)

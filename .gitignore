@@ -15,5 +15,5 @@ skuid_windows_amd64.exe
 # all test environment files lol
 **/**/.testenv
 .coverage
-.retrieve
-.deploy
+**/**/.retrieve
+**/**/.deploy
