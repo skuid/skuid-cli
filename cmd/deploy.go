@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
 	"time"
@@ -39,19 +38,19 @@ var deployCmd = &cobra.Command{
 
 		var currDir string
 
-		currentDirectory, err := os.Getwd()
-		if err != nil {
-			logging.PrintError("Unable to get working directory", err)
-			return
-		}
+		// currentDirectory, err := os.Getwd()
+		// if err != nil {
+		// 	logging.PrintError("Unable to get working directory", err)
+		// 	return
+		// }
 
-		defer func() {
-			err := os.Chdir(currentDirectory)
-			if err != nil {
-				logging.PrintError("Unable to change directory", err)
-				log.Fatal(err)
-			}
-		}()
+		// defer func() {
+		// 	err := os.Chdir(currentDirectory)
+		// 	if err != nil {
+		// 		logging.PrintError("Unable to change directory", err)
+		// 		log.Fatal(err)
+		// 	}
+		// }()
 
 		var targetDir string
 		if targetDir, err = cmd.Flags().GetString(flags.Directory.Name); err != nil {
@@ -69,7 +68,7 @@ var deployCmd = &cobra.Command{
 		}
 
 		dotDir := "."
-		currDir, err = filepath.Abs(filepath.Dir(dotDir))
+		currDir, err = filepath.Abs(filepath.Dir(targetDir))
 		if err != nil {
 			logging.PrintError("Unable to form filepath", err)
 			return
@@ -79,7 +78,7 @@ var deployCmd = &cobra.Command{
 
 		// Create a buffer to write our archive to.
 		bufPlan := new(bytes.Buffer)
-		err = pkg.Archive(".", bufPlan, nil)
+		err = pkg.Archive(currDir, bufPlan, nil)
 		if err != nil {
 			logging.PrintError("Error creating deployment ZIP archive", err)
 			return

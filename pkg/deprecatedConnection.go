@@ -4,12 +4,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
 
 	"github.com/pkg/errors"
 
+	"github.com/skuid/tides/pkg/logging"
 	"github.com/skuid/tides/pkg/nlx"
 )
 
@@ -91,7 +93,7 @@ func (conn *NlxConnection) GetJWTAuthorizationToken() error {
 
 	result := JWTResponse{}
 
-	if err := json.NewDecoder(*jwtResult).Decode(&result); err != nil {
+	if err := json.Unmarshal(jwtResult, &result); err != nil {
 		return err
 	}
 
@@ -101,13 +103,14 @@ func (conn *NlxConnection) GetJWTAuthorizationToken() error {
 }
 
 // MakeAccessTokenRequest Executes an HTTP request using a session token
-func (conn *NlxConnection) MakeAccessTokenRequest(method string, url string, payload io.Reader, contentType string) (result *io.ReadCloser, err error) {
+func (conn *NlxConnection) MakeAccessTokenRequest(method string, url string, payload io.Reader, contentType string) (result []byte, err error) {
 	endpoint := fmt.Sprintf("%s/api/v%s%s", conn.Host, conn.APIVersion, url)
 
 	req, err := http.NewRequest(method, endpoint, payload)
 
 	if err != nil {
-		return nil, err
+		logging.VerboseF("MakeAccessTokenRequest: %v\n", err)
+		return
 	}
 
 	req.Header.Add("Authorization", "Bearer "+conn.AccessToken)
@@ -119,7 +122,8 @@ func (conn *NlxConnection) MakeAccessTokenRequest(method string, url string, pay
 	resp, err := http.DefaultClient.Do(req)
 
 	if err != nil {
-		return nil, err
+		logging.VerboseF("MakeAccessTokenRequest: %v\n", err)
+		return
 	}
 
 	// Attempt to seamlessly grab a new access token if our current token has expired
@@ -129,35 +133,47 @@ func (conn *NlxConnection) MakeAccessTokenRequest(method string, url string, pay
 		refreshErr := conn.Refresh()
 		if refreshErr == nil && conn.AccessToken != "" {
 			newResp, newErr := http.DefaultClient.Do(req)
+
 			if newErr != nil {
-				return nil, newErr
+				err = newErr
+				return
 			}
+
 			if newResp.StatusCode != 200 {
-				defer newResp.Body.Close()
-				return nil, NewHttpError(newResp.Status, newResp.Body)
+				err = NewHttpError(newResp.Status, newResp.Body)
+				return
 			}
-			return &newResp.Body, nil
+
+			defer newResp.Body.Close()
+			result, err = ioutil.ReadAll(newResp.Body)
+
+			return
 		}
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode == 204 { // No content
+		logging.VerboseLn("MakeAccessTokenRequest: 204")
 		return nil, nil
 	}
 
 	if resp.StatusCode == 504 || resp.StatusCode == 503 {
-		return nil, errors.Errorf("%v - %s", resp.StatusCode, resp.Status)
+		err = errors.Errorf("%v - %s", resp.StatusCode, resp.Status)
+		return
 	}
 
 	if resp.StatusCode != 200 {
-		defer resp.Body.Close()
-		return nil, NewHttpError(resp.Status, resp.Body)
+		err = NewHttpError(resp.Status, resp.Body)
+		return
 	}
 
-	return &resp.Body, nil
+	result, err = ioutil.ReadAll(resp.Body)
+
+	return
 }
 
 // MakeAuthorizationBearerRequest Executes HTTP request using a jwt
-func (conn *NlxConnection) MakeAuthorizationBearerRequest(method string, url string, payload io.Reader, contentType string) (result *io.ReadCloser, err error) {
+func (conn *NlxConnection) MakeAuthorizationBearerRequest(method string, url string, payload io.Reader, contentType string) (result []byte, err error) {
 	endpoint := fmt.Sprintf("https://%s", url)
 	req, err := http.NewRequest(method, endpoint, payload)
 
@@ -178,11 +194,14 @@ func (conn *NlxConnection) MakeAuthorizationBearerRequest(method string, url str
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
-		defer resp.Body.Close()
+
 		return nil, NewHttpError(resp.Status, resp.Body)
 	}
 
-	return &resp.Body, nil
+	result, err = ioutil.ReadAll(resp.Body)
+
+	return
 }

@@ -19,7 +19,7 @@ type NlxApi struct {
 }
 
 // GetDeployPlan fetches a deploymnent plan from Skuid Platform API
-func (api *NlxApi) GetDeployPlan(payload io.Reader, mimeType string) (map[string]Plan, error) {
+func (api *NlxApi) GetDeployPlan(payload io.Reader, mimeType string) (plans map[string]Plan, err error) {
 	logging.VerboseSection("Getting Deploy Plan")
 
 	if mimeType == "" {
@@ -36,23 +36,20 @@ func (api *NlxApi) GetDeployPlan(payload io.Reader, mimeType string) (map[string
 	)
 
 	if err != nil {
-		return nil, err
+		return
 	}
 
 	logging.VerboseSuccess("Success Getting Deploy Plan", planStart)
 
-	defer (*planResult).Close()
-
-	var plans map[string]Plan
-	if err := json.NewDecoder(*planResult).Decode(&plans); err != nil {
-		return nil, err
+	if err = json.Unmarshal(planResult, &plans); err != nil {
+		return
 	}
 
-	return plans, nil
+	return
 }
 
 // ExecuteDeployPlan executes a map of plan items in a deployment plan
-func (api *NlxApi) ExecuteDeployPlan(plans map[string]Plan, targetDir string) ([]*io.ReadCloser, error) {
+func (api *NlxApi) ExecuteDeployPlan(plans map[string]Plan, targetDir string) (planResults [][]byte, err error) {
 
 	logging.VerboseSection("Executing Deploy Plan")
 
@@ -81,23 +78,25 @@ func (api *NlxApi) ExecuteDeployPlan(plans map[string]Plan, targetDir string) ([
 	// 	planResults = append(planResults, pr)
 	// }
 
-	planResults := []*io.ReadCloser{}
+	planResults = make([][]byte, 0)
 	for _, plan := range plans {
-		planResult, err := api.ExecutePlanItem(plan, targetDir)
+		var planResult []byte
+		planResult, err = api.ExecutePlanItem(plan, targetDir)
 		if err != nil {
-			return nil, err
+			return
 		}
 		planResults = append(planResults, planResult)
 	}
-	return planResults, nil
+
+	return
 }
 
 // ExecutePlanItem executes a particular item in a deployment plan
-func (api *NlxApi) ExecutePlanItem(plan Plan, targetDir string) (*io.ReadCloser, error) {
+func (api *NlxApi) ExecutePlanItem(plan Plan, targetDir string) (result []byte, err error) {
 	// Create a buffer to write our archive to.
-	var planResult *io.ReadCloser
+	var planResult []byte
 	bufDeploy := new(bytes.Buffer)
-	err := Archive(targetDir, bufDeploy, &plan.Metadata)
+	err = Archive(targetDir, bufDeploy, &plan.Metadata)
 	if err != nil {
 		log.Print("Error creating deployment ZIP archive")
 		log.Fatal(err)
@@ -129,9 +128,8 @@ func (api *NlxApi) ExecutePlanItem(plan Plan, targetDir string) (*io.ReadCloser,
 			"application/zip",
 		)
 		if err != nil {
-			return nil, err
+			return
 		}
-		defer (*planResult).Close()
 
 	}
 

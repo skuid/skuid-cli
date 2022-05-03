@@ -216,7 +216,7 @@ func (m Metadata) FilterMetadataItem(relativeFilePath string) (keep bool) {
 	return
 }
 
-func ExecuteRetrievePlan(api *NlxApi, plans map[string]Plan, noZip bool) (planResults []*io.ReadCloser, err error) {
+func ExecuteRetrievePlan(api *NlxApi, plans map[string]Plan, noZip bool) (planResults [][]byte, err error) {
 
 	logging.VerboseSection("Executing Skuid NLX Retrieve Plan")
 
@@ -232,7 +232,7 @@ func ExecuteRetrievePlan(api *NlxApi, plans map[string]Plan, noZip bool) (planRe
 		retrieveStart := time.Now()
 
 		var url string
-		var req func(string, string, io.Reader, string) (*io.ReadCloser, error)
+		var req func(string, string, io.Reader, string) ([]byte, error)
 		if plan.Host != "" {
 			url = fmt.Sprintf("%s:%s/api/v2%s", plan.Host, plan.Port, plan.Url)
 			req = api.Connection.MakeAuthorizationBearerRequest
@@ -243,7 +243,7 @@ func ExecuteRetrievePlan(api *NlxApi, plans map[string]Plan, noZip bool) (planRe
 
 		logging.VerboseF("Retrieval => %s (%s)\n", color.Yellow.Sprint(url), color.Cyan.Sprint(plan.Type))
 
-		var planResult *io.ReadCloser
+		var planResult []byte
 		if planResult, err = req(
 			http.MethodPost,
 			url,
@@ -267,11 +267,13 @@ func GetRetrievePlan(api *NlxApi, appName string) (results map[string]Plan, err 
 
 	var postBody io.Reader
 	if appName != "" {
-		retFilter, err := json.Marshal(RetrieveFilter{
+		var retFilter []byte
+		retFilter, err = json.Marshal(RetrieveFilter{
 			AppName: appName,
 		})
 		if err != nil {
-			return nil, err
+			logging.VerboseLn("Unable to marshal retrieve filter to json")
+			return
 		}
 		postBody = bytes.NewReader(retFilter)
 	}
@@ -286,14 +288,13 @@ func GetRetrievePlan(api *NlxApi, appName string) (results map[string]Plan, err 
 	)
 
 	if err != nil {
+		logging.VerboseLn("Unable to do thing")
 		return
 	}
 
 	logging.VerboseSuccess("Plan Retrieved", planStart)
 
-	defer (*planResult).Close()
-
-	err = json.NewDecoder(*planResult).Decode(&results)
+	err = json.Unmarshal(planResult, &results)
 
 	return
 }

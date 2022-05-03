@@ -70,7 +70,7 @@ func GetAuthorizationToken(host, accessToken string) (authToken string, err erro
 
 	var resp AuthorizationTokenResponse
 	if resp, err = FastJsonBodyRequest[AuthorizationTokenResponse](
-		host+"/api/v2/auth/token",
+		fmt.Sprintf("%v/api/%v/auth/token", host, DEFAULT_API_VERSION),
 		fasthttp.MethodGet,
 		[]byte{},
 		map[string]string{

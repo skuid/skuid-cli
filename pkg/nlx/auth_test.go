@@ -13,9 +13,13 @@ import (
 )
 
 var (
-	authHost = "https://cliplin2709-us-trial.skuid.ink" // "jredhoop-subdomain.pliny.webserver:3000" // os.Getenv(constants.ENV_SKUID_HOST)
-	authUser = "cliplin2709"                            //"jredhoop"                               // os.Getenv(constants.ENV_SKUID_USERNAME)
-	authPass = "#Skuid2020"                             //"SkuidLocalDevelopment"                  // os.Getenv(constants.ENV_SKUID_PASSWORD)
+	// authHost = "https://cliplin2709-us-trial.skuid.ink" // "jredhoop-subdomain.pliny.webserver:3000" // os.Getenv(constants.ENV_SKUID_HOST)
+	// authUser = "cliplin2709"                            //"jredhoop"                               // os.Getenv(constants.ENV_SKUID_USERNAME)
+	// authPass = "#Skuid2020"                             //"SkuidLocalDevelopment"                  // os.Getenv(constants.ENV_SKUID_PASSWORD)
+
+	authHost = "jredhoop-subdomain.pliny.webserver:3000" // os.Getenv(constants.ENV_SKUID_HOST)
+	authUser = "jredhoop"                                // os.Getenv(constants.ENV_SKUID_USERNAME)
+	authPass = "SkuidLocalDevelopment"                   // os.Getenv(constants.ENV_SKUID_PASSWORD)
 )
 
 // if you have to run it by itself, add some environment variables

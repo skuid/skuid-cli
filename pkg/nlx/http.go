@@ -21,7 +21,8 @@ var (
 )
 
 const (
-	DEFAULT_API_VERSION = "2"
+	DEFAULT_API_VERSION        = "v2"
+	MAX_AUTHORIZATION_ATTEMPTS = 3
 )
 
 // FastJsonBodyRequest takes a type parameter and automatically
@@ -62,7 +63,17 @@ func FastRequest(
 	route string,
 	method string,
 	body []byte,
-	additionalHeaders map[string]string,
+	headers RequestHeaders,
+) (response []byte, err error) {
+	return FastRequestHelper(route, method, body, headers, 0)
+}
+
+func FastRequestHelper(
+	route string,
+	method string,
+	body []byte,
+	headers RequestHeaders,
+	attempts int,
 ) (response []byte, err error) {
 	// only https
 	if strings.HasPrefix(route, "http://") {
@@ -104,8 +115,8 @@ func FastRequest(
 	// prep the request headers
 	req.Header.SetMethod(method)
 	req.Header.Add(fasthttp.HeaderUserAgent, SkuidUserAgent)
-	if additionalHeaders != nil {
-		for headerName, headerValue := range additionalHeaders {
+	if headers != nil {
+		for headerName, headerValue := range headers {
 			req.Header.Add(headerName, headerValue)
 		}
 	}
@@ -123,12 +134,30 @@ func FastRequest(
 
 	// check the validity of the body and grab the access token
 	responseBody := resp.Body()
-	if statusCode := resp.StatusCode(); statusCode != fasthttp.StatusOK {
-		err = fmt.Errorf("%s:\nStatus Code: %v\nBody: %v\n",
+	statusCode := resp.StatusCode()
+
+	httpError := func() error {
+		return fmt.Errorf("%s:\nStatus Code: %v\nBody: %v\n",
 			color.Red.Sprint("ERROR"),
 			color.Yellow.Sprint(statusCode),
 			color.Cyan.Sprint(string(responseBody)),
 		)
+	}
+
+	switch statusCode {
+	case fasthttp.StatusUnauthorized:
+		if attempts < MAX_AUTHORIZATION_ATTEMPTS {
+			return FastRequestHelper(route, method, body, headers, attempts+1)
+		} else {
+			err = httpError()
+		}
+	case fasthttp.StatusOK:
+		// we're good
+	default:
+		err = httpError()
+	}
+
+	if err != nil {
 		return
 	}
 

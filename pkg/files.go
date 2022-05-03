@@ -29,7 +29,7 @@ func getFriendlyURL(targetDir string) (string, error) {
 
 type WriteSettings struct {
 	TargetDir          string
-	Results            []*io.ReadCloser
+	Results            [][]byte
 	FileCreator        FileCreator
 	DirectoryCreator   DirectoryCreator
 	ExistingFileReader FileReader
@@ -40,7 +40,7 @@ func WriteResultsToDisk2(ws WriteSettings) error {
 	return WriteResultsToDisk(ws.TargetDir, ws.Results, ws.FileCreator, ws.DirectoryCreator, ws.ExistingFileReader, ws.NoZip)
 }
 
-func WriteResultsToDisk(targetDir string, results []*io.ReadCloser, fileCreator FileCreator, directoryCreator DirectoryCreator, existingFileReader FileReader, noZip bool) error {
+func WriteResultsToDisk(targetDir string, results [][]byte, fileCreator FileCreator, directoryCreator DirectoryCreator, existingFileReader FileReader, noZip bool) error {
 
 	// unzip the archive into the output directory
 	targetDirFriendly, err := getFriendlyURL(targetDir)
@@ -94,14 +94,13 @@ func WriteResultsToDisk(targetDir string, results []*io.ReadCloser, fileCreator 
 	return nil
 }
 
-func createTemporaryFile(data *io.ReadCloser) (name string, err error) {
+func createTemporaryFile(data []byte) (name string, err error) {
 	tmpfile, err := ioutil.TempFile("", "skuid")
 	if err != nil {
 		return "", err
 	}
-	defer (*data).Close()
 	// write to our new file
-	if _, err := io.Copy(tmpfile, *data); err != nil {
+	if _, err := tmpfile.Write(data); err != nil {
 		return "", err
 	}
 

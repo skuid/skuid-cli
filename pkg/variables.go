@@ -65,7 +65,7 @@ func getDataServices(api *NlxApi) (map[string]DataService, error) {
 		return nil, errors.New("Error requesting Data Service list.")
 	}
 	var dataservices []DataService
-	if err = json.NewDecoder(*dsStream).Decode(&dataservices); err != nil {
+	if err = json.Unmarshal(dsStream, &dataservices); err != nil {
 		return nil, errors.New("Could not parse Data Service list response.")
 	}
 	dsmap := make(map[string]DataService, len(dataservices))
@@ -112,7 +112,7 @@ func GetEnvironmentSpecificConfigurations(api *NlxApi, mapDsName bool) ([]EnvSpe
 	}
 
 	var escs []EnvSpecificConfig
-	if err := json.NewDecoder(*result).Decode(&escs); err != nil {
+	if err := json.Unmarshal(result, &escs); err != nil {
 		return nil, err
 	}
 

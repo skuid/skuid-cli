@@ -49,7 +49,7 @@ var (
 			// }
 
 			// var authToken string
-			// if authToken, err = nlx.GetAuthorizationToken(accessToken ); err != nil {
+			// if authToken, err = nlx.GetAuthorizationToken(accessToken); err != nil {
 			// 	return
 			// }
 
