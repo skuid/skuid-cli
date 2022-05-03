@@ -3,8 +3,6 @@ package nlx_test
 import (
 	"encoding/json"
 	"fmt"
-	"os"
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -133,6 +131,9 @@ func TestGetDeployPlan(t *testing.T) {
 		t.Log(err)
 		t.FailNow()
 	}
+
+	// td := ".deploy/jredhoop-subdomain"
+	// // directoryPath := util.GetAbs(td)
 
 	duration, plans, err := GetDeployPlan(auth, nil)
 	if err != nil {

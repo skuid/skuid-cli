@@ -5,8 +5,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/skuid/skuid-cli/pkg/logging"
+	"github.com/skuid/tides/pkg/logging"
 )
+
+func FromWindowsPath(path string) string {
+	return strings.Replace(path, "\\", string(filepath.Separator), -1)
+}
 
 func GetAbs(directory string) (path string) {
 	wd, _ := os.Getwd()
