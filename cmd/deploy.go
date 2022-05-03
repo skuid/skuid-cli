@@ -38,19 +38,19 @@ var deployCmd = &cobra.Command{
 
 		var currDir string
 
-		// currentDirectory, err := os.Getwd()
-		// if err != nil {
-		// 	logging.PrintError("Unable to get working directory", err)
-		// 	return
-		// }
+		currentDirectory, err := os.Getwd()
+		if err != nil {
+			logging.PrintError("Unable to get working directory", err)
+			return
+		}
 
-		// defer func() {
-		// 	err := os.Chdir(currentDirectory)
-		// 	if err != nil {
-		// 		logging.PrintError("Unable to change directory", err)
-		// 		log.Fatal(err)
-		// 	}
-		// }()
+		defer func() {
+			err := os.Chdir(currentDirectory)
+			if err != nil {
+				logging.PrintError("Unable to change directory", err)
+				panic(err)
+			}
+		}()
 
 		var targetDir string
 		if targetDir, err = cmd.Flags().GetString(flags.Directory.Name); err != nil {
@@ -68,7 +68,7 @@ var deployCmd = &cobra.Command{
 		}
 
 		dotDir := "."
-		currDir, err = filepath.Abs(filepath.Dir(targetDir))
+		currDir, err = filepath.Abs(filepath.Dir(dotDir))
 		if err != nil {
 			logging.PrintError("Unable to form filepath", err)
 			return
@@ -139,5 +139,5 @@ var deployCmd = &cobra.Command{
 func init() {
 	TidesCmd.AddCommand(deployCmd)
 	flags.AddFlags(deployCmd, flags.PlatformLoginFlags...)
-	flags.AddFlags(deployCmd, flags.Directory, flags.AppName)
+	flags.AddFlags(deployCmd, flags.Directory, flags.AppName, flags.ApiVersion)
 }
