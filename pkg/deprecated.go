@@ -11,7 +11,7 @@ import (
 )
 
 func SkuidNlxLogin(cmd *cobra.Command) (api *NlxApi, err error) {
-	var host, username, password string
+	var host, username, password, apiVersion string
 
 	f := cmd.Flags()
 
@@ -27,10 +27,14 @@ func SkuidNlxLogin(cmd *cobra.Command) (api *NlxApi, err error) {
 		return
 	}
 
-	return SkuidNlxLogin2(host, username, password)
+	if apiVersion, err = f.GetString(flags.ApiVersion.Name); err != nil {
+		return
+	}
+
+	return SkuidNlxLogin2(host, username, password, apiVersion)
 }
 
-func SkuidNlxLogin2(host, username, password string) (api *NlxApi, err error) {
+func SkuidNlxLogin2(host, username, password, apiVersion string) (api *NlxApi, err error) {
 
 	loginStart := time.Now()
 
@@ -43,20 +47,23 @@ func SkuidNlxLogin2(host, username, password string) (api *NlxApi, err error) {
 	logging.VerboseSeparator()
 
 	conn := NlxConnection{
-		Host:     host,
-		Username: username,
-		Password: password,
+		Host:       host,
+		Username:   username,
+		Password:   password,
+		APIVersion: apiVersion,
 	}
 
 	err = conn.Refresh()
 
 	if err != nil {
+		logging.VerboseF("SkuidNlxLogin2/Refresh: %v\n", err)
 		return
 	}
 
 	err = conn.GetJWTAuthorizationToken()
 
 	if err != nil {
+		logging.VerboseF("SkuidNlxLogin2/GetJWTAuthorizationToken: %v\n", err)
 		return
 	}
 

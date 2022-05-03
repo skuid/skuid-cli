@@ -296,6 +296,10 @@ func GetRetrievePlan(api *NlxApi, appName string) (results map[string]Plan, err 
 
 	err = json.Unmarshal(planResult, &results)
 
+	if err != nil {
+		logging.VerboseF("MakeAuthorizationBearerRequest: %v\n", err)
+	}
+
 	return
 }
 

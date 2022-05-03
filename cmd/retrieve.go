@@ -60,6 +60,7 @@ var (
 
 			api, err := pkg.SkuidNlxLogin(cmd)
 			if err != nil {
+				logging.VerboseF("Retrieve: SkuidNlxLogin: %v\n", err)
 				return
 			}
 
@@ -101,6 +102,6 @@ func init() {
 	TidesCmd.AddCommand(retrieveCmd)
 
 	flags.AddFlags(retrieveCmd, flags.PlatformLoginFlags...)
-	flags.AddFlags(retrieveCmd, flags.Directory, flags.AppName)
+	flags.AddFlags(retrieveCmd, flags.Directory, flags.AppName, flags.ApiVersion)
 	flags.AddFlags(retrieveCmd, flags.NoZip)
 }

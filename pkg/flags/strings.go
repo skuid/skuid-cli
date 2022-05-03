@@ -44,6 +44,7 @@ var (
 		argument: &argApiVersion,
 		Name:     "api-version",
 		Usage:    "API Version",
+		Default:  "2",
 	}
 
 	AppName = &Flag[string]{

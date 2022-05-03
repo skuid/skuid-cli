@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/gookit/color"
 	jsonpatch "github.com/skuid/json-patch"
 
 	"github.com/skuid/tides/pkg/logging"
@@ -48,7 +49,7 @@ func WriteResultsToDisk(targetDir string, results [][]byte, fileCreator FileCrea
 		return err
 	}
 
-	logging.VerboseSection("Writing results to " + targetDirFriendly)
+	logging.Printf("Writing results to %v\n", color.Cyan.Sprint(targetDirFriendly))
 
 	// Remove all of our metadata directories so we get a clean slate.
 	// We may want to improve this later when we do partial retrieves so that
@@ -56,7 +57,7 @@ func WriteResultsToDisk(targetDir string, results [][]byte, fileCreator FileCrea
 	for _, dirName := range GetMetadataTypeDirNames() {
 		dirPath := filepath.Join(targetDir, dirName)
 
-		logging.VerboseLn("Deleting Directory: " + dirPath)
+		logging.DebugLn("Deleting Directory: " + color.Red.Sprint(dirPath))
 
 		os.RemoveAll(dirPath)
 	}
@@ -89,7 +90,7 @@ func WriteResultsToDisk(targetDir string, results [][]byte, fileCreator FileCrea
 		}
 	}
 
-	logging.Printf("Results written to %s\n", targetDirFriendly)
+	logging.Printf("Results written to %s\n", color.Cyan.Sprint(targetDirFriendly))
 
 	return nil
 }
@@ -135,7 +136,7 @@ func moveTempFile(sourceFileLocation, targetLocation string, pathMap map[string]
 	}
 	if fileAlreadyWritten {
 
-		logging.VerboseLn("Augmenting existing file with more data: " + fi.Name())
+		logging.DebugF("Augmenting existing file with more data: %s\n", color.Magenta.Sprint(fi.Name()))
 
 		fileReader, err = combineJSONFile(fileReader, existingFileReader, path)
 		if err != nil {
@@ -143,7 +144,7 @@ func moveTempFile(sourceFileLocation, targetLocation string, pathMap map[string]
 		}
 	}
 
-	logging.VerboseLn("Creating file: " + fi.Name())
+	logging.DebugLn("Creating file: " + color.Green.Sprint(fi.Name()))
 
 	err = fileCreator(fileReader, path)
 	if err != nil {
@@ -217,7 +218,7 @@ func readFileFromZipAndWriteToFilesystem(file *zip.File, fullPath string, fileAl
 
 	if fileAlreadyWritten {
 
-		logging.VerboseLn("Augmenting existing file with more data: " + file.Name)
+		logging.DebugF("Augmenting existing file with more data: %s\n", color.Magenta.Sprint(file.Name))
 
 		fileReader, err = combineJSONFile(fileReader, existingFileReader, fullPath)
 		if err != nil {
@@ -226,7 +227,7 @@ func readFileFromZipAndWriteToFilesystem(file *zip.File, fullPath string, fileAl
 
 	}
 
-	logging.VerboseLn("Creating file: " + file.Name)
+	logging.DebugLn("Creating file: " + color.Green.Sprint(file.Name))
 
 	err = fileCreator(fileReader, fullPath)
 	if err != nil {
@@ -239,7 +240,7 @@ func readFileFromZipAndWriteToFilesystem(file *zip.File, fullPath string, fileAl
 func CreateDirectory(path string, fileMode os.FileMode) error {
 	if _, err := os.Stat(path); err != nil {
 
-		logging.VerboseLn("Creating intermediate directory: " + path)
+		logging.DebugLn("Creating intermediate directory: " + color.Cyan.Sprint(path))
 
 		return os.MkdirAll(path, fileMode)
 	}

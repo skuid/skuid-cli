@@ -1,11 +1,16 @@
 package logging
 
-import "time"
+import (
+	"time"
+
+	"github.com/gookit/color"
+)
 
 var (
 	// let's use a file global variable
 	// do not access this
 	isVerbose = false
+	debug     = true // TODO: remove
 )
 
 func SetVerbose(verbosity bool) {
@@ -63,5 +68,17 @@ func VerboseF(msg string, args ...interface{}) {
 func VerboseSeparator() {
 	if isVerbose {
 		PrintSeparator()
+	}
+}
+
+func DebugF(msg string, args ...interface{}) {
+	if debug {
+		Println(color.Yellow.Sprintf(msg, args...))
+	}
+}
+
+func DebugLn(msg string) {
+	if debug {
+		Println(color.Yellow.Sprint(msg))
 	}
 }

@@ -106,10 +106,12 @@ func (conn *NlxConnection) GetJWTAuthorizationToken() error {
 func (conn *NlxConnection) MakeAccessTokenRequest(method string, url string, payload io.Reader, contentType string) (result []byte, err error) {
 	endpoint := fmt.Sprintf("%s/api/v%s%s", conn.Host, conn.APIVersion, url)
 
+	logging.DebugF("Making Access Token Request: %v", endpoint)
+
 	req, err := http.NewRequest(method, endpoint, payload)
 
 	if err != nil {
-		logging.VerboseF("MakeAccessTokenRequest: %v\n", err)
+		logging.DebugF("MakeAccessTokenRequest: %v\n", err)
 		return
 	}
 
@@ -122,7 +124,7 @@ func (conn *NlxConnection) MakeAccessTokenRequest(method string, url string, pay
 	resp, err := http.DefaultClient.Do(req)
 
 	if err != nil {
-		logging.VerboseF("MakeAccessTokenRequest: %v\n", err)
+		logging.DebugF("MakeAccessTokenRequest: %v\n", err)
 		return
 	}
 
@@ -178,7 +180,8 @@ func (conn *NlxConnection) MakeAuthorizationBearerRequest(method string, url str
 	req, err := http.NewRequest(method, endpoint, payload)
 
 	if err != nil {
-		return nil, err
+		logging.VerboseF("MakeAuthorizationBearerRequest: %v\n", err)
+		return
 	}
 
 	req.Header.Add("Authorization", "Bearer "+conn.AuthorizationToken)
@@ -192,13 +195,15 @@ func (conn *NlxConnection) MakeAuthorizationBearerRequest(method string, url str
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return nil, err
+		logging.VerboseF("MakeAuthorizationBearerRequest: %v\n", err)
+		return
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
-
-		return nil, NewHttpError(resp.Status, resp.Body)
+		err = NewHttpError(resp.Status, resp.Body)
+		logging.VerboseF("MakeAuthorizationBearerRequest: %v\n", err)
+		return
 	}
 
 	result, err = ioutil.ReadAll(resp.Body)
