@@ -7,6 +7,8 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+
+	"github.com/skuid/tides/pkg/logging"
 )
 
 // Archive compresses a file/directory to a writer
@@ -75,11 +77,13 @@ func ArchiveWithFilterFunc(inFilePath string, writer io.Writer, filter func(stri
 			_ = file.Close()
 		}()
 
+		logging.DebugF("2 Copying to zipfile: %v", archivePath)
 		zipFileWriter, err := zipWriter.Create(archivePath)
 		if err != nil {
 			return err
 		}
 
+		logging.DebugF("2 Copying to file: %v", filePath)
 		_, err = io.Copy(zipFileWriter, file)
 		return err
 	})

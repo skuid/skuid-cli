@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/skuid/tides/pkg"
+	"github.com/skuid/tides/pkg/util"
 )
 
 const existingProfileBody = `{
@@ -168,7 +169,7 @@ func TestRetrieve(t *testing.T) {
 			}
 
 			var mockDirectoryMaker = func(path string, fileMode os.FileMode) error {
-				if !pkg.StringSliceContainsKey(directoriesCreated, path) {
+				if !util.StringSliceContainsKey(directoriesCreated, path) {
 					directoriesCreated = append(directoriesCreated, path)
 				}
 				return nil
@@ -178,9 +179,7 @@ func TestRetrieve(t *testing.T) {
 				return []byte(existingProfileBody), nil
 			}
 
-			bufData := ioutil.NopCloser(bytes.NewReader(buf.Bytes()))
-
-			err = pkg.WriteResultsToDisk(tc.giveTargetDir, []*io.ReadCloser{&bufData}, mockFileMaker, mockDirectoryMaker, mockExistingFileReader, tc.givenNoZip)
+			err = pkg.WriteResultsToDisk(tc.giveTargetDir, [][]byte{buf.Bytes()}, mockFileMaker, mockDirectoryMaker, mockExistingFileReader, tc.givenNoZip)
 
 			filesCreated := []RetrieveFile{}
 			for _, file := range filesMap {

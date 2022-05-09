@@ -1,0 +1,112 @@
+package nlx
+
+import (
+	"archive/zip"
+	"bytes"
+	"io/ioutil"
+	"os"
+	"path"
+	"path/filepath"
+	"strings"
+
+	"github.com/gookit/color"
+	"golang.org/x/sync/errgroup"
+
+	"github.com/skuid/tides/pkg/logging"
+)
+
+// Archive compresses a file/directory to a writer
+func Archive(inFilePath string, filter *NlxMetadata) (result []byte, err error) {
+	return ArchiveWithFilterFunc(inFilePath, func(relativePath string) bool {
+		if filter != nil {
+			return filter.FilterItem(relativePath)
+		}
+		return true
+	})
+}
+
+// ArchivePartial compresses all files in a file/directory matching a relative prefix to a writer
+func ArchivePartial(inFilePath string, basePrefix string) ([]byte, error) {
+	return ArchiveWithFilterFunc(inFilePath, func(relativePath string) bool {
+		return strings.HasPrefix(relativePath, basePrefix)
+	})
+}
+
+type archiveSuccess struct {
+	Bytes []byte
+	Path  string
+}
+
+func ArchiveWithFilterFunc(inFilePath string, filter func(string) bool) (result []byte, err error) {
+	buffer := new(bytes.Buffer)
+	zipWriter := zip.NewWriter(buffer)
+	basePath := filepath.Dir(inFilePath)
+
+	// halves the time of archival
+	eg := &errgroup.Group{}
+	ch := make(chan archiveSuccess)
+
+	if err = filepath.Walk(inFilePath, func(filePath string, fileInfo os.FileInfo, e error) (err error) {
+		if e != nil {
+			return e
+		}
+
+		if fileInfo.IsDir() {
+			logging.DebugLn(color.Magenta.Sprint(filePath))
+			return
+		}
+
+		var relativeFilePath string
+		if relativeFilePath, err = filepath.Rel(basePath, filePath); err != nil {
+			logging.DebugF("Relative Filepath Error: %v", err.Error())
+			return
+		}
+
+		archivePath := path.Join(filepath.SplitList(relativeFilePath)...)
+
+		if strings.HasPrefix(archivePath, ".") || !filter(relativeFilePath) {
+			logging.DebugLn(color.Gray.Sprintf("Ignoring: %v", filePath))
+			return
+		} else {
+			logging.DebugF("Processing: %v", color.Green.Sprint(filePath))
+		}
+
+		// spin off a thread archiving the file
+		eg.Go(func() error {
+			if bytes, err := ioutil.ReadFile(filePath); err != nil {
+				return err
+			} else {
+				ch <- archiveSuccess{
+					Bytes: bytes,
+					Path:  archivePath,
+				}
+			}
+			return nil
+		})
+
+		return err
+	}); err != nil {
+		return
+	}
+
+	go func() {
+		_ = eg.Wait()
+		close(ch)
+	}()
+
+	for success := range ch {
+		if zipFileWriter, e := zipWriter.Create(success.Path); err != nil {
+			err = e
+			return
+		} else if _, e := zipFileWriter.Write(success.Bytes); err != nil {
+			err = e
+			return
+		}
+		logging.DebugLn(color.Green.Sprintf("Finished Processing %v", success.Path))
+	}
+
+	zipWriter.Close()
+	result, err = ioutil.ReadAll(buffer)
+
+	return
+}

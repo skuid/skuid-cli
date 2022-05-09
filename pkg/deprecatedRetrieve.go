@@ -14,6 +14,7 @@ import (
 	"github.com/gookit/color"
 
 	"github.com/skuid/tides/pkg/logging"
+	"github.com/skuid/tides/pkg/util"
 )
 
 type Plan struct {
@@ -182,7 +183,7 @@ func (m Metadata) FilterMetadataItem(relativeFilePath string) (keep bool) {
 		return
 	}
 
-	if StringSliceContainsAnyKey(validMetadataNames, []string{
+	if util.StringSliceContainsAnyKey(validMetadataNames, []string{
 		// Most common case --- check for our metadata with .json stripped
 		strings.TrimSuffix(filePath, ".json"),
 		// See if our filePath is in the valid metadata, if so, we're done
@@ -195,13 +196,13 @@ func (m Metadata) FilterMetadataItem(relativeFilePath string) (keep bool) {
 	// Check for children of a component pack
 	if metadataType == "componentpacks" {
 		filePathParts := strings.Split(filePath, string(filepath.Separator))
-		if len(filePathParts) == 2 && StringSliceContainsKey(validMetadataNames, filePathParts[0]) {
+		if len(filePathParts) == 2 && util.StringSliceContainsKey(validMetadataNames, filePathParts[0]) {
 			keep = true
 			return
 		}
 	}
 
-	if StringSliceContainsAnyKey(validMetadataNames, []string{
+	if util.StringSliceContainsAnyKey(validMetadataNames, []string{
 		// Check for our metadata with .xml stripped
 		strings.TrimSuffix(filePath, ".xml"),
 		// Check for our metadata with .skuid.json stripped

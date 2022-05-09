@@ -1,4 +1,4 @@
-package pkg_test
+package util_test
 
 import (
 	"regexp"
@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/skuid/tides/pkg"
+	"github.com/skuid/tides/pkg/util"
 )
 
 var (
@@ -83,7 +83,7 @@ func TestSortJson(t *testing.T) {
 		},
 	} {
 		t.Run(tc.description, func(t *testing.T) {
-			actual, _ := pkg.ReSortJson([]byte(tc.given))
+			actual, _ := util.ReSortJson([]byte(tc.given))
 			expectedTrimmed := regexp.MustCompile(`\s`).ReplaceAllString(tc.expected, "")
 			assert.Equal(t, expectedTrimmed, string(actual))
 		})

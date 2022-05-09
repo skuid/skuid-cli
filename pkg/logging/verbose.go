@@ -82,3 +82,9 @@ func DebugLn(msg string) {
 		Println(color.Yellow.Sprint(msg))
 	}
 }
+
+func DebugErr(msg string, err error) {
+	if debug {
+		PrintError(color.Yellow.Sprint(msg), err)
+	}
+}

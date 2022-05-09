@@ -21,7 +21,7 @@ func TestRetrievePlan(t *testing.T) {
 	for _, tc := range []struct {
 		description string
 
-		givenFilter *nlx.NlxRetrieveFilter
+		givenFilter *nlx.NlxRetrievalFilter
 
 		expectedError string
 	}{
@@ -48,6 +48,7 @@ func TestRetrievePlan(t *testing.T) {
 }
 
 func TestExecuteRetrieval(t *testing.T) {
+	util.SkipIntegrationTest(t)
 
 	logging.SetVerbose(true)
 	auth, err := nlx.Authorize(authHost, authUser, authPass)

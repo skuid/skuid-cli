@@ -14,6 +14,7 @@ import (
 	jsonpatch "github.com/skuid/json-patch"
 
 	"github.com/skuid/tides/pkg/logging"
+	"github.com/skuid/tides/pkg/util"
 )
 
 func getFriendlyURL(targetDir string) (string, error) {
@@ -287,7 +288,7 @@ func combineJSONFile(newFileReader io.ReadCloser, existingFileReader FileReader,
 
 	// sort all of the keys in the json. custom sort logic.
 	// this puts "name" first, then everything alphanumerically
-	sorted, err := ReSortJson(combined)
+	sorted, err := util.ReSortJson(combined)
 	if err != nil {
 		return
 	}

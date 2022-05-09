@@ -17,11 +17,20 @@ type NlxRetrievalPlans struct {
 	MetadataService NlxPlan `json:"skuidMetadataService"`
 }
 
+type NlxPlan struct {
+	Host     string      `json:"host"`
+	Port     string      `json:"port"`
+	Endpoint string      `json:"url"`
+	Type     string      `json:"type"`
+	Metadata NlxMetadata `json:"metadata"`
+	Warnings []string    `json:"warnings"`
+}
+
 // Serialize this and provide it with the
 // request for retrieval
-type NlxRetrieveFilter struct {
-	AppName string `json:"appName"`
-	// PageNames []string `json:"pageNames"`
+type NlxRetrievalFilter struct {
+	AppName   string   `json:"appName"`
+	PageNames []string `json:"pageNames"`
 }
 
 func GetDeployPlan(auth *Authorization) (duration time.Duration, result NlxRetrievalPlans, err error) {

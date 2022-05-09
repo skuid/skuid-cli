@@ -1,4 +1,4 @@
-package pkg
+package util
 
 // StringSliceContainsKey returns true if a string is contained in a slice
 func StringSliceContainsKey(strings []string, key string) bool {

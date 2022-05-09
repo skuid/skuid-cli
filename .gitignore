@@ -17,3 +17,5 @@ skuid_windows_amd64.exe
 .coverage
 **/**/.retrieve
 **/**/.deploy
+**/**/_retrieve
+**/**/_deploy

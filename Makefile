@@ -20,10 +20,13 @@ ci:
 	go test -v -cover ./... -args coverfail=true
 
 test:
+	go test -v -short ./...
+	
+it:
 	go test -v ./...
 	
 bench:
-	go test -benchmem -v -run=Http -bench=.
+	go test -benchmem -short -v -bench=.
 
 setup:
 	go get -u github.com/kardianos/govendor

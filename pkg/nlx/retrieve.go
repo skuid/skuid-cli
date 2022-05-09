@@ -15,7 +15,7 @@ var (
 	RetrievePlanRoute = fmt.Sprintf("api/%v/metadata/retrieve/plan", DEFAULT_API_VERSION)
 )
 
-func GetRetrievePlan(auth *Authorization, filter *NlxRetrieveFilter) (duration time.Duration, result NlxRetrievalPlans, err error) {
+func GetRetrievePlan(auth *Authorization, filter *NlxRetrievalFilter) (duration time.Duration, result NlxRetrievalPlans, err error) {
 
 	planStart := time.Now()
 	defer func() { duration = time.Since(planStart) }()
