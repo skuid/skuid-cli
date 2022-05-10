@@ -1,11 +1,10 @@
-package nlx_test
+package pkg_test
 
 import (
 	"testing"
 
+	"github.com/skuid/tides/pkg"
 	"github.com/stretchr/testify/assert"
-
-	"github.com/skuid/tides/pkg/nlx"
 )
 
 // TODO: uncomment
@@ -71,7 +70,7 @@ import (
 // 		},
 // 	} {
 // 		t.Run(tc.description, func(t *testing.T) {
-// 			plan := nlx.NlxPlan{}
+// 			plan := pkg.NlxPlan{}
 // 			err := json.Unmarshal([]byte(tc.given), &plan)
 // 			if err != nil {
 // 				t.Log(err)
@@ -84,9 +83,9 @@ import (
 
 func TestGetMetadataByString(t *testing.T) {
 
-	badErr := nlx.GetFieldValueByNameError("bad")
+	badErr := pkg.GetFieldValueByNameError("bad")
 
-	metadata := nlx.NlxMetadata{
+	metadata := pkg.NlxMetadata{
 		Apps:               []string{"apps"},
 		AuthProviders:      []string{"authproviders"},
 		ComponentPacks:     []string{"componentpacks"},

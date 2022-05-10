@@ -1,11 +1,11 @@
-package nlx_test
+package pkg_test
 
 import (
 	"encoding/json"
 	"testing"
 
+	"github.com/skuid/tides/pkg"
 	"github.com/skuid/tides/pkg/logging"
-	"github.com/skuid/tides/pkg/nlx"
 	"github.com/skuid/tides/pkg/util"
 )
 
@@ -13,7 +13,7 @@ func TestRetrievePlan(t *testing.T) {
 	util.SkipIntegrationTest(t)
 
 	logging.SetVerbose(true)
-	auth, err := nlx.Authorize(authHost, authUser, authPass)
+	auth, err := pkg.Authorize(authHost, authUser, authPass)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -21,14 +21,14 @@ func TestRetrievePlan(t *testing.T) {
 	for _, tc := range []struct {
 		description string
 
-		givenFilter *nlx.NlxPlanFilter
+		givenFilter *pkg.NlxPlanFilter
 
 		expectedError string
 	}{
 		{},
 	} {
 		t.Run(tc.description, func(t *testing.T) {
-			duration, result, err := nlx.GetRetrievePlan(auth, tc.givenFilter)
+			duration, result, err := pkg.GetRetrievePlan(auth, tc.givenFilter)
 			t.Log(duration)
 			t.Log(err)
 
@@ -36,7 +36,7 @@ func TestRetrievePlan(t *testing.T) {
 			t.Log(string(data))
 			t.Log(err)
 
-			for _, plan := range []nlx.NlxPlan{
+			for _, plan := range []pkg.NlxPlan{
 				result.CloudDataService, result.MetadataService,
 			} {
 				t.Logf("PLAN (%v):", plan.Type)
@@ -51,7 +51,7 @@ func TestExecuteRetrieval(t *testing.T) {
 	util.SkipIntegrationTest(t)
 
 	logging.SetVerbose(true)
-	auth, err := nlx.Authorize(authHost, authUser, authPass)
+	auth, err := pkg.Authorize(authHost, authUser, authPass)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -64,12 +64,12 @@ func TestExecuteRetrieval(t *testing.T) {
 		{},
 	} {
 		t.Run(tc.description, func(t *testing.T) {
-			duration, plans, err := nlx.GetRetrievePlan(auth, nil)
+			duration, plans, err := pkg.GetRetrievePlan(auth, nil)
 			t.Log(duration)
 			t.Log(plans)
 			t.Log(err)
 
-			duration, results, err := nlx.ExecuteRetrieval(auth, plans, false)
+			duration, results, err := pkg.ExecuteRetrieval(auth, plans, false)
 			t.Log(duration)
 			t.Log(results)
 			t.Log(err)

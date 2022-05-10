@@ -4,9 +4,9 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/skuid/tides/cmd/validation"
+	"github.com/skuid/tides/pkg"
 	"github.com/skuid/tides/pkg/flags"
 	"github.com/skuid/tides/pkg/logging"
-	"github.com/skuid/tides/pkg/nlx"
 )
 
 var deployCmd = &cobra.Command{
@@ -38,14 +38,14 @@ func Deploy(cmd *cobra.Command, _ []string) (err error) {
 	}
 
 	// auth
-	var auth *nlx.Authorization
-	if auth, err = nlx.Authorize(host, username, password); err != nil {
+	var auth *pkg.Authorization
+	if auth, err = pkg.Authorize(host, username, password); err != nil {
 		return
 	}
 
 	// we want the filter nil because it will be discarded without
 	// initialization
-	var filter *nlx.NlxPlanFilter = nil
+	var filter *pkg.NlxPlanFilter = nil
 
 	// initialize the filter dynamically based on
 	// optional filter arguments. This lets us
@@ -53,7 +53,7 @@ func Deploy(cmd *cobra.Command, _ []string) (err error) {
 	// are required to be build
 	initFilter := func() {
 		if filter == nil {
-			filter = &nlx.NlxPlanFilter{}
+			filter = &pkg.NlxPlanFilter{}
 		}
 	}
 
@@ -82,18 +82,18 @@ func Deploy(cmd *cobra.Command, _ []string) (err error) {
 	}
 
 	var deploymentPlan []byte
-	if deploymentPlan, err = nlx.Archive(targetDirectory, nil); err != nil {
+	if deploymentPlan, err = pkg.Archive(targetDirectory, nil); err != nil {
 		return
 	}
 
 	// get the plan
-	var plans nlx.NlxDynamicPlanMap
-	if _, plans, err = nlx.PrepareDeployment(auth, deploymentPlan, filter); err != nil {
+	var plans pkg.NlxDynamicPlanMap
+	if _, plans, err = pkg.PrepareDeployment(auth, deploymentPlan, filter); err != nil {
 		return
 	}
 
-	var results []nlx.NlxDeploymentResult
-	if _, results, err = nlx.ExecuteDeployPlan(auth, plans, targetDirectory); err != nil {
+	var results []pkg.NlxDeploymentResult
+	if _, results, err = pkg.ExecuteDeployPlan(auth, plans, targetDirectory); err != nil {
 		return
 	}
 

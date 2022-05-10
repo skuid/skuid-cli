@@ -8,8 +8,7 @@ import (
 	"github.com/skuid/tides/cmd/validation"
 	"github.com/skuid/tides/pkg"
 	"github.com/skuid/tides/pkg/flags"
-	"github.com/skuid/tides/pkg/logging"
-	"github.com/skuid/tides/pkg/nlx"
+	"github.com/skuid/tides/pkg/util"
 )
 
 // retrieveCmd represents the retrieve command
@@ -37,14 +36,14 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 		return
 	}
 
-	var auth *nlx.Authorization
-	if auth, err = nlx.Authorize(host, username, password); err != nil {
+	var auth *pkg.Authorization
+	if auth, err = pkg.Authorize(host, username, password); err != nil {
 		return
 	}
 
 	// we want the filter nil because it will be discarded without
 	// initialization
-	var filter *nlx.NlxPlanFilter = nil
+	var filter *pkg.NlxPlanFilter = nil
 
 	// initialize the filter dynamically based on
 	// optional filter arguments. This lets us
@@ -52,7 +51,7 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 	// are required to be build
 	initFilter := func() {
 		if filter == nil {
-			filter = &nlx.NlxPlanFilter{}
+			filter = &pkg.NlxPlanFilter{}
 		}
 	}
 
@@ -74,8 +73,8 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 		filter.PageNames = pageNames
 	}
 
-	var plans nlx.NlxPlanPayload
-	if _, plans, err = nlx.GetRetrievePlan(auth, filter); err != nil {
+	var plans pkg.NlxPlanPayload
+	if _, plans, err = pkg.GetRetrievePlan(auth, filter); err != nil {
 		return
 	}
 
@@ -85,13 +84,9 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 		return
 	}
 
-	var results []nlx.NlxRetrievalResult
-	if _, results, err = nlx.ExecuteRetrieval(auth, plans, zip); err != nil {
+	var results []pkg.NlxRetrievalResult
+	if _, results, err = pkg.ExecuteRetrieval(auth, plans, zip); err != nil {
 		return
-	}
-
-	for _, result := range results {
-		logging.VerboseLn(result)
 	}
 
 	var directory string
@@ -99,9 +94,18 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 		return
 	}
 
-	if err = pkg.WriteResultsToDisk3(
+	var resultBytes [][]byte = make([][]byte, 0)
+	for _, result := range results {
+		resultBytes = append(resultBytes, result.Data)
+	}
+
+	if err = util.DeleteDirectories(directory, pkg.GetMetadataTypeDirNames()); err != nil {
+		return
+	}
+
+	if err = util.WriteResultsToDisk(
 		directory,
-		results,
+		resultBytes,
 		zip,
 	); err != nil {
 		return

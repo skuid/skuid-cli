@@ -1,4 +1,4 @@
-package nlx_test
+package pkg_test
 
 import (
 	"log"
@@ -7,8 +7,8 @@ import (
 	"github.com/gookit/color"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/skuid/tides/pkg"
 	"github.com/skuid/tides/pkg/logging"
-	"github.com/skuid/tides/pkg/nlx"
 	"github.com/skuid/tides/pkg/util"
 )
 
@@ -32,20 +32,20 @@ func TestAuthorizationMethods(t *testing.T) {
 
 	logging.SetVerbose(true)
 
-	if accessToken, err := nlx.GetAccessToken(
+	if accessToken, err := pkg.GetAccessToken(
 		authHost, authUser, authPass,
 	); err != nil {
 		color.Red.Println(err)
 		t.FailNow()
-	} else if authorizationToken, err := nlx.GetAuthorizationToken(
+	} else if authorizationToken, err := pkg.GetAuthorizationToken(
 		authHost, accessToken,
 	); err != nil {
 		color.Red.Println(err)
 		t.FailNow()
 	} else {
 
-		var auth nlx.Authorization
-		if auth, err := nlx.Authorize(authHost, authUser, authPass); err != nil {
+		var auth pkg.Authorization
+		if auth, err := pkg.Authorize(authHost, authUser, authPass); err != nil {
 			t.FailNow()
 		} else if err := auth.Refresh(); err != nil {
 			t.FailNow()

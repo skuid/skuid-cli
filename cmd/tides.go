@@ -18,7 +18,7 @@ var (
 	TidesCmd = &cobra.Command{
 		Use:     constants.PROJECT_NAME,
 		Short:   "Tides: A CLI for interacting with Skuid APIs",
-		Long:    `Tides: Deploy and retrieve Skuid metadata to / from Skuid NLX.`,
+		Long:    `Tides: Deploy and retrieve Skuid metadata to / from Skuid pkg.`,
 		Version: constants.VERSION_NAME,
 	}
 )

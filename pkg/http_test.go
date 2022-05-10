@@ -1,4 +1,4 @@
-package nlx_test
+package pkg_test
 
 import (
 	"fmt"
@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/valyala/fasthttp"
 
-	"github.com/skuid/tides/pkg/nlx"
+	"github.com/skuid/tides/pkg"
 	"github.com/skuid/tides/pkg/util"
 )
 
@@ -56,7 +56,7 @@ func TestFasthttpMethods(t *testing.T) {
 		},
 	} {
 		t.Run(tc.description, func(subtest *testing.T) {
-			actual, actualError := nlx.FastJsonBodyRequest[YesNoResponse](
+			actual, actualError := pkg.FastJsonBodyRequest[YesNoResponse](
 				tc.givenHost,
 				fasthttp.MethodGet,
 				[]byte{},

@@ -1,4 +1,4 @@
-package nlx
+package pkg
 
 import (
 	"fmt"
