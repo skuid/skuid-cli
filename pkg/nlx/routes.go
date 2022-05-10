@@ -9,9 +9,6 @@ func GenerateRoute(info *Authorization, plan NlxPlan) (url string) {
 	// with.
 	wardenRequest := plan.Host != ""
 
-	// for legibility
-	plinyRequest := !wardenRequest
-
 	// when given a warden request we have to use the plan information
 	// for the url
 	if wardenRequest {
@@ -20,11 +17,7 @@ func GenerateRoute(info *Authorization, plan NlxPlan) (url string) {
 		} else {
 			url = fmt.Sprintf("%s/api/%v%s", plan.Host, DEFAULT_API_VERSION, plan.Endpoint)
 		}
-	}
-
-	// with a pliny request we just attach the endpoint to the same
-	// host we've been using since it's a relative route
-	if plinyRequest {
+	} else /* pliny request */ {
 		url = fmt.Sprintf("%s/api/%v%s", info.Host, DEFAULT_API_VERSION, plan.Endpoint)
 	}
 

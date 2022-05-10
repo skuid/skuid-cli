@@ -10,7 +10,7 @@ import (
 
 // This is the result of getting the plan from the pliny
 // deployment retrieval plan endpoint
-type NlxRetrievalPlans struct {
+type NlxPlanPayload struct {
 	// Cloud Data Service is WARDEN
 	CloudDataService NlxPlan `json:"skuidCloudDataService"`
 	// Metadata Service is PLINY
@@ -28,16 +28,16 @@ type NlxPlan struct {
 
 // Serialize this and provide it with the
 // request for retrieval
-type NlxRetrievalFilter struct {
+type NlxPlanFilter struct {
 	AppName   string   `json:"appName"`
 	PageNames []string `json:"pageNames"`
 }
 
-func GetDeployPlan(auth *Authorization) (duration time.Duration, result NlxRetrievalPlans, err error) {
+func GetDeployPlan(auth *Authorization) (duration time.Duration, result NlxDynamicPlanMap, err error) {
 	planStart := time.Now()
 	defer func() { duration = time.Since(planStart) }()
 
-	if result, err = FastJsonBodyRequest[NlxRetrievalPlans](
+	if result, err = FastJsonBodyRequest[NlxDynamicPlanMap](
 		fmt.Sprintf("%s/api/%v/metadata/deploy/plan", auth.Host, DEFAULT_API_VERSION),
 		fasthttp.MethodPost,
 		[]byte{},

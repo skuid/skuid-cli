@@ -13,19 +13,14 @@ import (
 	"github.com/skuid/tides/pkg/logging"
 )
 
-type NlxDeploymentPlans map[string]NlxPlan
-
 var (
 	DeployPlanRoute = fmt.Sprintf("api/%v/metadata/deploy/plan", DEFAULT_API_VERSION)
 )
 
-type DeploymentFilter struct {
-	AppName   string
-	PageNames []string
-}
+type NlxDynamicPlanMap map[string]NlxPlan
 
 // maybe?
-func (df *DeploymentFilter) Filter(plans NlxDeploymentPlans) (filtered NlxDeploymentPlans) {
+func (df *NlxPlanFilter) Filter(plans NlxDynamicPlanMap) (filtered NlxDynamicPlanMap) {
 	// filter by app name
 	for k, plan := range plans {
 		// filter by app name
@@ -49,7 +44,7 @@ type FilteredRequestBody struct {
 	PlanBytes []byte   `json:"plan"`
 }
 
-func PrepareDeployment(auth *Authorization, deploymentPlan []byte, filter *DeploymentFilter) (duration time.Duration, results NlxDeploymentPlans, err error) {
+func PrepareDeployment(auth *Authorization, deploymentPlan []byte, filter *NlxPlanFilter) (duration time.Duration, results NlxDynamicPlanMap, err error) {
 	logging.VerboseSection("Getting Deploy Plan")
 	start := time.Now()
 	defer func() { duration = time.Since(start) }()
@@ -78,7 +73,7 @@ func PrepareDeployment(auth *Authorization, deploymentPlan []byte, filter *Deplo
 	}
 
 	// make the request
-	results, err = FastJsonBodyRequest[NlxDeploymentPlans](
+	results, err = FastJsonBodyRequest[NlxDynamicPlanMap](
 		fmt.Sprintf("%s/%s", auth.Host, DeployPlanRoute),
 		fasthttp.MethodPost,
 		body,
@@ -89,7 +84,7 @@ func PrepareDeployment(auth *Authorization, deploymentPlan []byte, filter *Deplo
 }
 
 // ExecuteDeployPlan executes a map of plan items in a deployment plan
-func ExecuteDeployPlan(auth *Authorization, plans NlxDeploymentPlans, targetDir string) (duration time.Duration, planResults []NlxDeploymentResult, err error) {
+func ExecuteDeployPlan(auth *Authorization, plans NlxDynamicPlanMap, targetDir string) (duration time.Duration, planResults []NlxDeploymentResult, err error) {
 	start := time.Now()
 	defer func() { duration = time.Since(start) }()
 	logging.VerboseSection("Executing Deploy Plan")

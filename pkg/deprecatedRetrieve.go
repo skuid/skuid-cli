@@ -105,7 +105,7 @@ type RetrieveFilter struct {
 
 type DeployFilter struct {
 	AppName string `json:"appName"`
-	Plan    []byte `json:"plan"`
+	Plan    []byte `json:"plan,omitempty"`
 }
 
 // GetMetadataTypeDirNames returns the directory names for a type

@@ -21,7 +21,7 @@ func TestRetrievePlan(t *testing.T) {
 	for _, tc := range []struct {
 		description string
 
-		givenFilter *nlx.NlxRetrievalFilter
+		givenFilter *nlx.NlxPlanFilter
 
 		expectedError string
 	}{

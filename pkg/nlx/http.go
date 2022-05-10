@@ -165,5 +165,13 @@ func FastRequestHelper(
 
 	response = responseBody
 
+	// Debug and output the marshalled body
+	if isJson := resp.Header.Peek(fasthttp.HeaderContentType); strings.Contains(string(isJson), JSON_CONTENT_TYPE) {
+		var prettyMarshal interface{}
+		json.Unmarshal(response, &prettyMarshal)
+		pretty, _ := json.MarshalIndent(prettyMarshal, "", " ")
+		logging.DebugF("Pretty Response Body: %v", color.Cyan.Sprint(string(pretty)))
+	}
+
 	return
 }

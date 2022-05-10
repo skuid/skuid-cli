@@ -14,6 +14,7 @@ import (
 	jsonpatch "github.com/skuid/json-patch"
 
 	"github.com/skuid/tides/pkg/logging"
+	"github.com/skuid/tides/pkg/nlx"
 	"github.com/skuid/tides/pkg/util"
 )
 
@@ -40,6 +41,21 @@ type WriteSettings struct {
 
 func WriteResultsToDisk2(ws WriteSettings) error {
 	return WriteResultsToDisk(ws.TargetDir, ws.Results, ws.FileCreator, ws.DirectoryCreator, ws.ExistingFileReader, ws.NoZip)
+}
+
+func WriteResultsToDisk3(
+	targetDirectory string,
+	results []nlx.NlxRetrievalResult,
+	noZip bool,
+) error {
+	logging.VerboseF("Target Directory: %v\n", targetDirectory)
+	logging.VerboseF("Zip: %v\n", noZip)
+	var resultBytes [][]byte = make([][]byte, 0)
+	for _, result := range results {
+		logging.VerboseF("Result: %v\n", result)
+		resultBytes = append(resultBytes, result.Data)
+	}
+	return WriteResultsToDisk(targetDirectory, resultBytes, WriteNewFile, CreateDirectory, ReadExistingFile, noZip)
 }
 
 func WriteResultsToDisk(targetDir string, results [][]byte, fileCreator FileCreator, directoryCreator DirectoryCreator, existingFileReader FileReader, noZip bool) error {

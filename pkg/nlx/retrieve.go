@@ -15,7 +15,7 @@ var (
 	RetrievePlanRoute = fmt.Sprintf("api/%v/metadata/retrieve/plan", DEFAULT_API_VERSION)
 )
 
-func GetRetrievePlan(auth *Authorization, filter *NlxRetrievalFilter) (duration time.Duration, result NlxRetrievalPlans, err error) {
+func GetRetrievePlan(auth *Authorization, filter *NlxPlanFilter) (duration time.Duration, result NlxPlanPayload, err error) {
 
 	planStart := time.Now()
 	defer func() { duration = time.Since(planStart) }()
@@ -30,7 +30,7 @@ func GetRetrievePlan(auth *Authorization, filter *NlxRetrievalFilter) (duration 
 	// this is a pliny request, so we provide the access token
 	headers := GenerateHeaders(auth.Host, auth.AccessToken)
 	headers[fasthttp.HeaderContentType] = JSON_CONTENT_TYPE
-	result, err = FastJsonBodyRequest[NlxRetrievalPlans](
+	result, err = FastJsonBodyRequest[NlxPlanPayload](
 		fmt.Sprintf("%s/%s", auth.Host, RetrievePlanRoute),
 		fasthttp.MethodPost,
 		body,
@@ -47,7 +47,7 @@ type NlxRetrievalResult struct {
 	Data     []byte
 }
 
-func ExecuteRetrieval(plans NlxRetrievalPlans, info *Authorization, zip bool) (duration time.Duration, results []NlxRetrievalResult, err error) {
+func ExecuteRetrieval(auth *Authorization, plans NlxPlanPayload, zip bool) (duration time.Duration, results []NlxRetrievalResult, err error) {
 	// for timing sake
 	start := time.Now()
 	defer func() { duration = time.Since(start) }()
@@ -62,7 +62,7 @@ func ExecuteRetrieval(plans NlxRetrievalPlans, info *Authorization, zip bool) (d
 		return func() error {
 			logging.VerboseF("Firing off %v", name)
 
-			headers := GeneratePlanHeaders(info, plan)
+			headers := GeneratePlanHeaders(auth, plan)
 
 			if zip {
 				headers[fasthttp.HeaderContentType] = ZIP_CONTENT_TYPE
@@ -72,7 +72,7 @@ func ExecuteRetrieval(plans NlxRetrievalPlans, info *Authorization, zip bool) (d
 
 			logging.VerboseF("Plan Headers: %v\n", headers)
 
-			url := GenerateRoute(info, plan)
+			url := GenerateRoute(auth, plan)
 
 			logging.VerboseF("Plan Request: %v\n", url)
 
