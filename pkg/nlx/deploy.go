@@ -125,7 +125,6 @@ func ExecuteDeployPlan(auth *Authorization, plans NlxDeploymentPlans, targetDir 
 					Data: result,
 				}
 			} else {
-				logging.VerboseF("Plan: %v", plan)
 				logging.VerboseF("Url: %v", url)
 				logging.VerboseF("Error on request: %v\n", err.Error())
 				return err

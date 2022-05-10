@@ -26,7 +26,7 @@ it:
 	go test -v ./...
 	
 bench:
-	go test -benchmem -short -v -bench=.
+	go test -benchmem -v -bench=. ./...
 
 setup:
 	go get -u github.com/kardianos/govendor

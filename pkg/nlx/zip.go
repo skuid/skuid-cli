@@ -19,7 +19,7 @@ import (
 func Archive(inFilePath string, filter *NlxMetadata) (result []byte, err error) {
 	return ArchiveWithFilterFunc(inFilePath, func(relativePath string) bool {
 		if filter != nil {
-			return filter.FilterItem(relativePath)
+			return !filter.FilterItem(relativePath)
 		}
 		return true
 	})
@@ -33,8 +33,8 @@ func ArchivePartial(inFilePath string, basePrefix string) ([]byte, error) {
 }
 
 type archiveSuccess struct {
-	Bytes []byte
-	Path  string
+	Bytes    []byte
+	FilePath string
 }
 
 func ArchiveWithFilterFunc(inFilePath string, filter func(string) bool) (result []byte, err error) {
@@ -62,13 +62,18 @@ func ArchiveWithFilterFunc(inFilePath string, filter func(string) bool) (result 
 			return
 		}
 
-		archivePath := path.Join(filepath.SplitList(relativeFilePath)...)
+		encapsulatingDirectory, fileName := filepath.Split(filePath)
+		encapsulatingFolder := filepath.Base(encapsulatingDirectory)
+
+		// we only want the immediate directory and the filename for the archive path
+		// so we are going to truncate the archive path
+		archivePath := path.Join(encapsulatingFolder, fileName)
 
 		if strings.HasPrefix(archivePath, ".") || !filter(relativeFilePath) {
 			logging.DebugLn(color.Gray.Sprintf("Ignoring: %v", filePath))
 			return
 		} else {
-			logging.DebugF("Processing: %v", color.Green.Sprint(filePath))
+			logging.DebugF("Processing: %v => %v", color.Green.Sprint(filePath), color.Yellow.Sprint(archivePath))
 		}
 
 		// spin off a thread archiving the file
@@ -77,8 +82,8 @@ func ArchiveWithFilterFunc(inFilePath string, filter func(string) bool) (result 
 				return err
 			} else {
 				ch <- archiveSuccess{
-					Bytes: bytes,
-					Path:  archivePath,
+					Bytes:    bytes,
+					FilePath: archivePath,
 				}
 			}
 			return nil
@@ -95,14 +100,14 @@ func ArchiveWithFilterFunc(inFilePath string, filter func(string) bool) (result 
 	}()
 
 	for success := range ch {
-		if zipFileWriter, e := zipWriter.Create(success.Path); err != nil {
+		if zipFileWriter, e := zipWriter.Create(success.FilePath); err != nil {
 			err = e
 			return
 		} else if _, e := zipFileWriter.Write(success.Bytes); err != nil {
 			err = e
 			return
 		}
-		logging.DebugLn(color.Green.Sprintf("Finished Processing %v", success.Path))
+		logging.DebugLn(color.Green.Sprintf("Finished Processing %v", success.FilePath))
 	}
 
 	zipWriter.Close()

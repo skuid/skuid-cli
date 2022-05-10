@@ -35,28 +35,27 @@ func TestGetDeployPlan(t *testing.T) {
 	}
 	t.Log(duration)
 
-	for k, v := range plans {
-		logging.DebugF("plan k: %v\n", k)
-		logging.DebugF("plan v: %v\n", v)
-	}
-
-	metadataFilter := &nlx.NlxMetadata{}
-	deploymentPlan, err = nlx.Archive(fp, metadataFilter)
-	if err != nil {
-		t.Log(err)
-		t.FailNow()
-	}
-
-	duration, plans, err = nlx.PrepareDeployment(auth, deploymentPlan, &nlx.DeploymentFilter{AppName: "alpha"})
+	duration, _, err = nlx.ExecuteDeployPlan(auth, plans, fp)
 	if err != nil {
 		t.Log(err)
 		t.FailNow()
 	}
 	t.Log(duration)
 
-	for k, v := range plans {
-		logging.DebugF("plan k: %v\n", k)
-		logging.DebugF("plan v: %v\n", v)
-	}
+}
 
+func BenchmarkDeploymentPlan(b *testing.B) {
+	util.SkipBenchmark(b)
+	logging.SetVerbose(false)
+	logging.SetDebug(false)
+	auth, _ := nlx.Authorize(authHost, authUser, authPass)
+	wd, _ := os.Getwd()
+	fp := filepath.Join(wd, "..", "..", "_deploy")
+	deploymentPlan, _ := nlx.Archive(fp, nil)
+	_, plans, _ := nlx.PrepareDeployment(auth, deploymentPlan, nil)
+	b.ResetTimer()
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		_, _, _ = nlx.ExecuteDeployPlan(auth, plans, fp)
+	}
 }

@@ -10,11 +10,15 @@ var (
 	// let's use a file global variable
 	// do not access this
 	isVerbose = false
-	debug     = true // TODO: remove
+	isDebug   = true // TODO: remove
 )
 
 func SetVerbose(verbosity bool) {
 	isVerbose = verbosity
+}
+
+func SetDebug(debugging bool) {
+	isDebug = debugging
 }
 
 // VerboseSection creates some visual space for a title in verbose mode
@@ -72,19 +76,19 @@ func VerboseSeparator() {
 }
 
 func DebugF(msg string, args ...interface{}) {
-	if debug {
+	if isDebug {
 		Println(color.Yellow.Sprintf(msg, args...))
 	}
 }
 
 func DebugLn(msg string) {
-	if debug {
+	if isDebug {
 		Println(color.Yellow.Sprint(msg))
 	}
 }
 
 func DebugErr(msg string, err error) {
-	if debug {
+	if isDebug {
 		PrintError(color.Yellow.Sprint(msg), err)
 	}
 }
