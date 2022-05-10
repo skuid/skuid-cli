@@ -33,11 +33,11 @@ type NlxPlanFilter struct {
 	PageNames []string `json:"pageNames"`
 }
 
-func GetDeployPlan(auth *Authorization) (duration time.Duration, result NlxDynamicPlanMap, err error) {
+func GetDeployPlan(auth *Authorization) (duration time.Duration, result NlxPlanPayload, err error) {
 	planStart := time.Now()
 	defer func() { duration = time.Since(planStart) }()
 
-	if result, err = FastJsonBodyRequest[NlxDynamicPlanMap](
+	if result, err = FastJsonBodyRequest[NlxPlanPayload](
 		fmt.Sprintf("%s/api/%v/metadata/deploy/plan", auth.Host, DEFAULT_API_VERSION),
 		fasthttp.MethodPost,
 		[]byte{},

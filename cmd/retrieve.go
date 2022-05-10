@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"fmt"
-	"time"
 
 	// jsoniter. Fork of github.com/json-iterator/go
 	"github.com/spf13/cobra"
@@ -110,56 +108,6 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 	}
 
 	return
-}
-
-func DeprecatedRetrieve(cmd *cobra.Command, _ []string) (err error) {
-
-	logging.VerboseCommand("Retrieve Skuid NLX Metadata")
-
-	retrieveStart := time.Now()
-
-	var appName string
-	if appName, err = cmd.Flags().GetString(flags.AppName.Name); err != nil {
-		return
-	}
-
-	api, err := pkg.SkuidNlxLogin(cmd)
-	if err != nil {
-		logging.VerboseF("Retrieve: SkuidNlxLogin: %v\n", err)
-		return
-	}
-
-	plan, err := pkg.GetRetrievePlan(api, appName)
-	if err != nil {
-		return
-	}
-
-	var noZip bool
-	if noZip, err = cmd.Flags().GetBool(flags.NoZip.Name); err != nil {
-		return
-	}
-
-	results, err := pkg.ExecuteRetrievePlan(api, plan, noZip)
-	if err != nil {
-		err = fmt.Errorf("Error executing retrieve plan: %v", err)
-		return
-	}
-
-	var targetDir string
-	if targetDir, err = cmd.Flags().GetString(flags.Directory.Name); err != nil {
-		return
-	}
-
-	err = pkg.WriteResultsToDisk(targetDir, results, pkg.WriteNewFile, pkg.CreateDirectory, pkg.ReadExistingFile, noZip)
-	if err != nil {
-		err = fmt.Errorf("Error writing results to disk: %v", err)
-		return
-	}
-
-	logging.VerboseSuccess("Skuid NLX Metadata Retrieved", retrieveStart)
-
-	return
-
 }
 
 func init() {

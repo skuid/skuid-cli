@@ -103,10 +103,10 @@ func ExecuteDeployPlan(auth *Authorization, plans NlxDynamicPlanMap, targetDir s
 			}
 
 			headers := GeneratePlanHeaders(auth, plan)
-			logging.VerboseF("Plan Headers: %v\n", headers)
+			logging.DebugF("Plan Headers: %v\n", headers)
 
 			url := GenerateRoute(auth, plan)
-			logging.VerboseF("Plan Request: %v\n", url)
+			logging.DebugF("Plan Request: %v\n", url)
 
 			if result, err := FastRequest(
 				url,
@@ -120,8 +120,8 @@ func ExecuteDeployPlan(auth *Authorization, plans NlxDynamicPlanMap, targetDir s
 					Data: result,
 				}
 			} else {
-				logging.VerboseF("Url: %v", url)
-				logging.VerboseF("Error on request: %v\n", err.Error())
+				logging.DebugF("Url: %v", url)
+				logging.DebugF("Error on request: %v\n", err.Error())
 				return err
 			}
 
@@ -158,4 +158,12 @@ type NlxDeploymentResult struct {
 	PlanName string
 	Url      string
 	Data     []byte
+}
+
+func (result NlxDeploymentResult) String() string {
+	return fmt.Sprintf("( Name: '%v', Url: %v => %v bytes )",
+		result.PlanName,
+		result.Url,
+		len(result.Data),
+	)
 }

@@ -52,7 +52,6 @@ func WriteResultsToDisk3(
 	logging.VerboseF("Zip: %v\n", noZip)
 	var resultBytes [][]byte = make([][]byte, 0)
 	for _, result := range results {
-		logging.VerboseF("Result: %v\n", result)
 		resultBytes = append(resultBytes, result.Data)
 	}
 	return WriteResultsToDisk(targetDirectory, resultBytes, WriteNewFile, CreateDirectory, ReadExistingFile, noZip)
@@ -71,7 +70,7 @@ func WriteResultsToDisk(targetDir string, results [][]byte, fileCreator FileCrea
 	// Remove all of our metadata directories so we get a clean slate.
 	// We may want to improve this later when we do partial retrieves so that
 	// we don't clear out the whole directory every time we retrieve.
-	for _, dirName := range GetMetadataTypeDirNames() {
+	for _, dirName := range nlx.GetMetadataTypeDirNames() {
 		dirPath := filepath.Join(targetDir, dirName)
 
 		logging.DebugLn("Deleting Directory: " + color.Red.Sprint(dirPath))

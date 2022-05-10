@@ -70,11 +70,11 @@ func ExecuteRetrieval(auth *Authorization, plans NlxPlanPayload, zip bool) (dura
 				headers[fasthttp.HeaderContentType] = JSON_CONTENT_TYPE
 			}
 
-			logging.VerboseF("Plan Headers: %v\n", headers)
+			logging.DebugF("Plan Headers: %v\n", headers)
 
 			url := GenerateRoute(auth, plan)
 
-			logging.VerboseF("Plan Request: %v\n", url)
+			logging.DebugF("Plan Request: %v\n", url)
 
 			if result, err := FastRequest(
 				url, fasthttp.MethodPost, NewRetrievalRequestBody(plan.Metadata, zip), headers,

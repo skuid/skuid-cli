@@ -117,3 +117,15 @@ func (m NlxMetadata) FilterItem(item string) (keep bool) {
 
 	return
 }
+
+// GetMetadataTypeDirNames returns the directory names for a type
+func GetMetadataTypeDirNames() (types []string) {
+	metadataType := reflect.TypeOf(NlxMetadata{})
+
+	for i := 0; i < metadataType.NumField(); i++ {
+		field := metadataType.Field(i)
+		types = append(types, field.Tag.Get("json"))
+	}
+
+	return types
+}

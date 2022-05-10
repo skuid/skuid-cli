@@ -108,7 +108,11 @@ func FastRequestHelper(
 	// ...For login: this is the url encoded bytes that we prepared beforehand
 	// ...along with the grant_type: password
 	if len(body) > 0 {
-		logging.VerboseF("With body: %v\n", string(body))
+		if len(body) < 1e4 {
+			logging.VerboseF("With body: %v\n", string(body))
+		} else {
+			logging.VerboseF("(With large body, too large to print)\n")
+		}
 		req.SetBody(body)
 	}
 
@@ -165,12 +169,15 @@ func FastRequestHelper(
 
 	response = responseBody
 
-	// Debug and output the marshalled body
-	if isJson := resp.Header.Peek(fasthttp.HeaderContentType); strings.Contains(string(isJson), JSON_CONTENT_TYPE) {
-		var prettyMarshal interface{}
-		json.Unmarshal(response, &prettyMarshal)
-		pretty, _ := json.MarshalIndent(prettyMarshal, "", " ")
-		logging.DebugF("Pretty Response Body: %v", color.Cyan.Sprint(string(pretty)))
+	// don't output something huge
+	if len(response) < 1e3 {
+		// Debug and output the marshalled body
+		if isJson := resp.Header.Peek(fasthttp.HeaderContentType); strings.Contains(string(isJson), JSON_CONTENT_TYPE) {
+			var prettyMarshal interface{}
+			json.Unmarshal(response, &prettyMarshal)
+			pretty, _ := json.MarshalIndent(prettyMarshal, "", " ")
+			logging.DebugF("Pretty Response Body: %v", color.Cyan.Sprint(string(pretty)))
+		}
 	}
 
 	return

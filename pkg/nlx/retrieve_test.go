@@ -69,7 +69,7 @@ func TestExecuteRetrieval(t *testing.T) {
 			t.Log(plans)
 			t.Log(err)
 
-			duration, results, err := nlx.ExecuteRetrieval(plans, auth, false)
+			duration, results, err := nlx.ExecuteRetrieval(auth, plans, false)
 			t.Log(duration)
 			t.Log(results)
 			t.Log(err)

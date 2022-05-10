@@ -32,16 +32,10 @@ func GeneratePlanHeaders(info *Authorization, plan NlxPlan) (headers RequestHead
 	// with.
 	wardenRequest := plan.Host != ""
 
-	// for legibility
-	plinyRequest := !wardenRequest
-
 	// when given a warden request we need to provide the authorization / jwt token
 	if wardenRequest {
 		headers = GenerateHeaders(plan.Host, info.AuthorizationToken)
-	}
-
-	// with a pliny request we just attach the access token
-	if plinyRequest {
+	} else {
 		headers = GenerateHeaders(plan.Host, info.AccessToken)
 	}
 
