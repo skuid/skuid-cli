@@ -1,19 +1,19 @@
 package main_test
 
 import (
-	"log"
 	"os"
 	"strings"
 	"testing"
 
 	"github.com/gookit/color"
 
+	"github.com/skuid/tides/pkg/logging"
 	"github.com/skuid/tides/pkg/util"
 )
 
 func TestMain(m *testing.M) {
 	if err := util.LoadTestEnvironment(); err != nil {
-		log.Fatal(err)
+		logging.Fatal(err)
 	}
 
 	// call flag.Parse() here if TestMain uses flags

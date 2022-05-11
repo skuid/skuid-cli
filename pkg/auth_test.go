@@ -1,25 +1,22 @@
 package pkg_test
 
 import (
-	"log"
+	"os"
 	"testing"
 
 	"github.com/gookit/color"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/skuid/tides/pkg"
+	"github.com/skuid/tides/pkg/constants"
 	"github.com/skuid/tides/pkg/logging"
 	"github.com/skuid/tides/pkg/util"
 )
 
 var (
-	// authHost = "https://cliplin2709-us-trial.skuid.ink" // "jredhoop-subdomain.pliny.webserver:3000" // os.Getenv(constants.ENV_SKUID_HOST)
-	// authUser = "cliplin2709"                            //"jredhoop"                               // os.Getenv(constants.ENV_SKUID_USERNAME)
-	// authPass = "#Skuid2020"                             //"SkuidLocalDevelopment"                  // os.Getenv(constants.ENV_SKUID_PASSWORD)
-
-	authHost = "jredhoop-subdomain.pliny.webserver:3000" // os.Getenv(constants.ENV_SKUID_HOST)
-	authUser = "jredhoop"                                // os.Getenv(constants.ENV_SKUID_USERNAME)
-	authPass = "SkuidLocalDevelopment"                   // os.Getenv(constants.ENV_SKUID_PASSWORD)
+	authHost = os.Getenv(constants.ENV_SKUID_HOST)
+	authUser = os.Getenv(constants.ENV_SKUID_USERNAME)
+	authPass = os.Getenv(constants.ENV_SKUID_PASSWORD)
 )
 
 // if you have to run it by itself, add some environment variables
@@ -27,7 +24,7 @@ var (
 func TestAuthorizationMethods(t *testing.T) {
 	util.SkipIntegrationTest(t)
 	if err := util.LoadTestEnvironment(); err != nil {
-		log.Fatal(err)
+		logging.Fatal(err)
 	}
 
 	logging.SetVerbose(true)

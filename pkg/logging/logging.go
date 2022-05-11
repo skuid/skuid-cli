@@ -76,3 +76,7 @@ func SuccessWithTime(description string, timeStart time.Time) {
 func Fatal(err error) {
 	log.Fatal(color.Red.Sprintf("ERROR: %v", err))
 }
+
+func FatalF(msg string, args ...interface{}) {
+	log.Fatalf(color.Red.Sprint(msg), args)
+}

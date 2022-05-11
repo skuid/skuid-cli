@@ -1,13 +1,12 @@
 package pkg_test
 
 import (
-	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/skuid/tides/pkg"
+	"github.com/skuid/tides/pkg/logging"
 )
 
 func TestZip(t *testing.T) {
@@ -15,8 +14,8 @@ func TestZip(t *testing.T) {
 	relpath := filepath.Join(cd, "..", "..", "_deploy")
 	bb, err := pkg.Archive(relpath, nil)
 	if err != nil {
-		log.Fatal(err)
+		logging.Fatal(err)
 	}
-	fmt.Println(len(bb))
+	logging.Println(len(bb))
 
 }

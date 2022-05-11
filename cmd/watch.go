@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -65,7 +64,7 @@ func Watch(cmd *cobra.Command, _ []string) (err error) {
 	defer func() {
 		if targetDir != "" {
 			if err := os.Chdir(back); err != nil {
-				log.Fatalf("failed changing back to directory: %v", err)
+				logging.FatalF("failed changing back to directory: %v", err)
 			}
 		}
 	}()
@@ -107,7 +106,7 @@ func Watch(cmd *cobra.Command, _ []string) (err error) {
 					}
 				}()
 			case err := <-w.Error:
-				log.Fatalln(err)
+				logging.Fatal(err)
 			case <-w.Closed:
 				return
 			}

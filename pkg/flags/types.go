@@ -2,12 +2,12 @@ package flags
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"strconv"
 	"strings"
 
 	"github.com/gookit/color"
+	"github.com/skuid/tides/pkg/logging"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -53,7 +53,7 @@ func CheckRequiredFields[T any](f *Flag[T]) error {
 func AddFlagFunctions(cmd *cobra.Command, adds ...func(*cobra.Command) error) {
 	for _, addFlag := range adds {
 		if err := addFlag(cmd); err != nil {
-			log.Fatalf("Unable to set up %v: %v", cmd.Name(), err.Error())
+			logging.FatalF("Unable to set up %v: %v", cmd.Name(), err.Error())
 		}
 	}
 }
@@ -62,7 +62,7 @@ func AddFlagFunctions(cmd *cobra.Command, adds ...func(*cobra.Command) error) {
 func AddFlags[T any](cmd *cobra.Command, flags ...*Flag[T]) {
 	for _, flag := range flags {
 		if err := Add(flag)(cmd); err != nil {
-			log.Fatalf("Unable to set up flag (%v) for command (%v): %v", flag.Name, cmd.Name(), err.Error())
+			logging.FatalF("Unable to set up flag (%v) for command (%v): %v", flag.Name, cmd.Name(), err.Error())
 		}
 	}
 }
@@ -106,6 +106,8 @@ func Add[T any](flag *Flag[T]) func(*cobra.Command) error {
 			flags = to.Flags()
 		}
 
+		// TODO: comment this and explain what we're doing with
+		// the type switch
 		switch f := any(flag).(type) {
 		// handle string
 		case *Flag[string]:
