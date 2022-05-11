@@ -83,6 +83,31 @@ func PrepareDeployment(auth *Authorization, deploymentPlan []byte, filter *NlxPl
 	return
 }
 
+func DeployModifiedFiles(auth *Authorization, targetDir, modifiedFile string) (err error) {
+	planBody, err := ArchivePartial(targetDir, modifiedFile)
+	if err != nil {
+		return
+	}
+
+	logging.VerboseF("Getting Deployment Plan for Modified File (%v)", modifiedFile)
+
+	_, plan, err := PrepareDeployment(auth, planBody, nil)
+	if err != nil {
+		return
+	}
+
+	logging.VerboseF("Received Deployment Plan for (%v), Deploying.", modifiedFile)
+
+	_, _, err = ExecuteDeployPlan(auth, plan, targetDir)
+	if err != nil {
+		return
+	}
+
+	logging.VerboseF("Successfully deployed metadata to Skuid Site: %v", modifiedFile)
+
+	return
+}
+
 // ExecuteDeployPlan executes a map of plan items in a deployment plan
 func ExecuteDeployPlan(auth *Authorization, plans NlxDynamicPlanMap, targetDir string) (duration time.Duration, planResults []NlxDeploymentResult, err error) {
 	start := time.Now()
