@@ -1,7 +1,7 @@
 ---
 kind: pipeline
 type: docker
-name: skuid-cli
+name: tides
 
 workspace:
   base: /go
@@ -33,7 +33,7 @@ steps:
       - name: output
         path: /tmp/dist
     when:
-      event: tag
+      event: [ tag ]
   - name: release
     image: plugins/github-release
     settings:
@@ -44,4 +44,4 @@ steps:
       - name: output
         path: /tmp/dist
     when:
-      event: tag
+      event: [ tag ]
