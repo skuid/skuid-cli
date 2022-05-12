@@ -58,9 +58,9 @@ push:
 
 # specifically used for downloads via github.
 release:
-	GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -o skuid_tides_linux_amd64
-	GOOS=darwin GOARCH=amd64 go build $(LDFLAGS) -o skuid_tides_darwin_amd64
-	GOOS=windows GOARCH=amd64 go build $(LDFLAGS) -o skuid_tides_windows_amd64.exe
+	GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -o tides_linux_amd64
+	GOOS=darwin GOARCH=amd64 go build $(LDFLAGS) -o tides_darwin_amd64
+	GOOS=windows GOARCH=amd64 go build $(LDFLAGS) -o tides_windows_amd64.exe
 
 # this command creates a directory .coverage 
 # then outputs coverage data into .coverage/cover.out, 
