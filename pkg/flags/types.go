@@ -20,13 +20,13 @@ type Flag[T any] struct {
 	// through the command pointer that we get from the function
 	argument *T // required
 
-	Name       string   // required
-	Aliases    []string // optional
-	Default    T        // optional, overridden by existing environment variable
-	EnvVarName string   // optional, overrides default value if exists
-	Usage      string   // required, text shown in usage
-	Required   bool     // flag whether the command requires this flag
-	Shorthand  string   // optional, will change call to allow for shorthand
+	Name string // required
+	// Aliases    []string // optional
+	Default    T      // optional, overridden by existing environment variable
+	EnvVarName string // optional, overrides default value if exists
+	Usage      string // required, text shown in usage
+	Required   bool   // flag whether the command requires this flag
+	Shorthand  string // optional, will change call to allow for shorthand
 
 	Global bool // is this a global/persistent flag?
 }
@@ -129,11 +129,11 @@ func Add[T any](flag *Flag[T]) func(*cobra.Command) error {
 			} else {
 				flags.StringVar(f.argument, flag.Name, defaultVar, usageText)
 			}
-			if len(flag.Aliases) > 0 {
-				for _, alias := range flag.Aliases {
-					flags.StringVar(f.argument, alias, defaultVar, aliasInformationString(flag.Name, usageText))
-				}
-			}
+			// if len(flag.Aliases) > 0 {
+			// 	for _, alias := range flag.Aliases {
+			// 		flags.StringVar(f.argument, alias, defaultVar, aliasInformationString(flag.Name, usageText))
+			// 	}
+			// }
 
 		// handle bools
 		case *Flag[bool]:
@@ -169,11 +169,11 @@ func Add[T any](flag *Flag[T]) func(*cobra.Command) error {
 				flags.BoolVar(f.argument, flag.Name, defaultValue, usageText)
 			}
 
-			if len(flag.Aliases) > 0 {
-				for _, alias := range flag.Aliases {
-					flags.BoolVar(f.argument, alias, defaultValue, aliasInformationString(flag.Name, usageText))
-				}
-			}
+			// if len(flag.Aliases) > 0 {
+			// 	for _, alias := range flag.Aliases {
+			// 		flags.BoolVar(f.argument, alias, defaultValue, aliasInformationString(flag.Name, usageText))
+			// 	}
+			// }
 
 		// handle string arrays
 		case *Flag[[]string]:
@@ -197,11 +197,11 @@ func Add[T any](flag *Flag[T]) func(*cobra.Command) error {
 				flags.StringArrayVar(f.argument, flag.Name, defaultVar, usageText)
 			}
 
-			if len(flag.Aliases) > 0 {
-				for _, alias := range flag.Aliases {
-					flags.StringArrayVar(f.argument, alias, defaultVar, aliasInformationString(flag.Name, usageText))
-				}
-			}
+			// if len(flag.Aliases) > 0 {
+			// 	for _, alias := range flag.Aliases {
+			// 		flags.StringArrayVar(f.argument, alias, defaultVar, aliasInformationString(flag.Name, usageText))
+			// 	}
+			// }
 
 		default:
 			return errors.Critical("No type definition found")

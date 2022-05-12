@@ -6,6 +6,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/muesli/reflow/indent"
+	"github.com/skuid/tides/pkg/util"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -83,7 +84,7 @@ func updateSelect(msg tea.Msg, vm viewModel) (m tea.Model, c tea.Cmd) {
 
 func updatePrepare(msg tea.Msg, vm viewModel) (m tea.Model, c tea.Cmd) {
 
-	flagLength := len(allFlags(vm.SelectedCommand))
+	flagLength := len(util.AllFlags(vm.SelectedCommand))
 	// flagLength +1
 	// when we get to index = flagLength,
 	// we want to show the option for "execute"
@@ -119,21 +120,11 @@ func updatePrepare(msg tea.Msg, vm viewModel) (m tea.Model, c tea.Cmd) {
 	return
 }
 
-func allFlags(cmd *cobra.Command) (flags []*pflag.Flag) {
-	cmd.PersistentFlags().VisitAll(func(f *pflag.Flag) {
-		flags = append(flags, f)
-	})
-	cmd.Flags().VisitAll(func(f *pflag.Flag) {
-		flags = append(flags, f)
-	})
-	return
-}
-
 func viewPrepare(vm viewModel) string {
 	executionHeader := fmt.Sprintf(`Configure Command: %v`, tides(vm.SelectedCommand.Name()))
 
 	var flagsStrings []string
-	for i, flag := range allFlags(vm.SelectedCommand) {
+	for i, flag := range util.AllFlags(vm.SelectedCommand) {
 		flagsStrings = append(
 			flagsStrings,
 			flagString(flag, vm.FlagIndex == i+1),
@@ -159,10 +150,10 @@ func flagString(flag *pflag.Flag, selected bool) string {
 
 	if selected {
 		selectString = tides(fmt.Sprintf("[x] %v %v", flag.Name, flag.Value.String()))
-		selectHelp = skuid(indent.String(fmt.Sprintf("%v (%v)", flag.Usage, flag.NoOptDefVal), 2))
+		selectHelp = subtle(indent.String(fmt.Sprintf("%v (%v)", flag.Usage, flag.NoOptDefVal), 2))
 	} else {
 		selectString = subtle(fmt.Sprintf("[ ] %v %v", flag.Name, flag.Value.String()))
-		selectHelp = skuid(indent.String(fmt.Sprintf("%v (%v)", flag.Usage, flag.NoOptDefVal), 2))
+		selectHelp = subtle(indent.String(fmt.Sprintf("%v (%v)", flag.Usage, flag.NoOptDefVal), 2))
 	}
 
 	return fmt.Sprintf("%v\n%v", selectString, selectHelp)

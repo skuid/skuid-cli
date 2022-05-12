@@ -6,9 +6,9 @@ import (
 
 var (
 	Host = &Flag[string]{
-		argument:   &argHost,
-		Name:       "host",
-		Aliases:    []string{"hostname"},
+		argument: &argHost,
+		Name:     "host",
+		// Aliases:    []string{"hostname"},
 		Usage:      `Host URL, e.g. [ https://my.skuidsite.com | my.skuidsite.com ]`,
 		EnvVarName: constants.ENV_SKUID_HOST,
 		Required:   true,
@@ -73,9 +73,9 @@ var (
 	}
 
 	Directory = &Flag[string]{
-		argument:  &argTargetDir,
-		Name:      "dir",
-		Aliases:   []string{"directory"},
+		argument: &argTargetDir,
+		Name:     "directory",
+		// Aliases:   []string{"directory"},
 		Shorthand: "d",
 		Usage:     "Target directory for this operation.",
 	}
