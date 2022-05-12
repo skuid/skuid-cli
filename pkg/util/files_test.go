@@ -81,9 +81,9 @@ const existingProfileBody = `{
 	"requireEmailVerificationOnSignup": true
 }`
 
-const messyProfileBody = `{
+const messySitePermissionSetBody = `{
 	"signupUi": null,
-	"name": "Admin",
+	"name": "Admin", 
 	"permissionSet": {
 		"dataSourcePermissions": {
 			"Racer": {
@@ -102,7 +102,7 @@ const messyProfileBody = `{
 	"enableSignupApi": false
 }`
 
-const mergedProfileBody = `{
+const mergedSitePermissionSetBody = `{
 	"name": "Admin",
 	"enableSignupApi": false,
 	"enableSignupUi": false,
@@ -180,9 +180,9 @@ func TestRetrieve(t *testing.T) {
 		{
 			testDescription: "retrieve merged profile",
 			giveTargetDir:   "",
-			giveFiles:       []RetrieveFile{{"profiles/myprofile.json", existingProfileBody}, {"profiles/myprofile.json", messyProfileBody}},
-			wantFiles:       []RetrieveFile{{filepath.FromSlash("profiles/myprofile.json"), mergedProfileBody}},
-			wantDirectories: []string{"profiles"},
+			giveFiles:       []RetrieveFile{{"sitepermissionsets/myprofile.json", existingProfileBody}, {"sitepermissionsets/myprofile.json", messySitePermissionSetBody}},
+			wantFiles:       []RetrieveFile{{filepath.FromSlash("sitepermissionsets/myprofile.json"), mergedSitePermissionSetBody}},
+			wantDirectories: []string{"sitepermissionsets"},
 			wantError:       nil,
 		},
 	}
