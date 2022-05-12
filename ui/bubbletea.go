@@ -6,7 +6,9 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/muesli/reflow/indent"
 	"github.com/skuid/tides/pkg/constants"
+	"github.com/skuid/tides/ui/style"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 // ViewModel is the public method that will be used
@@ -18,7 +20,7 @@ import (
 func ViewModel(cmd *cobra.Command) viewModel {
 	return viewModel{
 		State:           MAIN_MENU,
-		Command:         cmd,
+		TidesCommand:    cmd,
 		CommandIndex:    0,
 		Quitting:        false,
 		SelectedCommand: nil,
@@ -29,31 +31,27 @@ type state string
 
 const (
 	MAIN_MENU = "main"
-	PREPARE   = "prep"
+	CONFIGURE = "prep"
 	EDIT      = "edit"
 	RUN       = "run"
 )
 
 type viewModel struct {
-	State   state
-	Command *cobra.Command
-
-	// this is the index of the thing we're
-	// selecting
-	CommandIndex int
-	FlagIndex    int
-
+	State state
 	// stateful indicators
 	Quitting bool
 
+	TidesCommand *cobra.Command
+
+	CommandIndex    int
 	SelectedCommand *cobra.Command
+
+	FlagIndex    int
+	SelectedFlag *pflag.Flag
 }
 
-// this function is called when the
-// viewmodel is created
-// part of the tea.Model interface
 func (vm viewModel) Init() tea.Cmd {
-	return nil // this means "no input right now, thanks"
+	return nil
 }
 
 // Main update function. This is called every time a message
@@ -80,9 +78,11 @@ func (vm viewModel) Update(msg tea.Msg) (m tea.Model, c tea.Cmd) {
 			case MAIN_MENU:
 				quit()
 				return
-			case PREPARE:
+			case CONFIGURE:
 				vm.SelectedCommand = nil
 				vm.State = MAIN_MENU
+			case EDIT:
+				vm.State = CONFIGURE
 			}
 		}
 	}
@@ -90,8 +90,8 @@ func (vm viewModel) Update(msg tea.Msg) (m tea.Model, c tea.Cmd) {
 	switch vm.State {
 	case MAIN_MENU:
 		m, c = updateSelect(msg, vm)
-	case PREPARE:
-		m, c = updatePrepare(msg, vm)
+	case CONFIGURE, EDIT:
+		m, c = updateConfigure(msg, vm)
 	}
 
 	return
@@ -105,8 +105,8 @@ func (vm viewModel) View() string {
 	if vm.Quitting {
 		return indent.String(
 			"\n"+
-				fmt.Sprintf(skuid("Thank you for using %v!"), tides("Skuid Tides"))+
-				subtle(fmt.Sprintf(" (Version: %v) ", constants.VERSION_NAME))+
+				fmt.Sprintf(style.Skuid("Thank you for using %v!"), style.Tides("Skuid Tides"))+
+				style.Subtle(fmt.Sprintf(" (Version: %v) ", constants.VERSION_NAME))+
 				"\n\n",
 			2)
 	}
@@ -114,8 +114,8 @@ func (vm viewModel) View() string {
 	switch vm.State {
 	case MAIN_MENU:
 		s = viewSelect(vm)
-	case PREPARE:
-		s = viewPrepare(vm)
+	case CONFIGURE, EDIT:
+		s = viewConfigure(vm)
 	}
 
 	return indent.String("\n"+s+"\n\n", 2)

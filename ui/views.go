@@ -6,7 +6,9 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/muesli/reflow/indent"
+	"github.com/skuid/tides/pkg/constants"
 	"github.com/skuid/tides/pkg/util"
+	"github.com/skuid/tides/ui/style"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -19,19 +21,27 @@ type Choice struct {
 var (
 	helpSelect = strings.Join(
 		[]string{
-			subtle("[up]/[down]: select"),
-			subtle("[enter]: choose"),
-			subtle("[esc]: quit/back"),
+			style.Subtle("[up]/[down]: select"),
+			style.Subtle("[enter]: choose"),
+			style.Subtle("[esc]: quit/back"),
 		},
-		dot,
+		style.Dot,
 	)
 
-	welcomeHeader = fmt.Sprintf(`Welcome to Skuid's Command Line Interface (CLI): %v`, tides("Tides"))
+	helpEdit = strings.Join(
+		[]string{
+			style.Subtle("[enter]: save"),
+			style.Subtle("[esc]: revert/back"),
+		},
+		style.Dot,
+	)
+
+	welcomeHeader = fmt.Sprintf(`Welcome to Skuid's Command Line Interface (CLI): %v`, style.Tides("Tides"))
 )
 
 func viewSelect(vm viewModel) string {
 	var commands []string
-	for i, command := range vm.Command.Commands() {
+	for i, command := range vm.TidesCommand.Commands() {
 		commands = append(commands, selectCommandString(command, vm.CommandIndex == i))
 	}
 
@@ -48,9 +58,9 @@ func selectCommandString(cmd *cobra.Command, selected bool) string {
 	name := cmd.Name()
 	description := indent.String(cmd.Short, 4)
 	if selected {
-		return skuid(fmt.Sprintf("[x] %s\n%s", name, tides(description)))
+		return style.Skuid(fmt.Sprintf("[x] %s\n%s", name, style.Tides(description)))
 	}
-	return fmt.Sprintf("[ ] %s\n%s", name, subtle(description))
+	return fmt.Sprintf("[ ] %s\n%s", name, style.Subtle(description))
 }
 
 // Update loop for the first view where you're choosing a task.
@@ -61,8 +71,8 @@ func updateSelect(msg tea.Msg, vm viewModel) (m tea.Model, c tea.Cmd) {
 		switch msg.String() {
 		case "down":
 			vm.CommandIndex += 1
-			if vm.CommandIndex > len(vm.Command.Commands())-1 {
-				vm.CommandIndex = len(vm.Command.Commands()) - 1
+			if vm.CommandIndex > len(vm.TidesCommand.Commands())-1 {
+				vm.CommandIndex = len(vm.TidesCommand.Commands()) - 1
 			}
 		case "up":
 			vm.CommandIndex -= 1
@@ -70,8 +80,8 @@ func updateSelect(msg tea.Msg, vm viewModel) (m tea.Model, c tea.Cmd) {
 				vm.CommandIndex = 0
 			}
 		case "enter":
-			vm.SelectedCommand = vm.Command.Commands()[vm.CommandIndex]
-			vm.State = PREPARE
+			vm.SelectedCommand = vm.TidesCommand.Commands()[vm.CommandIndex]
+			vm.State = CONFIGURE
 		}
 	}
 
@@ -82,7 +92,7 @@ func updateSelect(msg tea.Msg, vm viewModel) (m tea.Model, c tea.Cmd) {
 
 // ------------------------------------------------------------------------------
 
-func updatePrepare(msg tea.Msg, vm viewModel) (m tea.Model, c tea.Cmd) {
+func updateConfigure(msg tea.Msg, vm viewModel) (m tea.Model, c tea.Cmd) {
 
 	flagLength := len(util.AllFlags(vm.SelectedCommand))
 	// flagLength +1
@@ -92,25 +102,38 @@ func updatePrepare(msg tea.Msg, vm viewModel) (m tea.Model, c tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "down":
-			vm.FlagIndex += 1
+		case "up", "down", "tab", "shift+tab":
+			// movement
+			switch msg.String() {
+			case "down", "tab":
+				vm.FlagIndex++
+			case "up", "shift+tab":
+				vm.FlagIndex--
+			}
+
+			// protection
 			// this is different than the others
 			// since we have the ability to EXECUTE
 			// this command, so the final option
 			// will be "execute" and we will use that
 			if vm.FlagIndex > flagLength {
 				vm.FlagIndex = flagLength
-			}
-		case "up":
-			vm.FlagIndex -= 1
-			if vm.FlagIndex < 0 {
+			} else if vm.FlagIndex < 0 {
 				vm.FlagIndex = 0
 			}
+
 		case "enter":
-			if vm.FlagIndex == flagLength {
-				vm.State = RUN
-			} else {
-				vm.State = EDIT
+			if vm.State == CONFIGURE {
+				if vm.FlagIndex == 0 {
+					vm.State = RUN
+				} else {
+					vm.SelectedFlag = util.AllFlags(vm.SelectedCommand)[vm.FlagIndex-1]
+					vm.State = EDIT
+				}
+			}
+
+			if vm.State == EDIT {
+				// save the current flag
 			}
 		}
 	}
@@ -120,8 +143,8 @@ func updatePrepare(msg tea.Msg, vm viewModel) (m tea.Model, c tea.Cmd) {
 	return
 }
 
-func viewPrepare(vm viewModel) string {
-	executionHeader := fmt.Sprintf(`Configure Command: %v`, tides(vm.SelectedCommand.Name()))
+func viewConfigure(vm viewModel) string {
+	configureHeader := fmt.Sprintf(`Configure Command: %v`, style.Tides(vm.SelectedCommand.Name()))
 
 	var flagsStrings []string
 	for i, flag := range util.AllFlags(vm.SelectedCommand) {
@@ -137,7 +160,7 @@ func viewPrepare(vm viewModel) string {
 
 	return strings.Join([]string{
 		welcomeHeader,
-		executionHeader,
+		configureHeader,
 		executeText,
 		flagsText,
 		helpSelect,
@@ -146,22 +169,25 @@ func viewPrepare(vm viewModel) string {
 
 func flagString(flag *pflag.Flag, selected bool) string {
 	var selectString string
-	var selectHelp string
 
-	if selected {
-		selectString = tides(fmt.Sprintf("[x] %v %v", flag.Name, flag.Value.String()))
-		selectHelp = subtle(indent.String(fmt.Sprintf("%v (%v)", flag.Usage, flag.NoOptDefVal), 2))
-	} else {
-		selectString = subtle(fmt.Sprintf("[ ] %v %v", flag.Name, flag.Value.String()))
-		selectHelp = subtle(indent.String(fmt.Sprintf("%v (%v)", flag.Usage, flag.NoOptDefVal), 2))
+	pad := func(flag string) string {
+		return fmt.Sprintf("%-20s", flag)
 	}
 
-	return fmt.Sprintf("%v\n%v", selectString, selectHelp)
+	if selected {
+		selectString = style.Tides(fmt.Sprintf("[x] %v %v", pad(flag.Name), flag.Value.String()))
+		// selectHelp = style.Subtle(indent.String(fmt.Sprintf("%v (%v)", flag.Usage, flag.NoOptDefVal), 3))
+	} else {
+		selectString = style.Subtle(fmt.Sprintf("[ ] %v %v", pad(flag.Name), flag.Value.String()))
+		// selectHelp = style.Subtle(indent.String(fmt.Sprintf("%v (%v)", flag.Usage, flag.NoOptDefVal), 3))
+	}
+
+	return fmt.Sprintf("%v", selectString)
 }
 
 func executeString(selected bool) string {
 	if selected {
-		return pink(fmt.Sprintf("[x] EXECUTE"))
+		return style.Pink(fmt.Sprintf("[%v] EXECUTE", constants.CHECKMARK))
 	}
-	return subtle(fmt.Sprintf("[ ] EXECUTE"))
+	return style.Subtle(fmt.Sprintf("[ ] EXECUTE"))
 }

@@ -8,7 +8,7 @@ import (
 	"github.com/skuid/tides/pkg/constants"
 	"github.com/skuid/tides/pkg/flags"
 	"github.com/skuid/tides/pkg/logging"
-	"github.com/skuid/tides/ui"
+	"github.com/skuid/tides/ui/views"
 )
 
 var (
@@ -26,7 +26,7 @@ var (
 		},
 		Version: constants.VERSION_NAME,
 		Run: func(cmd *cobra.Command, _ []string) {
-			p := tea.NewProgram(ui.ViewModel(cmd))
+			p := tea.NewProgram(views.Main(cmd))
 
 			if err := p.Start(); err != nil {
 				logging.Fatal(err)

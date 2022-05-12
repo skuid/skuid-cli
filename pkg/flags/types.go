@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/gookit/color"
+	"github.com/skuid/tides/pkg/constants"
 	"github.com/skuid/tides/pkg/errors"
 	"github.com/skuid/tides/pkg/logging"
 	"github.com/spf13/cobra"
@@ -74,7 +75,7 @@ func environmentVariableDetectionString(environmentVariableName, usageText strin
 	usageText = color.White.Sprint(usageText)
 	if environmentVariableValue != "" {
 		usageText = usageText + "\n" +
-			color.Gray.Sprintf("%v %v", color.Green.Sprint(environmentVariableName), color.Green.Sprint(`✔`))
+			color.Gray.Sprintf("%v %v", color.Green.Sprint(environmentVariableName), color.Green.Sprint(constants.CHECKMARK))
 	} else {
 		usageText = usageText + "\n" +
 			color.Gray.Sprintf("Available as environment variable: %v", color.Yellow.Sprint(environmentVariableName))
