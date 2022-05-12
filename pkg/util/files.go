@@ -89,7 +89,6 @@ func WriteResultsToDiskInjection(targetDirectory string, results [][]byte, noZip
 	pathMap := map[string]bool{}
 
 	for _, result := range results {
-
 		tmpFileName, err := CreateTemporaryFile(result)
 		if err != nil {
 			return err
@@ -152,12 +151,17 @@ func MoveTemporaryFile(sourceFileLocation, targetLocation string, pathMap map[st
 	fileReader := ioutil.NopCloser(fi)
 	path := filepath.Join(targetLocation, filepath.FromSlash(fi.Name()))
 
-	if _, fileAlreadyWritten := pathMap[path]; !fileAlreadyWritten {
+	_, fileAlreadyWritten := pathMap[path]
+
+	if !fileAlreadyWritten {
 		pathMap[path] = true
-		if fstat.IsDir() {
-			return directoryCreator(path, fstat.Mode())
-		}
-	} else {
+	}
+
+	if fstat.IsDir() {
+		return directoryCreator(path, fstat.Mode())
+	}
+
+	if fileAlreadyWritten {
 		logging.DebugF("Augmenting existing file with more data: %s\n", color.Magenta.Sprint(fi.Name()))
 		if fileReader, err = CombineJSON(fileReader, existingFileReader, path); err != nil {
 			return
@@ -192,8 +196,8 @@ func UnzipArchive(sourceFileLocation, targetLocation string, pathMap map[string]
 		path := filepath.Join(targetLocation, filepath.FromSlash(file.Name))
 		// Check to see if we've already written to this file in this retrieve
 
-		var fileAlreadyWritten bool
-		if _, fileAlreadyWritten := pathMap[path]; !fileAlreadyWritten {
+		_, fileAlreadyWritten := pathMap[path]
+		if !fileAlreadyWritten {
 			pathMap[path] = true
 		}
 
@@ -201,6 +205,22 @@ func UnzipArchive(sourceFileLocation, targetLocation string, pathMap map[string]
 			return
 		}
 	}
+
+	return
+}
+
+func sanitizeZip(reader io.ReadCloser) (newReader io.ReadCloser, err error) {
+	var b []byte
+	if b, err = ioutil.ReadAll(reader); err != nil {
+		return
+	}
+	reader.Close()
+
+	if b, err = ReSortJson(b); err != nil {
+		return
+	}
+
+	newReader = ioutil.NopCloser(bytes.NewBuffer(b))
 
 	return
 }
@@ -241,6 +261,10 @@ func readFileFromZipAndWriteToFilesystem(
 		return
 	}
 	defer fileReader.Close()
+
+	if fileReader, err = sanitizeZip(fileReader); err != nil {
+		return
+	}
 
 	if fileAlreadyWritten {
 		logging.DebugF("Augmenting existing file with more data: %s\n", color.Magenta.Sprint(file.Name))
@@ -305,7 +329,7 @@ func CombineJSON(newFileReader io.ReadCloser, existingFileReader FileReader, pat
 
 	// sort all of the keys in the json. custom sort logic.
 	// this puts "name" first, then everything alphanumerically
-	sorted, err := ReSortJson(combined)
+	sorted, err := ReSortJsonIndent(combined, true)
 	if err != nil {
 		return
 	}

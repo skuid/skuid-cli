@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/skuid/tides/pkg/logging"
 	"github.com/skuid/tides/pkg/util"
 	"github.com/stretchr/testify/assert"
 )
@@ -128,6 +129,7 @@ type RetrieveFile struct {
 }
 
 func TestRetrieve(t *testing.T) {
+	logging.SetDebug(true)
 	testCases := []struct {
 		testDescription string
 		giveTargetDir   string
@@ -137,53 +139,60 @@ func TestRetrieve(t *testing.T) {
 		wantDirectories []string
 		wantError       error
 	}{
-		{
-			testDescription: "retrieve nothing",
-			giveTargetDir:   "",
-			giveFiles:       []RetrieveFile{},
-			wantFiles:       []RetrieveFile{},
-			wantDirectories: []string{},
-			wantError:       nil,
-		},
-		{
-			testDescription: "retrieve nonvalid skuid metadata files",
-			giveTargetDir:   "",
-			giveFiles:       []RetrieveFile{{"readme.txt", "This archive contains some text files."}, {"gopher.txt", "Gopher names:\nGeorge\nGeoffrey\nGonzo"}, {"todo.txt", "Get animal handling licence.\nWrite more examples."}},
-			wantFiles:       []RetrieveFile{},
-			wantDirectories: []string{},
-			wantError:       nil,
-		},
-		{
-			testDescription: "retrieve a data source",
-			giveTargetDir:   "",
-			giveFiles:       []RetrieveFile{{"datasources/mydatasource.json", "this is not even close to good JSON"}},
-			wantFiles:       []RetrieveFile{{filepath.FromSlash("datasources/mydatasource.json"), "this is not even close to good JSON"}},
-			wantDirectories: []string{"datasources"},
-			wantError:       nil,
-		},
-		{
-			testDescription: "retrieve two data sources",
-			giveTargetDir:   "",
-			giveFiles:       []RetrieveFile{{"datasources/mydatasource.json", "this is not even close to good JSON"}, {"datasources/mydatasource2.json", "this is not even close to good JSON2"}},
-			wantFiles:       []RetrieveFile{{filepath.FromSlash("datasources/mydatasource.json"), "this is not even close to good JSON"}, {filepath.FromSlash("datasources/mydatasource2.json"), "this is not even close to good JSON2"}},
-			wantDirectories: []string{"datasources"},
-			wantError:       nil,
-		},
-		{
-			testDescription: "retrieve a data source with targetdir",
-			giveTargetDir:   "myTargetDir",
-			giveFiles:       []RetrieveFile{{"datasources/mydatasource.json", "this is not even close to good JSON"}},
-			wantFiles:       []RetrieveFile{{filepath.FromSlash("myTargetDir/datasources/mydatasource.json"), "this is not even close to good JSON"}},
-			wantDirectories: []string{"myTargetDir", filepath.FromSlash("myTargetDir/datasources")},
-			wantError:       nil,
-		},
+		// {
+		// 	testDescription: "retrieve nothing",
+		// 	giveTargetDir:   "",
+		// 	giveFiles:       []RetrieveFile{},
+		// 	wantFiles:       []RetrieveFile{},
+		// 	wantDirectories: []string{},
+		// 	wantError:       nil,
+		// },
+		// {
+		// 	testDescription: "retrieve nonvalid skuid metadata files",
+		// 	giveTargetDir:   "",
+		// 	giveFiles:       []RetrieveFile{{"readme.txt", "This archive contains some text files."}, {"gopher.txt", "Gopher names:\nGeorge\nGeoffrey\nGonzo"}, {"todo.txt", "Get animal handling licence.\nWrite more examples."}},
+		// 	wantFiles:       []RetrieveFile{},
+		// 	wantDirectories: []string{},
+		// 	wantError:       nil,
+		// },
+		// {
+		// 	testDescription: "retrieve a data source",
+		// 	giveTargetDir:   "",
+		// 	giveFiles:       []RetrieveFile{{"datasources/mydatasource.json", "this is not even close to good JSON"}},
+		// 	wantFiles:       []RetrieveFile{{filepath.FromSlash("datasources/mydatasource.json"), "this is not even close to good JSON"}},
+		// 	wantDirectories: []string{"datasources"},
+		// 	wantError:       nil,
+		// },
+		// {
+		// 	testDescription: "retrieve two data sources",
+		// 	giveTargetDir:   "",
+		// 	giveFiles:       []RetrieveFile{{"datasources/mydatasource.json", "this is not even close to good JSON"}, {"datasources/mydatasource2.json", "this is not even close to good JSON2"}},
+		// 	wantFiles:       []RetrieveFile{{filepath.FromSlash("datasources/mydatasource.json"), "this is not even close to good JSON"}, {filepath.FromSlash("datasources/mydatasource2.json"), "this is not even close to good JSON2"}},
+		// 	wantDirectories: []string{"datasources"},
+		// 	wantError:       nil,
+		// },
+		// {
+		// 	testDescription: "retrieve a data source with targetdir",
+		// 	giveTargetDir:   "myTargetDir",
+		// 	giveFiles:       []RetrieveFile{{"datasources/mydatasource.json", "this is not even close to good JSON"}},
+		// 	wantFiles:       []RetrieveFile{{filepath.FromSlash("myTargetDir/datasources/mydatasource.json"), "this is not even close to good JSON"}},
+		// 	wantDirectories: []string{"myTargetDir", filepath.FromSlash("myTargetDir/datasources")},
+		// 	wantError:       nil,
+		// },
 		{
 			testDescription: "retrieve merged profile",
 			giveTargetDir:   "",
-			giveFiles:       []RetrieveFile{{"sitepermissionsets/myprofile.json", existingProfileBody}, {"sitepermissionsets/myprofile.json", messySitePermissionSetBody}},
-			wantFiles:       []RetrieveFile{{filepath.FromSlash("sitepermissionsets/myprofile.json"), mergedSitePermissionSetBody}},
-			wantDirectories: []string{"sitepermissionsets"},
-			wantError:       nil,
+			giveFiles: []RetrieveFile{
+				{"sitepermissionsets/myprofile.json", existingProfileBody},
+				{"sitepermissionsets/myprofile.json", messySitePermissionSetBody},
+			},
+			wantFiles: []RetrieveFile{
+				{filepath.FromSlash("sitepermissionsets/myprofile.json"), mergedSitePermissionSetBody},
+			},
+			wantDirectories: []string{
+				"sitepermissionsets",
+			},
+			wantError: nil,
 		},
 	}
 
@@ -240,6 +249,11 @@ func TestRetrieve(t *testing.T) {
 			}
 
 			err = util.WriteResultsToDiskInjection(tc.giveTargetDir, [][]byte{buf.Bytes()}, tc.givenNoZip, mockFileMaker, mockDirectoryMaker, mockExistingFileReader)
+			if tc.wantError != nil {
+				assert.Equal(t, tc.wantError, err)
+			} else if err != nil {
+				t.Fatal(err)
+			}
 
 			filesCreated := []RetrieveFile{}
 			for _, file := range filesMap {
@@ -247,13 +261,6 @@ func TestRetrieve(t *testing.T) {
 			}
 			assert.ElementsMatch(t, tc.wantFiles, filesCreated)
 			assert.ElementsMatch(t, tc.wantDirectories, directoriesCreated)
-			if tc.wantError != nil {
-				assert.Equal(t, tc.wantError, err)
-			} else {
-				if err != nil {
-					t.Fatal(err)
-				}
-			}
 		})
 	}
 }

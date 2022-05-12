@@ -10,7 +10,7 @@ var (
 	// let's use a file global variable
 	// do not access this
 	isVerbose = false
-	isDebug   = true // TODO: remove
+	isDebug   = false // TODO: remove
 )
 
 func SetVerbose(verbosity bool) {
@@ -19,6 +19,10 @@ func SetVerbose(verbosity bool) {
 
 func SetDebug(debugging bool) {
 	isDebug = debugging
+}
+
+func GetDebug() bool {
+	return isDebug
 }
 
 // VerboseSection creates some visual space for a title in verbose mode

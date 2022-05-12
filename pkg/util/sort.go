@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+
+	"github.com/skuid/tides/pkg/logging"
 )
 
 // hopefully this doesn't mess with anything lol
@@ -41,12 +43,17 @@ func ReplaceNamePlaceholders(in []byte) []byte {
 	)
 }
 
+func ReSortJson(data []byte) (replaced []byte, err error) {
+	return ReSortJsonIndent(data, false)
+}
+
 // this takes marshalled json in bytes and resorts it recursively the way
 // we want it, with "name" field first.
-func ReSortJson(data []byte) (replaced []byte, err error) {
+func ReSortJsonIndent(data []byte, indent bool) (replaced []byte, err error) {
 	var unsorted map[string]interface{}
 	err = json.Unmarshal(data, &unsorted)
 	if err != nil {
+		logging.DebugF("Error Unmarshalling into map[string]interface{}: %v", string(data))
 		return
 	}
 
@@ -55,7 +62,12 @@ func ReSortJson(data []byte) (replaced []byte, err error) {
 
 	// marshal, which uses the native ordering
 	// (will do alphanumerically)
-	sorted, err := json.Marshal(unsorted)
+	var sorted []byte
+	if indent {
+		sorted, err = json.MarshalIndent(unsorted, "", "\t")
+	} else {
+		sorted, err = json.Marshal(unsorted)
+	}
 	if err != nil {
 		return
 	}

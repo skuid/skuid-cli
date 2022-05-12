@@ -7,9 +7,11 @@ import (
 
 	"github.com/skuid/tides/pkg"
 	"github.com/skuid/tides/pkg/logging"
+	"github.com/skuid/tides/pkg/util"
 )
 
 func TestZip(t *testing.T) {
+	util.SkipIntegrationTest(t)
 	cd, _ := os.Getwd()
 	relpath := filepath.Join(cd, "..", "..", "_deploy")
 	bb, err := pkg.Archive(relpath, nil)

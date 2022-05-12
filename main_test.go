@@ -6,16 +6,9 @@ import (
 	"testing"
 
 	"github.com/gookit/color"
-
-	"github.com/skuid/tides/pkg/logging"
-	"github.com/skuid/tides/pkg/util"
 )
 
 func TestMain(m *testing.M) {
-	if err := util.LoadTestEnvironment(); err != nil {
-		logging.Fatal(err)
-	}
-
 	// call flag.Parse() here if TestMain uses flags
 	rc := m.Run()
 
