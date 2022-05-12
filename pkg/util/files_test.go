@@ -3,10 +3,12 @@ package util_test
 import (
 	"archive/zip"
 	"bytes"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/skuid/tides/pkg/logging"
@@ -76,6 +78,10 @@ func TestWindowsPath(t *testing.T) {
 	}
 }
 
+const badJson = "this is not even close to good JSON"
+
+const goodJson = `{"good":"json"}`
+
 const existingProfileBody = `{
 	"name": "Admin",
 	"enableSignupUi": false,
@@ -139,46 +145,53 @@ func TestRetrieve(t *testing.T) {
 		wantDirectories []string
 		wantError       error
 	}{
-		// {
-		// 	testDescription: "retrieve nothing",
-		// 	giveTargetDir:   "",
-		// 	giveFiles:       []RetrieveFile{},
-		// 	wantFiles:       []RetrieveFile{},
-		// 	wantDirectories: []string{},
-		// 	wantError:       nil,
-		// },
-		// {
-		// 	testDescription: "retrieve nonvalid skuid metadata files",
-		// 	giveTargetDir:   "",
-		// 	giveFiles:       []RetrieveFile{{"readme.txt", "This archive contains some text files."}, {"gopher.txt", "Gopher names:\nGeorge\nGeoffrey\nGonzo"}, {"todo.txt", "Get animal handling licence.\nWrite more examples."}},
-		// 	wantFiles:       []RetrieveFile{},
-		// 	wantDirectories: []string{},
-		// 	wantError:       nil,
-		// },
-		// {
-		// 	testDescription: "retrieve a data source",
-		// 	giveTargetDir:   "",
-		// 	giveFiles:       []RetrieveFile{{"datasources/mydatasource.json", "this is not even close to good JSON"}},
-		// 	wantFiles:       []RetrieveFile{{filepath.FromSlash("datasources/mydatasource.json"), "this is not even close to good JSON"}},
-		// 	wantDirectories: []string{"datasources"},
-		// 	wantError:       nil,
-		// },
-		// {
-		// 	testDescription: "retrieve two data sources",
-		// 	giveTargetDir:   "",
-		// 	giveFiles:       []RetrieveFile{{"datasources/mydatasource.json", "this is not even close to good JSON"}, {"datasources/mydatasource2.json", "this is not even close to good JSON2"}},
-		// 	wantFiles:       []RetrieveFile{{filepath.FromSlash("datasources/mydatasource.json"), "this is not even close to good JSON"}, {filepath.FromSlash("datasources/mydatasource2.json"), "this is not even close to good JSON2"}},
-		// 	wantDirectories: []string{"datasources"},
-		// 	wantError:       nil,
-		// },
-		// {
-		// 	testDescription: "retrieve a data source with targetdir",
-		// 	giveTargetDir:   "myTargetDir",
-		// 	giveFiles:       []RetrieveFile{{"datasources/mydatasource.json", "this is not even close to good JSON"}},
-		// 	wantFiles:       []RetrieveFile{{filepath.FromSlash("myTargetDir/datasources/mydatasource.json"), "this is not even close to good JSON"}},
-		// 	wantDirectories: []string{"myTargetDir", filepath.FromSlash("myTargetDir/datasources")},
-		// 	wantError:       nil,
-		// },
+		{
+			testDescription: "retrieve nothing",
+			giveTargetDir:   "",
+			giveFiles:       []RetrieveFile{},
+			wantFiles:       []RetrieveFile{},
+			wantDirectories: []string{},
+			wantError:       nil,
+		},
+		{
+			testDescription: "retrieve nonvalid skuid metadata files",
+			giveTargetDir:   "",
+			giveFiles:       []RetrieveFile{{"readme.txt", "This archive contains some text files."}, {"gopher.txt", "Gopher names:\nGeorge\nGeoffrey\nGonzo"}, {"todo.txt", "Get animal handling licence.\nWrite more examples."}},
+			wantFiles:       []RetrieveFile{},
+			wantDirectories: []string{},
+			wantError:       nil,
+		},
+		{
+			testDescription: "bad json",
+			giveTargetDir:   "",
+			giveFiles:       []RetrieveFile{{"datasources/mydatasource.json", badJson}},
+			wantDirectories: []string{"datasources"},
+			wantError:       fmt.Errorf("invalid character 'h' in literal true (expecting 'r')"),
+		},
+		{
+			testDescription: "retrieve a data source",
+			giveTargetDir:   "",
+			giveFiles:       []RetrieveFile{{"datasources/mydatasource.json", goodJson}},
+			wantFiles:       []RetrieveFile{{filepath.FromSlash("datasources/mydatasource.json"), goodJson}},
+			wantDirectories: []string{"datasources"},
+			wantError:       nil,
+		},
+		{
+			testDescription: "retrieve two data sources",
+			giveTargetDir:   "",
+			giveFiles:       []RetrieveFile{{"datasources/mydatasource.json", goodJson}, {"datasources/mydatasource2.json", strings.ReplaceAll(goodJson, "json", "json2")}},
+			wantFiles:       []RetrieveFile{{filepath.FromSlash("datasources/mydatasource.json"), goodJson}, {filepath.FromSlash("datasources/mydatasource2.json"), strings.ReplaceAll(goodJson, "json", "json2")}},
+			wantDirectories: []string{"datasources"},
+			wantError:       nil,
+		},
+		{
+			testDescription: "retrieve a data source with targetdir",
+			giveTargetDir:   "myTargetDir",
+			giveFiles:       []RetrieveFile{{"datasources/mydatasource.json", goodJson}},
+			wantFiles:       []RetrieveFile{{filepath.FromSlash("myTargetDir/datasources/mydatasource.json"), goodJson}},
+			wantDirectories: []string{"myTargetDir", filepath.FromSlash("myTargetDir/datasources")},
+			wantError:       nil,
+		},
 		{
 			testDescription: "retrieve merged profile",
 			giveTargetDir:   "",
@@ -250,7 +263,7 @@ func TestRetrieve(t *testing.T) {
 
 			err = util.WriteResultsToDiskInjection(tc.giveTargetDir, [][]byte{buf.Bytes()}, tc.givenNoZip, mockFileMaker, mockDirectoryMaker, mockExistingFileReader)
 			if tc.wantError != nil {
-				assert.Equal(t, tc.wantError, err)
+				assert.Equal(t, tc.wantError.Error(), err.Error())
 			} else if err != nil {
 				t.Fatal(err)
 			}

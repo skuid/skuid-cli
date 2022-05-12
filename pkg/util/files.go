@@ -82,7 +82,7 @@ func WriteResultsToDiskInjection(targetDirectory string, results [][]byte, noZip
 		return err
 	}
 
-	logging.Printf("Writing results to %v\n", color.Cyan.Sprint(targetDirFriendly))
+	logging.DebugF("Writing results to %v\n", color.Cyan.Sprint(targetDirFriendly))
 
 	// Store a map of paths that we've already encountered. We'll use this
 	// to determine if we need to modify a file or overwrite it.
@@ -97,6 +97,7 @@ func WriteResultsToDiskInjection(targetDirectory string, results [][]byte, noZip
 		defer os.Remove(tmpFileName)
 
 		if noZip {
+			logging.DebugF("Moving Temporary File: %v => %v", tmpFileName, targetDirectory)
 			err = MoveTemporaryFile(tmpFileName, targetDirectory, pathMap, fileCreator, directoryCreator, existingFileReader)
 			if err != nil {
 				return err
@@ -125,6 +126,8 @@ func CreateTemporaryFile(data []byte) (name string, err error) {
 	} else {
 		name = tmpfile.Name()
 	}
+
+	logging.DebugLn(color.Yellow.Sprintf("Created Temp File: %v", name))
 	return
 }
 
@@ -163,12 +166,14 @@ func MoveTemporaryFile(sourceFileLocation, targetLocation string, pathMap map[st
 
 	if fileAlreadyWritten {
 		logging.DebugF("Augmenting existing file with more data: %s\n", color.Magenta.Sprint(fi.Name()))
-		if fileReader, err = CombineJSON(fileReader, existingFileReader, path); err != nil {
-			return
+		if filepath.Ext(sourceFileLocation) == ".json" {
+			if fileReader, err = CombineJSON(fileReader, existingFileReader, path); err != nil {
+				return
+			}
 		}
 	}
 
-	logging.DebugLn("Creating file: " + color.Green.Sprint(fi.Name()))
+	logging.DebugLn("Moving file: " + color.Green.Sprint(fi.Name()))
 
 	if err = fileCreator(fileReader, path); err != nil {
 		return
@@ -179,7 +184,7 @@ func MoveTemporaryFile(sourceFileLocation, targetLocation string, pathMap map[st
 
 // Unzips a ZIP archive and recreates the folders and file structure within it locally
 func UnzipArchive(sourceFileLocation, targetLocation string, pathMap map[string]bool, fileCreator FileCreator, directoryCreator DirectoryCreator, existingFileReader FileReader) (err error) {
-
+	logging.DebugF("Unzipping Archive: %v => %v", sourceFileLocation, targetLocation)
 	var reader *zip.ReadCloser
 	if reader, err = zip.OpenReader(sourceFileLocation); err != nil {
 		return
@@ -233,6 +238,7 @@ func readFileFromZipAndWriteToFilesystem(
 	directoryCreator DirectoryCreator,
 	existingFileReader FileReader,
 ) (err error) {
+	logging.DebugF("Extracting from Zip: %v", fullPath)
 
 	// If this file name contains a /, make sure that we create the directory it belongs in
 	if pathParts := strings.Split(fullPath, string(filepath.Separator)); len(pathParts) > 0 {
@@ -262,8 +268,10 @@ func readFileFromZipAndWriteToFilesystem(
 	}
 	defer fileReader.Close()
 
-	if fileReader, err = sanitizeZip(fileReader); err != nil {
-		return
+	if filepath.Ext(fullPath) == ".json" {
+		if fileReader, err = sanitizeZip(fileReader); err != nil {
+			return
+		}
 	}
 
 	if fileAlreadyWritten {
@@ -273,7 +281,6 @@ func readFileFromZipAndWriteToFilesystem(
 		}
 	}
 
-	logging.DebugLn("Creating file: " + color.Green.Sprint(file.Name))
 	if err = fileCreator(fileReader, fullPath); err != nil {
 		return
 	}
@@ -311,6 +318,8 @@ func CopyToFile(fileReader io.ReadCloser, path string) (err error) {
 }
 
 func CombineJSON(newFileReader io.ReadCloser, existingFileReader FileReader, path string) (rc io.ReadCloser, err error) {
+
+	logging.DebugF("Augmenting File with more JSON Data: %v\n", color.Magenta.Sprint(path))
 	existingBytes, err := existingFileReader(path)
 	if err != nil {
 		return
