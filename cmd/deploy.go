@@ -13,15 +13,15 @@ var deployCmd = &cobra.Command{
 	SilenceErrors:     true,
 	SilenceUsage:      true,
 	Use:               "deploy",
-	Short:             "Deploy local Skuid metadata to a Skuid Platform Site.",
-	Long:              "Deploy Skuid metadata stored within a local file system directory to a Skuid Platform Site.",
+	Short:             "Deploy local Skuid metadata to a Skuid NLX Site.",
+	Long:              "Deploy Skuid metadata stored within a local file system directory to a Skuid NLX Site.",
 	PersistentPreRunE: validation.PrerunValidation,
 	RunE:              Deploy,
 }
 
 func init() {
 	TidesCmd.AddCommand(deployCmd)
-	flags.AddFlags(deployCmd, flags.PlatformLoginFlags...)
+	flags.AddFlags(deployCmd, flags.NLXLoginFlags...)
 	flags.AddFlags(deployCmd, flags.Directory, flags.AppName, flags.ApiVersion)
 	flags.AddFlags(deployCmd, flags.Pages)
 }

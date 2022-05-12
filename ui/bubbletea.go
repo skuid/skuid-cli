@@ -30,7 +30,8 @@ type state string
 const (
 	MAIN_MENU = "main"
 	PREPARE   = "prep"
-	EXECUTE   = "run"
+	EDIT      = "edit"
+	RUN       = "run"
 )
 
 type viewModel struct {
@@ -48,12 +49,9 @@ type viewModel struct {
 	SelectedCommand *cobra.Command
 }
 
-func (vm viewModel) HaveSelectedCommand() bool {
-	return vm.SelectedCommand == nil
-}
-
 // this function is called when the
 // viewmodel is created
+// part of the tea.Model interface
 func (vm viewModel) Init() tea.Cmd {
 	return nil // this means "no input right now, thanks"
 }
@@ -61,6 +59,7 @@ func (vm viewModel) Init() tea.Cmd {
 // Main update function. This is called every time a message
 // goes down the channel. User input (keys) are typically the base
 // case for input messages.
+// part of the tea.Model interface
 func (vm viewModel) Update(msg tea.Msg) (m tea.Model, c tea.Cmd) {
 	// Make sure these keys always quit
 

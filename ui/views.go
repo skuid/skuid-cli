@@ -71,8 +71,6 @@ func updateSelect(msg tea.Msg, vm viewModel) (m tea.Model, c tea.Cmd) {
 		case "enter":
 			vm.SelectedCommand = vm.Command.Commands()[vm.CommandIndex]
 			vm.State = PREPARE
-		case "shift+enter":
-			vm.State = EXECUTE
 		}
 	}
 
@@ -81,56 +79,98 @@ func updateSelect(msg tea.Msg, vm viewModel) (m tea.Model, c tea.Cmd) {
 	return
 }
 
-func updatePrepare(msg tea.Msg, vm viewModel) (tea.Model, tea.Cmd) {
-	return vm, nil
+// ------------------------------------------------------------------------------
+
+func updatePrepare(msg tea.Msg, vm viewModel) (m tea.Model, c tea.Cmd) {
+
+	flagLength := len(allFlags(vm.SelectedCommand))
+	// flagLength +1
+	// when we get to index = flagLength,
+	// we want to show the option for "execute"
+
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "down":
+			vm.FlagIndex += 1
+			// this is different than the others
+			// since we have the ability to EXECUTE
+			// this command, so the final option
+			// will be "execute" and we will use that
+			if vm.FlagIndex > flagLength {
+				vm.FlagIndex = flagLength
+			}
+		case "up":
+			vm.FlagIndex -= 1
+			if vm.FlagIndex < 0 {
+				vm.FlagIndex = 0
+			}
+		case "enter":
+			if vm.FlagIndex == flagLength {
+				vm.State = RUN
+			} else {
+				vm.State = EDIT
+			}
+		}
+	}
+
+	m = vm
+
+	return
+}
+
+func allFlags(cmd *cobra.Command) (flags []*pflag.Flag) {
+	cmd.PersistentFlags().VisitAll(func(f *pflag.Flag) {
+		flags = append(flags, f)
+	})
+	cmd.Flags().VisitAll(func(f *pflag.Flag) {
+		flags = append(flags, f)
+	})
+	return
 }
 
 func viewPrepare(vm viewModel) string {
 	executionHeader := fmt.Sprintf(`Configure Command: %v`, tides(vm.SelectedCommand.Name()))
 
-	var globalFlags []*pflag.Flag
-	vm.Command.PersistentFlags().VisitAll(func(f *pflag.Flag) {
-		globalFlags = append(globalFlags, f)
-	})
-
-	var globalFlagText []string
-	for _, flag := range globalFlags {
-		globalFlagText = append(
-			globalFlagText,
-			globalFlagString(flag, false),
+	var flagsStrings []string
+	for i, flag := range allFlags(vm.SelectedCommand) {
+		flagsStrings = append(
+			flagsStrings,
+			flagString(flag, vm.FlagIndex == i+1),
 		)
 	}
 
-	globalFlagString := indent.String(strings.Join(globalFlagText, "\n"), 2)
+	executeText := indent.String(executeString(vm.FlagIndex == 0), 2)
 
-	var flags []*pflag.Flag
-	vm.SelectedCommand.Flags().VisitAll(func(f *pflag.Flag) {
-		flags = append(flags, f)
-	})
-
-	var flagNames []string
-	for i, flag := range flags {
-		flagNames = append(
-			flagNames,
-			commandFlagString(flag, vm.FlagIndex == i),
-		)
-	}
-
-	flagString := indent.String(strings.Join(flagNames, "\n"), 2)
+	flagsText := indent.String(strings.Join(flagsStrings, "\n"), 2)
 
 	return strings.Join([]string{
 		welcomeHeader,
 		executionHeader,
-		globalFlagString,
-		flagString,
+		executeText,
+		flagsText,
 		helpSelect,
 	}, "\n\n")
 }
 
-func globalFlagString(flag *pflag.Flag, selected bool) string {
-	return fmt.Sprintf("%v", flag.Name)
+func flagString(flag *pflag.Flag, selected bool) string {
+	var selectString string
+	var selectHelp string
+
+	if selected {
+		selectString = tides(fmt.Sprintf("[x] %v %v", flag.Name, flag.Value.String()))
+		selectHelp = skuid(indent.String(fmt.Sprintf("%v (%v)", flag.Usage, flag.NoOptDefVal), 2))
+	} else {
+		selectString = subtle(fmt.Sprintf("[ ] %v %v", flag.Name, flag.Value.String()))
+		selectHelp = skuid(indent.String(fmt.Sprintf("%v (%v)", flag.Usage, flag.NoOptDefVal), 2))
+	}
+
+	return fmt.Sprintf("%v\n%v", selectString, selectHelp)
 }
 
-func commandFlagString(flag *pflag.Flag, selected bool) string {
-	return fmt.Sprintf("%v", flag.Name)
+func executeString(selected bool) string {
+	if selected {
+		return pink(fmt.Sprintf("[x] EXECUTE"))
+	}
+	return subtle(fmt.Sprintf("[ ] EXECUTE"))
 }

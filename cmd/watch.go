@@ -21,15 +21,15 @@ var watchCmd = &cobra.Command{
 	SilenceErrors:     true,
 	SilenceUsage:      true,
 	Use:               "watch",
-	Short:             "Watch for changes to local Skuid metadata, and deploy changes to a Skuid Platform Site.",
-	Long:              "Watches for changes to local Skuid metadata on your file system, and automatically deploys the changed files to a Skuid Platform Site.",
+	Short:             "Watch for changes to local Skuid metadata, and deploy changes to a Skuid NLX Site.",
+	Long:              "Watches for changes to local Skuid metadata on your file system, and automatically deploys the changed files to a Skuid NLX Site.",
 	PersistentPreRunE: validation.PrerunValidation,
 	RunE:              Watch,
 }
 
 func init() {
 	TidesCmd.AddCommand(watchCmd)
-	flags.AddFlags(watchCmd, flags.PlatformLoginFlags...)
+	flags.AddFlags(watchCmd, flags.NLXLoginFlags...)
 }
 
 func Watch(cmd *cobra.Command, _ []string) (err error) {

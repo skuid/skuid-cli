@@ -18,8 +18,8 @@ var (
 		SilenceErrors:     true, // we do not want to show users raw errors
 		Example:           "retrieve -u myUser -p myPassword --host my-site.skuidsite.com --dir ./retrieval",
 		Use:               "retrieve",
-		Short:             "Retrieve Skuid metadata from a Site into a local directory.",
-		Long:              "Retrieve Skuid metadata from a Skuid Platform Site and output it into a local directory.",
+		Short:             "Retrieve Skuid metadata from an Skuid NLX Site into a local directory.",
+		Long:              "Retrieve Skuid metadata from a Skuid NLX Site and output it into a local directory.",
 		PersistentPreRunE: validation.PrerunValidation,
 		RunE:              Retrieve,
 	}
@@ -117,7 +117,7 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 func init() {
 	TidesCmd.AddCommand(retrieveCmd)
 
-	flags.AddFlags(retrieveCmd, flags.PlatformLoginFlags...)
+	flags.AddFlags(retrieveCmd, flags.NLXLoginFlags...)
 	flags.AddFlags(retrieveCmd, flags.Directory, flags.AppName, flags.ApiVersion)
 	flags.AddFlags(retrieveCmd, flags.Pages)
 	flags.AddFlags(retrieveCmd, flags.NoZip)
