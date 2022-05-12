@@ -1,12 +1,12 @@
 package flags
 
 import (
-	"fmt"
 	"os"
 	"strconv"
 	"strings"
 
 	"github.com/gookit/color"
+	"github.com/skuid/tides/pkg/errors"
 	"github.com/skuid/tides/pkg/logging"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -33,15 +33,15 @@ type Flag[T any] struct {
 
 func CheckRequiredFields[T any](f *Flag[T]) error {
 	if f.argument == nil {
-		return fmt.Errorf("StringFlag Argument must be provided.")
+		return errors.Critical("Flag Argument must be provided.")
 	}
 
 	if f.Name == "" {
-		return fmt.Errorf("StringFlag FlagName must be provided.")
+		return errors.Critical("Flag FlagName must be provided.")
 	}
 
 	if f.Usage == "" {
-		return fmt.Errorf("StringFlag UsageText must be provided.")
+		return errors.Critical("Flag UsageText must be provided.")
 	}
 
 	return nil
@@ -204,7 +204,7 @@ func Add[T any](flag *Flag[T]) func(*cobra.Command) error {
 			}
 
 		default:
-			return fmt.Errorf("No type definition found")
+			return errors.Critical("No type definition found")
 		}
 
 		if required {

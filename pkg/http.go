@@ -9,6 +9,7 @@ import (
 	"github.com/valyala/fasthttp"
 
 	"github.com/skuid/tides/pkg/constants"
+	"github.com/skuid/tides/pkg/errors"
 	"github.com/skuid/tides/pkg/logging"
 )
 
@@ -141,7 +142,7 @@ func FastRequestHelper(
 	statusCode := resp.StatusCode()
 
 	httpError := func() error {
-		return fmt.Errorf("%s:\nStatus Code: %v\nBody: %v\n",
+		return errors.Critical("%s:\nStatus Code: %v\nBody: %v\n",
 			color.Red.Sprint("ERROR"),
 			color.Yellow.Sprint(statusCode),
 			color.Cyan.Sprint(string(responseBody)),

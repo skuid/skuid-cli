@@ -1,11 +1,11 @@
 package pkg
 
 import (
-	"fmt"
 	"path/filepath"
 	"reflect"
 	"strings"
 
+	"github.com/skuid/tides/pkg/errors"
 	"github.com/skuid/tides/pkg/logging"
 	"github.com/skuid/tides/pkg/util"
 )
@@ -27,7 +27,7 @@ type NlxMetadata struct {
 }
 
 func GetFieldValueByNameError(target string) error {
-	return fmt.Errorf("GetFieldValueByName('%v') failed", target)
+	return errors.Error("GetFieldValueByName('%v') failed", target)
 }
 
 func (from NlxMetadata) GetFieldValueByName(target string) (names []string, err error) {
