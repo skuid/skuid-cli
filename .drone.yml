@@ -20,7 +20,7 @@ steps:
     image: golang:1.18-alpine
     commands:
       - apk add git
-      - go test -v -cover ./... -args # coverfail=true
+      - go test -v -cover -short ./... # -args coverfail=true
     environment:
       CGO_ENABLED: '0'
   - name: build
