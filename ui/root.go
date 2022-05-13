@@ -6,12 +6,13 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/muesli/reflow/indent"
+	"github.com/spf13/cobra"
+
 	"github.com/skuid/tides/pkg/constants"
 	"github.com/skuid/tides/ui/help"
 	"github.com/skuid/tides/ui/keys"
 	"github.com/skuid/tides/ui/lit"
 	"github.com/skuid/tides/ui/style"
-	"github.com/spf13/cobra"
 )
 
 type main struct {
@@ -59,7 +60,10 @@ func (v main) Update(msg tea.Msg) (m tea.Model, c tea.Cmd) {
 				v.index = 0
 			}
 		case keys.ENTER:
-			m, c = Configure(&v, v.SelectedCommand())
+			m, c = Configure(
+				&v,
+				v.SelectedCommand(),
+			)
 			return
 		}
 	}
@@ -81,7 +85,7 @@ func (v main) View() string {
 	var sections []string
 
 	sections = append(sections, lit.MainHeader)
-	sections = append(sections, v.Body())
+	sections = append(sections, v.body())
 	sections = append(sections, help.SelectionHelp)
 
 	return strings.Join(
@@ -90,7 +94,7 @@ func (v main) View() string {
 	)
 }
 
-func (v main) Body() string {
+func (v main) body() string {
 	var commands []string
 	for i, command := range v.Command.Commands() {
 		commands = append(commands, style.CommandString(command, v.index == i))

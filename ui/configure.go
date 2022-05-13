@@ -39,7 +39,6 @@ const (
 type configure struct {
 	// how we get back to the main view if we hit [esc]
 	back *main
-
 	// subcommand we're in on
 	sub *cobra.Command
 
@@ -118,7 +117,10 @@ func (v configure) Update(msg tea.Msg) (m tea.Model, c tea.Cmd) {
 			v.reset()
 		case keys.ENTER:
 			if v.index == RUN_INDEX {
-				m, c = v.run()
+				m = Run(
+					&v,
+					v.sub,
+				)
 			} else {
 				m, c = v.save(v.index)
 			}
@@ -183,29 +185,10 @@ func (v configure) save(index int) (m tea.Model, cmd tea.Cmd) {
 	return
 }
 
-func (v configure) run() (m tea.Model, cmd tea.Cmd) {
-	r := run{
-		v.sub,
-		&v,
-	}
-
-	m = r
-
-	return
-}
-
-var (
-	passwordPlaceholder = strings.Repeat("•", 8)
-)
-
-func isPassword(flag *pflag.Flag) bool {
-	return strings.EqualFold(flag.Name, "password")
-}
-
 func (v configure) reset() (m tea.Model, cmd tea.Cmd) {
 	for i, flag := range v.getFlags() {
-		if isPassword(flag) && v.index != i+1 {
-			v.inputs[i].SetValue(passwordPlaceholder)
+		if style.IsPassword(flag) && v.index != i+1 {
+			v.inputs[i].SetValue(style.PasswordPlaceholder)
 		} else {
 			v.inputs[i].SetValue(style.RemoveBrackets(flag.Value.String()))
 			v.inputs[i].CursorEnd() // otherwise when you hit a password you are in the middle of it
@@ -218,30 +201,13 @@ func (v configure) getFlags() []*pflag.Flag {
 	return util.AllFlags(v.sub)
 }
 
-func commandText(cmd *cobra.Command) string {
-	var command []string
-	command = append(command, cmd.Name())
-	for _, flag := range util.AllFlags(cmd) {
-		s := flag.Value.String()
-		if s != "" &&
-			s != "false" && /* bool */
-			s != "[]" /* array */ {
-			if isPassword(flag) {
-				s = passwordPlaceholder
-			}
-			command = append(command, fmt.Sprintf("\t--%v %v", flag.Name, s))
-		}
-	}
-	return strings.Join(command, "\n")
-}
-
 // body is going to show us all of the inputs possible
 // for this
 func (v configure) body() string {
 	var lines []string
 	// add execute checkbox
 	lines = append(lines, style.Checkbox("run the command ", v.index == 0, false))
-	lines = append(lines, style.HighlightIf(indent.String("tides "+commandText(v.sub), 2), v.index == 0))
+	lines = append(lines, style.HighlightIf(indent.String(style.CommandText(v.sub), 2), v.index == 0))
 	lines = append(lines, style.Subtle(strings.Repeat("-", 60)))
 	lines = append(lines, style.HighlightIf("flags:", v.index != 0))
 	// add text inputs
