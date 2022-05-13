@@ -23,7 +23,7 @@ var (
 
 const (
 	DEFAULT_API_VERSION        = "v2"
-	MAX_AUTHORIZATION_ATTEMPTS = 3
+	MAX_AUTHORIZATION_ATTEMPTS = 3 // 5 will lock you out iirc
 )
 
 // FastJsonBodyRequest takes a type parameter and automatically
