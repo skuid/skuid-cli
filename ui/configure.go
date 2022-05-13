@@ -19,16 +19,12 @@ import (
 )
 
 var (
-	focusedStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
-	blurredStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
-	savedStyle          = lipgloss.NewStyle().Foreground(lipgloss.Color("050"))
-	cursorStyle         = focusedStyle.Copy()
-	noStyle             = lipgloss.NewStyle()
-	helpStyle           = blurredStyle.Copy()
-	cursorModeHelpStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("244"))
-
-	focusedButton = focusedStyle.Copy().Render("[ Submit ]")
-	blurredButton = fmt.Sprintf("[ %s ]", blurredStyle.Render("Submit"))
+	StyleFocus = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
+	StyleBlur  = lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
+	StyleSave  = lipgloss.NewStyle().Foreground(lipgloss.Color("050"))
+	StyleClear = lipgloss.NewStyle().Foreground(lipgloss.Color("500"))
+	StyleNone  = lipgloss.NewStyle()
+	StyleHelp  = StyleBlur.Copy()
 )
 
 const (
@@ -36,34 +32,48 @@ const (
 	FLAG_STRING_ARRAY = "stringArray"
 	FLAG_BOOL         = "bool"
 	FLAG_INT          = "int"
+
+	RUN_INDEX = 0 // first thing
 )
 
 type configure struct {
+	// how we get back to the main view if we hit [esc]
 	back *main
 
-	cmd   *cobra.Command
-	index int
-	saved int
+	// subcommand we're in on
+	sub *cobra.Command
 
+	// selector index
+	index int
+
+	// these are all the inputs for whatever command we're using
 	inputs []textinput.Model
+
+	// hiddenIndices are basically for password fields
+	// and other keys we don't want visible when we hover
+	// over something
+	hiddenIndices []int
 }
 
 func Configure(back *main, cmd *cobra.Command) (v configure, c tea.Cmd) {
 	v = configure{
 		back: back,
-		cmd:  cmd,
+		sub:  cmd,
 	}
-	v.inputs = make([]textinput.Model, len(v.GetFlags()))
-	v.initFlags()
-	v.Reset()
-	c = v.Focus(0)
+	v.inputs = make([]textinput.Model, len(v.getFlags()))
+	v.createFlags()
+	v.reset()
+	c = v.focus(0)
 	return
 }
 
-func (v configure) initFlags() {
-	for i, flag := range v.GetFlags() {
+func (v configure) createFlags() {
+	for i, flag := range v.getFlags() {
+		if strings.ToLower(flag.Name) == "password" {
+			v.hiddenIndices = append(v.hiddenIndices, i)
+		}
 		v.inputs[i] = textinput.New()
-		v.inputs[i].CursorStyle = cursorStyle
+		v.inputs[i].CursorStyle = StyleFocus
 		v.inputs[i].Prompt = style.Pad(fmt.Sprintf("%v:", flag.Name))
 	}
 }
@@ -72,66 +82,12 @@ func (v configure) Init() tea.Cmd {
 	return textinput.Blink
 }
 
-func removeBrackets(s string) string {
-	return strings.ReplaceAll(
-		strings.ReplaceAll(
-			s, "[", "",
-		), "]", "",
-	)
-}
-
-func (v configure) Focus(index int) (cmd tea.Cmd) {
-	for i := range v.inputs {
-		if i == index {
-			cmd = v.inputs[i].Focus()
-			v.inputs[i].PromptStyle = focusedStyle
-			v.inputs[i].TextStyle = focusedStyle
-		} else {
-			v.inputs[i].Blur()
-			v.inputs[i].PromptStyle = noStyle
-			v.inputs[i].TextStyle = noStyle
-		}
-	}
-	return
-}
-
-func (v configure) Save(index int) (m tea.Model, cmd tea.Cmd) {
-	input := v.inputs[index]
-	flag := v.GetFlags()[index]
-	switch f := flag.Value.(type) {
-	// need to handle the slice value separately
-	// the default behavior when calling "flag.Value.Set()"
-	// on a slice is to *FREAKING APPEND IT*.
-	// this doesn't allow us to update the value at all.
-	case pflag.SliceValue:
-		array := strings.Split(input.Value(), ",")
-		f.Replace(array)
-	default:
-		flag.Value.Set(input.Value())
-	}
-
-	v.inputs[index].TextStyle = savedStyle
-	v.inputs[index].PromptStyle = savedStyle
-	v.saved = index
-
-	m = v
-	return
-}
-
-func (v configure) Run() (m tea.Model, cmd tea.Cmd) {
-
-	return
-}
-
-func (v configure) Reset() (m tea.Model, cmd tea.Cmd) {
-	for i, flag := range v.GetFlags() {
-		v.inputs[i].SetValue(removeBrackets(flag.Value.String()))
-	}
-	return
-}
-
-func (v configure) GetFlags() []*pflag.Flag {
-	return util.AllFlags(v.cmd)
+func (v configure) View() string {
+	var sections []string
+	sections = append(sections, lit.MainHeader)
+	sections = append(sections, v.body())
+	sections = append(sections, help.EditingHelp)
+	return strings.Join(sections, "\n\n")
 }
 
 func (v configure) Update(msg tea.Msg) (m tea.Model, c tea.Cmd) {
@@ -147,7 +103,7 @@ func (v configure) Update(msg tea.Msg) (m tea.Model, c tea.Cmd) {
 			m = v.back
 			return
 		case keys.UP, keys.DOWN, keys.SHIFT_TAB, keys.TAB:
-			bounds := len(v.GetFlags())
+			bounds := len(v.getFlags())
 			if s == keys.UP || s == keys.SHIFT_TAB {
 				v.index--
 			} else if s == keys.DOWN || s == keys.TAB {
@@ -158,18 +114,20 @@ func (v configure) Update(msg tea.Msg) (m tea.Model, c tea.Cmd) {
 			} else if v.index > bounds {
 				v.index = bounds
 			}
-			v.Focus(v.index)
-			v.Reset()
+			v.focus(v.index)
+			v.reset()
 		case keys.ENTER:
-			if v.index == 0 {
-				m, c = v.Run()
+			if v.index == RUN_INDEX {
+				m, c = v.run()
 			} else {
-				m, c = v.Save(v.index)
-				return
+				m, c = v.save(v.index)
 			}
-
+			return
+		case keys.CTRL_S:
+			m, c = v.save(v.index)
+			return
 		default:
-			v.Focus(v.index)
+			v.focus(v.index)
 		}
 
 	}
@@ -185,18 +143,110 @@ func (v configure) Update(msg tea.Msg) (m tea.Model, c tea.Cmd) {
 	return
 }
 
-func (v configure) Body() string {
-	var inputs []string
+func (v configure) focus(index int) (cmd tea.Cmd) {
+	focusIndex := index - 1 // because EXECUTE is first
+
 	for i := range v.inputs {
-		inputs = append(inputs, v.inputs[i].View())
+		if i == focusIndex {
+			cmd = v.inputs[i].Focus()
+			v.inputs[i].PromptStyle = StyleFocus
+			v.inputs[i].TextStyle = StyleFocus
+		} else {
+			v.inputs[i].Blur()
+			v.inputs[i].PromptStyle = StyleNone
+			v.inputs[i].TextStyle = StyleNone
+		}
 	}
-	return indent.String(strings.Join(inputs, "\n"), 4)
+	return
 }
 
-func (v configure) View() string {
-	var sections []string
-	sections = append(sections, lit.MainHeader)
-	sections = append(sections, v.Body())
-	sections = append(sections, help.SelectionHelp)
-	return strings.Join(sections, "\n\n")
+func (v configure) save(index int) (m tea.Model, cmd tea.Cmd) {
+	saveIndex := index - 1 // because EXECUTE is first
+	input := v.inputs[saveIndex]
+	flag := v.getFlags()[saveIndex]
+	switch f := flag.Value.(type) {
+	// need to handle the slice value separately
+	// the default behavior when calling "flag.Value.Set()"
+	// on a slice is to *FREAKING APPEND IT*.
+	// this doesn't allow us to update the value at all.
+	case pflag.SliceValue:
+		array := strings.Split(input.Value(), ",")
+		f.Replace(array)
+	default:
+		flag.Value.Set(input.Value())
+	}
+
+	v.inputs[saveIndex].TextStyle = StyleSave
+	v.inputs[saveIndex].PromptStyle = StyleSave
+
+	m = v
+	return
+}
+
+func (v configure) run() (m tea.Model, cmd tea.Cmd) {
+	r := run{
+		v.sub,
+		&v,
+	}
+
+	m = r
+
+	return
+}
+
+var (
+	passwordPlaceholder = strings.Repeat("•", 8)
+)
+
+func isPassword(flag *pflag.Flag) bool {
+	return strings.EqualFold(flag.Name, "password")
+}
+
+func (v configure) reset() (m tea.Model, cmd tea.Cmd) {
+	for i, flag := range v.getFlags() {
+		if isPassword(flag) && v.index != i+1 {
+			v.inputs[i].SetValue(passwordPlaceholder)
+		} else {
+			v.inputs[i].SetValue(style.RemoveBrackets(flag.Value.String()))
+			v.inputs[i].CursorEnd() // otherwise when you hit a password you are in the middle of it
+		}
+	}
+	return
+}
+
+func (v configure) getFlags() []*pflag.Flag {
+	return util.AllFlags(v.sub)
+}
+
+func commandText(cmd *cobra.Command) string {
+	var command []string
+	command = append(command, cmd.Name())
+	for _, flag := range util.AllFlags(cmd) {
+		s := flag.Value.String()
+		if s != "" &&
+			s != "false" && /* bool */
+			s != "[]" /* array */ {
+			if isPassword(flag) {
+				s = passwordPlaceholder
+			}
+			command = append(command, fmt.Sprintf("\t--%v %v", flag.Name, s))
+		}
+	}
+	return strings.Join(command, "\n")
+}
+
+// body is going to show us all of the inputs possible
+// for this
+func (v configure) body() string {
+	var lines []string
+	// add execute checkbox
+	lines = append(lines, style.Checkbox("run the command ", v.index == 0, false))
+	lines = append(lines, style.HighlightIf(indent.String("tides "+commandText(v.sub), 2), v.index == 0))
+	lines = append(lines, style.Subtle(strings.Repeat("-", 60)))
+	lines = append(lines, style.HighlightIf("flags:", v.index != 0))
+	// add text inputs
+	for i := range v.inputs {
+		lines = append(lines, v.inputs[i].View())
+	}
+	return indent.String(strings.Join(lines, "\n"), 4)
 }

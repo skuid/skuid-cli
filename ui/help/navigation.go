@@ -9,15 +9,15 @@ import (
 
 var (
 	SelectionControls = map[string][]string{
-		"select":    {"up", "down", "tab", "shift+tab"},
+		"select":    {"up", "down"}, // "tab", "shift+tab"},
 		"quit/back": {"esc", "ctrl+c"},
 	}
 
 	SelectionHelp = helpText(SelectionControls)
 
 	EditingControls = map[string][]string{
-		"select":      {"up", "down", "tab", "shift+tab"},
-		"save":        {"enter", "ctrl+s"},
+		"select":      {"up", "down"}, // "tab", "shift+tab"},
+		"run/save":    {"enter"},      // "ctrl+s"},
 		"revert/back": {"esc"},
 		"quit":        {"ctrl+c"},
 	}
