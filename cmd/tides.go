@@ -1,14 +1,12 @@
 package cmd
 
 import (
-	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
 	"github.com/skuid/tides/pkg/constants"
 	"github.com/skuid/tides/pkg/flags"
 	"github.com/skuid/tides/pkg/logging"
-	"github.com/skuid/tides/ui"
 )
 
 var (
@@ -25,13 +23,6 @@ var (
 			DisableDefaultCmd: true,
 		},
 		Version: constants.VERSION_NAME,
-		Run: func(cmd *cobra.Command, _ []string) {
-			p := tea.NewProgram(ui.ViewModel(cmd))
-
-			if err := p.Start(); err != nil {
-				logging.Fatal(err)
-			}
-		},
 	}
 )
 
