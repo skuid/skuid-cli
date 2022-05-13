@@ -98,7 +98,17 @@ func (v configure) Focus(index int) (cmd tea.Cmd) {
 func (v configure) Save(index int) (m tea.Model, cmd tea.Cmd) {
 	input := v.inputs[index]
 	flag := v.GetFlags()[index]
-	flag.Value.Set(input.Value())
+	switch f := flag.Value.(type) {
+	// need to handle the slice value separately
+	// the default behavior when calling "flag.Value.Set()"
+	// on a slice is to *FREAKING APPEND IT*.
+	// this doesn't allow us to update the value at all.
+	case pflag.SliceValue:
+		array := strings.Split(input.Value(), ",")
+		f.Replace(array)
+	default:
+		flag.Value.Set(input.Value())
+	}
 
 	v.inputs[index].TextStyle = savedStyle
 	v.inputs[index].PromptStyle = savedStyle
