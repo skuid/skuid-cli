@@ -15,8 +15,11 @@ const (
 	ENV_DATA_SERVICE_PROXY     = "DATA_SERVICE_PROXY"
 )
 
+// tides-specific
 const (
-	ENV_VERBOSE = "TIDES_VERBOSE"
+	ENV_VERBOSE              = "TIDES_VERBOSE"
+	ENV_TIDES_LOG            = "TIDES_LOG"
+	ENV_TIDES_DEFAULT_FOLDER = "TIDES_DEFAULT_FOLDER"
 )
 
 const (

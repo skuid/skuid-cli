@@ -33,7 +33,17 @@ func (v main) Init() tea.Cmd {
 }
 
 func (v main) SelectedCommand() *cobra.Command {
-	return v.Command.Commands()[v.index]
+	return GetSubcommands(v.Command)[v.index]
+}
+
+// GetSubcommands gets all the commands EXCEPT FOR help
+func GetSubcommands(cmd *cobra.Command) (nonHelpCommands []*cobra.Command) {
+	for _, sub := range cmd.Commands() {
+		if !strings.EqualFold(sub.Name(), "help") {
+			nonHelpCommands = append(nonHelpCommands, sub)
+		}
+	}
+	return
 }
 
 func (v main) Update(msg tea.Msg) (m tea.Model, c tea.Cmd) {
@@ -47,7 +57,7 @@ func (v main) Update(msg tea.Msg) (m tea.Model, c tea.Cmd) {
 			c = tea.Quit
 			return
 		case keys.UP, keys.DOWN, keys.TAB, keys.SHIFT_TAB:
-			cmdLength := len(v.Command.Commands()) - 1
+			cmdLength := len(GetSubcommands(v.Command)) - 1
 			if s == keys.UP || s == keys.SHIFT_TAB {
 				v.index--
 			}
@@ -96,7 +106,7 @@ func (v main) View() string {
 
 func (v main) body() string {
 	var commands []string
-	for i, command := range v.Command.Commands() {
+	for i, command := range GetSubcommands(v.Command) {
 		commands = append(commands, style.CommandString(command, v.index == i))
 	}
 	return strings.Join(commands, "\n")

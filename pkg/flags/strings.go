@@ -76,7 +76,8 @@ var (
 		argument: &argTargetDir,
 		Name:     "directory",
 		// Aliases:   []string{"directory"},
-		Shorthand: "d",
-		Usage:     "Target directory for this operation.",
+		Shorthand:  "d",
+		Usage:      "Target directory for this operation.",
+		EnvVarName: constants.ENV_TIDES_DEFAULT_FOLDER,
 	}
 )
