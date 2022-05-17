@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 	"github.com/muesli/reflow/indent"
 	"github.com/spf13/cobra"
 
@@ -127,9 +126,5 @@ func (v main) body() string {
 	for i, command := range v.getCommands() {
 		commands = append(commands, style.CommandString(command, v.index == i))
 	}
-	return lipgloss.JoinHorizontal(
-		lipgloss.Left,
-		style.SKUID_ASCII,
-		strings.Join(commands, "\n"),
-	)
+	return strings.Join(commands, "\n")
 }
