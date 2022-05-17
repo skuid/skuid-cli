@@ -6,7 +6,6 @@ import (
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 	"github.com/muesli/reflow/indent"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -16,15 +15,6 @@ import (
 	"github.com/skuid/tides/ui/keys"
 	"github.com/skuid/tides/ui/lit"
 	"github.com/skuid/tides/ui/style"
-)
-
-var (
-	StyleFocus = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
-	StyleBlur  = lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
-	StyleSave  = lipgloss.NewStyle().Foreground(lipgloss.Color("050"))
-	StyleClear = lipgloss.NewStyle().Foreground(lipgloss.Color("500"))
-	StyleNone  = lipgloss.NewStyle()
-	StyleHelp  = StyleBlur.Copy()
 )
 
 const (
@@ -72,7 +62,7 @@ func (v configure) createFlags() {
 			v.hiddenIndices = append(v.hiddenIndices, i)
 		}
 		v.inputs[i] = textinput.New()
-		v.inputs[i].CursorStyle = StyleFocus
+		v.inputs[i].CursorStyle = style.StyleFocus
 		v.inputs[i].Prompt = style.Pad(fmt.Sprintf("%v:", flag.Name))
 	}
 }
@@ -81,6 +71,8 @@ func (v configure) Init() tea.Cmd {
 	return textinput.Blink
 }
 
+// TODO:
+// refactor to use a style here
 func (v configure) View() string {
 	var sections []string
 	sections = append(sections, lit.MainHeader)
@@ -151,12 +143,12 @@ func (v configure) focus(index int) (cmd tea.Cmd) {
 	for i := range v.inputs {
 		if i == focusIndex {
 			cmd = v.inputs[i].Focus()
-			v.inputs[i].PromptStyle = StyleFocus
-			v.inputs[i].TextStyle = StyleFocus
+			v.inputs[i].PromptStyle = style.StyleFocus
+			v.inputs[i].TextStyle = style.StyleFocus
 		} else {
 			v.inputs[i].Blur()
-			v.inputs[i].PromptStyle = StyleNone
-			v.inputs[i].TextStyle = StyleNone
+			v.inputs[i].PromptStyle = style.StyleNone
+			v.inputs[i].TextStyle = style.StyleNone
 		}
 	}
 	return
@@ -178,8 +170,8 @@ func (v configure) save(index int) (m tea.Model, cmd tea.Cmd) {
 		flag.Value.Set(input.Value())
 	}
 
-	v.inputs[saveIndex].TextStyle = StyleSave
-	v.inputs[saveIndex].PromptStyle = StyleSave
+	v.inputs[saveIndex].TextStyle = style.StyleSave
+	v.inputs[saveIndex].PromptStyle = style.StyleSave
 
 	m = v
 	return

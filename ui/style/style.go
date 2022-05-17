@@ -4,8 +4,19 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/charmbracelet/lipgloss"
 	"github.com/lucasb-eyer/go-colorful"
 	"github.com/muesli/termenv"
+)
+
+// lipgloss styles colors
+var (
+	StyleFocus = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
+	StyleBlur  = lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
+	StyleSave  = lipgloss.NewStyle().Foreground(lipgloss.Color("050"))
+	StyleClear = lipgloss.NewStyle().Foreground(lipgloss.Color("500"))
+	StyleNone  = lipgloss.NewStyle()
+	StyleHelp  = StyleBlur.Copy()
 )
 
 // General stuff for styling the view

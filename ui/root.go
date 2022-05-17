@@ -73,6 +73,8 @@ func (v main) Update(msg tea.Msg) (m tea.Model, c tea.Cmd) {
 	return
 }
 
+// TODO:
+// replace View() logic with styled options
 func (v main) View() string {
 	if v.quitting {
 		return indent.String(

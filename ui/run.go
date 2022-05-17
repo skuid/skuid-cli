@@ -21,6 +21,8 @@ type run struct {
 	status string
 }
 
+// Run is the public function that we use to export the model
+// to the other view
 func Run(back *configure, sub *cobra.Command) run {
 	v := run{
 		cmd:  sub,
@@ -73,6 +75,17 @@ func (v run) Update(msg tea.Msg) (m tea.Model, c tea.Cmd) {
 	return
 }
 
+// TODO:
+// replace View() logic with styled options
+func (v run) View() string {
+	var sections []string
+	sections = append(sections, lit.MainHeader)
+	sections = append(sections, v.body())
+	sections = append(sections, v.output())
+	sections = append(sections, help.SelectionHelp)
+	return strings.Join(sections, "\n\n")
+}
+
 func (v run) body() string {
 	var s = lipgloss.NewStyle().
 		Bold(true).
@@ -88,13 +101,4 @@ func (v run) body() string {
 
 func (v run) output() string {
 	return fmt.Sprintf("Status: %v", v.status)
-}
-
-func (v run) View() string {
-	var sections []string
-	sections = append(sections, lit.MainHeader)
-	sections = append(sections, v.body())
-	sections = append(sections, v.output())
-	sections = append(sections, help.SelectionHelp)
-	return strings.Join(sections, "\n\n")
 }
