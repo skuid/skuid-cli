@@ -22,30 +22,21 @@ type main struct {
 	index   int
 }
 
+// Main is going to be the entry that takes the cmd
+// pointer and returns the model we want to use to initialize
+// the user interface
 func Main(command *cobra.Command) main {
 	return main{
 		Command: command,
 	}
 }
 
+// Init is called when the model is created
 func (v main) Init() tea.Cmd {
 	return nil
 }
 
-func (v main) SelectedCommand() *cobra.Command {
-	return GetSubcommands(v.Command)[v.index]
-}
-
-// GetSubcommands gets all the commands EXCEPT FOR help
-func GetSubcommands(cmd *cobra.Command) (nonHelpCommands []*cobra.Command) {
-	for _, sub := range cmd.Commands() {
-		if !strings.EqualFold(sub.Name(), "help") {
-			nonHelpCommands = append(nonHelpCommands, sub)
-		}
-	}
-	return
-}
-
+//
 func (v main) Update(msg tea.Msg) (m tea.Model, c tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
@@ -72,7 +63,7 @@ func (v main) Update(msg tea.Msg) (m tea.Model, c tea.Cmd) {
 		case keys.ENTER:
 			m, c = Configure(
 				&v,
-				v.SelectedCommand(),
+				v.selectedCommand(),
 			)
 			return
 		}
@@ -104,9 +95,25 @@ func (v main) View() string {
 	)
 }
 
+// returns the selected command that we're going to
+// pass to the next model
+func (v main) selectedCommand() *cobra.Command {
+	return v.getCommands()[v.index]
+}
+
+// GetSubcommands gets all the commands EXCEPT FOR help
+func (v main) getCommands() (nonHelpCommands []*cobra.Command) {
+	for _, sub := range v.Command.Commands() {
+		if !strings.EqualFold(sub.Name(), "help") {
+			nonHelpCommands = append(nonHelpCommands, sub)
+		}
+	}
+	return
+}
+
 func (v main) body() string {
 	var commands []string
-	for i, command := range GetSubcommands(v.Command) {
+	for i, command := range v.getCommands() {
 		commands = append(commands, style.CommandString(command, v.index == i))
 	}
 	return strings.Join(commands, "\n")
