@@ -14,9 +14,9 @@ func CommandString(cmd *cobra.Command, selected bool) string {
 
 	var text string
 	if selected {
-		text = fmt.Sprintf(" %s\n%s", commandName, Tides(description))
+		text = fmt.Sprintf(" %s\n%s", commandName, StyleTides.Render(description))
 	} else {
-		text = fmt.Sprintf(" %s\n%s", commandName, Subtle(description))
+		text = fmt.Sprintf(" %s\n%s", commandName, StyleBlur.Render(description))
 	}
 
 	return Checkbox(text, selected, true)
@@ -26,10 +26,10 @@ func Flag(flag *pflag.Flag, selected bool) string {
 
 	var text string
 	if selected {
-		text = Tides(fmt.Sprintf(" %v %v", Pad(flag.Name), flag.Value.String()))
+		text = StyleTides.Render(fmt.Sprintf(" %v %v", Pad(flag.Name), flag.Value.String()))
 		// selectHelp = style.Subtle(indent.String(fmt.Sprintf("%v (%v)", flag.Usage, flag.NoOptDefVal), 3))
 	} else {
-		text = Subtle(fmt.Sprintf(" %v %v", Pad(flag.Name), flag.Value.String()))
+		text = StyleSubtle.Render(fmt.Sprintf(" %v %v", Pad(flag.Name), flag.Value.String()))
 		// selectHelp = style.Subtle(indent.String(fmt.Sprintf("%v (%v)", flag.Usage, flag.NoOptDefVal), 3))
 	}
 
@@ -47,7 +47,7 @@ func Checkbox(text string, selected bool, left bool) (ret string) {
 		} else {
 			ret = fmt.Sprintf("%s[%s]", text, selector)
 		}
-		ret = Skuid(ret)
+		ret = StyleTides.Render(ret)
 	} else {
 		if left {
 			ret = fmt.Sprintf("[ ]%s", text)
@@ -61,7 +61,7 @@ func Checkbox(text string, selected bool, left bool) (ret string) {
 
 func HighlightIf(text string, selected bool) (ret string) {
 	if selected {
-		ret = Tides(text)
+		ret = StyleSkuid.Render(text)
 	} else {
 		ret = text
 	}

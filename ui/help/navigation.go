@@ -35,9 +35,9 @@ func helpText(controls map[string][]string) string {
 		}
 
 		helps = append(helps,
-			style.Subtle(fmt.Sprintf("%v: %v", strings.Join(options, "/"), k)),
+			style.StyleSubtle.Render(fmt.Sprintf("%v: %v", strings.Join(options, "/"), k)),
 		)
 	}
 
-	return strings.Join(helps, style.Subtle(style.Dot))
+	return strings.Join(helps, style.StyleSubtle.Render(style.Dot))
 }

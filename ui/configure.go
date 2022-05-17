@@ -196,7 +196,7 @@ func (v configure) body() string {
 	// add execute checkbox
 	lines = append(lines, style.Checkbox("run the command ", v.index == 0, false))
 	lines = append(lines, style.HighlightIf(indent.String(style.CommandText(v.sub), 2), v.index == 0))
-	lines = append(lines, style.Subtle(strings.Repeat("-", 60)))
+	lines = append(lines, style.StyleSubtle.Render(strings.Repeat("-", 60)))
 	lines = append(lines, style.HighlightIf("flags:", v.index != 0))
 	// add text inputs
 	for i := range v.inputs {

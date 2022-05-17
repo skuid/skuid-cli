@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/muesli/reflow/indent"
 	"github.com/spf13/cobra"
 
@@ -92,8 +93,8 @@ func (v main) View() string {
 	if v.quitting {
 		return indent.String(
 			"\n"+
-				fmt.Sprintf(style.Skuid("Thank you for using %v!"), style.Tides("Skuid Tides"))+
-				style.Subtle(fmt.Sprintf(" (Version: %v) ", constants.VERSION_NAME))+
+				fmt.Sprintf(style.StyleSkuid.Render("Thank you for using %v!"), style.StyleTides.Render("Skuid Tides"))+
+				style.StyleSubtle.Render(fmt.Sprintf(" (Version: %v) ", constants.VERSION_NAME))+
 				"\n\n",
 			2)
 	}
@@ -126,5 +127,9 @@ func (v main) body() string {
 	for i, command := range v.getCommands() {
 		commands = append(commands, style.CommandString(command, v.index == i))
 	}
-	return strings.Join(commands, "\n")
+	return lipgloss.JoinHorizontal(
+		lipgloss.Left,
+		style.SKUID_ASCII,
+		strings.Join(commands, "\n"),
+	)
 }
