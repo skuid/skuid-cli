@@ -73,9 +73,22 @@ func (v main) Update(msg tea.Msg) (m tea.Model, c tea.Cmd) {
 	return
 }
 
+func View(header string, body string, help string) string {
+	return style.ViewStyle.Render(
+		strings.Join([]string{
+			style.HeaderStyle.Render(header),
+			style.BodyStyle.Render(body),
+			style.HelpStyle.Render(help),
+		},
+			"\n",
+		),
+	)
+}
+
 // TODO:
 // replace View() logic with styled options
 func (v main) View() string {
+
 	if v.quitting {
 		return indent.String(
 			"\n"+
@@ -85,15 +98,10 @@ func (v main) View() string {
 			2)
 	}
 
-	var sections []string
-
-	sections = append(sections, lit.MainHeader)
-	sections = append(sections, v.body())
-	sections = append(sections, help.SelectionHelp)
-
-	return strings.Join(
-		sections,
-		"\n\n",
+	return View(
+		lit.MainHeader,
+		v.body(),
+		help.SelectionHelp,
 	)
 }
 

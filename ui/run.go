@@ -2,7 +2,6 @@ package ui
 
 import (
 	"fmt"
-	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -78,12 +77,7 @@ func (v run) Update(msg tea.Msg) (m tea.Model, c tea.Cmd) {
 // TODO:
 // replace View() logic with styled options
 func (v run) View() string {
-	var sections []string
-	sections = append(sections, lit.MainHeader)
-	sections = append(sections, v.body())
-	sections = append(sections, v.output())
-	sections = append(sections, help.SelectionHelp)
-	return strings.Join(sections, "\n\n")
+	return View(lit.MainHeader, v.body(), help.SelectionHelp)
 }
 
 func (v run) body() string {
@@ -96,7 +90,7 @@ func (v run) body() string {
 	return lipgloss.JoinHorizontal(lipgloss.Left,
 		s.Render(style.SKUID_ASCII),
 		style.CommandText(v.cmd),
-	)
+	) + v.output()
 }
 
 func (v run) output() string {

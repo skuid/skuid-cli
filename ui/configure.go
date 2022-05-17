@@ -74,11 +74,7 @@ func (v configure) Init() tea.Cmd {
 // TODO:
 // refactor to use a style here
 func (v configure) View() string {
-	var sections []string
-	sections = append(sections, lit.MainHeader)
-	sections = append(sections, v.body())
-	sections = append(sections, help.EditingHelp)
-	return strings.Join(sections, "\n\n")
+	return View(lit.MainHeader, v.body(), help.EditingHelp)
 }
 
 func (v configure) Update(msg tea.Msg) (m tea.Model, c tea.Cmd) {
@@ -206,5 +202,5 @@ func (v configure) body() string {
 	for i := range v.inputs {
 		lines = append(lines, v.inputs[i].View())
 	}
-	return indent.String(strings.Join(lines, "\n"), 4)
+	return strings.Join(lines, "\n")
 }
