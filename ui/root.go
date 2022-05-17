@@ -48,7 +48,7 @@ func (v main) Update(msg tea.Msg) (m tea.Model, c tea.Cmd) {
 			c = tea.Quit
 			return
 		case keys.UP, keys.DOWN, keys.TAB, keys.SHIFT_TAB:
-			cmdLength := len(GetSubcommands(v.Command)) - 1
+			cmdLength := len(v.getCommands()) - 1
 			if s == keys.UP || s == keys.SHIFT_TAB {
 				v.index--
 			}
