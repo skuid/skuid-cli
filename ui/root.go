@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/muesli/reflow/indent"
 	"github.com/spf13/cobra"
 
 	"github.com/skuid/tides/pkg/constants"
@@ -36,7 +35,10 @@ func (v main) Init() tea.Cmd {
 	return nil
 }
 
-//
+// Update is the main function that handles all tea.Msgs.
+// Think of this as the event listener for all inputs within
+// the machine. So we need to handle input, that's all.
+// NOTE: if you don't assign m = v, you'll get a nil pointer.
 func (v main) Update(msg tea.Msg) (m tea.Model, c tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
@@ -73,32 +75,19 @@ func (v main) Update(msg tea.Msg) (m tea.Model, c tea.Cmd) {
 	return
 }
 
-func View(header string, body string, help string) string {
-	return style.ViewStyle.Render(
-		strings.Join([]string{
-			style.HeaderStyle.Render(header),
-			style.BodyStyle.Render(body),
-			style.HelpStyle.Render(help),
-		},
-			"\n",
-		),
-	)
-}
-
-// TODO:
-// replace View() logic with styled options
+// View is what's rendered in the command line. This string
+// is styled and assembled every time that there's a change,
+// so you want to check state
 func (v main) View() string {
 
 	if v.quitting {
-		return indent.String(
-			"\n"+
-				fmt.Sprintf(style.StyleSkuid.Render("Thank you for using %v!"), style.StyleTides.Render("Skuid Tides"))+
-				style.StyleSubtle.Render(fmt.Sprintf(" (Version: %v) ", constants.VERSION_NAME))+
-				"\n\n",
-			2)
+		return "\n" +
+			fmt.Sprintf(style.StyleSkuid.Render("Thank you for using %v!"), style.StyleTides.Render("Skuid Tides")) +
+			style.StyleSubtle.Render(fmt.Sprintf(" (Version: %v) ", constants.VERSION_NAME)) +
+			"\n\n"
 	}
 
-	return View(
+	return style.StandardView(
 		lit.MainHeader,
 		v.body(),
 		help.SelectionHelp,
@@ -126,5 +115,5 @@ func (v main) body() string {
 	for i, command := range v.getCommands() {
 		commands = append(commands, style.CommandString(command, v.index == i))
 	}
-	return strings.Join(commands, "\n")
+	return strings.Join(commands, "\n\n")
 }

@@ -80,4 +80,13 @@ var (
 		Usage:      "Target directory for this operation.",
 		EnvVarName: constants.ENV_TIDES_DEFAULT_FOLDER,
 	}
+
+	FileLoggingDirectory = &Flag[string]{
+		argument:   &argFileLoggingLocation,
+		Name:       "log-directory",
+		Shorthand:  "l",
+		Usage:      "Target directory for file logging",
+		Default:    ".logs",
+		EnvVarName: constants.ENV_TIDES_LOGGING_LOCATION,
+	}
 )

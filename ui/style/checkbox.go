@@ -3,14 +3,13 @@ package style
 import (
 	"fmt"
 
-	"github.com/muesli/reflow/indent"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
 
 func CommandString(cmd *cobra.Command, selected bool) string {
 	commandName := cmd.Name()
-	description := indent.String(cmd.Short, 4)
+	description := cmd.Short
 
 	var text string
 	if selected {

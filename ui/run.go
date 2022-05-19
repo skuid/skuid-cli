@@ -77,18 +77,11 @@ func (v run) Update(msg tea.Msg) (m tea.Model, c tea.Cmd) {
 // TODO:
 // replace View() logic with styled options
 func (v run) View() string {
-	return View(lit.MainHeader, v.body(), help.SelectionHelp)
+	return style.StandardView(lit.MainHeader, v.body(), help.SelectionHelp)
 }
 
 func (v run) body() string {
-	var s = lipgloss.NewStyle().
-		Bold(true).
-		Foreground(lipgloss.Color("#005CB9")).
-		PaddingLeft(2).
-		PaddingRight(2)
-
 	return lipgloss.JoinHorizontal(lipgloss.Left,
-		s.Render(style.SKUID_ASCII),
 		style.CommandText(v.cmd),
 	) + v.output()
 }

@@ -24,4 +24,12 @@ var (
 		Name:     "no-module",
 		Usage:    "Retrieve only those pages that do not have a module",
 	}
+
+	FileLogging = &Flag[bool]{
+		argument:   &argFileLogging,
+		Name:       "file-logging",
+		Usage:      "Log diagnostic information to files",
+		EnvVarName: constants.ENV_TIDES_FILE_LOGGING,
+		Default:    true,
+	}
 )

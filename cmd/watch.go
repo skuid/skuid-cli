@@ -24,6 +24,7 @@ var watchCmd = &cobra.Command{
 	Short:             "Watch for changes to local Skuid metadata, and deploy changes to a Skuid NLX Site.",
 	Long:              "Watches for changes to local Skuid metadata on your file system, and automatically deploys the changed files to a Skuid NLX Site.",
 	PersistentPreRunE: validation.PrerunValidation,
+	PreRun:            logging.InitializeLogging,
 	RunE:              Watch,
 }
 

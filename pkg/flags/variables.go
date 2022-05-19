@@ -13,10 +13,12 @@ var (
 	argVariableValue        string
 	argVariableDataservice  string
 	argOutputFilename       string
+	argFileLoggingLocation  string
 
-	argNoZip    bool
-	argNoModule bool
-	argVerbose  bool
+	argNoZip       bool
+	argNoModule    bool
+	argVerbose     bool
+	argFileLogging bool
 
 	argModules []string
 	argPages   []string

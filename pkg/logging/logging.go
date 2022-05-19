@@ -7,16 +7,45 @@ import (
 	"time"
 
 	"github.com/gookit/color"
+	"github.com/spf13/cobra"
 
 	"github.com/skuid/tides/pkg/constants"
+	"github.com/skuid/tides/pkg/flags"
 )
 
 const (
 	SEPARATOR_LENGTH = 50
 )
 
+var (
+	fsLogSystem *ThreadSafeLoggingSystem
+)
+
 func init() {
-	color.Enable = true
+	color.Enable = false
+}
+
+func InitializeLogging(cmd *cobra.Command, _ []string) (err error) {
+	fsLogSystem = NewFileLoggingSystem()
+
+	if fsLogSystem.FileLoggingEnabled, err = cmd.Flags().GetBool(flags.FileLogging.Name); err != nil {
+		return
+	}
+
+	if fsLogSystem.FileLocation, err = cmd.Flags().GetString(flags.FileLoggingDirectory.Name); err != nil {
+		return
+	}
+
+	// try to open a file for this run off this
+	if fsLogSystem.FileLoggingEnabled {
+		if err = fsLogSystem.OpenFile(); err != nil {
+			return
+		} else {
+			fsLogSystem.Write()
+		}
+	}
+
+	return
 }
 
 // Println redirects through the color package

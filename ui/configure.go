@@ -74,7 +74,7 @@ func (v configure) Init() tea.Cmd {
 // TODO:
 // refactor to use a style here
 func (v configure) View() string {
-	return View(lit.MainHeader, v.body(), help.EditingHelp)
+	return style.StandardView(lit.MainHeader, v.body(), help.EditingHelp)
 }
 
 func (v configure) Update(msg tea.Msg) (m tea.Model, c tea.Cmd) {

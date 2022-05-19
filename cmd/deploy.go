@@ -16,6 +16,7 @@ var deployCmd = &cobra.Command{
 	Short:             "Deploy local Skuid metadata to a Skuid NLX Site.",
 	Long:              "Deploy Skuid metadata stored within a local file system directory to a Skuid NLX Site.",
 	PersistentPreRunE: validation.PrerunValidation,
+	PreRun:            logging.InitializeLogging,
 	RunE:              Deploy,
 }
 

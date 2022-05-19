@@ -1,13 +1,13 @@
 package cmd
 
 import (
-
 	// jsoniter. Fork of github.com/json-iterator/go
 	"github.com/spf13/cobra"
 
 	"github.com/skuid/tides/cmd/validation"
 	"github.com/skuid/tides/pkg"
 	"github.com/skuid/tides/pkg/flags"
+	"github.com/skuid/tides/pkg/logging"
 	"github.com/skuid/tides/pkg/util"
 )
 
@@ -21,6 +21,7 @@ var (
 		Short:             "Retrieve Skuid metadata from an Skuid NLX Site into a local directory.",
 		Long:              "Retrieve Skuid metadata from a Skuid NLX Site and output it into a local directory.",
 		PersistentPreRunE: validation.PrerunValidation,
+		PreRun:            logging.InitializeLogging,
 		RunE:              Retrieve,
 	}
 )

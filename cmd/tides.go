@@ -25,6 +25,7 @@ var (
 			DisableDefaultCmd: true,
 		},
 		Version: constants.VERSION_NAME,
+		PreRun:  logging.InitializeLogging,
 		Run: func(cmd *cobra.Command, _ []string) {
 			p := tea.NewProgram(ui.Main(cmd))
 			if err := p.Start(); err != nil {
