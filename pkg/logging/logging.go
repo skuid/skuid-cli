@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gookit/color"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
 	"github.com/skuid/tides/pkg/constants"
@@ -18,7 +19,16 @@ const (
 )
 
 var (
-	fsLogSystem *ThreadSafeLoggingSystem
+	logger             = logrus.New()
+	fileLoggingEnabled bool
+	loggingDirectory   string
+	fileStringFormat   = func() (ret string) {
+		ret = time.RFC822
+		ret = strings.ReplaceAll(ret, " ", "-")
+		ret = strings.ReplaceAll(ret, ":", "-")
+		return
+	}()
+	logStringFmt = fmt.Sprintf("[%v]: %%v\n", time.RFC1123Z)
 )
 
 func init() {
@@ -26,23 +36,50 @@ func init() {
 }
 
 func InitializeLogging(cmd *cobra.Command, _ []string) (err error) {
-	fsLogSystem = NewFileLoggingSystem()
+	// The API for setting attributes is a little different than the package level
+	// exported logger. See Godoc.
+	// log.Out = os.Stdout
 
-	if fsLogSystem.FileLoggingEnabled, err = cmd.Flags().GetBool(flags.FileLogging.Name); err != nil {
+	// You could set this to any `io.Writer` such as a file
+	// file, err := os.OpenFile("logrus.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	// if err == nil {
+	//  log.Out = file
+	// } else {
+	//  log.Info("Failed to log to file, using default stderr")
+	// }
+
+	if fileLoggingEnabled, err = cmd.Flags().GetBool(flags.FileLogging.Name); err != nil {
 		return
 	}
 
-	if fsLogSystem.FileLocation, err = cmd.Flags().GetString(flags.FileLoggingDirectory.Name); err != nil {
+	if loggingDirectory, err = cmd.Flags().GetString(flags.FileLoggingDirectory.Name); err != nil {
 		return
 	}
 
 	// try to open a file for this run off this
-	if fsLogSystem.FileLoggingEnabled {
-		if err = fsLogSystem.OpenFile(); err != nil {
-			return
-		} else {
-			fsLogSystem.Write()
-		}
+	if fileLoggingEnabled {
+		// 	var wd string
+		// if wd, err = os.Getwd(); err != nil {
+		// 	return
+		// }
+
+		// ls.FileName = fmt.Sprintf(fileStringFormat+".log", ls.RunStart)
+
+		// var fp string
+		// if strings.Contains(ls.FileLocation, wd) {
+		// 	fp = path.Join(ls.FileLocation, ls.FileName)
+		// } else {
+		// 	fp = path.Join(wd, ls.FileLocation, ls.FileName)
+		// }
+
+		// if ls.File, err = os.Open(fp); err != nil {
+		// 	return
+		// }
+		// if err = fsLogSystem.OpenFile(); err != nil {
+		// 	return
+		// } else {
+		// 	fsLogSystem.Write()
+		// }
 	}
 
 	return
