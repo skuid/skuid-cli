@@ -2,25 +2,13 @@ package common
 
 import (
 	"fmt"
-	"os"
-	"path"
 	"strings"
-	"time"
 
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
 	"github.com/skuid/tides/pkg/flags"
 	"github.com/skuid/tides/pkg/logging"
-)
-
-var (
-	fileStringFormat = func() (ret string) {
-		ret = time.RFC3339
-		ret = strings.ReplaceAll(ret, " ", "")
-		ret = strings.ReplaceAll(ret, ":", "")
-		return
-	}()
-	file *os.File
 )
 
 // PrerunValidation does generic validation for a function to make sure it has
@@ -40,8 +28,8 @@ func PrerunValidation(cmd *cobra.Command, _ []string) error {
 	// set verbosity
 	if verbose, err := cmd.Flags().GetBool(flags.Verbose.Name); err != nil {
 		return err
-	} else {
-		logging.SetVerbose(verbose)
+	} else if verbose {
+		logging.Logger.SetLevel(logrus.TraceLevel)
 	}
 
 	if err := initLog(cmd, []string{}); err != nil {
@@ -64,38 +52,7 @@ func initLog(cmd *cobra.Command, _ []string) (err error) {
 
 	// try to open a file for this run off this
 	if fileLoggingEnabled {
-		var wd string
-		if wd, err = os.Getwd(); err != nil {
-			return
-		}
-
-		var dir string
-		if strings.Contains(loggingDirectory, wd) {
-			dir = loggingDirectory
-		} else {
-			dir = path.Join(wd, loggingDirectory)
-		}
-
-		if stat, e := os.Stat(dir); e != nil {
-			if err = os.MkdirAll(dir, 0777); err != nil {
-				return err
-			}
-		} else if !stat.IsDir() {
-			err = fmt.Errorf("Directory required at loc: %v", dir)
-			return
-		}
-
-		logFileName := time.Now().Format(fileStringFormat) + ".log"
-
-		if _, err = os.Create(path.Join(dir, logFileName)); err != nil {
-			return
-		}
-
-		if file, err = os.OpenFile(path.Join(dir, logFileName), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666); err != nil {
-			return
-		}
-
-		logging.Logger.SetOutput(file)
+		logging.SetFileLogging(loggingDirectory)
 	}
 
 	return

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/radovskyb/watcher"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
 	"github.com/skuid/tides/cmd/common"
@@ -30,6 +31,7 @@ var watchCmd = &cobra.Command{
 func init() {
 	TidesCmd.AddCommand(watchCmd)
 	flags.AddFlags(watchCmd, flags.NLXLoginFlags...)
+	flags.AddFlags(watchCmd, flags.Directory)
 }
 
 func Watch(cmd *cobra.Command, _ []string) (err error) {
@@ -43,10 +45,19 @@ func Watch(cmd *cobra.Command, _ []string) (err error) {
 		return
 	}
 
+	fields := make(logrus.Fields)
+	fields["host"] = host
+	fields["username"] = username
+
+	logging.Logger.WithFields(fields).Debug("Gathered Credentials.")
+
 	var auth *pkg.Authorization
 	if auth, err = pkg.Authorize(host, username, password); err != nil {
 		return
 	}
+
+	fields["auth"] = auth
+	logging.Logger.WithFields(fields).Debug("Successfully Logged In.")
 
 	var targetDir string
 	if targetDir, err = cmd.Flags().GetString(flags.Directory.Name); err != nil {
@@ -84,10 +95,14 @@ func Watch(cmd *cobra.Command, _ []string) (err error) {
 	// Only handle one file change per event cycle.
 	w.SetMaxEvents(1)
 
+	fields["targetDir"] = targetDir
+	logging.Logger.WithFields(fields).Debug("Starting Watch.")
+
 	go func() {
 		for {
 			select {
 			case event := <-w.Event:
+				logging.Logger.WithFields(fields).Debug("Event Detected.")
 				cleanRelativeFilePath := util.FromWindowsPath(strings.Split(event.Path, friendly)[1])
 				dirSplit := strings.Split(cleanRelativeFilePath, string(filepath.Separator))
 				metadataType, remainder := dirSplit[1], dirSplit[2]
@@ -99,14 +114,14 @@ func Watch(cmd *cobra.Command, _ []string) (err error) {
 				} else {
 					changedEntity = filepath.Join(metadataType, strings.Split(remainder, ".")[0])
 				}
-				logging.Println("Detected change to metadata type: " + changedEntity)
+				logging.Logger.WithFields(fields).Debug("Detected change to metadata type: " + changedEntity)
 				go func() {
 					if err := pkg.DeployModifiedFiles(auth, targetDir, changedEntity); err != nil {
 						w.Error <- err
 					}
 				}()
 			case err := <-w.Error:
-				logging.Fatal(err)
+				logging.Logger.WithError(err).Fatal("Unable to handle file change.")
 			case <-w.Closed:
 				return
 			}
@@ -120,11 +135,11 @@ func Watch(cmd *cobra.Command, _ []string) (err error) {
 
 	// Print a list of all of the files and folders currently
 	// being watched and their paths.
-	logging.VerboseLn("** Now watching the following files for changes... **")
+	logging.Logger.Debug("** Now watching the following files for changes... **")
 	for path, f := range w.WatchedFiles() {
-		logging.VerboseLn(fmt.Sprintf("%s: %s", path, f.Name()))
+		logging.Logger.Debug(fmt.Sprintf("%s: %s", path, f.Name()))
 	}
-	logging.VerboseLn("Waiting for changes...")
+	logging.Logger.Debug("Waiting for changes...")
 
 	// Start the watching process - it'll check for changes every 100ms.
 	if err = w.Start(time.Millisecond * 100); err != nil {
