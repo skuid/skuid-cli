@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/skuid/tides/pkg"
-	"github.com/skuid/tides/pkg/logging"
 	"github.com/skuid/tides/pkg/util"
 )
 
@@ -46,8 +45,6 @@ func TestGetDeployPlan(t *testing.T) {
 
 func BenchmarkDeploymentPlan(b *testing.B) {
 	util.SkipBenchmark(b)
-	logging.SetVerbose(false)
-	logging.SetDebug(false)
 	auth, _ := pkg.Authorize(authHost, authUser, authPass)
 	wd, _ := os.Getwd()
 	fp := filepath.Join(wd, "..", "..", "_deploy")

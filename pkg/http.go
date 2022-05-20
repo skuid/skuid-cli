@@ -49,13 +49,11 @@ func FastJsonBodyRequest[T any](
 		return
 	}
 
-	logging.VerboseLn("Unmarshalling data")
+	logging.Logger.Debug("Unmarshalling data")
 
 	if err = json.Unmarshal(responseBody, &r); err != nil {
 		return
 	}
-
-	logging.Debugf("(Response: %v)\n", r)
 
 	return
 }
@@ -85,8 +83,7 @@ func FastRequestHelper(
 		route = fmt.Sprintf("https://%v", route)
 	}
 
-	logging.VerboseSeparator()
-	logging.VerboseLn(color.Gray.Sprint("HTTPS Request:"), color.Cyan.Sprint(route))
+	logging.Logger.Debug("Assembling Request.")
 
 	// Prepare resources for the http request
 	req := fasthttp.AcquireRequest()
@@ -102,6 +99,7 @@ func FastRequestHelper(
 	}
 	// Set the URI for the request
 	req.SetURI(uri)
+	logging.Logger.Debugf("URI: %v", uri.String())
 
 	// Set the body for the request (if found)
 	// (empty bodies will be discarded)
@@ -110,9 +108,9 @@ func FastRequestHelper(
 	// ...along with the grant_type: password
 	if len(body) > 0 {
 		if len(body) < 1e4 {
-			logging.Debugf("With body: %v\n", string(body))
+			logging.Logger.Debugf("With body: %v\n", string(body))
 		} else {
-			logging.Debugf("(With large body, too large to print)\n")
+			logging.Logger.Debugf("(With large body, too large to print)\n")
 		}
 		req.SetBody(body)
 	}
@@ -132,7 +130,7 @@ func FastRequestHelper(
 
 	// perform the request. errors only pop up if there's an issue
 	// with assembly/resources.
-	logging.VerboseLn("Making Request")
+	logging.Logger.Debug("Making Request.")
 	if err = fasthttp.Do(req, resp); err != nil {
 		return
 	}
@@ -166,7 +164,7 @@ func FastRequestHelper(
 		return
 	}
 
-	logging.VerboseLn("Successful Request")
+	logging.Logger.Debug("Successful Request")
 
 	response = responseBody
 
@@ -177,7 +175,7 @@ func FastRequestHelper(
 			var prettyMarshal interface{}
 			json.Unmarshal(response, &prettyMarshal)
 			pretty, _ := json.MarshalIndent(prettyMarshal, "", " ")
-			logging.TraceF("Pretty Response Body: %v", color.Cyan.Sprint(string(pretty)))
+			logging.Logger.Tracef("Pretty Response Body: %v", color.Cyan.Sprint(string(pretty)))
 		}
 	}
 

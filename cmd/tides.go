@@ -28,7 +28,7 @@ var (
 		Run: func(cmd *cobra.Command, _ []string) {
 			p := tea.NewProgram(ui.Main(cmd))
 			if err := p.Start(); err != nil {
-				logging.Fatal(err)
+				logging.Logger.WithError(err).Error("Unable to Start User Interface.")
 			}
 		},
 	}
@@ -41,20 +41,20 @@ func init() {
 
 		// If a config file is found, read it in.
 		if err := viper.ReadInConfig(); err == nil {
-			logging.Println("Using config file:", viper.ConfigFileUsed())
+			logging.Logger.Println("Using config file:", viper.ConfigFileUsed())
 		}
 	})
 
 	if err := flags.Add(flags.Verbose)(TidesCmd); err != nil {
-		logging.Fatal(err)
+		logging.Logger.WithError(err).Fatal("Unable to assign verbose flag to command")
 	}
 
 	if err := flags.Add(flags.FileLogging)(TidesCmd); err != nil {
-		logging.Fatal(err)
+		logging.Logger.WithError(err).Fatal("Unable to assign file logging flag to command")
 	}
 
 	if err := flags.Add(flags.FileLoggingDirectory)(TidesCmd); err != nil {
-		logging.Fatal(err)
+		logging.Logger.WithError(err).Fatal("Unable to assign file logging directory flag to command")
 	}
 
 }

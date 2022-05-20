@@ -11,9 +11,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/skuid/tides/pkg/logging"
-	"github.com/skuid/tides/pkg/util"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/skuid/tides/pkg/util"
 )
 
 func TestGetAbs(t *testing.T) {
@@ -135,7 +135,6 @@ type RetrieveFile struct {
 }
 
 func TestRetrieve(t *testing.T) {
-	logging.SetDebug(true)
 	testCases := []struct {
 		testDescription string
 		giveTargetDir   string

@@ -35,6 +35,8 @@ func init() {
 }
 
 func Watch(cmd *cobra.Command, _ []string) (err error) {
+	fields := make(logrus.Fields)
+	fields["process"] = "watch"
 	// get required arguments
 	var host, username, password string
 	if host, err = cmd.Flags().GetString(flags.Host.Name); err != nil {
@@ -45,7 +47,6 @@ func Watch(cmd *cobra.Command, _ []string) (err error) {
 		return
 	}
 
-	fields := make(logrus.Fields)
 	fields["host"] = host
 	fields["username"] = username
 
@@ -75,7 +76,7 @@ func Watch(cmd *cobra.Command, _ []string) (err error) {
 	defer func() {
 		if targetDir != "" {
 			if err := os.Chdir(back); err != nil {
-				logging.Fatalf("failed changing back to directory: %v", err)
+				logging.Logger.WithFields(fields).WithError(err).Fatal("Failed changing back to directory: %v")
 			}
 		}
 	}()
@@ -135,11 +136,11 @@ func Watch(cmd *cobra.Command, _ []string) (err error) {
 
 	// Print a list of all of the files and folders currently
 	// being watched and their paths.
-	logging.Logger.Debug("** Now watching the following files for changes... **")
+	logging.Logger.WithFields(fields).Debug("** Now watching the following files for changes... **")
 	for path, f := range w.WatchedFiles() {
-		logging.Logger.Debug(fmt.Sprintf("%s: %s", path, f.Name()))
+		logging.Logger.WithFields(fields).Debug(fmt.Sprintf("%s: %s", path, f.Name()))
 	}
-	logging.Logger.Debug("Waiting for changes...")
+	logging.Logger.WithFields(fields).Debug("Waiting for changes...")
 
 	// Start the watching process - it'll check for changes every 100ms.
 	if err = w.Start(time.Millisecond * 100); err != nil {

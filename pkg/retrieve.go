@@ -60,7 +60,7 @@ func ExecuteRetrieval(auth *Authorization, plans NlxPlanPayload, zip bool) (dura
 	// this function generically handles a plan based on name / stuff
 	executePlan := func(name string, plan NlxPlan) func() error {
 		return func() error {
-			logging.Debugf("Firing off %v", name)
+			logging.Logger.Debugf("Firing off %v", name)
 
 			headers := GeneratePlanHeaders(auth, plan)
 
@@ -70,11 +70,11 @@ func ExecuteRetrieval(auth *Authorization, plans NlxPlanPayload, zip bool) (dura
 				headers[fasthttp.HeaderContentType] = JSON_CONTENT_TYPE
 			}
 
-			logging.TraceF("Plan Headers: %v\n", headers)
+			logging.Logger.Tracef("Plan Headers: %v\n", headers)
 
 			url := GenerateRoute(auth, plan)
 
-			logging.TraceF("Plan Request: %v\n", url)
+			logging.Logger.Tracef("Plan Request: %v\n", url)
 
 			if result, err := FastRequest(
 				url, fasthttp.MethodPost, NewRetrievalRequestBody(plan.Metadata, zip), headers,
@@ -86,10 +86,10 @@ func ExecuteRetrieval(auth *Authorization, plans NlxPlanPayload, zip bool) (dura
 					Data:     result,
 				}
 			} else {
-				logging.Debugf("Plan: %v", plan)
-				logging.Debugf("PlanName: %v", name)
-				logging.Debugf("Url: %v", url)
-				logging.Debugf("Error on request: %v\n", err.Error())
+				logging.Logger.Tracef("Plan: %v", plan)
+				logging.Logger.Tracef("PlanName: %v", name)
+				logging.Logger.Tracef("Url: %v", url)
+				logging.Logger.Tracef("Error on request: %v\n", err.Error())
 				return err
 			}
 
@@ -110,13 +110,13 @@ func ExecuteRetrieval(auth *Authorization, plans NlxPlanPayload, zip bool) (dura
 		// if there's an error, we won't consume the results below
 		// and we'll output the error
 		if err != nil {
-			logging.PrintError("Error when executing retrieval plan:", err)
+			logging.Logger.WithError(err).Error("Error when executing retrieval plan.")
 		}
 	}()
 
 	// consume the closed channel (probably return an array; todo)
 	for result := range ch {
-		logging.Debugf("%v\n", result)
+		logging.Logger.Tracef("%v\n", result)
 		results = append(results, result)
 	}
 

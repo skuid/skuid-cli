@@ -1,6 +1,9 @@
 package cmd
 
 import (
+	"time"
+
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
 	"github.com/skuid/tides/cmd/common"
@@ -27,6 +30,11 @@ func init() {
 }
 
 func Deploy(cmd *cobra.Command, _ []string) (err error) {
+	fields := make(logrus.Fields)
+	fields["start"] = time.Now()
+	fields["process"] = "deploy"
+	logging.Logger.WithFields(fields).Info("Starting Deploy.")
+
 	// get required authentication arguments
 	var host, username, password string
 	if host, err = cmd.Flags().GetString(flags.Host.Name); err != nil {
@@ -37,11 +45,18 @@ func Deploy(cmd *cobra.Command, _ []string) (err error) {
 		return
 	}
 
+	fields["host"] = host
+	fields["username"] = username
+	logging.Logger.WithFields(fields).Debug("Gathered credentials.")
+
 	// auth
 	var auth *pkg.Authorization
 	if auth, err = pkg.Authorize(host, username, password); err != nil {
 		return
 	}
+
+	fields["auth"] = auth
+	logging.Logger.WithFields(fields).Debug("Successfully Authenticated.")
 
 	// we want the filter nil because it will be discarded without
 	// initialization
@@ -63,6 +78,7 @@ func Deploy(cmd *cobra.Command, _ []string) (err error) {
 		return
 	} else if appName != "" {
 		initFilter()
+		fields["appName"] = appName
 		filter.AppName = appName
 	}
 
@@ -72,6 +88,7 @@ func Deploy(cmd *cobra.Command, _ []string) (err error) {
 		return
 	} else if len(pageNames) > 0 {
 		initFilter()
+		fields["pages"] = pageNames
 		filter.PageNames = pageNames
 	}
 
@@ -79,12 +96,19 @@ func Deploy(cmd *cobra.Command, _ []string) (err error) {
 	var targetDirectory string
 	if targetDirectory, err = cmd.Flags().GetString(flags.Directory.Name); err != nil {
 		return
+	} else if targetDirectory != "" {
+		fields["targetDirectory"] = targetDirectory
 	}
+
+	logging.Logger.WithFields(fields).Debug("Getting Deployment Plan.")
 
 	var deploymentPlan []byte
 	if deploymentPlan, err = pkg.Archive(targetDirectory, nil); err != nil {
 		return
 	}
+
+	fields["deploymentBytes"] = len(deploymentPlan)
+	logging.Logger.WithFields(fields).Debugf("Got Deployment Plan: Size (%v)", len(deploymentPlan))
 
 	// get the plan
 	var plans pkg.NlxDynamicPlanMap
@@ -92,13 +116,18 @@ func Deploy(cmd *cobra.Command, _ []string) (err error) {
 		return
 	}
 
+	fields["plans"] = len(plans)
+	logging.Logger.WithFields(fields)
+
 	var results []pkg.NlxDeploymentResult
 	if _, results, err = pkg.ExecuteDeployPlan(auth, plans, targetDirectory); err != nil {
 		return
 	}
 
+	fields["results"] = len(results)
+
 	for _, result := range results {
-		logging.Debugf("result: %v\n", result)
+		logging.Logger.Debugf("result: %v\n", result)
 	}
 
 	return

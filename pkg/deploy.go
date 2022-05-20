@@ -45,7 +45,7 @@ type FilteredRequestBody struct {
 }
 
 func PrepareDeployment(auth *Authorization, deploymentPlan []byte, filter *NlxPlanFilter) (duration time.Duration, results NlxDynamicPlanMap, err error) {
-	logging.VerboseSection("Getting Deploy Plan")
+	logging.Logger.Debug("Getting Deploy Plan")
 	start := time.Now()
 	defer func() { duration = time.Since(start) }()
 
@@ -55,6 +55,7 @@ func PrepareDeployment(auth *Authorization, deploymentPlan []byte, filter *NlxPl
 
 	var body []byte
 	if filter != nil {
+		logging.Logger.Debug("With filter.")
 		// change content type to json
 		headers[fasthttp.HeaderContentType] = JSON_CONTENT_TYPE
 		// we instead add the deployment plan bytes to the payload
@@ -80,6 +81,8 @@ func PrepareDeployment(auth *Authorization, deploymentPlan []byte, filter *NlxPl
 		headers,
 	)
 
+	logging.Logger.Debugf("This took %v.", time.Since(start))
+
 	return
 }
 
@@ -89,21 +92,21 @@ func DeployModifiedFiles(auth *Authorization, targetDir, modifiedFile string) (e
 		return
 	}
 
-	logging.Debugf("Getting Deployment Plan for Modified File (%v)", modifiedFile)
+	logging.Logger.Debugf("Getting Deployment Plan for Modified File (%v)", modifiedFile)
 
 	_, plan, err := PrepareDeployment(auth, planBody, nil)
 	if err != nil {
 		return
 	}
 
-	logging.Debugf("Received Deployment Plan for (%v), Deploying.", modifiedFile)
+	logging.Logger.Debugf("Received Deployment Plan for (%v), Deploying.", modifiedFile)
 
 	_, _, err = ExecuteDeployPlan(auth, plan, targetDir)
 	if err != nil {
 		return
 	}
 
-	logging.Debugf("Successfully deployed metadata to Skuid Site: %v", modifiedFile)
+	logging.Logger.Debugf("Successfully deployed metadata to Skuid Site: %v", modifiedFile)
 
 	return
 }
@@ -112,7 +115,7 @@ func DeployModifiedFiles(auth *Authorization, targetDir, modifiedFile string) (e
 func ExecuteDeployPlan(auth *Authorization, plans NlxDynamicPlanMap, targetDir string) (duration time.Duration, planResults []NlxDeploymentResult, err error) {
 	start := time.Now()
 	defer func() { duration = time.Since(start) }()
-	logging.VerboseSection("Executing Deploy Plan")
+	logging.Logger.Debug("Executing Deploy Plan")
 
 	eg := &errgroup.Group{}
 	ch := make(chan NlxDeploymentResult)
@@ -120,18 +123,18 @@ func ExecuteDeployPlan(auth *Authorization, plans NlxDynamicPlanMap, targetDir s
 	executePlan := func(plan NlxPlan) func() error {
 		return func() error {
 
-			logging.Debugf("Archiving %v", targetDir)
+			logging.Logger.Debugf("Archiving %v", targetDir)
 			deploy, err := Archive(targetDir, &plan.Metadata)
 			if err != nil {
-				logging.Println("Error creating deployment ZIP archive")
+				logging.Logger.Debug("Error creating deployment ZIP archive")
 				return err
 			}
 
 			headers := GeneratePlanHeaders(auth, plan)
-			logging.TraceF("Plan Headers: %v\n", headers)
+			logging.Logger.Debugf("Plan Headers: %v\n", headers)
 
 			url := GenerateRoute(auth, plan)
-			logging.TraceF("Plan Request: %v\n", url)
+			logging.Logger.Debugf("Plan Request: %v\n", url)
 
 			if result, err := FastRequest(
 				url,
@@ -145,8 +148,8 @@ func ExecuteDeployPlan(auth *Authorization, plans NlxDynamicPlanMap, targetDir s
 					Data: result,
 				}
 			} else {
-				logging.TraceF("Url: %v", url)
-				logging.TraceF("Error on request: %v\n", err.Error())
+				logging.Logger.Debugf("Url: %v", url)
+				logging.Logger.Debugf("Error on request: %v\n", err.Error())
 				return err
 			}
 
@@ -166,7 +169,7 @@ func ExecuteDeployPlan(auth *Authorization, plans NlxDynamicPlanMap, targetDir s
 		// if there's an error, we won't consume the results below
 		// and we'll output the error
 		if err != nil {
-			logging.PrintError("Error when executing retrieval plan:", err)
+			logging.Logger.WithError(err).Error("Error when executing retrieval plan.")
 		}
 	}()
 

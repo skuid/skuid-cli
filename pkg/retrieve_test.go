@@ -5,14 +5,12 @@ import (
 	"testing"
 
 	"github.com/skuid/tides/pkg"
-	"github.com/skuid/tides/pkg/logging"
 	"github.com/skuid/tides/pkg/util"
 )
 
 func TestRetrievePlan(t *testing.T) {
 	util.SkipIntegrationTest(t)
 
-	logging.SetVerbose(true)
 	auth, err := pkg.Authorize(authHost, authUser, authPass)
 	if err != nil {
 		t.Fatal(err)
@@ -49,8 +47,6 @@ func TestRetrievePlan(t *testing.T) {
 
 func TestExecuteRetrieval(t *testing.T) {
 	util.SkipIntegrationTest(t)
-
-	logging.SetVerbose(true)
 	auth, err := pkg.Authorize(authHost, authUser, authPass)
 	if err != nil {
 		t.Fatal(err)

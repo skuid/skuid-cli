@@ -21,3 +21,4 @@ skuid_windows_amd64.exe
 logs
 .logs
 **/**/*.log
+work/

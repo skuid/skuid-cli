@@ -9,7 +9,6 @@ import (
 
 	"github.com/skuid/tides/pkg"
 	"github.com/skuid/tides/pkg/constants"
-	"github.com/skuid/tides/pkg/logging"
 	"github.com/skuid/tides/pkg/util"
 )
 
@@ -24,10 +23,8 @@ var (
 func TestAuthorizationMethods(t *testing.T) {
 	util.SkipIntegrationTest(t)
 	if err := util.LoadTestEnvironment(); err != nil {
-		logging.Fatal(err)
+		t.Fatal(err)
 	}
-
-	logging.SetVerbose(true)
 
 	if accessToken, err := pkg.GetAccessToken(
 		authHost, authUser, authPass,

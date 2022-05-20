@@ -6,11 +6,12 @@ import (
 	"strings"
 
 	"github.com/gookit/color"
+	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
+
 	"github.com/skuid/tides/pkg/constants"
 	"github.com/skuid/tides/pkg/errors"
 	"github.com/skuid/tides/pkg/logging"
-	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 )
 
 // Generic flag type that can take a type variable and use a pointer
@@ -54,7 +55,7 @@ func CheckRequiredFields[T any](f *Flag[T]) error {
 func AddFlagFunctions(cmd *cobra.Command, adds ...func(*cobra.Command) error) {
 	for _, addFlag := range adds {
 		if err := addFlag(cmd); err != nil {
-			logging.Fatalf("Unable to set up %v: %v", cmd.Name(), err.Error())
+			logging.Logger.WithError(err).Fatal("Unable to Add Flag to Command: %v", cmd.Name())
 		}
 	}
 }
@@ -63,7 +64,7 @@ func AddFlagFunctions(cmd *cobra.Command, adds ...func(*cobra.Command) error) {
 func AddFlags[T any](cmd *cobra.Command, flags ...*Flag[T]) {
 	for _, flag := range flags {
 		if err := Add(flag)(cmd); err != nil {
-			logging.Fatalf("Unable to set up flag (%v) for command (%v): %v", flag.Name, cmd.Name(), err.Error())
+			logging.Logger.WithError(err).Fatal("Unable to Add Flag to Command: %v", cmd.Name())
 		}
 	}
 }
