@@ -32,14 +32,14 @@ func PrerunValidation(cmd *cobra.Command, _ []string) error {
 		logging.Logger.SetLevel(logrus.TraceLevel)
 	}
 
-	if err := initLog(cmd, []string{}); err != nil {
+	if err := LoggingValidation(cmd, []string{}); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func initLog(cmd *cobra.Command, _ []string) (err error) {
+func LoggingValidation(cmd *cobra.Command, _ []string) (err error) {
 	var fileLoggingEnabled bool
 	if fileLoggingEnabled, err = cmd.Flags().GetBool(flags.FileLogging.Name); err != nil {
 		return

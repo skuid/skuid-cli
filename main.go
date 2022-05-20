@@ -26,6 +26,6 @@ func init() {
 	if err := godotenv.Load(".env"); err != nil {
 		logging.Logger.WithError(err).Trace("Error Initializing Environment.")
 	} else {
-		logging.Logger.Debug("Initialized Environment")
+		// logging.Logger.Debug("Initialized Environment")
 	}
 }
