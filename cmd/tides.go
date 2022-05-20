@@ -1,7 +1,10 @@
 package cmd
 
 import (
+	"os"
+
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
@@ -26,6 +29,10 @@ var (
 		},
 		Version: constants.VERSION_NAME,
 		Run: func(cmd *cobra.Command, _ []string) {
+			if logging.Logger.Out == os.Stderr {
+				// want to hide the logger if we're not file logging
+				logging.Logger.SetLevel(logrus.FatalLevel)
+			}
 			p := tea.NewProgram(ui.Main(cmd))
 			if err := p.Start(); err != nil {
 				logging.Logger.WithError(err).Error("Unable to Start User Interface.")
