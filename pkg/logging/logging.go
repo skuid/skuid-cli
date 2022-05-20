@@ -2,16 +2,14 @@ package logging
 
 import (
 	"fmt"
-	"log"
+	"os"
 	"strings"
 	"time"
 
 	"github.com/gookit/color"
 	"github.com/sirupsen/logrus"
-	"github.com/spf13/cobra"
 
 	"github.com/skuid/tides/pkg/constants"
-	"github.com/skuid/tides/pkg/flags"
 )
 
 const (
@@ -19,92 +17,45 @@ const (
 )
 
 var (
-	logger             = logrus.New()
-	fileLoggingEnabled bool
-	loggingDirectory   string
-	fileStringFormat   = func() (ret string) {
-		ret = time.RFC822
-		ret = strings.ReplaceAll(ret, " ", "-")
-		ret = strings.ReplaceAll(ret, ":", "-")
-		return
-	}()
-	logStringFmt = fmt.Sprintf("[%v]: %%v\n", time.RFC1123Z)
+	Logger        *logrus.Logger
+	LineSeparator = strings.Repeat("-", SEPARATOR_LENGTH)
+	StarSeparator = strings.Repeat("*", SEPARATOR_LENGTH)
 )
 
 func init() {
-	color.Enable = false
-}
+	Logger = logrus.New()
 
-func InitializeLogging(cmd *cobra.Command, _ []string) (err error) {
-	// The API for setting attributes is a little different than the package level
-	// exported logger. See Godoc.
-	// log.Out = os.Stdout
+	// Log as JSON instead of the default ASCII formatter.
+	Logger.SetFormatter(&logrus.TextFormatter{})
 
-	// You could set this to any `io.Writer` such as a file
-	// file, err := os.OpenFile("logrus.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
-	// if err == nil {
-	//  log.Out = file
-	// } else {
-	//  log.Info("Failed to log to file, using default stderr")
-	// }
+	// Output to stdout instead of the default stderr
+	// Can be any io.Writer, see below for File example
+	Logger.SetOutput(os.Stdout)
 
-	if fileLoggingEnabled, err = cmd.Flags().GetBool(flags.FileLogging.Name); err != nil {
-		return
-	}
-
-	if loggingDirectory, err = cmd.Flags().GetString(flags.FileLoggingDirectory.Name); err != nil {
-		return
-	}
-
-	// try to open a file for this run off this
-	if fileLoggingEnabled {
-		// 	var wd string
-		// if wd, err = os.Getwd(); err != nil {
-		// 	return
-		// }
-
-		// ls.FileName = fmt.Sprintf(fileStringFormat+".log", ls.RunStart)
-
-		// var fp string
-		// if strings.Contains(ls.FileLocation, wd) {
-		// 	fp = path.Join(ls.FileLocation, ls.FileName)
-		// } else {
-		// 	fp = path.Join(wd, ls.FileLocation, ls.FileName)
-		// }
-
-		// if ls.File, err = os.Open(fp); err != nil {
-		// 	return
-		// }
-		// if err = fsLogSystem.OpenFile(); err != nil {
-		// 	return
-		// } else {
-		// 	fsLogSystem.Write()
-		// }
-	}
-
-	return
+	// Only log the warning severity or above.
+	Logger.SetLevel(logrus.WarnLevel)
 }
 
 // Println redirects through the color package
 // to print a gray colored line
 func Println(args ...interface{}) {
-	fmt.Println(args...)
+	Logger.Log(logrus.InfoLevel, args...)
 }
 
 // Printf redirects through the color package
 // to print a gray colored message
 func Printf(formatString string, args ...interface{}) {
-	fmt.Printf(formatString, args...)
+	Logger.Logf(logrus.InfoLevel, formatString, args...)
 }
 
 // PrintSeparator creates some visual space
 func PrintSeparator() {
-	fmt.Println(strings.Repeat("-", SEPARATOR_LENGTH))
+	Logger.Logln(logrus.InfoLevel, LineSeparator)
 }
 
 // PrintErrorSeparator creates some visual space
 func PrintErrorSeparator() {
-	color.Red.Println(strings.Repeat("*", SEPARATOR_LENGTH))
+	Logger.Logln(logrus.ErrorLevel, StarSeparator)
 }
 
 // Printcommand is a command that outputs separated
@@ -129,20 +80,89 @@ func PrintCommand(commandName string) {
 // PrintError formats an error with a description and message
 func PrintError(description string, err error) {
 	PrintErrorSeparator()
-	color.Red.Println(description)
-	color.Red.Println(err.Error())
+	Logger.Logln(logrus.ErrorLevel, description)
+	Logger.Logln(logrus.ErrorLevel, err.Error())
 	PrintErrorSeparator()
 }
 
 // SuccessWithTime Returns a formatted string with a duration since a start time
 func SuccessWithTime(description string, timeStart time.Time) {
-	color.Gray.Printf("%-25s\t%v\n", fmt.Sprintf("%v:", description), color.Green.Sprint(time.Since(timeStart)))
+	Logger.Logf(logrus.InfoLevel, "%-25s\t%v\n", fmt.Sprintf("%v:", description), color.Green.Sprint(time.Since(timeStart)))
 }
 
 func Fatal(err error) {
-	log.Fatal(color.Red.Sprintf("ERROR: %v", err))
+	Logger.Fatal(color.Red.Sprintf("ERROR: %v", err))
 }
 
-func FatalF(msg string, args ...interface{}) {
-	log.Fatalf(color.Red.Sprint(msg), args)
+func Fatalf(msg string, args ...interface{}) {
+	Logger.Fatalf(color.Red.Sprint(msg), args)
+}
+
+func SetVerbose(verbosity bool) {
+	if verbosity {
+		Logger.SetLevel(logrus.WarnLevel)
+	} else {
+		Logger.SetLevel(logrus.InfoLevel)
+	}
+}
+
+func SetDebug(debugging bool) {
+	if debugging {
+		Logger.SetLevel(logrus.DebugLevel)
+	} else {
+		Logger.SetLevel(logrus.InfoLevel)
+	}
+}
+
+// VerboseSection creates some visual space for a title in verbose mode
+func VerboseSection(description string) {
+	Logger.Debugln(LineSeparator)
+	Logger.Debugln(description)
+}
+
+// VerboseLn will only call Println if ArgVerbose is true.
+func VerboseLn(args ...interface{}) {
+	Logger.Debugln(args...)
+}
+
+// VerboseLn will call SuccessWithTime if ArgVerbose is true.
+// Otherwise, it just prints a success message
+func VerboseSuccess(msg string, t time.Time) {
+	Logger.WithField("duration", time.Since(t)).Debug(msg)
+}
+
+// DebugCommand only prints the command if ArgVerbose is true.
+func DebugCommand(commandName string) {
+	Logger.Debug(commandName)
+}
+
+// DebugError logs an error if ArgVerbose is true.
+func DebugError(description string, err error) {
+	Logger.WithError(err).Debug(description)
+}
+
+func Debug(msg string) {
+	Logger.Debug(msg)
+}
+
+// Debugf is a gated printF
+func Debugf(msg string, args ...interface{}) {
+	Logger.Debugf(msg, args...)
+}
+
+// VerboseSeparator is a gated separator
+func VerboseSeparator() {
+	Logger.Debugln(LineSeparator)
+}
+
+func TraceF(msg string, args ...interface{}) {
+	Logger.Tracef(msg, args...)
+}
+
+func TraceLn(msg string) {
+	Logger.Traceln(msg)
+}
+
+func TraceErr(msg string, err error) {
+	Logger.WithError(err).Trace(msg)
 }

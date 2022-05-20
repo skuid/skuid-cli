@@ -55,7 +55,7 @@ func FastJsonBodyRequest[T any](
 		return
 	}
 
-	logging.VerboseF("(Response: %v)\n", r)
+	logging.Debugf("(Response: %v)\n", r)
 
 	return
 }
@@ -110,9 +110,9 @@ func FastRequestHelper(
 	// ...along with the grant_type: password
 	if len(body) > 0 {
 		if len(body) < 1e4 {
-			logging.VerboseF("With body: %v\n", string(body))
+			logging.Debugf("With body: %v\n", string(body))
 		} else {
-			logging.VerboseF("(With large body, too large to print)\n")
+			logging.Debugf("(With large body, too large to print)\n")
 		}
 		req.SetBody(body)
 	}
@@ -177,7 +177,7 @@ func FastRequestHelper(
 			var prettyMarshal interface{}
 			json.Unmarshal(response, &prettyMarshal)
 			pretty, _ := json.MarshalIndent(prettyMarshal, "", " ")
-			logging.DebugF("Pretty Response Body: %v", color.Cyan.Sprint(string(pretty)))
+			logging.TraceF("Pretty Response Body: %v", color.Cyan.Sprint(string(pretty)))
 		}
 	}
 

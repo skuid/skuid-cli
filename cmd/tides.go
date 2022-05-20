@@ -25,7 +25,6 @@ var (
 			DisableDefaultCmd: true,
 		},
 		Version: constants.VERSION_NAME,
-		PreRun:  logging.InitializeLogging,
 		Run: func(cmd *cobra.Command, _ []string) {
 			p := tea.NewProgram(ui.Main(cmd))
 			if err := p.Start(); err != nil {
@@ -47,6 +46,14 @@ func init() {
 	})
 
 	if err := flags.Add(flags.Verbose)(TidesCmd); err != nil {
+		logging.Fatal(err)
+	}
+
+	if err := flags.Add(flags.FileLogging)(TidesCmd); err != nil {
+		logging.Fatal(err)
+	}
+
+	if err := flags.Add(flags.FileLoggingDirectory)(TidesCmd); err != nil {
 		logging.Fatal(err)
 	}
 

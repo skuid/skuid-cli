@@ -89,21 +89,21 @@ func DeployModifiedFiles(auth *Authorization, targetDir, modifiedFile string) (e
 		return
 	}
 
-	logging.VerboseF("Getting Deployment Plan for Modified File (%v)", modifiedFile)
+	logging.Debugf("Getting Deployment Plan for Modified File (%v)", modifiedFile)
 
 	_, plan, err := PrepareDeployment(auth, planBody, nil)
 	if err != nil {
 		return
 	}
 
-	logging.VerboseF("Received Deployment Plan for (%v), Deploying.", modifiedFile)
+	logging.Debugf("Received Deployment Plan for (%v), Deploying.", modifiedFile)
 
 	_, _, err = ExecuteDeployPlan(auth, plan, targetDir)
 	if err != nil {
 		return
 	}
 
-	logging.VerboseF("Successfully deployed metadata to Skuid Site: %v", modifiedFile)
+	logging.Debugf("Successfully deployed metadata to Skuid Site: %v", modifiedFile)
 
 	return
 }
@@ -120,7 +120,7 @@ func ExecuteDeployPlan(auth *Authorization, plans NlxDynamicPlanMap, targetDir s
 	executePlan := func(plan NlxPlan) func() error {
 		return func() error {
 
-			logging.VerboseF("Archiving %v", targetDir)
+			logging.Debugf("Archiving %v", targetDir)
 			deploy, err := Archive(targetDir, &plan.Metadata)
 			if err != nil {
 				logging.Println("Error creating deployment ZIP archive")
@@ -128,10 +128,10 @@ func ExecuteDeployPlan(auth *Authorization, plans NlxDynamicPlanMap, targetDir s
 			}
 
 			headers := GeneratePlanHeaders(auth, plan)
-			logging.DebugF("Plan Headers: %v\n", headers)
+			logging.TraceF("Plan Headers: %v\n", headers)
 
 			url := GenerateRoute(auth, plan)
-			logging.DebugF("Plan Request: %v\n", url)
+			logging.TraceF("Plan Request: %v\n", url)
 
 			if result, err := FastRequest(
 				url,
@@ -145,8 +145,8 @@ func ExecuteDeployPlan(auth *Authorization, plans NlxDynamicPlanMap, targetDir s
 					Data: result,
 				}
 			} else {
-				logging.DebugF("Url: %v", url)
-				logging.DebugF("Error on request: %v\n", err.Error())
+				logging.TraceF("Url: %v", url)
+				logging.TraceF("Error on request: %v\n", err.Error())
 				return err
 			}
 

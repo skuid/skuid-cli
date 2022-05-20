@@ -60,7 +60,7 @@ func ExecuteRetrieval(auth *Authorization, plans NlxPlanPayload, zip bool) (dura
 	// this function generically handles a plan based on name / stuff
 	executePlan := func(name string, plan NlxPlan) func() error {
 		return func() error {
-			logging.VerboseF("Firing off %v", name)
+			logging.Debugf("Firing off %v", name)
 
 			headers := GeneratePlanHeaders(auth, plan)
 
@@ -70,11 +70,11 @@ func ExecuteRetrieval(auth *Authorization, plans NlxPlanPayload, zip bool) (dura
 				headers[fasthttp.HeaderContentType] = JSON_CONTENT_TYPE
 			}
 
-			logging.DebugF("Plan Headers: %v\n", headers)
+			logging.TraceF("Plan Headers: %v\n", headers)
 
 			url := GenerateRoute(auth, plan)
 
-			logging.DebugF("Plan Request: %v\n", url)
+			logging.TraceF("Plan Request: %v\n", url)
 
 			if result, err := FastRequest(
 				url, fasthttp.MethodPost, NewRetrievalRequestBody(plan.Metadata, zip), headers,
@@ -86,10 +86,10 @@ func ExecuteRetrieval(auth *Authorization, plans NlxPlanPayload, zip bool) (dura
 					Data:     result,
 				}
 			} else {
-				logging.VerboseF("Plan: %v", plan)
-				logging.VerboseF("PlanName: %v", name)
-				logging.VerboseF("Url: %v", url)
-				logging.VerboseF("Error on request: %v\n", err.Error())
+				logging.Debugf("Plan: %v", plan)
+				logging.Debugf("PlanName: %v", name)
+				logging.Debugf("Url: %v", url)
+				logging.Debugf("Error on request: %v\n", err.Error())
 				return err
 			}
 
@@ -116,7 +116,7 @@ func ExecuteRetrieval(auth *Authorization, plans NlxPlanPayload, zip bool) (dura
 
 	// consume the closed channel (probably return an array; todo)
 	for result := range ch {
-		logging.VerboseF("%v\n", result)
+		logging.Debugf("%v\n", result)
 		results = append(results, result)
 	}
 

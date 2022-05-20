@@ -3,7 +3,7 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/skuid/tides/cmd/validation"
+	"github.com/skuid/tides/cmd/common"
 	"github.com/skuid/tides/pkg"
 	"github.com/skuid/tides/pkg/flags"
 	"github.com/skuid/tides/pkg/logging"
@@ -15,8 +15,7 @@ var deployCmd = &cobra.Command{
 	Use:               "deploy",
 	Short:             "Deploy local Skuid metadata to a Skuid NLX Site.",
 	Long:              "Deploy Skuid metadata stored within a local file system directory to a Skuid NLX Site.",
-	PersistentPreRunE: validation.PrerunValidation,
-	PreRun:            logging.InitializeLogging,
+	PersistentPreRunE: common.PrerunValidation,
 	RunE:              Deploy,
 }
 
@@ -99,7 +98,7 @@ func Deploy(cmd *cobra.Command, _ []string) (err error) {
 	}
 
 	for _, result := range results {
-		logging.VerboseF("result: %v\n", result)
+		logging.Debugf("result: %v\n", result)
 	}
 
 	return

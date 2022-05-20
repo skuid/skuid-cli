@@ -88,5 +88,6 @@ var (
 		Usage:      "Target directory for file logging",
 		Default:    ".logs",
 		EnvVarName: constants.ENV_TIDES_LOGGING_LOCATION,
+		Global:     true,
 	}
 )

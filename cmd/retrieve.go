@@ -4,7 +4,7 @@ import (
 	// jsoniter. Fork of github.com/json-iterator/go
 	"github.com/spf13/cobra"
 
-	"github.com/skuid/tides/cmd/validation"
+	"github.com/skuid/tides/cmd/common"
 	"github.com/skuid/tides/pkg"
 	"github.com/skuid/tides/pkg/flags"
 	"github.com/skuid/tides/pkg/logging"
@@ -20,8 +20,7 @@ var (
 		Use:               "retrieve",
 		Short:             "Retrieve Skuid metadata from an Skuid NLX Site into a local directory.",
 		Long:              "Retrieve Skuid metadata from a Skuid NLX Site and output it into a local directory.",
-		PersistentPreRunE: validation.PrerunValidation,
-		PreRun:            logging.InitializeLogging,
+		PersistentPreRunE: common.PrerunValidation,
 		RunE:              Retrieve,
 	}
 )
@@ -51,6 +50,7 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 	// expand the pattern down the road as more things
 	// are required to be build
 	initFilter := func() {
+		logging.Debug("Using filter.")
 		if filter == nil {
 			filter = &pkg.NlxPlanFilter{}
 		}
@@ -62,6 +62,7 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 		return
 	} else if appName != "" {
 		initFilter()
+		logging.Debugf("Filtering for app name: %v", appName)
 		filter.AppName = appName
 	}
 
@@ -71,6 +72,7 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 		return
 	} else if len(pageNames) > 0 {
 		initFilter()
+		logging.Debugf("Filtering for page names: %v", pageNames)
 		filter.PageNames = pageNames
 	}
 
@@ -85,24 +87,34 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 		return
 	}
 
+	logging.Debugf("Zipping? %v", !zip)
+
 	var results []pkg.NlxRetrievalResult
 	if _, results, err = pkg.ExecuteRetrieval(auth, plans, zip); err != nil {
 		return
 	}
+
+	logging.Debugf("Received %v Results.", len(results))
 
 	var directory string
 	if directory, err = cmd.Flags().GetString(flags.Directory.Name); err != nil {
 		return
 	}
 
+	logging.Debugf("Writing to %v.", directory)
+
 	var resultBytes [][]byte = make([][]byte, 0)
 	for _, result := range results {
 		resultBytes = append(resultBytes, result.Data)
 	}
 
+	logging.Debug("Clearing Directory first!")
+
 	if err = util.DeleteDirectories(directory, pkg.GetMetadataTypeDirNames()); err != nil {
 		return
 	}
+
+	logging.Debug("Directory Cleared.")
 
 	if err = util.WriteResultsToDisk(
 		directory,

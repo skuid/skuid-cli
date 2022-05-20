@@ -53,7 +53,7 @@ func ReSortJsonIndent(data []byte, indent bool) (replaced []byte, err error) {
 	var unsorted map[string]interface{}
 	err = json.Unmarshal(data, &unsorted)
 	if err != nil {
-		logging.DebugF("Error Unmarshalling into map[string]interface{}: %v", string(data))
+		logging.TraceF("Error Unmarshalling into map[string]interface{}: %v", string(data))
 		return
 	}
 

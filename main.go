@@ -24,7 +24,7 @@ func init() {
 	// if we want to load environments for customers
 	// instead of relying on autoenv/direnv
 	if err := godotenv.Load(".env"); err != nil {
-		logging.DebugF("Error Initializing Environment: %v", err.Error())
+		logging.TraceF("Error Initializing Environment: %v", err.Error())
 	} else {
 		logging.VerboseLn("Initialized Environment")
 	}

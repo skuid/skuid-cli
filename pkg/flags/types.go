@@ -54,7 +54,7 @@ func CheckRequiredFields[T any](f *Flag[T]) error {
 func AddFlagFunctions(cmd *cobra.Command, adds ...func(*cobra.Command) error) {
 	for _, addFlag := range adds {
 		if err := addFlag(cmd); err != nil {
-			logging.FatalF("Unable to set up %v: %v", cmd.Name(), err.Error())
+			logging.Fatalf("Unable to set up %v: %v", cmd.Name(), err.Error())
 		}
 	}
 }
@@ -63,7 +63,7 @@ func AddFlagFunctions(cmd *cobra.Command, adds ...func(*cobra.Command) error) {
 func AddFlags[T any](cmd *cobra.Command, flags ...*Flag[T]) {
 	for _, flag := range flags {
 		if err := Add(flag)(cmd); err != nil {
-			logging.FatalF("Unable to set up flag (%v) for command (%v): %v", flag.Name, cmd.Name(), err.Error())
+			logging.Fatalf("Unable to set up flag (%v) for command (%v): %v", flag.Name, cmd.Name(), err.Error())
 		}
 	}
 }

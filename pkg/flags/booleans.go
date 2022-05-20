@@ -31,5 +31,6 @@ var (
 		Usage:      "Log diagnostic information to files",
 		EnvVarName: constants.ENV_TIDES_FILE_LOGGING,
 		Default:    true,
+		Global:     true,
 	}
 )

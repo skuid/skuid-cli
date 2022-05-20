@@ -10,7 +10,7 @@ import (
 	"github.com/radovskyb/watcher"
 	"github.com/spf13/cobra"
 
-	"github.com/skuid/tides/cmd/validation"
+	"github.com/skuid/tides/cmd/common"
 	"github.com/skuid/tides/pkg"
 	"github.com/skuid/tides/pkg/flags"
 	"github.com/skuid/tides/pkg/logging"
@@ -23,8 +23,7 @@ var watchCmd = &cobra.Command{
 	Use:               "watch",
 	Short:             "Watch for changes to local Skuid metadata, and deploy changes to a Skuid NLX Site.",
 	Long:              "Watches for changes to local Skuid metadata on your file system, and automatically deploys the changed files to a Skuid NLX Site.",
-	PersistentPreRunE: validation.PrerunValidation,
-	PreRun:            logging.InitializeLogging,
+	PersistentPreRunE: common.PrerunValidation,
 	RunE:              Watch,
 }
 
@@ -65,7 +64,7 @@ func Watch(cmd *cobra.Command, _ []string) (err error) {
 	defer func() {
 		if targetDir != "" {
 			if err := os.Chdir(back); err != nil {
-				logging.FatalF("failed changing back to directory: %v", err)
+				logging.Fatalf("failed changing back to directory: %v", err)
 			}
 		}
 	}()
