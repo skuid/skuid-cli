@@ -76,7 +76,7 @@ func Watch(cmd *cobra.Command, _ []string) (err error) {
 	defer func() {
 		if targetDir != "" {
 			if err := os.Chdir(back); err != nil {
-				logging.Logger.WithFields(fields).WithError(err).Fatal("Failed changing back to directory: %v")
+				logging.Logger.WithFields(fields).WithError(err).Fatalf("Failed changing back to directory: %v", back)
 			}
 		}
 	}()
