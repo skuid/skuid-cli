@@ -53,7 +53,7 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 		return
 	}
 
-	fields["auth"] = auth
+	fields["authorized"] = true
 	logging.Logger.WithFields(fields).Debug("Authentication successful")
 
 	// we want the filter nil because it will be discarded without

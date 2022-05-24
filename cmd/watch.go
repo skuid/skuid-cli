@@ -57,7 +57,7 @@ func Watch(cmd *cobra.Command, _ []string) (err error) {
 		return
 	}
 
-	fields["auth"] = auth
+	fields["authorized"] = true
 	logging.Logger.WithFields(fields).Debug("Successfully Logged In.")
 
 	var targetDir string
