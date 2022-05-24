@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
+	"github.com/skuid/tides/pkg/constants"
 	"github.com/skuid/tides/pkg/util"
 	"github.com/skuid/tides/ui/help"
 	"github.com/skuid/tides/ui/keys"
@@ -176,7 +177,7 @@ func (v configure) save(index int) (m tea.Model, cmd tea.Cmd) {
 func (v configure) reset() (m tea.Model, cmd tea.Cmd) {
 	for i, flag := range v.getFlags() {
 		if style.IsPassword(flag) && v.index != i+1 {
-			v.inputs[i].SetValue(style.PasswordPlaceholder)
+			v.inputs[i].SetValue(constants.PasswordPlaceholder)
 		} else {
 			v.inputs[i].SetValue(style.RemoveBrackets(flag.Value.String()))
 			v.inputs[i].CursorEnd() // otherwise when you hit a password you are in the middle of it

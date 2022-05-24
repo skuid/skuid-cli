@@ -88,6 +88,12 @@ func aliasInformationString(flagName, usageText string) string {
 	return color.Gray.Sprintf("Alias for '--%v'\n", flagName) + usageText
 }
 
+// ReadOnly access of value
+// Mostly for grabing the password used
+func (flag Flag[T]) GetValue() T {
+	return *flag.argument
+}
+
 func Add[T any](flag *Flag[T]) func(*cobra.Command) error {
 	return func(to *cobra.Command) error {
 		// three required fields

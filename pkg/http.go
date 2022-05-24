@@ -11,6 +11,7 @@ import (
 	"github.com/skuid/tides/pkg/constants"
 	"github.com/skuid/tides/pkg/errors"
 	"github.com/skuid/tides/pkg/logging"
+	"github.com/skuid/tides/pkg/util"
 )
 
 var (
@@ -108,7 +109,7 @@ func FastRequestHelper(
 	// ...along with the grant_type: password
 	if len(body) > 0 {
 		if len(body) < 1e4 {
-			logging.Logger.Debugf("With body: %v\n", string(body))
+			logging.Logger.Debugf("With body: %v\n", string(util.RemovePasswordBytes(body)))
 		} else {
 			logging.Logger.Debugf("(With large body, too large to print)\n")
 		}

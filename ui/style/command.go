@@ -19,7 +19,7 @@ func CommandText(cmd *cobra.Command) string {
 		s := flag.Value.String()
 		if s != "" && s != "false" && s != "[]" {
 			if IsPassword(flag) {
-				s = PasswordPlaceholder
+				s = constants.PasswordPlaceholder
 			}
 			text = append(text, indent.String(
 				fmt.Sprintf(

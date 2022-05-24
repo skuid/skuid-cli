@@ -30,8 +30,10 @@ var (
 
 func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 	fields := make(logrus.Fields)
+	start := time.Now()
 	fields["process"] = "retrieve"
-	fields["start"] = time.Now()
+	fields["start"] = start
+
 	logging.Logger.Info("Starting retrieve")
 	// get required arguments
 	var host, username, password string
@@ -116,6 +118,9 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 	}
 
 	fields["results"] = len(results)
+	fields["finished"] = time.Now()
+	fields["retrievalDuration"] = time.Since(start)
+
 	logging.Logger.WithFields(fields).Debugf("Received %v Results.", len(results))
 
 	var directory string
@@ -124,7 +129,7 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 	}
 
 	fields["directory"] = directory
-	logging.Logger.WithFields(fields).Debugf("Writing to %v.", directory)
+	logging.Logger.WithFields(fields).Debugf("Target directory is %v.", directory)
 
 	var resultBytes [][]byte = make([][]byte, 0)
 	for _, result := range results {
@@ -138,6 +143,7 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 	}
 
 	logging.Logger.WithFields(fields).Debug("Directory Cleared.")
+	fields["writeStart"] = time.Now()
 
 	if err = util.WriteResultsToDisk(
 		directory,
@@ -146,6 +152,8 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 	); err != nil {
 		return
 	}
+
+	logging.Logger.WithFields(fields).Debug("Finished writing to disk.")
 
 	return
 }
