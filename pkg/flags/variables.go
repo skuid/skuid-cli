@@ -1,7 +1,8 @@
 package flags
 
 var (
-	argHost                 string
+	argPlinyHost            string
+	argMarinaHost           string
 	argPassword             string
 	argUsername             string
 	argApiVersion           string
@@ -22,4 +23,6 @@ var (
 
 	argModules []string
 	argPages   []string
+
+	argMarinaPort int
 )

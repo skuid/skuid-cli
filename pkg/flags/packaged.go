@@ -4,6 +4,6 @@ var (
 	// NLXLoginFlags adds the required necessary flags to a command
 	// for the function NLXLogin
 	NLXLoginFlags = []*Flag[string]{
-		Host, Username, Password,
+		PlinyHost, Username, Password,
 	}
 )

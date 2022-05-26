@@ -14,13 +14,13 @@ import (
 // PrerunValidation does generic validation for a function to make sure it has
 // https (as was in the main function)
 func PrerunValidation(cmd *cobra.Command, _ []string) error {
-	if host, err := cmd.Flags().GetString(flags.Host.Name); err != nil {
+	if host, err := cmd.Flags().GetString(flags.PlinyHost.Name); err != nil {
 		return err
 	} else {
 		// host validation: it must have https:// to start
 		if strings.HasPrefix("https://", host) {
 			// do nothing
-		} else if err := cmd.Flags().Set(flags.Host.Name, fmt.Sprintf("https://%v", host)); err != nil {
+		} else if err := cmd.Flags().Set(flags.PlinyHost.Name, fmt.Sprintf("https://%v", host)); err != nil {
 			return err
 		}
 	}

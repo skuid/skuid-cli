@@ -39,7 +39,7 @@ func Watch(cmd *cobra.Command, _ []string) (err error) {
 	fields["process"] = "watch"
 	// get required arguments
 	var host, username, password string
-	if host, err = cmd.Flags().GetString(flags.Host.Name); err != nil {
+	if host, err = cmd.Flags().GetString(flags.PlinyHost.Name); err != nil {
 		return
 	} else if username, err = cmd.Flags().GetString(flags.Username.Name); err != nil {
 		return

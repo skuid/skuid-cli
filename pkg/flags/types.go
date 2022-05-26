@@ -24,11 +24,11 @@ type Flag[T any] struct {
 
 	Name string // required
 	// Aliases    []string // optional
-	Default    T      // optional, overridden by existing environment variable
-	EnvVarName string // optional, overrides default value if exists
-	Usage      string // required, text shown in usage
-	Required   bool   // flag whether the command requires this flag
-	Shorthand  string // optional, will change call to allow for shorthand
+	Default     T        // optional, overridden by existing environment variable
+	EnvVarNames []string // optional, overrides default value if exists
+	Usage       string   // required, text shown in usage
+	Required    bool     // flag whether the command requires this flag
+	Shorthand   string   // optional, will change call to allow for shorthand
 
 	Global bool // is this a global/persistent flag?
 }
@@ -71,16 +71,17 @@ func AddFlags[T any](cmd *cobra.Command, flags ...*Flag[T]) {
 
 // If we find an environment variable indicate that in the usage text so that there
 // is some additional information given
-func environmentVariableDetectionString(environmentVariableName, usageText string) string {
-	environmentVariableValue := os.Getenv(environmentVariableName)
+func environmentVariableFound(environmentVariableName string, usageText string) string {
 	usageText = color.White.Sprint(usageText)
-	if environmentVariableValue != "" {
-		usageText = usageText + "\n" +
-			color.Gray.Sprintf("%v %v", color.Green.Sprint(environmentVariableName), color.Green.Sprint(constants.CHECKMARK))
-	} else {
-		usageText = usageText + "\n" +
-			color.Gray.Sprintf("Available as environment variable: %v", color.Yellow.Sprint(environmentVariableName))
-	}
+	usageText = usageText + "\n" +
+		color.Gray.Sprintf("%v %v", color.Green.Sprint(environmentVariableName), color.Green.Sprint(constants.CHECKMARK))
+	return usageText
+}
+
+func environmentVariablePossible(environmentVariableNames []string, usageText string) string {
+	usageText = color.White.Sprint(usageText)
+	usageText = usageText + "\n" +
+		color.Gray.Sprintf("Available as environment variable(s): %v", color.Yellow.Sprint(strings.Join(environmentVariableNames, ", ")))
 	return usageText
 }
 
@@ -122,16 +123,21 @@ func Add[T any](flag *Flag[T]) func(*cobra.Command) error {
 			defaultVar := f.Default
 			// override default values and usage text if
 			// there is an environment variable provided
-			if flag.EnvVarName != "" {
-				defaultVar = os.Getenv(flag.EnvVarName)
-				usageText = environmentVariableDetectionString(flag.EnvVarName, flag.Usage)
-				if defaultVar != "" {
-					// the only time we disabled required
-					// is when we have the environment variable name
-					// and we find an environment variable value
-					required = false
+			if len(flag.EnvVarNames) > 0 {
+				usageText = environmentVariablePossible(flag.EnvVarNames, flag.Usage)
+				for _, envVarName := range flag.EnvVarNames {
+					defaultVar = os.Getenv(envVarName)
+					if defaultVar != "" {
+						// the only time we disabled required
+						// is when we have the environment variable name
+						// and we find an environment variable value
+						required = false
+						usageText = environmentVariableFound(envVarName, flag.Usage)
+						break
+					}
 				}
 			}
+
 			if flag.Shorthand != "" {
 				flags.StringVarP(f.argument, flag.Name, flag.Shorthand, defaultVar, usageText)
 			} else {
@@ -148,27 +154,34 @@ func Add[T any](flag *Flag[T]) func(*cobra.Command) error {
 			defaultValue := f.Default
 			// override default values and usage text if
 			// there is an environment variable provided
-			if flag.EnvVarName != "" {
+			if len(flag.EnvVarNames) > 0 {
+				usageText = environmentVariablePossible(flag.EnvVarNames, flag.Usage)
 				defaultValue = func() bool {
-					val := strings.ToLower(os.Getenv(flag.EnvVarName))
-					// if there's something set
-					// disable requirement, we're going to use
-					// the environment variable as the default value
-					if val != "" && required {
-						required = false
-					}
-					// we will accept VALUE == "true/TRUE/tRuE"
-					if strings.EqualFold(val, "true") {
-						return true
-					}
-					// we will accept VALUE != 0 (VALUE=1)
-					if i, err := strconv.Atoi(val); err == nil && i != 0 {
-						return true
+					for _, envVarName := range flag.EnvVarNames {
+						val := strings.ToLower(os.Getenv(envVarName))
+						if val == "" {
+							continue
+						} else {
+							// if there's something set
+							// disable requirement, we're going to use
+							// the environment variable as the default value
+							if required {
+								usageText = environmentVariableFound(envVarName, flag.Usage)
+								required = false
+							}
+							// we will accept VALUE == "true/TRUE/tRuE"
+							if strings.EqualFold(val, "true") {
+								return true
+							}
+							// we will accept VALUE != 0 (VALUE=1)
+							if i, err := strconv.Atoi(val); err == nil && i != 0 {
+								return true
+							}
+						}
 					}
 					// otherwise, it's false
 					return false
 				}()
-				usageText = environmentVariableDetectionString(flag.EnvVarName, flag.Usage)
 			}
 
 			if flag.Shorthand != "" {
@@ -188,14 +201,18 @@ func Add[T any](flag *Flag[T]) func(*cobra.Command) error {
 			defaultVar := f.Default
 			// override default values and usage text if
 			// there is an environment variable provided
-			if flag.EnvVarName != "" {
-				defaultVar = strings.Split(os.Getenv(flag.EnvVarName), ",")
-				usageText = environmentVariableDetectionString(flag.EnvVarName, flag.Usage)
-				if len(defaultVar) > 0 {
-					// the only time we disabled required
-					// is when we have the environment variable name
-					// and we find an environment variable value
-					required = false
+			if len(flag.EnvVarNames) > 0 {
+				usageText = environmentVariablePossible(flag.EnvVarNames, flag.Usage)
+				for _, envVarName := range flag.EnvVarNames {
+					defaultVar = strings.Split(os.Getenv(envVarName), ",")
+					if len(defaultVar) > 0 {
+						usageText = environmentVariableFound(envVarName, flag.Usage)
+						// the only time we disabled required
+						// is when we have the environment variable name
+						// and we find an environment variable value
+						required = false
+						break
+					}
 				}
 			}
 
@@ -205,11 +222,32 @@ func Add[T any](flag *Flag[T]) func(*cobra.Command) error {
 				flags.StringArrayVar(f.argument, flag.Name, defaultVar, usageText)
 			}
 
-			// if len(flag.Aliases) > 0 {
-			// 	for _, alias := range flag.Aliases {
-			// 		flags.StringArrayVar(f.argument, alias, defaultVar, aliasInformationString(flag.Name, usageText))
-			// 	}
-			// }
+		// if len(flag.Aliases) > 0 {
+		// 	for _, alias := range flag.Aliases {
+		// 		flags.StringArrayVar(f.argument, alias, defaultVar, aliasInformationString(flag.Name, usageText))
+		// 	}
+		// }
+
+		case *Flag[int]:
+			defaultVar := f.Default
+			if len(flag.EnvVarNames) > 0 {
+				usageText = environmentVariablePossible(flag.EnvVarNames, flag.Usage)
+				for _, envVarName := range flag.EnvVarNames {
+					envValue := os.Getenv(envVarName)
+					if value, err := strconv.Atoi(envValue); envValue != "" && err == nil {
+						usageText = environmentVariableFound(envVarName, flag.Usage)
+						defaultVar = value
+						required = false
+						break
+					}
+				}
+			}
+
+			if flag.Shorthand != "" {
+				flags.IntVarP(f.argument, flag.Name, flag.Shorthand, defaultVar, usageText)
+			} else {
+				flags.IntVar(f.argument, flag.Name, defaultVar, usageText)
+			}
 
 		default:
 			return errors.Critical("No type definition found")

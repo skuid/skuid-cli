@@ -4,12 +4,12 @@ import "github.com/skuid/tides/pkg/constants"
 
 var (
 	Verbose = &Flag[bool]{
-		argument:   &argVerbose,
-		Name:       "verbose",
-		Shorthand:  "v",
-		Usage:      "Show additional logging",
-		EnvVarName: constants.ENV_VERBOSE,
-		Global:     true,
+		argument:    &argVerbose,
+		Name:        "verbose",
+		Shorthand:   "v",
+		Usage:       "Show additional logging",
+		EnvVarNames: []string{constants.ENV_VERBOSE},
+		Global:      true,
 	}
 
 	NoZip = &Flag[bool]{
@@ -26,11 +26,11 @@ var (
 	}
 
 	FileLogging = &Flag[bool]{
-		argument:   &argFileLogging,
-		Name:       "file-logging",
-		Usage:      "Log diagnostic information to files",
-		EnvVarName: constants.ENV_TIDES_FILE_LOGGING,
-		Default:    true,
-		Global:     true,
+		argument:    &argFileLogging,
+		Name:        "file-logging",
+		Usage:       "Log diagnostic information to files",
+		EnvVarNames: []string{constants.ENV_TIDES_FILE_LOGGING},
+		Default:     true,
+		Global:      true,
 	}
 )

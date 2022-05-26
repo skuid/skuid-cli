@@ -5,31 +5,38 @@ import (
 )
 
 var (
-	Host = &Flag[string]{
-		argument: &argHost,
-		Name:     "host",
-		// Aliases:    []string{"hostname"},
-		Usage:      `Host URL, e.g. [ https://my.skuidsite.com | my.skuidsite.com ]`,
-		EnvVarName: constants.ENV_SKUID_HOST,
-		Required:   true,
+	PlinyHost = &Flag[string]{
+		argument:    &argPlinyHost,
+		Name:        "pliny-host",
+		Usage:       `Host URL, e.g. [ https://my.skuidsite.com | my.skuidsite.com ]`,
+		EnvVarNames: []string{constants.ENV_SKUID_HOST, constants.ENV_PLINY_HOST},
+		Required:    true,
+	}
+
+	MarinaHost = &Flag[string]{
+		argument:    &argMarinaHost,
+		Name:        "marina-host",
+		Usage:       `Host URL, e.g. [ https://marina.skuidsite.com | marina.skuidsite.com ]`,
+		EnvVarNames: []string{constants.ENV_MARINA_HOST},
+		Required:    true,
 	}
 
 	Password = &Flag[string]{
-		argument:   &argPassword,
-		Name:       "password",
-		Shorthand:  "p",
-		Usage:      "Skuid NLX Password",
-		EnvVarName: constants.ENV_SKUID_PASSWORD,
-		Required:   true,
+		argument:    &argPassword,
+		Name:        "password",
+		Shorthand:   "p",
+		Usage:       "Skuid NLX Password",
+		EnvVarNames: []string{constants.ENV_SKUID_PASSWORD},
+		Required:    true,
 	}
 
 	Username = &Flag[string]{
-		argument:   &argUsername,
-		Name:       "username",
-		Shorthand:  "u",
-		EnvVarName: constants.ENV_SKUID_USERNAME,
-		Required:   true,
-		Usage:      "Skuid NLX Username",
+		argument:    &argUsername,
+		Name:        "username",
+		Shorthand:   "u",
+		EnvVarNames: []string{constants.ENV_SKUID_USERNAME},
+		Required:    true,
+		Usage:       "Skuid NLX Username",
 	}
 
 	OutputFile = &Flag[string]{
@@ -76,18 +83,18 @@ var (
 		argument: &argTargetDir,
 		Name:     "directory",
 		// Aliases:   []string{"directory"},
-		Shorthand:  "d",
-		Usage:      "Target directory for this operation.",
-		EnvVarName: constants.ENV_TIDES_DEFAULT_FOLDER,
+		Shorthand:   "d",
+		Usage:       "Target directory for this operation.",
+		EnvVarNames: []string{constants.ENV_TIDES_DEFAULT_FOLDER},
 	}
 
 	FileLoggingDirectory = &Flag[string]{
-		argument:   &argFileLoggingLocation,
-		Name:       "log-directory",
-		Shorthand:  "l",
-		Usage:      "Target directory for file logging",
-		Default:    ".logs",
-		EnvVarName: constants.ENV_TIDES_LOGGING_LOCATION,
-		Global:     true,
+		argument:    &argFileLoggingLocation,
+		Name:        "log-directory",
+		Shorthand:   "l",
+		Usage:       "Target directory for file logging",
+		Default:     ".logs",
+		EnvVarNames: []string{constants.ENV_TIDES_LOGGING_LOCATION},
+		Global:      true,
 	}
 )
