@@ -121,6 +121,9 @@ func FastRequestHelper(
 	req.Header.Add(fasthttp.HeaderUserAgent, SkuidUserAgent)
 	if headers != nil {
 		for headerName, headerValue := range headers {
+			if headerName == fasthttp.HeaderContentType {
+				logging.Logger.Debugf("With Content Type: %v", headerValue)
+			}
 			req.Header.Add(headerName, headerValue)
 		}
 	}

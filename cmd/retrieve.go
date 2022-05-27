@@ -102,18 +102,18 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 
 	logging.Logger.WithFields(fields).Debug("Got Retrieve Plan.")
 
-	// zip argument
-	var zip bool
-	if zip, err = cmd.Flags().GetBool(flags.NoZip.Name); err != nil {
+	// noZip argument
+	var noZip bool
+	if noZip, err = cmd.Flags().GetBool(flags.NoZip.Name); err != nil {
 		return
 	}
 
-	fields["NoZip"] = !zip
+	fields["NoZip"] = noZip
 
-	logging.Logger.WithFields(fields).Debugf("Zipping? %v", !zip)
+	logging.Logger.WithFields(fields).Debugf("Zipping? %v", noZip)
 
 	var results []pkg.NlxRetrievalResult
-	if _, results, err = pkg.ExecuteRetrieval(auth, plans, zip); err != nil {
+	if _, results, err = pkg.ExecuteRetrieval(auth, plans, noZip); err != nil {
 		return
 	}
 
@@ -148,7 +148,7 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 	if err = util.WriteResultsToDisk(
 		directory,
 		resultBytes,
-		zip,
+		noZip,
 	); err != nil {
 		return
 	}

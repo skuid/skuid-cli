@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"github.com/valyala/fasthttp"
 	"golang.org/x/sync/errgroup"
 
@@ -47,7 +48,11 @@ type NlxRetrievalResult struct {
 	Data     []byte
 }
 
-func ExecuteRetrieval(auth *Authorization, plans NlxPlanPayload, zip bool) (duration time.Duration, results []NlxRetrievalResult, err error) {
+func ExecuteRetrieval(auth *Authorization, plans NlxPlanPayload, noZip bool) (duration time.Duration, results []NlxRetrievalResult, err error) {
+	log := logging.Logger.WithFields(logrus.Fields{
+		"func": "ExecuteRetrieval",
+		"zip":  noZip,
+	})
 	// for timing sake
 	start := time.Now()
 	defer func() { duration = time.Since(start) }()
@@ -60,24 +65,27 @@ func ExecuteRetrieval(auth *Authorization, plans NlxPlanPayload, zip bool) (dura
 	// this function generically handles a plan based on name / stuff
 	executePlan := func(name string, plan NlxPlan) func() error {
 		return func() error {
-			logging.Logger.Debugf("Firing off %v", name)
+			log = log.WithField("planName", name)
+			log.Debugf("Firing off %v", name)
 
 			headers := GeneratePlanHeaders(auth, plan)
 
-			if zip {
+			if !noZip {
 				headers[fasthttp.HeaderContentType] = ZIP_CONTENT_TYPE
+				log.Debug(ZIP_CONTENT_TYPE)
 			} else {
 				headers[fasthttp.HeaderContentType] = JSON_CONTENT_TYPE
+				log.Debug(JSON_CONTENT_TYPE)
 			}
 
-			logging.Logger.Tracef("Plan Headers: %v\n", headers)
+			log.Tracef("Plan Headers: %v\n", headers)
 
 			url := GenerateRoute(auth, plan)
 
-			logging.Logger.Tracef("Plan Request: %v\n", url)
+			log.Tracef("Plan Request: %v\n", url)
 
 			if result, err := FastRequest(
-				url, fasthttp.MethodPost, NewRetrievalRequestBody(plan.Metadata, zip), headers,
+				url, fasthttp.MethodPost, NewRetrievalRequestBody(plan.Metadata, noZip), headers,
 			); err == nil {
 				ch <- NlxRetrievalResult{
 					Plan:     plan,
@@ -86,10 +94,10 @@ func ExecuteRetrieval(auth *Authorization, plans NlxPlanPayload, zip bool) (dura
 					Data:     result,
 				}
 			} else {
-				logging.Logger.Tracef("Plan: %v", plan)
-				logging.Logger.Tracef("PlanName: %v", name)
-				logging.Logger.Tracef("Url: %v", url)
-				logging.Logger.Tracef("Error on request: %v\n", err.Error())
+				log.Tracef("Plan: %v", plan)
+				log.Tracef("PlanName: %v", name)
+				log.Tracef("Url: %v", url)
+				log.Tracef("Error on request: %v\n", err.Error())
 				return err
 			}
 
