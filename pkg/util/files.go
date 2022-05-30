@@ -79,7 +79,7 @@ func WriteResultsToDisk(targetDirectory string, results [][]byte, noZip bool) (e
 	return WriteResultsToDiskInjection(targetDirectory, results, noZip, CopyToFile, CreateDirectoryDeep, ioutil.ReadFile)
 }
 
-func WriteResultsToDiskInjection(targetDirectory string, results [][]byte, NoZip bool, fileCreator FileCreator, directoryCreator DirectoryCreator, existingFileReader FileReader) (err error) {
+func WriteResultsToDiskInjection(targetDirectory string, results [][]byte, noZip bool, fileCreator FileCreator, directoryCreator DirectoryCreator, existingFileReader FileReader) (err error) {
 	fields := logrus.Fields{
 		"function": "WriteResultsToDiskInjection",
 	}
@@ -105,7 +105,7 @@ func WriteResultsToDiskInjection(targetDirectory string, results [][]byte, NoZip
 		// schedule cleanup of temp file
 		defer os.Remove(tmpFileName)
 
-		if !NoZip {
+		if noZip {
 			log.Tracef("Moving Temporary File: %v => %v", tmpFileName, targetDirectory)
 			err = MoveTemporaryFile(tmpFileName, targetDirectory, pathMap, fileCreator, directoryCreator, existingFileReader)
 			if err != nil {
