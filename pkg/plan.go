@@ -30,7 +30,7 @@ type NlxPlan struct {
 // request for retrieval
 type NlxPlanFilter struct {
 	AppName   string   `json:"appName"`
-	PageNames []string `json:"pageNames"`
+	PageNames []string `json:"pages"`
 }
 
 func GetDeployPlan(auth *Authorization) (duration time.Duration, result NlxPlanPayload, err error) {
