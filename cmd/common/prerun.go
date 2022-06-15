@@ -1,9 +1,6 @@
 package common
 
 import (
-	"fmt"
-	"strings"
-
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
@@ -14,18 +11,6 @@ import (
 // PrerunValidation does generic validation for a function to make sure it has
 // https (as was in the main function)
 func PrerunValidation(cmd *cobra.Command, _ []string) error {
-	if host, err := cmd.Flags().GetString(flags.PlinyHost.Name); err != nil {
-		return err
-	} else {
-		// host validation: it must have https:// to start
-		if !strings.HasPrefix("https://", host) {
-			// do nothing
-			host = fmt.Sprintf("https://%v", host)
-		} else if err := cmd.Flags().Set(flags.PlinyHost.Name, host); err != nil {
-			return err
-		}
-	}
-
 	// set verbosity
 	if verbose, err := cmd.Flags().GetBool(flags.Verbose.Name); err != nil {
 		return err
