@@ -18,9 +18,10 @@ func PrerunValidation(cmd *cobra.Command, _ []string) error {
 		return err
 	} else {
 		// host validation: it must have https:// to start
-		if strings.HasPrefix("https://", host) {
+		if !strings.HasPrefix("https://", host) {
 			// do nothing
-		} else if err := cmd.Flags().Set(flags.PlinyHost.Name, fmt.Sprintf("https://%v", host)); err != nil {
+			host = fmt.Sprintf("https://%v", host)
+		} else if err := cmd.Flags().Set(flags.PlinyHost.Name, host); err != nil {
 			return err
 		}
 	}
