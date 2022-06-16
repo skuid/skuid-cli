@@ -17,7 +17,7 @@ const (
 )
 
 var (
-	threadsafety    sync.Mutex
+	safe            sync.Mutex
 	loggerSingleton Logger
 	LineSeparator   = strings.Repeat("-", SEPARATOR_LENGTH)
 	StarSeparator   = strings.Repeat("*", SEPARATOR_LENGTH)
@@ -101,25 +101,25 @@ func WithField(field string, value interface{}) Logger {
 }
 
 func Reset() Logger {
-	threadsafety.Lock()
+	safe.Lock()
 	loggerSingleton = nil
-	threadsafety.Unlock()
+	safe.Unlock()
 	return Get()
 }
 
 func DisableLogging() Logger {
-	threadsafety.Lock()
 	loggerSingleton = Get()
+	safe.Lock()
 	l, _ := loggerSingleton.(*logrus.Logger)
 	l.Out = nil
 	l.SetLevel(logrus.PanicLevel)
-	threadsafety.Unlock()
+	safe.Unlock()
 	return loggerSingleton
 }
 
 func Get() Logger {
-	threadsafety.Lock()
-	defer threadsafety.Unlock()
+	safe.Lock()
+	defer safe.Unlock()
 	if loggerSingleton != nil {
 		return loggerSingleton
 	}

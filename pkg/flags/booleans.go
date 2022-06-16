@@ -33,7 +33,6 @@ var (
 		Name:        "file-logging",
 		Usage:       "Log diagnostic information to files",
 		EnvVarNames: []string{constants.ENV_TIDES_FILE_LOGGING},
-		Default:     true,
 		Global:      true,
 	}
 )

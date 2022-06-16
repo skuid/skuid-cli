@@ -167,8 +167,8 @@ func Add[T any](flag *Flag[T]) func(*cobra.Command) error {
 							// if there's something set
 							// disable requirement, we're going to use
 							// the environment variable as the default value
+							usageText = environmentVariableFound(envVarName, flag.Usage)
 							if required {
-								usageText = environmentVariableFound(envVarName, flag.Usage)
 								required = false
 							}
 							// we will accept VALUE == "true/TRUE/tRuE"
