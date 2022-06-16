@@ -15,7 +15,6 @@ var (
 	Trace = &Flag[bool]{
 		argument:    &argVerbose,
 		Name:        "trace",
-		Shorthand:   "v",
 		Usage:       "Show incredibly verbose logging",
 		EnvVarNames: []string{constants.ENV_TRACE},
 		Global:      true,
