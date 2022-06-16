@@ -58,7 +58,7 @@ func ArchiveWithFilterFunc(inFilePath string, filter func(string) bool) (result 
 
 		var relativeFilePath string
 		if relativeFilePath, err = filepath.Rel(basePath, filePath); err != nil {
-			logging.Get().WithError(err).Tracef("Relative Filepath Error: %v", err.Error())
+			logging.Get().Tracef("Relative Filepath Error: %v", err)
 			return
 		}
 

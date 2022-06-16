@@ -31,14 +31,14 @@ var (
 
 			// want to hide the logger if we're not file logging
 			if fileLogging, err := cmd.Flags().GetBool(flags.FileLogging.Name); err != nil {
-				logging.Get().WithError(err).Panic("we need to know if we're file logging")
+				logging.Get().Panicf("we need to know if we're file logging: %v", err)
 			} else if !fileLogging {
 				logging.DisableLogging()
 			}
 
 			p := tea.NewProgram(ui.Main(cmd))
 			if err := p.Start(); err != nil {
-				logging.Get().WithError(err).Error("Unable to Start User Interface.")
+				logging.Get().Errorf("Unable to Start User Interface: %v", err)
 			}
 		},
 	}

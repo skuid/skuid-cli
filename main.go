@@ -15,7 +15,7 @@ func main() {
 
 func Run() {
 	if err := cmd.TidesCmd.Execute(); err != nil {
-		logging.Get().WithError(err).Error("Error Encountered During Run.")
+		logging.Get().Errorf("Error Encountered During Run: %v", err)
 		os.Exit(1)
 	}
 }
@@ -24,7 +24,7 @@ func init() {
 	// if we want to load environments for customers
 	// instead of relying on autoenv/direnv
 	if err := godotenv.Load(".env"); err != nil {
-		logging.Get().WithError(err).Trace("Error Initializing Environment.")
+		logging.Get().Tracef("Error Initializing Environment: %v", err)
 	} else {
 		// logging.Get().Debug("Initialized Environment")
 	}

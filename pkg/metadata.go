@@ -78,7 +78,7 @@ func (m NlxMetadata) FilterItem(item string) (keep bool) {
 	}
 
 	if err != nil {
-		logging.Get().WithError(err).Error("Metadata Filter Error.")
+		logging.Get().Errorf("Metadata Filter Error: %v", err)
 		return
 	}
 

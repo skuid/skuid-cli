@@ -76,7 +76,7 @@ func Watch(cmd *cobra.Command, _ []string) (err error) {
 	defer func() {
 		if targetDir != "" {
 			if err := os.Chdir(back); err != nil {
-				logging.WithFields(fields).WithError(err).Fatalf("Failed changing back to directory: %v", back)
+				logging.WithFields(fields).Fatalf("Failed changing back to directory '%v': %v", back, err)
 			}
 		}
 	}()
@@ -122,7 +122,7 @@ func Watch(cmd *cobra.Command, _ []string) (err error) {
 					}
 				}()
 			case err := <-w.Error:
-				logging.Get().WithError(err).Fatal("Unable to handle file change.")
+				logging.Get().Fatalf("Unable to handle file change: %v", err)
 			case <-w.Closed:
 				return
 			}

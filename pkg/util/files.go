@@ -157,7 +157,7 @@ func MoveTemporaryFile(sourceFileLocation, targetLocation string, pathMap map[st
 	// open the file (to copy later)
 	var fi *os.File
 	if fi, err = os.Open(sourceFileLocation); err != nil {
-		log.WithError(err).Trace("os.Open")
+		log.Tracef("os.Open: %v", err)
 		return
 	}
 	defer fi.Close()
@@ -215,7 +215,7 @@ func UnzipArchive(sourceFileLocation, targetLocation string, pathMap map[string]
 	// If we have a non-empty target directory, ensure it exists
 	if targetLocation != "" {
 		if err = directoryCreator(targetLocation, 0755); err != nil {
-			log.WithError(err).Tracef("directoryCreator")
+			log.Tracef("directoryCreator: %v", err)
 			return
 		}
 	}
@@ -230,7 +230,7 @@ func UnzipArchive(sourceFileLocation, targetLocation string, pathMap map[string]
 		}
 
 		if err = readFileFromZipAndWriteToFilesystem(file, path, fileAlreadyWritten, fileCreator, directoryCreator, existingFileReader); err != nil {
-			log.WithError(err).Trace("readFileFromZipAndWriteToFilesystem")
+			log.Tracef("readFileFromZipAndWriteToFilesystem: %v", err)
 			return
 		}
 	}
@@ -301,7 +301,7 @@ func readFileFromZipAndWriteToFilesystem(
 	if filepath.Ext(fullPath) == ".json" {
 		log.Trace("Sanitizing Zip.")
 		if fileReader, err = sanitizeZip(fileReader); err != nil {
-			log.WithError(err).Trace("Error.")
+			log.Tracef("Error: %v", err)
 			return
 		}
 	}
@@ -357,20 +357,20 @@ func CombineJSON(newFileReader io.ReadCloser, existingFileReader FileReader, pat
 	log.Tracef("Augmenting File with more JSON Data: %v\n", color.Magenta.Sprint(path))
 	existingBytes, err := existingFileReader(path)
 	if err != nil {
-		log.WithError(err).Trace("existingFileReader")
+		log.Tracef("existingFileReader: %v", err)
 		return
 	}
 
 	newBytes, err := ioutil.ReadAll(newFileReader)
 	if err != nil {
-		log.WithError(err).Trace("ioutil.ReadAll")
+		log.Tracef("ioutil.ReadAll: %v")
 		return
 	}
 
 	// merge the files together using the json patch library
 	combined, err := jsonpatch.MergePatch(existingBytes, newBytes)
 	if err != nil {
-		log.WithError(err).Trace("jsonpatch.MergePatch")
+		log.Tracef("jsonpatch.MergePatch: %v", err)
 		return
 	}
 
@@ -378,7 +378,7 @@ func CombineJSON(newFileReader io.ReadCloser, existingFileReader FileReader, pat
 	// this puts "name" first, then everything alphanumerically
 	sorted, err := ReSortJsonIndent(combined, true)
 	if err != nil {
-		log.WithError(err).Trace("ReSortJsonIndent")
+		log.Tracef("ReSortJsonIndent: %v", err)
 		return
 	}
 

@@ -169,7 +169,7 @@ func ExecuteDeployPlan(auth *Authorization, plans NlxDynamicPlanMap, targetDir s
 		// if there's an error, we won't consume the results below
 		// and we'll output the error
 		if err != nil {
-			logging.Get().WithError(err).Error("Error when executing retrieval plan.")
+			logging.Get().Errorf("Error when executing retrieval plan: %v", err)
 		}
 	}()
 
