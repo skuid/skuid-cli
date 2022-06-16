@@ -50,7 +50,7 @@ func Watch(cmd *cobra.Command, _ []string) (err error) {
 	fields["host"] = host
 	fields["username"] = username
 
-	logging.Get().WithFields(fields).Debug("Gathered Credentials.")
+	logging.WithFields(fields).Debug("Gathered Credentials.")
 
 	var auth *pkg.Authorization
 	if auth, err = pkg.Authorize(host, username, password); err != nil {
@@ -58,7 +58,7 @@ func Watch(cmd *cobra.Command, _ []string) (err error) {
 	}
 
 	fields["authorized"] = true
-	logging.Get().WithFields(fields).Debug("Successfully Logged In.")
+	logging.WithFields(fields).Debug("Successfully Logged In.")
 
 	var targetDir string
 	if targetDir, err = cmd.Flags().GetString(flags.Directory.Name); err != nil {
@@ -76,7 +76,7 @@ func Watch(cmd *cobra.Command, _ []string) (err error) {
 	defer func() {
 		if targetDir != "" {
 			if err := os.Chdir(back); err != nil {
-				logging.Get().WithFields(fields).WithError(err).Fatalf("Failed changing back to directory: %v", back)
+				logging.WithFields(fields).WithError(err).Fatalf("Failed changing back to directory: %v", back)
 			}
 		}
 	}()
@@ -97,13 +97,13 @@ func Watch(cmd *cobra.Command, _ []string) (err error) {
 	w.SetMaxEvents(1)
 
 	fields["targetDir"] = targetDir
-	logging.Get().WithFields(fields).Debug("Starting Watch.")
+	logging.WithFields(fields).Debug("Starting Watch.")
 
 	go func() {
 		for {
 			select {
 			case event := <-w.Event:
-				logging.Get().WithFields(fields).Debug("Event Detected.")
+				logging.WithFields(fields).Debug("Event Detected.")
 				cleanRelativeFilePath := util.FromWindowsPath(strings.Split(event.Path, friendly)[1])
 				dirSplit := strings.Split(cleanRelativeFilePath, string(filepath.Separator))
 				metadataType, remainder := dirSplit[1], dirSplit[2]
@@ -115,7 +115,7 @@ func Watch(cmd *cobra.Command, _ []string) (err error) {
 				} else {
 					changedEntity = filepath.Join(metadataType, strings.Split(remainder, ".")[0])
 				}
-				logging.Get().WithFields(fields).Debug("Detected change to metadata type: " + changedEntity)
+				logging.WithFields(fields).Debug("Detected change to metadata type: " + changedEntity)
 				go func() {
 					if err := pkg.DeployModifiedFiles(auth, targetDir, changedEntity); err != nil {
 						w.Error <- err
@@ -136,11 +136,11 @@ func Watch(cmd *cobra.Command, _ []string) (err error) {
 
 	// Print a list of all of the files and folders currently
 	// being watched and their paths.
-	logging.Get().WithFields(fields).Debug("** Now watching the following files for changes... **")
+	logging.WithFields(fields).Debug("** Now watching the following files for changes... **")
 	for path, f := range w.WatchedFiles() {
-		logging.Get().WithFields(fields).Debug(fmt.Sprintf("%s: %s", path, f.Name()))
+		logging.WithFields(fields).Debug(fmt.Sprintf("%s: %s", path, f.Name()))
 	}
-	logging.Get().WithFields(fields).Debug("Waiting for changes...")
+	logging.WithFields(fields).Debug("Waiting for changes...")
 
 	// Start the watching process - it'll check for changes every 100ms.
 	if err = w.Start(time.Millisecond * 100); err != nil {

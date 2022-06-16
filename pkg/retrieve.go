@@ -49,7 +49,7 @@ type NlxRetrievalResult struct {
 }
 
 func ExecuteRetrieval(auth *Authorization, plans NlxPlanPayload, noZip bool) (duration time.Duration, results []NlxRetrievalResult, err error) {
-	log := logging.Get().WithFields(logrus.Fields{
+	log := logging.WithFields(logrus.Fields{
 		"func": "ExecuteRetrieval",
 		"zip":  noZip,
 	})

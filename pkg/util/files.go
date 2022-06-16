@@ -26,7 +26,7 @@ func FromWindowsPath(path string) string {
 // GetAbsolutePath gets the absolute path for the directory from the relative path
 func GetAbsolutePath(relative string) (absolute string) {
 	wd, _ := os.Getwd()
-	log := logging.Get().WithFields(logrus.Fields{
+	log := logging.WithFields(logrus.Fields{
 		"function": "GetAbsolutePath",
 	})
 	log.Tracef("Working Directory: %v", wd)
@@ -83,7 +83,7 @@ func WriteResultsToDiskInjection(targetDirectory string, results [][]byte, noZip
 	fields := logrus.Fields{
 		"function": "WriteResultsToDiskInjection",
 	}
-	log := logging.Get().WithFields(fields)
+	log := logging.WithFields(fields)
 
 	// unzip the archive into the output directory
 	targetDirFriendly, err := SanitizePath(targetDirectory)
@@ -146,7 +146,7 @@ func MoveTemporaryFile(sourceFileLocation, targetLocation string, pathMap map[st
 		"sourceFileLocation": sourceFileLocation,
 		"targetLocation":     targetLocation,
 	}
-	log := logging.Get().WithFields(fields)
+	log := logging.WithFields(fields)
 	// If we have a non-empty target directory, ensure it exists
 	if targetLocation != "" {
 		if err = directoryCreator(targetLocation, 0755); err != nil {
@@ -205,7 +205,7 @@ func UnzipArchive(sourceFileLocation, targetLocation string, pathMap map[string]
 		"sourceFileLocation": sourceFileLocation,
 		"targetLocation":     targetLocation,
 	}
-	log := logging.Get().WithFields(fields)
+	log := logging.WithFields(fields)
 	log.Tracef("Unzipping Archive: %v => %v", sourceFileLocation, targetLocation)
 	var reader *zip.ReadCloser
 	if reader, err = zip.OpenReader(sourceFileLocation); err != nil {
@@ -266,7 +266,7 @@ func readFileFromZipAndWriteToFilesystem(
 		"func":     "readFileFromZipAndWriteToFilesystem",
 		"fullPath": fullPath,
 	}
-	log := logging.Get().WithFields(fields)
+	log := logging.WithFields(fields)
 	log.Tracef("Extracting from Zip: %v", fullPath)
 
 	// If this file name contains a /, make sure that we create the directory it belongs in
@@ -353,7 +353,7 @@ func CombineJSON(newFileReader io.ReadCloser, existingFileReader FileReader, pat
 	fields := logrus.Fields{
 		"function": "CombineJSON",
 	}
-	log := logging.Get().WithFields(fields)
+	log := logging.WithFields(fields)
 	log.Tracef("Augmenting File with more JSON Data: %v\n", color.Magenta.Sprint(path))
 	existingBytes, err := existingFileReader(path)
 	if err != nil {

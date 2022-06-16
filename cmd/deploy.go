@@ -33,7 +33,7 @@ func Deploy(cmd *cobra.Command, _ []string) (err error) {
 	fields := make(logrus.Fields)
 	fields["start"] = time.Now()
 	fields["process"] = "deploy"
-	logging.Get().WithFields(fields).Info("Starting Deploy.")
+	logging.WithFields(fields).Info("Starting Deploy.")
 
 	// get required authentication arguments
 	var host, username, password string
@@ -47,7 +47,7 @@ func Deploy(cmd *cobra.Command, _ []string) (err error) {
 
 	fields["host"] = host
 	fields["username"] = username
-	logging.Get().WithFields(fields).Debug("Gathered credentials.")
+	logging.WithFields(fields).Debug("Gathered credentials.")
 
 	// auth
 	var auth *pkg.Authorization
@@ -56,7 +56,7 @@ func Deploy(cmd *cobra.Command, _ []string) (err error) {
 	}
 
 	fields["authorized"] = true
-	logging.Get().WithFields(fields).Debug("Successfully Authenticated.")
+	logging.WithFields(fields).Debug("Successfully Authenticated.")
 
 	// we want the filter nil because it will be discarded without
 	// initialization
@@ -100,7 +100,7 @@ func Deploy(cmd *cobra.Command, _ []string) (err error) {
 		fields["targetDirectory"] = targetDirectory
 	}
 
-	logging.Get().WithFields(fields).Debug("Getting Deployment Plan.")
+	logging.WithFields(fields).Debug("Getting Deployment Plan.")
 
 	var deploymentPlan []byte
 	if deploymentPlan, err = pkg.Archive(targetDirectory, nil); err != nil {
@@ -108,7 +108,7 @@ func Deploy(cmd *cobra.Command, _ []string) (err error) {
 	}
 
 	fields["deploymentBytes"] = len(deploymentPlan)
-	logging.Get().WithFields(fields).Debugf("Got Deployment Plan: Size (%v)", len(deploymentPlan))
+	logging.WithFields(fields).Debugf("Got Deployment Plan: Size (%v)", len(deploymentPlan))
 
 	// get the plan
 	var plans pkg.NlxDynamicPlanMap
@@ -117,7 +117,7 @@ func Deploy(cmd *cobra.Command, _ []string) (err error) {
 	}
 
 	fields["plans"] = len(plans)
-	logging.Get().WithFields(fields)
+	logging.WithFields(fields)
 
 	var results []pkg.NlxDeploymentResult
 	if _, results, err = pkg.ExecuteDeployPlan(auth, plans, targetDirectory); err != nil {

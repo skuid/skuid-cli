@@ -138,7 +138,13 @@ func Add[T any](flag *Flag[T]) func(*cobra.Command) error {
 				}
 			}
 
-			if flag.Shorthand != "" {
+			if flag.argument == nil {
+				if flag.Shorthand != "" {
+					flags.StringP(flag.Name, flag.Shorthand, defaultVar, usageText)
+				} else {
+					flags.String(flag.Name, defaultVar, usageText)
+				}
+			} else if flag.Shorthand != "" {
 				flags.StringVarP(f.argument, flag.Name, flag.Shorthand, defaultVar, usageText)
 			} else {
 				flags.StringVar(f.argument, flag.Name, defaultVar, usageText)
@@ -152,6 +158,7 @@ func Add[T any](flag *Flag[T]) func(*cobra.Command) error {
 		// handle bools
 		case *Flag[bool]:
 			defaultValue := f.Default
+			logging.Get().Info("flag: %v, default: %v", f.Name, f.Default)
 			// override default values and usage text if
 			// there is an environment variable provided
 			if len(flag.EnvVarNames) > 0 {
@@ -185,9 +192,9 @@ func Add[T any](flag *Flag[T]) func(*cobra.Command) error {
 			}
 
 			if flag.Shorthand != "" {
-				flags.BoolVarP(f.argument, flag.Name, flag.Shorthand, defaultValue, usageText)
+				flags.BoolP(flag.Name, flag.Shorthand, defaultValue, usageText)
 			} else {
-				flags.BoolVar(f.argument, flag.Name, defaultValue, usageText)
+				flags.Bool(flag.Name, defaultValue, usageText)
 			}
 
 			// if len(flag.Aliases) > 0 {
@@ -217,9 +224,9 @@ func Add[T any](flag *Flag[T]) func(*cobra.Command) error {
 			}
 
 			if flag.Shorthand != "" {
-				flags.StringArrayVarP(f.argument, flag.Name, flag.Shorthand, defaultVar, usageText)
+				flags.StringArrayP(flag.Name, flag.Shorthand, defaultVar, usageText)
 			} else {
-				flags.StringArrayVar(f.argument, flag.Name, defaultVar, usageText)
+				flags.StringArray(flag.Name, defaultVar, usageText)
 			}
 
 		// if len(flag.Aliases) > 0 {
@@ -244,9 +251,9 @@ func Add[T any](flag *Flag[T]) func(*cobra.Command) error {
 			}
 
 			if flag.Shorthand != "" {
-				flags.IntVarP(f.argument, flag.Name, flag.Shorthand, defaultVar, usageText)
+				flags.IntP(flag.Name, flag.Shorthand, defaultVar, usageText)
 			} else {
-				flags.IntVar(f.argument, flag.Name, defaultVar, usageText)
+				flags.Int(flag.Name, defaultVar, usageText)
 			}
 
 		default:

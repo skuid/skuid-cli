@@ -36,6 +36,7 @@ type Logger interface {
 
 func SetVerbose() Logger {
 	loggerSingleton = Get()
+	loggerSingleton.Info("Setting verbose logging level.")
 	l, _ := loggerSingleton.(*logrus.Logger)
 	l.SetLevel(logrus.DebugLevel)
 	return loggerSingleton
@@ -43,6 +44,7 @@ func SetVerbose() Logger {
 
 func SetTrace() Logger {
 	loggerSingleton = Get()
+	loggerSingleton.Info("Setting trace logging level.")
 	l, _ := loggerSingleton.(*logrus.Logger)
 	l.SetLevel(logrus.TraceLevel)
 	return loggerSingleton
@@ -132,9 +134,6 @@ func Get() Logger {
 	// Output to stdout instead of the default stderr
 	// Can be any io.Writer, see below for File example
 	l.SetOutput(os.Stdout)
-
-	// Only log the warning severity or above.
-	l.SetLevel(logrus.DebugLevel)
 
 	return loggerSingleton
 }

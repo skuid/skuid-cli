@@ -48,7 +48,7 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 	fields["host"] = host
 	fields["username"] = username
 	fields["password"] = password != ""
-	logging.Get().WithFields(fields).Debug("Credentials gathered.")
+	logging.WithFields(fields).Debug("Credentials gathered.")
 
 	var auth *pkg.Authorization
 	if auth, err = pkg.Authorize(host, username, password); err != nil {
@@ -56,7 +56,7 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 	}
 
 	fields["authorized"] = true
-	logging.Get().WithFields(fields).Debug("Authentication successful")
+	logging.WithFields(fields).Debug("Authentication successful")
 
 	// we want the filter nil because it will be discarded without
 	// initialization
@@ -67,7 +67,7 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 	// expand the pattern down the road as more things
 	// are required to be build
 	initFilter := func() {
-		logging.Get().WithFields(fields).Debug("Using filter.")
+		logging.WithFields(fields).Debug("Using filter.")
 		if filter == nil {
 			filter = &pkg.NlxPlanFilter{}
 		}
@@ -93,14 +93,14 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 		filter.PageNames = pageNames
 	}
 
-	logging.Get().WithFields(fields).Debug("Getting Retrieve Plan.")
+	logging.WithFields(fields).Debug("Getting Retrieve Plan.")
 
 	var plans pkg.NlxPlanPayload
 	if _, plans, err = pkg.GetRetrievePlan(auth, filter); err != nil {
 		return
 	}
 
-	logging.Get().WithFields(fields).Debug("Got Retrieve Plan.")
+	logging.WithFields(fields).Debug("Got Retrieve Plan.")
 
 	// noZip argument
 	var noZip bool
@@ -110,7 +110,7 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 
 	fields["NoZip"] = noZip
 
-	logging.Get().WithFields(fields).Debugf("Zipping? %v", noZip)
+	logging.WithFields(fields).Debugf("Zipping? %v", noZip)
 
 	var results []pkg.NlxRetrievalResult
 	if _, results, err = pkg.ExecuteRetrieval(auth, plans, noZip); err != nil {
@@ -121,7 +121,7 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 	fields["finished"] = time.Now()
 	fields["retrievalDuration"] = time.Since(start)
 
-	logging.Get().WithFields(fields).Debugf("Received %v Results.", len(results))
+	logging.WithFields(fields).Debugf("Received %v Results.", len(results))
 
 	var directory string
 	if directory, err = cmd.Flags().GetString(flags.Directory.Name); err != nil {
@@ -129,20 +129,20 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 	}
 
 	fields["directory"] = directory
-	logging.Get().WithFields(fields).Debugf("Target directory is %v.", directory)
+	logging.WithFields(fields).Debugf("Target directory is %v.", directory)
 
 	var resultBytes [][]byte = make([][]byte, 0)
 	for _, result := range results {
 		resultBytes = append(resultBytes, result.Data)
 	}
 
-	logging.Get().WithFields(fields).Debug("Clearing Directory first!")
+	logging.WithFields(fields).Debug("Clearing Directory first!")
 
 	if err = util.DeleteDirectories(directory, pkg.GetMetadataTypeDirNames()); err != nil {
 		return
 	}
 
-	logging.Get().WithFields(fields).Debug("Directory Cleared.")
+	logging.WithFields(fields).Debug("Directory Cleared.")
 	fields["writeStart"] = time.Now()
 
 	if err = util.WriteResultsToDisk(
@@ -153,7 +153,7 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 		return
 	}
 
-	logging.Get().WithFields(fields).Debug("Finished writing to disk.")
+	logging.WithFields(fields).Debug("Finished writing to disk.")
 
 	return
 }
