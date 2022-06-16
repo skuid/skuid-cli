@@ -154,7 +154,6 @@ func Add[T any](flag *Flag[T]) func(*cobra.Command) error {
 		// handle bools
 		case *Flag[bool]:
 			defaultValue := f.Default
-			logging.Get().Info("flag: %v, default: %v", f.Name, f.Default)
 			// override default values and usage text if
 			// there is an environment variable provided
 			if len(flag.EnvVarNames) > 0 {
