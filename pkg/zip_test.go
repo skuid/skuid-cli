@@ -16,8 +16,8 @@ func TestZip(t *testing.T) {
 	relpath := filepath.Join(cd, "..", "..", "_deploy")
 	bb, err := pkg.Archive(relpath, nil)
 	if err != nil {
-		logging.Logger.Fatal(err)
+		logging.Get().Fatal(err)
 	}
-	logging.Logger.Info(len(bb))
+	logging.Get().Info(len(bb))
 
 }

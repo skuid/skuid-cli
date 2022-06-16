@@ -49,7 +49,7 @@ type NlxRetrievalResult struct {
 }
 
 func ExecuteRetrieval(auth *Authorization, plans NlxPlanPayload, noZip bool) (duration time.Duration, results []NlxRetrievalResult, err error) {
-	log := logging.Logger.WithFields(logrus.Fields{
+	log := logging.Get().WithFields(logrus.Fields{
 		"func": "ExecuteRetrieval",
 		"zip":  noZip,
 	})
@@ -118,13 +118,13 @@ func ExecuteRetrieval(auth *Authorization, plans NlxPlanPayload, noZip bool) (du
 		// if there's an error, we won't consume the results below
 		// and we'll output the error
 		if err != nil {
-			logging.Logger.WithError(err).Error("Error when executing retrieval plan.")
+			logging.Get().WithError(err).Error("Error when executing retrieval plan.")
 		}
 	}()
 
 	// consume the closed channel (probably return an array; todo)
 	for result := range ch {
-		logging.Logger.Tracef("%v\n", result)
+		logging.Get().Tracef("%v\n", result)
 		results = append(results, result)
 	}
 

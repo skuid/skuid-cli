@@ -12,6 +12,15 @@ var (
 		Global:      true,
 	}
 
+	Trace = &Flag[bool]{
+		argument:    &argVerbose,
+		Name:        "trace",
+		Shorthand:   "v",
+		Usage:       "Show incredibly verbose logging",
+		EnvVarNames: []string{constants.ENV_TRACE},
+		Global:      true,
+	}
+
 	NoZip = &Flag[bool]{
 		argument:  &argNoZip,
 		Name:      "no-zip",

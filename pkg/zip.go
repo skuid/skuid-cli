@@ -52,13 +52,13 @@ func ArchiveWithFilterFunc(inFilePath string, filter func(string) bool) (result 
 		}
 
 		if fileInfo.IsDir() {
-			logging.Logger.Trace(color.Magenta.Sprint(filePath))
+			logging.Get().Debug(color.Magenta.Sprint(filePath))
 			return
 		}
 
 		var relativeFilePath string
 		if relativeFilePath, err = filepath.Rel(basePath, filePath); err != nil {
-			logging.Logger.WithError(err).Tracef("Relative Filepath Error: %v", err.Error())
+			logging.Get().WithError(err).Tracef("Relative Filepath Error: %v", err.Error())
 			return
 		}
 
@@ -70,10 +70,10 @@ func ArchiveWithFilterFunc(inFilePath string, filter func(string) bool) (result 
 		archivePath := path.Join(encapsulatingFolder, fileName)
 
 		if strings.HasPrefix(archivePath, ".") || !filter(relativeFilePath) {
-			logging.Logger.Tracef(color.Gray.Sprintf("Ignoring: %v", filePath))
+			logging.Get().Tracef(color.Gray.Sprintf("Ignoring: %v", filePath))
 			return
 		} else {
-			logging.Logger.Tracef("Processing: %v => %v", color.Green.Sprint(filePath), color.Yellow.Sprint(archivePath))
+			logging.Get().Tracef("Processing: %v => %v", color.Green.Sprint(filePath), color.Yellow.Sprint(archivePath))
 		}
 
 		// spin off a thread archiving the file
@@ -107,7 +107,7 @@ func ArchiveWithFilterFunc(inFilePath string, filter func(string) bool) (result 
 			err = e
 			return
 		}
-		logging.Logger.Trace(color.Green.Sprintf("Finished Processing %v", success.FilePath))
+		logging.Get().Debug(color.Green.Sprintf("Finished Processing %v", success.FilePath))
 	}
 
 	zipWriter.Close()

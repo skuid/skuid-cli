@@ -26,7 +26,7 @@ func FromWindowsPath(path string) string {
 // GetAbsolutePath gets the absolute path for the directory from the relative path
 func GetAbsolutePath(relative string) (absolute string) {
 	wd, _ := os.Getwd()
-	log := logging.Logger.WithFields(logrus.Fields{
+	log := logging.Get().WithFields(logrus.Fields{
 		"function": "GetAbsolutePath",
 	})
 	log.Tracef("Working Directory: %v", wd)
@@ -66,7 +66,7 @@ func DeleteDirectories(targetDirectory string, directories []string) (err error)
 	for _, dirName := range directories {
 		dirPath := filepath.Join(targetDirectory, dirName)
 
-		logging.Logger.Tracef("Deleting Directory: %v", color.Red.Sprint(dirPath))
+		logging.Get().Tracef("Deleting Directory: %v", color.Red.Sprint(dirPath))
 
 		if err = os.RemoveAll(dirPath); err != nil {
 			return
@@ -83,7 +83,7 @@ func WriteResultsToDiskInjection(targetDirectory string, results [][]byte, noZip
 	fields := logrus.Fields{
 		"function": "WriteResultsToDiskInjection",
 	}
-	log := logging.Logger.WithFields(fields)
+	log := logging.Get().WithFields(fields)
 
 	// unzip the archive into the output directory
 	targetDirFriendly, err := SanitizePath(targetDirectory)
@@ -136,7 +136,7 @@ func CreateTemporaryFile(data []byte) (name string, err error) {
 		name = tmpfile.Name()
 	}
 
-	logging.Logger.WithField("tempFileName", name).Tracef("Created Temp File")
+	logging.Get().WithField("tempFileName", name).Tracef("Created Temp File")
 	return
 }
 
@@ -146,7 +146,7 @@ func MoveTemporaryFile(sourceFileLocation, targetLocation string, pathMap map[st
 		"sourceFileLocation": sourceFileLocation,
 		"targetLocation":     targetLocation,
 	}
-	log := logging.Logger.WithFields(fields)
+	log := logging.Get().WithFields(fields)
 	// If we have a non-empty target directory, ensure it exists
 	if targetLocation != "" {
 		if err = directoryCreator(targetLocation, 0755); err != nil {
@@ -205,7 +205,7 @@ func UnzipArchive(sourceFileLocation, targetLocation string, pathMap map[string]
 		"sourceFileLocation": sourceFileLocation,
 		"targetLocation":     targetLocation,
 	}
-	log := logging.Logger.WithFields(fields)
+	log := logging.Get().WithFields(fields)
 	log.Tracef("Unzipping Archive: %v => %v", sourceFileLocation, targetLocation)
 	var reader *zip.ReadCloser
 	if reader, err = zip.OpenReader(sourceFileLocation); err != nil {
@@ -266,7 +266,7 @@ func readFileFromZipAndWriteToFilesystem(
 		"func":     "readFileFromZipAndWriteToFilesystem",
 		"fullPath": fullPath,
 	}
-	log := logging.Logger.WithFields(fields)
+	log := logging.Get().WithFields(fields)
 	log.Tracef("Extracting from Zip: %v", fullPath)
 
 	// If this file name contains a /, make sure that we create the directory it belongs in
@@ -322,7 +322,7 @@ func readFileFromZipAndWriteToFilesystem(
 
 func CreateDirectoryDeep(path string, fileMode os.FileMode) (err error) {
 	if _, err = os.Stat(path); err != nil {
-		logging.Logger.Tracef("Creating intermediate directory: %v", color.Cyan.Sprint(path))
+		logging.Get().Tracef("Creating intermediate directory: %v", color.Cyan.Sprint(path))
 		err = os.MkdirAll(path, fileMode)
 	}
 	return
@@ -353,7 +353,7 @@ func CombineJSON(newFileReader io.ReadCloser, existingFileReader FileReader, pat
 	fields := logrus.Fields{
 		"function": "CombineJSON",
 	}
-	log := logging.Logger.WithFields(fields)
+	log := logging.Get().WithFields(fields)
 	log.Tracef("Augmenting File with more JSON Data: %v\n", color.Magenta.Sprint(path))
 	existingBytes, err := existingFileReader(path)
 	if err != nil {

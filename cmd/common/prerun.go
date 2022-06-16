@@ -1,7 +1,6 @@
 package common
 
 import (
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
 	"github.com/skuid/tides/pkg/flags"
@@ -15,7 +14,13 @@ func PrerunValidation(cmd *cobra.Command, _ []string) error {
 	if verbose, err := cmd.Flags().GetBool(flags.Verbose.Name); err != nil {
 		return err
 	} else if verbose {
-		logging.Logger.SetLevel(logrus.TraceLevel)
+		logging.SetVerbose()
+	}
+
+	if trace, err := cmd.Flags().GetBool(flags.Trace.Name); err != nil {
+		return err
+	} else if trace {
+		logging.SetTrace()
 	}
 
 	if err := LoggingValidation(cmd, []string{}); err != nil {

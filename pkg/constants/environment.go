@@ -23,6 +23,7 @@ const (
 // tides-specific
 const (
 	ENV_VERBOSE                = "TIDES_VERBOSE"
+	ENV_TRACE                  = "TIDES_TRACE"
 	ENV_TIDES_LOG              = "TIDES_LOG"
 	ENV_TIDES_DEFAULT_FOLDER   = "TIDES_DEFAULT_FOLDER"
 	ENV_TIDES_LOGGING_LOCATION = "TIDES_LOGGING_DIRECTORY"

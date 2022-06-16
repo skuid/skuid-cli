@@ -54,7 +54,7 @@ func (from NlxMetadata) GetFieldValueByName(target string) (names []string, err 
 		return
 	}
 
-	logging.Logger.Tracef("Somehow able to find field name %v but not its value as []string in the metadata", name)
+	logging.Get().Debugf("Somehow able to find field name %v but not its value as []string in the metadata", name)
 	err = GetFieldValueByNameError(target)
 
 	return
@@ -73,12 +73,12 @@ func (m NlxMetadata) FilterItem(item string) (keep bool) {
 
 	validMetadataNames, err := m.GetFieldValueByName(metadataType)
 	if validMetadataNames == nil || len(validMetadataNames) == 0 {
-		logging.Logger.Trace("No valid names for this directory.")
+		logging.Get().Debug("No valid names for this directory.")
 		return
 	}
 
 	if err != nil {
-		logging.Logger.WithError(err).Error("Metadata Filter Error.")
+		logging.Get().WithError(err).Error("Metadata Filter Error.")
 		return
 	}
 
@@ -96,7 +96,7 @@ func (m NlxMetadata) FilterItem(item string) (keep bool) {
 	if metadataType == "componentpacks" {
 		filePathParts := strings.Split(filePath, string(filepath.Separator))
 		if len(filePathParts) == 2 && util.StringSliceContainsKey(validMetadataNames, filePathParts[0]) {
-			logging.Logger.Tracef("Keeping componentpack metadata file: %v", filePath)
+			logging.Get().Tracef("Keeping componentpack metadata file: %v", filePath)
 			keep = true
 			return
 		}
@@ -110,7 +110,7 @@ func (m NlxMetadata) FilterItem(item string) (keep bool) {
 		// Check for theme inline css
 		strings.TrimSuffix(filePath, ".inline.css"),
 	}) {
-		logging.Logger.Tracef("Keeping metadata file: %v", filePath)
+		logging.Get().Tracef("Keeping metadata file: %v", filePath)
 		keep = true
 		return
 	}

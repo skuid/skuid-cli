@@ -1,10 +1,7 @@
 package cmd
 
 import (
-	"fmt"
-
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
@@ -34,17 +31,14 @@ var (
 
 			// want to hide the logger if we're not file logging
 			if fileLogging, err := cmd.Flags().GetBool(flags.FileLogging.Name); err != nil {
-				logging.Logger.WithError(err).Panic("we need to know if we're file logging")
+				logging.Get().WithError(err).Panic("we need to know if we're file logging")
 			} else if !fileLogging {
-				// disable the logger
-				fmt.Println("NO NO LOG")
-				logging.Logger.Out = nil
-				logging.Logger.SetLevel(logrus.PanicLevel)
+				logging.DisableLogging()
 			}
 
 			p := tea.NewProgram(ui.Main(cmd))
 			if err := p.Start(); err != nil {
-				logging.Logger.WithError(err).Error("Unable to Start User Interface.")
+				logging.Get().WithError(err).Error("Unable to Start User Interface.")
 			}
 		},
 	}
@@ -57,20 +51,20 @@ func init() {
 
 		// If a config file is found, read it in.
 		if err := viper.ReadInConfig(); err == nil {
-			logging.Logger.Println("Using config file:", viper.ConfigFileUsed())
+			logging.Get().Debug("Using config file:", viper.ConfigFileUsed())
 		}
 	})
 
 	if err := flags.Add(flags.Verbose)(TidesCmd); err != nil {
-		logging.Logger.WithError(err).Fatal("Unable to assign verbose flag to command")
+		logging.Get().WithError(err).Fatal("Unable to assign verbose flag to command")
 	}
 
 	if err := flags.Add(flags.FileLogging)(TidesCmd); err != nil {
-		logging.Logger.WithError(err).Fatal("Unable to assign file logging flag to command")
+		logging.Get().WithError(err).Fatal("Unable to assign file logging flag to command")
 	}
 
 	if err := flags.Add(flags.FileLoggingDirectory)(TidesCmd); err != nil {
-		logging.Logger.WithError(err).Fatal("Unable to assign file logging directory flag to command")
+		logging.Get().WithError(err).Fatal("Unable to assign file logging directory flag to command")
 	}
 
 }

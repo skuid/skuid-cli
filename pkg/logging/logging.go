@@ -5,6 +5,7 @@ import (
 	"os"
 	"path"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gookit/color"
@@ -16,9 +17,10 @@ const (
 )
 
 var (
-	Logger        *logrus.Logger
-	LineSeparator = strings.Repeat("-", SEPARATOR_LENGTH)
-	StarSeparator = strings.Repeat("*", SEPARATOR_LENGTH)
+	threadsafety    sync.Mutex
+	loggerSingleton Logger
+	LineSeparator   = strings.Repeat("-", SEPARATOR_LENGTH)
+	StarSeparator   = strings.Repeat("*", SEPARATOR_LENGTH)
 
 	fileStringFormat = func() (ret string) {
 		ret = time.RFC3339
@@ -27,6 +29,24 @@ var (
 		return
 	}()
 )
+
+type Logger interface {
+	logrus.Ext1FieldLogger
+}
+
+func SetVerbose() Logger {
+	loggerSingleton = Get()
+	l, _ := loggerSingleton.(*logrus.Logger)
+	l.SetLevel(logrus.DebugLevel)
+	return loggerSingleton
+}
+
+func SetTrace() Logger {
+	loggerSingleton = Get()
+	l, _ := loggerSingleton.(*logrus.Logger)
+	l.SetLevel(logrus.TraceLevel)
+	return loggerSingleton
+}
 
 func SetFileLogging(loggingDirectory string) (err error) {
 	var wd string
@@ -59,24 +79,62 @@ func SetFileLogging(loggingDirectory string) (err error) {
 	if file, err := os.OpenFile(path.Join(dir, logFileName), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666); err != nil {
 		return err
 	} else {
-		Logger.SetOutput(file)
-		Logger.SetFormatter(&logrus.TextFormatter{})
+		l, _ := Get().(*logrus.Logger)
+		l.SetOutput(file)
+		l.SetFormatter(&logrus.TextFormatter{})
 		color.Enable = false
 	}
 
 	return
 }
 
-func init() {
-	Logger = logrus.New()
+func WithFields(fields logrus.Fields) Logger {
+	loggerSingleton = Get().WithFields(fields)
+	return loggerSingleton
+}
+
+func WithField(field string, value interface{}) Logger {
+	loggerSingleton = Get().WithField(field, value)
+	return loggerSingleton
+}
+
+func Reset() Logger {
+	threadsafety.Lock()
+	loggerSingleton = nil
+	threadsafety.Unlock()
+	return Get()
+}
+
+func DisableLogging() Logger {
+	threadsafety.Lock()
+	loggerSingleton = Get()
+	l, _ := loggerSingleton.(*logrus.Logger)
+	l.Out = nil
+	l.SetLevel(logrus.PanicLevel)
+	threadsafety.Unlock()
+	return loggerSingleton
+}
+
+func Get() Logger {
+	threadsafety.Lock()
+	defer threadsafety.Unlock()
+	if loggerSingleton != nil {
+		return loggerSingleton
+	}
+
+	loggerSingleton = logrus.StandardLogger()
+
+	l, _ := loggerSingleton.(*logrus.Logger)
 
 	// Log as JSON instead of the default ASCII formatter.
-	Logger.SetFormatter(&logrus.TextFormatter{})
+	l.SetFormatter(&logrus.TextFormatter{})
 
 	// Output to stdout instead of the default stderr
 	// Can be any io.Writer, see below for File example
-	Logger.SetOutput(os.Stdout)
+	l.SetOutput(os.Stdout)
 
 	// Only log the warning severity or above.
-	Logger.SetLevel(logrus.TraceLevel)
+	l.SetLevel(logrus.DebugLevel)
+
+	return loggerSingleton
 }
