@@ -34,10 +34,6 @@ type Flag[T any] struct {
 }
 
 func CheckRequiredFields[T any](f *Flag[T]) error {
-	if f.argument == nil {
-		return errors.Critical("Flag Argument must be provided.")
-	}
-
 	if f.Name == "" {
 		return errors.Critical("Flag FlagName must be provided.")
 	}
