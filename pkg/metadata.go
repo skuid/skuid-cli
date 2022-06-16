@@ -54,7 +54,7 @@ func (from NlxMetadata) GetFieldValueByName(target string) (names []string, err 
 		return
 	}
 
-	logging.Get().Debugf("Somehow able to find field name %v but not its value as []string in the metadata", name)
+	logging.Get().Tracef("Somehow able to find field name %v but not its value as []string in the metadata", name)
 	err = GetFieldValueByNameError(target)
 
 	return
@@ -73,7 +73,7 @@ func (m NlxMetadata) FilterItem(item string) (keep bool) {
 
 	validMetadataNames, err := m.GetFieldValueByName(metadataType)
 	if validMetadataNames == nil || len(validMetadataNames) == 0 {
-		logging.Get().Debug("No valid names for this directory.")
+		logging.Get().Trace("No valid names for this directory.")
 		return
 	}
 

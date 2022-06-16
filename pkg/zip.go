@@ -52,7 +52,7 @@ func ArchiveWithFilterFunc(inFilePath string, filter func(string) bool) (result 
 		}
 
 		if fileInfo.IsDir() {
-			logging.Get().Debug(color.Magenta.Sprint(filePath))
+			logging.Get().Trace(color.Magenta.Sprint(filePath))
 			return
 		}
 
@@ -107,7 +107,7 @@ func ArchiveWithFilterFunc(inFilePath string, filter func(string) bool) (result 
 			err = e
 			return
 		}
-		logging.Get().Debug(color.Green.Sprintf("Finished Processing %v", success.FilePath))
+		logging.Get().Trace(color.Green.Sprintf("Finished Processing %v", success.FilePath))
 	}
 
 	zipWriter.Close()

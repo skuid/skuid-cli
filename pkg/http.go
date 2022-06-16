@@ -50,7 +50,7 @@ func FastJsonBodyRequest[T any](
 		return
 	}
 
-	logging.Get().Debug("Unmarshalling data")
+	logging.Get().Trace("Unmarshalling data")
 
 	if err = json.Unmarshal(responseBody, &r); err != nil {
 		return
@@ -84,7 +84,7 @@ func FastRequestHelper(
 		route = fmt.Sprintf("https://%v", route)
 	}
 
-	logging.Get().Debug("Assembling Request.")
+	logging.Get().Trace("Assembling Request.")
 
 	// Prepare resources for the http request
 	req := fasthttp.AcquireRequest()
@@ -100,7 +100,7 @@ func FastRequestHelper(
 	}
 	// Set the URI for the request
 	req.SetURI(uri)
-	logging.Get().Debugf("URI: %v", uri.String())
+	logging.Get().Tracef("URI: %v", uri.String())
 
 	// Set the body for the request (if found)
 	// (empty bodies will be discarded)
@@ -109,9 +109,9 @@ func FastRequestHelper(
 	// ...along with the grant_type: password
 	if len(body) > 0 {
 		if len(body) < 1e4 {
-			logging.Get().Debugf("With body: %v\n", string(util.RemovePasswordBytes(body)))
+			logging.Get().Tracef("With body: %v\n", string(util.RemovePasswordBytes(body)))
 		} else {
-			logging.Get().Debugf("(With large body, too large to print)\n")
+			logging.Get().Tracef("(With large body, too large to print)\n")
 		}
 		req.SetBody(body)
 	}
@@ -122,7 +122,7 @@ func FastRequestHelper(
 	if headers != nil {
 		for headerName, headerValue := range headers {
 			if headerName == fasthttp.HeaderContentType {
-				logging.Get().Debugf("With Content Type: %v", headerValue)
+				logging.Get().Tracef("With Content Type: %v", headerValue)
 			}
 			req.Header.Add(headerName, headerValue)
 		}
@@ -134,7 +134,7 @@ func FastRequestHelper(
 
 	// perform the request. errors only pop up if there's an issue
 	// with assembly/resources.
-	logging.Get().Debug("Making Request.")
+	logging.Get().Trace("Making Request.")
 	if err = fasthttp.Do(req, resp); err != nil {
 		return
 	}
@@ -168,7 +168,7 @@ func FastRequestHelper(
 		return
 	}
 
-	logging.Get().Debug("Successful Request")
+	logging.Get().Trace("Successful Request")
 
 	response = responseBody
 
@@ -179,7 +179,7 @@ func FastRequestHelper(
 			var prettyMarshal interface{}
 			json.Unmarshal(response, &prettyMarshal)
 			pretty, _ := json.MarshalIndent(prettyMarshal, "", " ")
-			logging.Get().Debugf("Pretty Response Body: %v", color.Cyan.Sprint(string(pretty)))
+			logging.Get().Tracef("Pretty Response Body: %v", color.Cyan.Sprint(string(pretty)))
 		}
 	}
 

@@ -59,6 +59,10 @@ func init() {
 		logging.Get().WithError(err).Fatal("Unable to assign verbose flag to command")
 	}
 
+	if err := flags.Add(flags.Trace)(TidesCmd); err != nil {
+		logging.Get().WithError(err).Fatal("Unable to assign trace flag to command")
+	}
+
 	if err := flags.Add(flags.FileLogging)(TidesCmd); err != nil {
 		logging.Get().WithError(err).Fatal("Unable to assign file logging flag to command")
 	}
