@@ -86,19 +86,19 @@ func TestGetMetadataByString(t *testing.T) {
 	badErr := pkg.GetFieldValueByNameError("bad")
 
 	metadata := pkg.NlxMetadata{
-		Apps:               []string{"apps"},
-		AuthProviders:      []string{"authproviders"},
-		ComponentPacks:     []string{"componentpacks"},
-		DataServices:       []string{"dataservices"},
-		DataSources:        []string{"datasources"},
-		DesignSystems:      []string{"designsystems"},
-		Variables:          []string{"variables"},
-		Files:              []string{"files"},
-		Pages:              []string{"pages"},
-		PermissionSets:     []string{"permissionsets"},
-		SitePermissionSets: []string{"sitepermissionsets"},
-		Site:               []string{"site"},
-		Themes:             []string{"themes"},
+		Apps:           []string{"apps"},
+		AuthProviders:  []string{"authproviders"},
+		ComponentPacks: []string{"componentpacks"},
+		DataServices:   []string{"dataservices"},
+		DataSources:    []string{"datasources"},
+		DesignSystems:  []string{"designsystems"},
+		Variables:      []string{"variables"},
+		Files:          []string{"files"},
+		Pages:          []string{"pages"},
+		PermissionSets: []string{"permissionsets"},
+		Profiles:       []string{"sitepermissionsets"},
+		Site:           []string{"site"},
+		Themes:         []string{"themes"},
 	}
 
 	for _, tc := range []struct {
@@ -160,12 +160,12 @@ func TestGetMetadataByString(t *testing.T) {
 		{
 			description: "sitepermissionsets",
 			given:       "sitepermissionsets",
-			expected:    metadata.SitePermissionSets,
+			expected:    metadata.Profiles,
 		},
 		{
 			description: "profiles",
 			given:       "profiles",
-			expected:    metadata.SitePermissionSets,
+			expected:    metadata.Profiles,
 		},
 		{
 			description: "site",
