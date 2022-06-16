@@ -144,10 +144,11 @@ func FastRequestHelper(
 	statusCode := resp.StatusCode()
 
 	httpError := func() error {
-		return errors.Critical("%s:\nStatus Code: %v\nBody: %v\n",
+		return errors.Critical("%s:\nStatus Code: %v\nBody: %v\nURI: %v",
 			color.Red.Sprint("ERROR"),
 			color.Yellow.Sprint(statusCode),
 			color.Cyan.Sprint(string(responseBody)),
+			color.Red.Sprint(uri),
 		)
 	}
 

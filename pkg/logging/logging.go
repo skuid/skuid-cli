@@ -19,6 +19,7 @@ const (
 var (
 	safe            sync.Mutex
 	loggerSingleton Logger
+	fileLogging     bool
 	LineSeparator   = strings.Repeat("-", SEPARATOR_LENGTH)
 	StarSeparator   = strings.Repeat("*", SEPARATOR_LENGTH)
 
@@ -85,18 +86,25 @@ func SetFileLogging(loggingDirectory string) (err error) {
 		l.SetOutput(file)
 		l.SetFormatter(&logrus.TextFormatter{})
 		color.Enable = false
+		fileLogging = true
 	}
 
 	return
 }
 
 func WithFields(fields logrus.Fields) Logger {
-	loggerSingleton = Get().WithFields(fields)
+	loggerSingleton = Get()
+	if fileLogging {
+		loggerSingleton = loggerSingleton.WithFields(fields)
+	}
 	return loggerSingleton
 }
 
 func WithField(field string, value interface{}) Logger {
-	loggerSingleton = Get().WithField(field, value)
+	loggerSingleton = Get()
+	if fileLogging {
+		loggerSingleton = loggerSingleton.WithField(field, value)
+	}
 	return loggerSingleton
 }
 

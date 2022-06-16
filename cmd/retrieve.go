@@ -110,7 +110,7 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 
 	fields["NoZip"] = noZip
 
-	logging.WithFields(fields).Debugf("Zipping? %v", noZip)
+	logging.WithFields(fields).Tracef("Not Zipping? %v", noZip)
 
 	var results []pkg.NlxRetrievalResult
 	if _, results, err = pkg.ExecuteRetrieval(auth, plans, noZip); err != nil {

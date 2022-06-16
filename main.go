@@ -15,7 +15,8 @@ func main() {
 
 func Run() {
 	if err := cmd.TidesCmd.Execute(); err != nil {
-		logging.Get().Errorf("Error Encountered During Run: %v", err)
+		logging.Get().Errorf("Error Encountered During Run.")
+		logging.Get().Error(err)
 		os.Exit(1)
 	}
 }

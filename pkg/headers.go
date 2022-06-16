@@ -35,6 +35,7 @@ func GeneratePlanHeaders(info *Authorization, plan NlxPlan) (headers RequestHead
 	// when given a warden request we need to provide the authorization / jwt token
 	if wardenRequest {
 		headers = GenerateHeaders(plan.Host, info.AuthorizationToken)
+		headers[fasthttp.HeaderContentType] = JSON_CONTENT_TYPE
 	} else {
 		headers = GenerateHeaders(plan.Host, info.AccessToken)
 	}

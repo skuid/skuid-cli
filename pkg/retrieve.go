@@ -50,8 +50,8 @@ type NlxRetrievalResult struct {
 
 func ExecuteRetrieval(auth *Authorization, plans NlxPlanPayload, noZip bool) (duration time.Duration, results []NlxRetrievalResult, err error) {
 	log := logging.WithFields(logrus.Fields{
-		"func": "ExecuteRetrieval",
-		"zip":  noZip,
+		"func":  "ExecuteRetrieval",
+		"noZip": noZip,
 	})
 	// for timing sake
 	start := time.Now()
@@ -70,12 +70,12 @@ func ExecuteRetrieval(auth *Authorization, plans NlxPlanPayload, noZip bool) (du
 
 			headers := GeneratePlanHeaders(auth, plan)
 
-			if !noZip {
-				headers[fasthttp.HeaderContentType] = ZIP_CONTENT_TYPE
-				log.Debug(ZIP_CONTENT_TYPE)
-			} else {
-				headers[fasthttp.HeaderContentType] = JSON_CONTENT_TYPE
-				log.Debug(JSON_CONTENT_TYPE)
+			if _, ok := headers[fasthttp.HeaderContentType]; !ok {
+				if !noZip {
+					headers[fasthttp.HeaderContentType] = ZIP_CONTENT_TYPE
+				} else {
+					headers[fasthttp.HeaderContentType] = JSON_CONTENT_TYPE
+				}
 			}
 
 			log.Tracef("Plan Headers: %v\n", headers)
@@ -97,6 +97,7 @@ func ExecuteRetrieval(auth *Authorization, plans NlxPlanPayload, noZip bool) (du
 				log.Tracef("Plan: %v", plan)
 				log.Tracef("PlanName: %v", name)
 				log.Tracef("Url: %v", url)
+				log.Tracef("Headers: %v", headers)
 				log.Tracef("Error on request: %v\n", err.Error())
 				return err
 			}
