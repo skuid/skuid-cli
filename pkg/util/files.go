@@ -93,6 +93,10 @@ func WriteResultsToDiskInjection(targetDirectory string, results [][]byte, noZip
 
 	log.Tracef("Writing results to %v\n", color.Cyan.Sprint(targetDirFriendly))
 
+	if err := os.MkdirAll(targetDirFriendly, 0777); err != nil {
+		log.Tracef("Error making target dir: %v", err.Error())
+	}
+
 	// Store a map of paths that we've already encountered. We'll use this
 	// to determine if we need to modify a file or overwrite it.
 	pathMap := map[string]bool{}
@@ -355,9 +359,6 @@ type DirectoryCreator func(path string, fileMode os.FileMode) error
 type FileReader func(path string) ([]byte, error)
 
 func CopyToFile(fileReader io.ReadCloser, path string) (err error) {
-	// fileFlags := os.O_CREATE | os.O_WRONLY | os.O_TRUNC
-	// fileMode := os.FileMode(0644)
-
 	var targetFile *os.File
 	if targetFile, err = os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644); err != nil {
 		logging.Get().WithError(err).Warn("unable to open file in copytofile")

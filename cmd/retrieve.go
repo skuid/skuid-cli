@@ -4,6 +4,7 @@ import (
 	"time"
 
 	// jsoniter. Fork of github.com/json-iterator/go
+	"github.com/gookit/color"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
@@ -128,7 +129,7 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 	}
 
 	fields["directory"] = directory
-	logging.WithFields(fields).Debugf("Target directory is %v.", directory)
+	logging.WithFields(fields).Debugf("Target directory is %v.", color.Magenta.Sprint(directory))
 
 	var resultBytes [][]byte = make([][]byte, 0)
 	for _, result := range results {
@@ -142,6 +143,7 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 	}
 
 	logging.WithFields(fields).Debug("Directory Cleared.")
+
 	fields["writeStart"] = time.Now()
 
 	if err = util.WriteResultsToDisk(

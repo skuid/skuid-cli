@@ -10,7 +10,7 @@ const (
 	ZIP_CONTENT_TYPE  = "application/zip"
 	JSON_CONTENT_TYPE = "application/json"
 
-	DEFAULT_CONTENT_TYPE = ZIP_CONTENT_TYPE
+	DEFAULT_CONTENT_TYPE = JSON_CONTENT_TYPE
 
 	HEADER_SKUID_PUBLIC_KEY_ENDPOINT = "x-skuid-public-key-endpoint"
 )
