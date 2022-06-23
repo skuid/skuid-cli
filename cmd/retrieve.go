@@ -105,12 +105,11 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 	// noZip argument
 	var noZip bool
 	if noZip, err = cmd.Flags().GetBool(flags.NoZip.Name); err != nil {
-		return
+		return err
 	}
+	fields["noZip"] = noZip
 
-	fields["NoZip"] = noZip
-
-	logging.WithFields(fields).Tracef("Not Zipping? %v", noZip)
+	logging.WithFields(fields).Tracef("Zipping? %v", !noZip)
 
 	var results []pkg.NlxRetrievalResult
 	if _, results, err = pkg.ExecuteRetrieval(auth, plans, noZip); err != nil {

@@ -18,7 +18,7 @@ const (
 
 var (
 	safe            sync.Mutex
-	loggerSingleton Logger
+	loggerSingleton logrus.Ext1FieldLogger
 	fileLogging     bool
 	LineSeparator   = strings.Repeat("-", SEPARATOR_LENGTH)
 	StarSeparator   = strings.Repeat("*", SEPARATOR_LENGTH)
@@ -31,11 +31,15 @@ var (
 	}()
 )
 
-type Logger interface {
-	logrus.Ext1FieldLogger
+func Level(logger logrus.Ext1FieldLogger) logrus.Level {
+	if l, ok := (logger).(*logrus.Logger); ok {
+		return l.Level
+	} else {
+		return logrus.PanicLevel
+	}
 }
 
-func SetVerbose() Logger {
+func SetVerbose() logrus.Ext1FieldLogger {
 	loggerSingleton = Get()
 	loggerSingleton.Info("Setting verbose logging level.")
 	l, _ := loggerSingleton.(*logrus.Logger)
@@ -43,7 +47,7 @@ func SetVerbose() Logger {
 	return loggerSingleton
 }
 
-func SetTrace() Logger {
+func SetTrace() logrus.Ext1FieldLogger {
 	loggerSingleton = Get()
 	loggerSingleton.Info("Setting trace logging level.")
 	l, _ := loggerSingleton.(*logrus.Logger)
@@ -92,30 +96,30 @@ func SetFileLogging(loggingDirectory string) (err error) {
 	return
 }
 
-func WithFields(fields logrus.Fields) Logger {
+func WithFields(fields logrus.Fields) logrus.Ext1FieldLogger {
 	loggerSingleton = Get()
-	if fileLogging {
+	if fileLogging || Level(loggerSingleton) == logrus.TraceLevel {
 		loggerSingleton = loggerSingleton.WithFields(fields)
 	}
 	return loggerSingleton
 }
 
-func WithField(field string, value interface{}) Logger {
+func WithField(field string, value interface{}) logrus.Ext1FieldLogger {
 	loggerSingleton = Get()
-	if fileLogging {
+	if fileLogging || Level(loggerSingleton) == logrus.TraceLevel {
 		loggerSingleton = loggerSingleton.WithField(field, value)
 	}
 	return loggerSingleton
 }
 
-func Reset() Logger {
+func Reset() logrus.Ext1FieldLogger {
 	safe.Lock()
 	loggerSingleton = nil
 	safe.Unlock()
 	return Get()
 }
 
-func DisableLogging() Logger {
+func DisableLogging() logrus.Ext1FieldLogger {
 	loggerSingleton = Get()
 	safe.Lock()
 	l, _ := loggerSingleton.(*logrus.Logger)
@@ -125,7 +129,7 @@ func DisableLogging() Logger {
 	return loggerSingleton
 }
 
-func Get() Logger {
+func Get() logrus.Ext1FieldLogger {
 	safe.Lock()
 	defer safe.Unlock()
 	if loggerSingleton != nil {

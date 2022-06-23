@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/gookit/color"
 	"github.com/sirupsen/logrus"
 	"github.com/valyala/fasthttp"
 	"golang.org/x/sync/errgroup"
@@ -48,10 +49,10 @@ type NlxRetrievalResult struct {
 	Data     []byte
 }
 
-func ExecuteRetrieval(auth *Authorization, plans NlxPlanPayload, noZip bool) (duration time.Duration, results []NlxRetrievalResult, err error) {
-	log := logging.WithFields(logrus.Fields{
-		"func":  "ExecuteRetrieval",
-		"noZip": noZip,
+func ExecuteRetrieval(auth *Authorization, plans NlxPlanPayload, zip bool) (duration time.Duration, results []NlxRetrievalResult, err error) {
+	logging.WithFields(logrus.Fields{
+		"func": "ExecuteRetrieval",
+		"zip":  zip,
 	})
 	// for timing sake
 	start := time.Now()
@@ -65,27 +66,29 @@ func ExecuteRetrieval(auth *Authorization, plans NlxPlanPayload, noZip bool) (du
 	// this function generically handles a plan based on name / stuff
 	executePlan := func(name string, plan NlxPlan) func() error {
 		return func() error {
-			log = log.WithField("planName", name)
-			log.Debugf("Firing off %v", name)
+			log := logging.WithField("planName", name)
+			log.Debugf("Firing off %v", color.Magenta.Sprint(name))
 
 			headers := GeneratePlanHeaders(auth, plan)
 
 			if _, ok := headers[fasthttp.HeaderContentType]; !ok {
-				if !noZip {
+				if zip {
 					headers[fasthttp.HeaderContentType] = ZIP_CONTENT_TYPE
 				} else {
 					headers[fasthttp.HeaderContentType] = JSON_CONTENT_TYPE
 				}
 			}
 
-			log.Tracef("Plan Headers: %v\n", headers)
+			for k, header := range headers {
+				log.Tracef("header: (%v => %v)", color.Yellow.Sprint(k), color.Green.Sprint(header))
+			}
 
 			url := GenerateRoute(auth, plan)
 
-			log.Tracef("Plan Request: %v\n", url)
+			log.Tracef("URL: %v", color.Blue.Sprint(url))
 
 			if result, err := FastRequest(
-				url, fasthttp.MethodPost, NewRetrievalRequestBody(plan.Metadata, noZip), headers,
+				url, fasthttp.MethodPost, NewRetrievalRequestBody(plan.Metadata, zip), headers,
 			); err == nil {
 				ch <- NlxRetrievalResult{
 					Plan:     plan,
@@ -94,11 +97,13 @@ func ExecuteRetrieval(auth *Authorization, plans NlxPlanPayload, noZip bool) (du
 					Data:     result,
 				}
 			} else {
-				log.Tracef("Plan: %v", plan)
-				log.Tracef("PlanName: %v", name)
-				log.Tracef("Url: %v", url)
-				log.Tracef("Headers: %v", headers)
-				log.Tracef("Error on request: %v\n", err.Error())
+				log = log.WithFields(logrus.Fields{
+					"plan":     plan,
+					"planName": name,
+					"url":      url,
+				})
+				log = log.WithError(err)
+				log.Errorf("error with %v request", color.Magenta.Sprint(name))
 				return err
 			}
 

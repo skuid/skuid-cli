@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/gookit/color"
+	"github.com/sirupsen/logrus"
 	"github.com/valyala/fasthttp"
 
 	"github.com/skuid/tides/pkg/constants"
@@ -75,6 +76,12 @@ func FastRequestHelper(
 	headers RequestHeaders,
 	attempts int,
 ) (response []byte, err error) {
+	log := logging.WithFields(logrus.Fields{
+		"route":    route,
+		"method":   method,
+		"headers":  headers,
+		"attempts": attempts,
+	})
 	// only https
 	if strings.HasPrefix(route, "http://") {
 		route = strings.Replace(route, "http://", "https://", 1)
@@ -84,7 +91,7 @@ func FastRequestHelper(
 		route = fmt.Sprintf("https://%v", route)
 	}
 
-	logging.Get().Trace("Assembling Request.")
+	log.Trace("Assembling Request.")
 
 	// Prepare resources for the http request
 	req := fasthttp.AcquireRequest()
@@ -100,7 +107,7 @@ func FastRequestHelper(
 	}
 	// Set the URI for the request
 	req.SetURI(uri)
-	logging.Get().Tracef("URI: %v", uri.String())
+	log.Tracef("URI: %v", uri.String())
 
 	// Set the body for the request (if found)
 	// (empty bodies will be discarded)
@@ -109,24 +116,24 @@ func FastRequestHelper(
 	// ...along with the grant_type: password
 	if len(body) > 0 {
 		if len(body) < 1e4 {
-			logging.Get().Tracef("With body: %v\n", string(util.RemovePasswordBytes(body)))
+			log.Tracef("With body: %v\n", string(util.RemovePasswordBytes(body)))
 		} else {
-			logging.Get().Tracef("(With large body, too large to print)\n")
+			log.Tracef("(With large body, too large to print)\n")
 		}
 		req.SetBody(body)
 	}
 
 	// prep the request headers
 	req.Header.SetMethod(method)
-	req.Header.Add(fasthttp.HeaderUserAgent, SkuidUserAgent)
+	req.Header.Set(fasthttp.HeaderUserAgent, SkuidUserAgent)
 	if headers != nil {
 		for headerName, headerValue := range headers {
-			if headerName == fasthttp.HeaderContentType {
-				logging.Get().Tracef("With Content Type: %v", headerValue)
-			}
-			req.Header.Add(headerName, headerValue)
+			log.Tracef("Setting header %v: %v", headerName, headerValue)
+			req.Header.Set(headerName, headerValue)
 		}
 	}
+
+	log.Tracef("Header Length: %v", req.Header.Len())
 
 	// prep for the response
 	resp := fasthttp.AcquireResponse()
@@ -134,7 +141,7 @@ func FastRequestHelper(
 
 	// perform the request. errors only pop up if there's an issue
 	// with assembly/resources.
-	logging.Get().Trace("Making Request.")
+	log.Trace("Making Request.")
 	if err = fasthttp.Do(req, resp); err != nil {
 		return
 	}
@@ -144,11 +151,12 @@ func FastRequestHelper(
 	statusCode := resp.StatusCode()
 
 	httpError := func() error {
-		return errors.Critical("%s:\nStatus Code: %v\nBody: %v\nURI: %v",
+		return errors.Critical("%s:\nStatus Code: %v\nBody: %v\nURI: %v\nHeaders: %v",
 			color.Red.Sprint("ERROR"),
 			color.Yellow.Sprint(statusCode),
 			color.Cyan.Sprint(string(responseBody)),
 			color.Red.Sprint(uri),
+			color.Cyan.Sprint(headers),
 		)
 	}
 
@@ -169,7 +177,7 @@ func FastRequestHelper(
 		return
 	}
 
-	logging.Get().Trace("Successful Request")
+	log.Trace("Successful Request")
 
 	response = responseBody
 
@@ -180,7 +188,7 @@ func FastRequestHelper(
 			var prettyMarshal interface{}
 			json.Unmarshal(response, &prettyMarshal)
 			pretty, _ := json.MarshalIndent(prettyMarshal, "", " ")
-			logging.Get().Tracef("Pretty Response Body: %v", color.Cyan.Sprint(string(pretty)))
+			log.Tracef("Pretty Response Body: %v", color.Cyan.Sprint(string(pretty)))
 		}
 	}
 

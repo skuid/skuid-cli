@@ -54,14 +54,14 @@ func GetDeployPlan(auth *Authorization) (duration time.Duration, result NlxPlanP
 
 // NewRetrievalRequestBody marshals the NlxMetadata into json and returns
 // the body. This is the payload expected for the Retrieval Request
-func NewRetrievalRequestBody(metadata NlxMetadata, zip bool) (body []byte) {
+func NewRetrievalRequestBody(metadata NlxMetadata, NoZip bool) (body []byte) {
 	// there should be no issue marshalling this thing.
 	body, _ = json.Marshal(struct {
 		Metadata NlxMetadata `json:"metadata"`
-		DoZip    bool        `json:"zip"`
+		NoZip    bool        `json:"nozip"`
 	}{
 		Metadata: metadata,
-		DoZip:    zip,
+		NoZip:    NoZip,
 	})
 	return
 }

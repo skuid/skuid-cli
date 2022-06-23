@@ -79,7 +79,7 @@ func WriteResultsToDisk(targetDirectory string, results [][]byte, noZip bool) (e
 	return WriteResultsToDiskInjection(targetDirectory, results, noZip, CopyToFile, CreateDirectoryDeep, ioutil.ReadFile)
 }
 
-func WriteResultsToDiskInjection(targetDirectory string, results [][]byte, noZip bool, fileCreator FileCreator, directoryCreator DirectoryCreator, existingFileReader FileReader) (err error) {
+func WriteResultsToDiskInjection(targetDirectory string, results [][]byte, noZip bool, copyToFile FileCreator, createDirectoryDeep DirectoryCreator, ioutilReadFile FileReader) (err error) {
 	fields := logrus.Fields{
 		"function": "WriteResultsToDiskInjection",
 	}
@@ -100,6 +100,11 @@ func WriteResultsToDiskInjection(targetDirectory string, results [][]byte, noZip
 	for _, result := range results {
 		tmpFileName, err := CreateTemporaryFile(result)
 		if err != nil {
+			log.WithFields(logrus.Fields{
+				"fileName": tmpFileName,
+			}).
+				WithError(err).
+				Error("error creating temporary file")
 			return err
 		}
 		// schedule cleanup of temp file
@@ -107,17 +112,27 @@ func WriteResultsToDiskInjection(targetDirectory string, results [][]byte, noZip
 
 		if noZip {
 			log.Tracef("Moving Temporary File: %v => %v", tmpFileName, targetDirectory)
-			err = MoveTemporaryFile(tmpFileName, targetDirectory, pathMap, fileCreator, directoryCreator, existingFileReader)
+			err = MoveTemporaryFile(tmpFileName, targetDirectory, pathMap, copyToFile, createDirectoryDeep, ioutilReadFile)
 			if err != nil {
+				log.WithFields(logrus.Fields{
+					"fileName":        tmpFileName,
+					"targetDirectory": targetDirectory,
+				}).WithError(err).Error("error moving temp file")
 				return err
 			}
-			continue
-		}
-
-		// unzip the contents of our temp zip file
-		err = UnzipArchive(tmpFileName, targetDirectory, pathMap, fileCreator, directoryCreator, existingFileReader)
-		if err != nil {
-			return err
+		} else {
+			// unzip the contents of our temp zip file
+			err = UnzipArchive(tmpFileName, targetDirectory, pathMap, copyToFile, createDirectoryDeep, ioutilReadFile)
+			if err != nil {
+				log.WithFields(logrus.Fields{
+					"fileName":        tmpFileName,
+					"targetDirectory": targetDirectory,
+					"pathMap":         pathMap,
+				}).
+					WithError(err).
+					Error("Error with UnzipArchive")
+				return err
+			}
 		}
 	}
 
@@ -149,7 +164,9 @@ func MoveTemporaryFile(sourceFileLocation, targetLocation string, pathMap map[st
 	log := logging.WithFields(fields)
 	// If we have a non-empty target directory, ensure it exists
 	if targetLocation != "" {
+		log.Debugf("creating directory: %v", targetLocation)
 		if err = directoryCreator(targetLocation, 0755); err != nil {
+			log.WithError(err).Error("unable to create directory")
 			return
 		}
 	}
@@ -157,26 +174,30 @@ func MoveTemporaryFile(sourceFileLocation, targetLocation string, pathMap map[st
 	// open the file (to copy later)
 	var fi *os.File
 	if fi, err = os.Open(sourceFileLocation); err != nil {
-		log.Tracef("os.Open: %v", err)
+		log.WithError(err).Error("os.Open")
 		return
 	}
 	defer fi.Close()
 
 	var fstat os.FileInfo
 	if fstat, err = fi.Stat(); err != nil {
+		log.WithError(err).Error("fi.Stat()")
 		return
 	}
 
 	fileReader := ioutil.NopCloser(fi)
 	path := filepath.Join(targetLocation, filepath.FromSlash(fi.Name()))
+	log.Tracef("path; %v", path)
 
 	_, fileAlreadyWritten := pathMap[path]
 
 	if !fileAlreadyWritten {
+		log.Tracef("file hasn't been written yet: %v", path)
 		pathMap[path] = true
 	}
 
 	if fstat.IsDir() {
+		log.Trace("found a dir, making a dir")
 		return directoryCreator(path, fstat.Mode())
 	}
 
@@ -189,9 +210,10 @@ func MoveTemporaryFile(sourceFileLocation, targetLocation string, pathMap map[st
 		}
 	}
 
-	log.Tracef("Moving file: %v", color.Green.Sprint(fi.Name()))
+	log.Tracef("Moving file: %v => %v", color.Green.Sprint(fi.Name()), color.Blue.Sprint(path))
 
 	if err = fileCreator(fileReader, path); err != nil {
+		log.WithError(err).Error("fileCreator")
 		return
 	}
 
@@ -206,7 +228,7 @@ func UnzipArchive(sourceFileLocation, targetLocation string, pathMap map[string]
 		"targetLocation":     targetLocation,
 	}
 	log := logging.WithFields(fields)
-	log.Tracef("Unzipping Archive: %v => %v", sourceFileLocation, targetLocation)
+	log.Tracef("Unzipping Archive: %v => %v", color.Green.Sprint(sourceFileLocation), color.Blue.Sprint(targetLocation))
 	var reader *zip.ReadCloser
 	if reader, err = zip.OpenReader(sourceFileLocation); err != nil {
 		return
@@ -267,7 +289,7 @@ func readFileFromZipAndWriteToFilesystem(
 		"fullPath": fullPath,
 	}
 	log := logging.WithFields(fields)
-	log.Tracef("Extracting from Zip: %v", fullPath)
+	log.Tracef("Extracting from Zip: %v", color.Blue.Sprint(fullPath))
 
 	// If this file name contains a /, make sure that we create the directory it belongs in
 	if pathParts := strings.Split(fullPath, string(filepath.Separator)); len(pathParts) > 0 {
@@ -333,16 +355,18 @@ type DirectoryCreator func(path string, fileMode os.FileMode) error
 type FileReader func(path string) ([]byte, error)
 
 func CopyToFile(fileReader io.ReadCloser, path string) (err error) {
-	fileFlags := os.O_CREATE | os.O_WRONLY | os.O_TRUNC
-	fileMode := os.FileMode(0644)
+	// fileFlags := os.O_CREATE | os.O_WRONLY | os.O_TRUNC
+	// fileMode := os.FileMode(0644)
 
 	var targetFile *os.File
-	if targetFile, err = os.OpenFile(path, fileFlags, fileMode); err != nil {
+	if targetFile, err = os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644); err != nil {
+		logging.Get().WithError(err).Warn("unable to open file in copytofile")
 		return
 	}
 	defer targetFile.Close()
 
 	if _, err = io.Copy(targetFile, fileReader); err != nil {
+		logging.Get().WithError(err).Error("unable to copy to target")
 		return
 	}
 
