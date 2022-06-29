@@ -18,12 +18,6 @@ var (
 		Global:  true,
 	}
 
-	NoZip = &Flag[bool]{
-		Name:      "no-zip",
-		Shorthand: "x",
-		Usage:     "Ask for site not to be zipped",
-	}
-
 	NoModule = &Flag[bool]{
 		Name:  "no-module",
 		Usage: "Retrieve only those pages that do not have a module",

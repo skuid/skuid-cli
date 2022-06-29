@@ -41,7 +41,6 @@ func Level(logger logrus.Ext1FieldLogger) logrus.Level {
 
 func SetVerbose() logrus.Ext1FieldLogger {
 	loggerSingleton = Get()
-	loggerSingleton.Info("Setting verbose logging level.")
 	l, _ := loggerSingleton.(*logrus.Logger)
 	l.SetLevel(logrus.DebugLevel)
 	return loggerSingleton
@@ -49,7 +48,6 @@ func SetVerbose() logrus.Ext1FieldLogger {
 
 func SetTrace() logrus.Ext1FieldLogger {
 	loggerSingleton = Get()
-	loggerSingleton.Info("Setting trace logging level.")
 	l, _ := loggerSingleton.(*logrus.Logger)
 	l.SetLevel(logrus.TraceLevel)
 	return loggerSingleton

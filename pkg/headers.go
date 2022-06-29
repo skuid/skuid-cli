@@ -7,8 +7,9 @@ import (
 )
 
 const (
-	ZIP_CONTENT_TYPE  = "application/zip"
-	JSON_CONTENT_TYPE = "application/json"
+	ZIP_CONTENT_TYPE         = "application/zip"
+	JSON_CONTENT_TYPE        = "application/json"
+	URL_ENCODED_CONTENT_TYPE = "application/x-www-form-urlencoded"
 
 	DEFAULT_CONTENT_TYPE = JSON_CONTENT_TYPE
 

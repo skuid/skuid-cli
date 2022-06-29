@@ -73,7 +73,7 @@ func ArchiveWithFilterFunc(inFilePath string, filter func(string) bool) (result 
 			logging.Get().Tracef(color.Gray.Sprintf("Ignoring: %v", filePath))
 			return
 		} else {
-			logging.Get().Tracef("Processing: %v => %v", color.Green.Sprint(filePath), color.Yellow.Sprint(archivePath))
+			logging.Get().Infof("Processing: %v => %v", color.Green.Sprint(filePath), color.Yellow.Sprint(archivePath))
 		}
 
 		// spin off a thread archiving the file
@@ -95,7 +95,10 @@ func ArchiveWithFilterFunc(inFilePath string, filter func(string) bool) (result 
 	}
 
 	go func() {
-		_ = eg.Wait()
+		err = eg.Wait()
+		if err != nil {
+			logging.Get().WithError(err).Fatal("failed during ArchiveWithFilterFunc")
+		}
 		close(ch)
 	}()
 
@@ -103,7 +106,7 @@ func ArchiveWithFilterFunc(inFilePath string, filter func(string) bool) (result 
 		if zipFileWriter, e := zipWriter.Create(success.FilePath); err != nil {
 			err = e
 			return
-		} else if _, e := zipFileWriter.Write(success.Bytes); err != nil {
+		} else if _, e := zipFileWriter.Write(success.Bytes); e != nil {
 			err = e
 			return
 		}

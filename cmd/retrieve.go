@@ -103,17 +103,8 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 
 	logging.WithFields(fields).Debug("Got Retrieve Plan.")
 
-	// noZip argument
-	var noZip bool
-	if noZip, err = cmd.Flags().GetBool(flags.NoZip.Name); err != nil {
-		return err
-	}
-	fields["noZip"] = noZip
-
-	logging.WithFields(fields).Tracef("Zipping? %v", !noZip)
-
 	var results []pkg.NlxRetrievalResult
-	if _, results, err = pkg.ExecuteRetrieval(auth, plans, noZip); err != nil {
+	if _, results, err = pkg.ExecuteRetrieval(auth, plans); err != nil {
 		return
 	}
 
@@ -136,20 +127,11 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 		resultBytes = append(resultBytes, result.Data)
 	}
 
-	logging.WithFields(fields).Debug("Clearing Directory first!")
-
-	if err = util.DeleteDirectories(directory, pkg.GetMetadataTypeDirNames()); err != nil {
-		return
-	}
-
-	logging.WithFields(fields).Debug("Directory Cleared.")
-
 	fields["writeStart"] = time.Now()
 
 	if err = util.WriteResultsToDisk(
 		directory,
 		resultBytes,
-		noZip,
 	); err != nil {
 		return
 	}
@@ -165,5 +147,4 @@ func init() {
 	flags.AddFlags(retrieveCmd, flags.NLXLoginFlags...)
 	flags.AddFlags(retrieveCmd, flags.Directory, flags.AppName, flags.ApiVersion)
 	flags.AddFlags(retrieveCmd, flags.Pages)
-	flags.AddFlags(retrieveCmd, flags.NoZip)
 }

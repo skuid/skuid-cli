@@ -65,7 +65,7 @@ func TestExecuteRetrieval(t *testing.T) {
 			t.Log(plans)
 			t.Log(err)
 
-			duration, results, err := pkg.ExecuteRetrieval(auth, plans, false)
+			duration, results, err := pkg.ExecuteRetrieval(auth, plans)
 			t.Log(duration)
 			t.Log(results)
 			t.Log(err)

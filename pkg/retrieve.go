@@ -49,10 +49,9 @@ type NlxRetrievalResult struct {
 	Data     []byte
 }
 
-func ExecuteRetrieval(auth *Authorization, plans NlxPlanPayload, zip bool) (duration time.Duration, results []NlxRetrievalResult, err error) {
+func ExecuteRetrieval(auth *Authorization, plans NlxPlanPayload) (duration time.Duration, results []NlxRetrievalResult, err error) {
 	logging.WithFields(logrus.Fields{
 		"func": "ExecuteRetrieval",
-		"zip":  zip,
 	})
 	// for timing sake
 	start := time.Now()
@@ -70,14 +69,7 @@ func ExecuteRetrieval(auth *Authorization, plans NlxPlanPayload, zip bool) (dura
 			log.Debugf("Firing off %v", color.Magenta.Sprint(name))
 
 			headers := GeneratePlanHeaders(auth, plan)
-
-			if _, ok := headers[fasthttp.HeaderContentType]; !ok {
-				if zip {
-					headers[fasthttp.HeaderContentType] = ZIP_CONTENT_TYPE
-				} else {
-					headers[fasthttp.HeaderContentType] = JSON_CONTENT_TYPE
-				}
-			}
+			headers[fasthttp.HeaderContentType] = JSON_CONTENT_TYPE
 
 			for k, header := range headers {
 				log.Tracef("header: (%v => %v)", color.Yellow.Sprint(k), color.Green.Sprint(header))
@@ -88,7 +80,7 @@ func ExecuteRetrieval(auth *Authorization, plans NlxPlanPayload, zip bool) (dura
 			log.Tracef("URL: %v", color.Blue.Sprint(url))
 
 			if result, err := FastRequest(
-				url, fasthttp.MethodPost, NewRetrievalRequestBody(plan.Metadata, zip), headers,
+				url, fasthttp.MethodPost, NewRetrievalRequestBody(plan.Metadata), headers,
 			); err == nil {
 				ch <- NlxRetrievalResult{
 					Plan:     plan,

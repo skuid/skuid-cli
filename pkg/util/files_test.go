@@ -138,7 +138,6 @@ func TestRetrieve(t *testing.T) {
 	testCases := []struct {
 		testDescription string
 		giveTargetDir   string
-		givenNoZip      bool
 		giveFiles       []RetrieveFile
 		wantFiles       []RetrieveFile
 		wantDirectories []string
@@ -260,7 +259,7 @@ func TestRetrieve(t *testing.T) {
 				return []byte(existingProfileBody), nil
 			}
 
-			err = util.WriteResultsToDiskInjection(tc.giveTargetDir, [][]byte{buf.Bytes()}, tc.givenNoZip, mockFileMaker, mockDirectoryMaker, mockExistingFileReader)
+			err = util.WriteResultsToDiskInjection(tc.giveTargetDir, [][]byte{buf.Bytes()}, mockFileMaker, mockDirectoryMaker, mockExistingFileReader)
 			if tc.wantError != nil {
 				assert.Equal(t, tc.wantError.Error(), err.Error())
 			} else if err != nil {

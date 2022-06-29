@@ -52,7 +52,7 @@ func GetAccessToken(host, username, password string) (accessToken string, err er
 		fasthttp.MethodPost,
 		body,
 		map[string]string{
-			fasthttp.HeaderContentType: "application/x-www-form-urlencoded",
+			fasthttp.HeaderContentType: URL_ENCODED_CONTENT_TYPE,
 		},
 	); err != nil {
 		return

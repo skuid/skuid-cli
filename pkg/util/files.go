@@ -58,28 +58,11 @@ func SanitizePath(directory string) (friendlyResult string, err error) {
 
 }
 
-// DeleteDirectories deletes a list of directories (os.RemoveAll) in a target directory
-func DeleteDirectories(targetDirectory string, directories []string) (err error) {
-	// Remove all of our metadata directories so we get a clean slate.
-	// We may want to improve this later when we do partial retrieves so that
-	// we don't clear out the whole directory every time we retrieve.
-	for _, dirName := range directories {
-		dirPath := filepath.Join(targetDirectory, dirName)
-
-		logging.Get().Tracef("Deleting Directory: %v", color.Red.Sprint(dirPath))
-
-		if err = os.RemoveAll(dirPath); err != nil {
-			return
-		}
-	}
-	return
+func WriteResultsToDisk(targetDirectory string, results [][]byte) (err error) {
+	return WriteResultsToDiskInjection(targetDirectory, results, CopyToFile, CreateDirectoryDeep, ioutil.ReadFile)
 }
 
-func WriteResultsToDisk(targetDirectory string, results [][]byte, noZip bool) (err error) {
-	return WriteResultsToDiskInjection(targetDirectory, results, noZip, CopyToFile, CreateDirectoryDeep, ioutil.ReadFile)
-}
-
-func WriteResultsToDiskInjection(targetDirectory string, results [][]byte, noZip bool, copyToFile FileCreator, createDirectoryDeep DirectoryCreator, ioutilReadFile FileReader) (err error) {
+func WriteResultsToDiskInjection(targetDirectory string, results [][]byte, copyToFile FileCreator, createDirectoryDeep DirectoryCreator, ioutilReadFile FileReader) (err error) {
 	fields := logrus.Fields{
 		"function": "WriteResultsToDiskInjection",
 	}
@@ -114,29 +97,17 @@ func WriteResultsToDiskInjection(targetDirectory string, results [][]byte, noZip
 		// schedule cleanup of temp file
 		defer os.Remove(tmpFileName)
 
-		if noZip {
-			log.Tracef("Moving Temporary File: %v => %v", tmpFileName, targetDirectory)
-			err = MoveTemporaryFile(tmpFileName, targetDirectory, pathMap, copyToFile, createDirectoryDeep, ioutilReadFile)
-			if err != nil {
-				log.WithFields(logrus.Fields{
-					"fileName":        tmpFileName,
-					"targetDirectory": targetDirectory,
-				}).WithError(err).Error("error moving temp file")
-				return err
-			}
-		} else {
-			// unzip the contents of our temp zip file
-			err = UnzipArchive(tmpFileName, targetDirectory, pathMap, copyToFile, createDirectoryDeep, ioutilReadFile)
-			if err != nil {
-				log.WithFields(logrus.Fields{
-					"fileName":        tmpFileName,
-					"targetDirectory": targetDirectory,
-					"pathMap":         pathMap,
-				}).
-					WithError(err).
-					Error("Error with UnzipArchive")
-				return err
-			}
+		// unzip the contents of our temp zip file
+		err = UnzipArchive(tmpFileName, targetDirectory, pathMap, copyToFile, createDirectoryDeep, ioutilReadFile)
+		if err != nil {
+			log.WithFields(logrus.Fields{
+				"fileName":        tmpFileName,
+				"targetDirectory": targetDirectory,
+				"pathMap":         pathMap,
+			}).
+				WithError(err).
+				Warn("Error with UnzipArchive")
+			return err
 		}
 	}
 
@@ -159,71 +130,6 @@ func CreateTemporaryFile(data []byte) (name string, err error) {
 	return
 }
 
-func MoveTemporaryFile(sourceFileLocation, targetLocation string, pathMap map[string]bool, fileCreator FileCreator, directoryCreator DirectoryCreator, existingFileReader FileReader) (err error) {
-	fields := logrus.Fields{
-		"function":           "MoveTemporaryFile",
-		"sourceFileLocation": sourceFileLocation,
-		"targetLocation":     targetLocation,
-	}
-	log := logging.WithFields(fields)
-	// If we have a non-empty target directory, ensure it exists
-	if targetLocation != "" {
-		log.Debugf("creating directory: %v", targetLocation)
-		if err = directoryCreator(targetLocation, 0755); err != nil {
-			log.WithError(err).Error("unable to create directory")
-			return
-		}
-	}
-
-	// open the file (to copy later)
-	var fi *os.File
-	if fi, err = os.Open(sourceFileLocation); err != nil {
-		log.WithError(err).Error("os.Open")
-		return
-	}
-	defer fi.Close()
-
-	var fstat os.FileInfo
-	if fstat, err = fi.Stat(); err != nil {
-		log.WithError(err).Error("fi.Stat()")
-		return
-	}
-
-	fileReader := ioutil.NopCloser(fi)
-	path := filepath.Join(targetLocation, filepath.FromSlash(fi.Name()))
-	log.Tracef("path; %v", path)
-
-	_, fileAlreadyWritten := pathMap[path]
-
-	if !fileAlreadyWritten {
-		log.Tracef("file hasn't been written yet: %v", path)
-		pathMap[path] = true
-	}
-
-	if fstat.IsDir() {
-		log.Trace("found a dir, making a dir")
-		return directoryCreator(path, fstat.Mode())
-	}
-
-	if fileAlreadyWritten {
-		log.Tracef("Augmenting existing file with more data: %s\n", color.Magenta.Sprint(fi.Name()))
-		if filepath.Ext(sourceFileLocation) == ".json" {
-			if fileReader, err = CombineJSON(fileReader, existingFileReader, path); err != nil {
-				return
-			}
-		}
-	}
-
-	log.Tracef("Moving file: %v => %v", color.Green.Sprint(fi.Name()), color.Blue.Sprint(path))
-
-	if err = fileCreator(fileReader, path); err != nil {
-		log.WithError(err).Error("fileCreator")
-		return
-	}
-
-	return
-}
-
 // Unzips a ZIP archive and recreates the folders and file structure within it locally
 func UnzipArchive(sourceFileLocation, targetLocation string, pathMap map[string]bool, fileCreator FileCreator, directoryCreator DirectoryCreator, existingFileReader FileReader) (err error) {
 	fields := logrus.Fields{
@@ -235,13 +141,14 @@ func UnzipArchive(sourceFileLocation, targetLocation string, pathMap map[string]
 	log.Tracef("Unzipping Archive: %v => %v", color.Green.Sprint(sourceFileLocation), color.Blue.Sprint(targetLocation))
 	var reader *zip.ReadCloser
 	if reader, err = zip.OpenReader(sourceFileLocation); err != nil {
+		log.WithError(err).Warn("unable to unzip archive")
 		return
 	}
 
 	// If we have a non-empty target directory, ensure it exists
 	if targetLocation != "" {
 		if err = directoryCreator(targetLocation, 0755); err != nil {
-			log.Tracef("directoryCreator: %v", err)
+			log.Warnf("directoryCreator: %v", err)
 			return
 		}
 	}
@@ -256,7 +163,7 @@ func UnzipArchive(sourceFileLocation, targetLocation string, pathMap map[string]
 		}
 
 		if err = readFileFromZipAndWriteToFilesystem(file, path, fileAlreadyWritten, fileCreator, directoryCreator, existingFileReader); err != nil {
-			log.Tracef("readFileFromZipAndWriteToFilesystem: %v", err)
+			log.Warnf("readFileFromZipAndWriteToFilesystem: %v", err)
 			return
 		}
 	}
