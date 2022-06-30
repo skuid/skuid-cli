@@ -13,13 +13,23 @@ import (
 	"strings"
 	"time"
 
-	jsoniter "github.com/skuid/json-iterator-go" // jsoniter. Fork of github.com/json-iterator/go
-	jsonpatch "github.com/skuid/json-patch"
+	jsonpatch "github.com/evanphx/json-patch/v5"
+	jsoniter "github.com/json-iterator/go"
 	"github.com/skuid/skuid-cli/platform"
 	"github.com/skuid/skuid-cli/text"
 	"github.com/skuid/skuid-cli/types"
 	"github.com/spf13/cobra"
 )
+
+func JSONRemarshal(bytes []byte) ([]byte, error) {
+	var ifce interface{}
+	var json = jsoniter.ConfigCompatibleWithStandardLibrary
+	err := json.Unmarshal(bytes, &ifce)
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(ifce)
+}
 
 // retrieveCmd represents the retrieve command
 var retrieveCmd = &cobra.Command{
@@ -117,8 +127,8 @@ func writeResultsToDisk(results []*io.ReadCloser, fileCreator FileCreator, direc
 
 		tmpFileName, err := createTemporaryFile(result)
 		if err != nil {
-				return err
-			}
+			return err
+		}
 		// schedule cleanup of temp file
 		defer os.Remove(tmpFileName)
 
@@ -133,8 +143,8 @@ func writeResultsToDisk(results []*io.ReadCloser, fileCreator FileCreator, direc
 		// unzip the contents of our temp zip file
 		err = unzip(tmpFileName, targetDir, pathMap, fileCreator, directoryCreator, existingFileReader)
 		if err != nil {
-				return err
-			}
+			return err
+		}
 	}
 
 	fmt.Printf("Results written to %s\n", targetDirFriendly)
@@ -316,29 +326,6 @@ func readExistingFile(path string) ([]byte, error) {
 	return ioutil.ReadFile(path)
 }
 
-// Define custom json object key sorter for use in combineJSONFile() below.
-// The intent here is to always have deterministically sorted maps from merged JSON objects.
-type nameFirstKeySorter struct{}
-
-func (sorter *nameFirstKeySorter) Sort(keyA string, keyB string) bool {
-	if keyA == "name" {
-		return true
-	} else if keyB == "name" {
-		return false
-	} else {
-		return keyA < keyB
-	}
-}
-
-type nameFirstKeyExtension struct {
-	jsoniter.DummyExtension
-	sorter jsoniter.MapKeySorter
-}
-
-func (extension *nameFirstKeyExtension) CreateMapKeySorter() jsoniter.MapKeySorter {
-	return extension.sorter
-}
-
 func combineJSONFile(newFileReader io.ReadCloser, existingFileReader FileReader, path string) (io.ReadCloser, error) {
 	existingBytes, err := existingFileReader(path)
 	if err != nil {
@@ -348,17 +335,6 @@ func combineJSONFile(newFileReader io.ReadCloser, existingFileReader FileReader,
 	if err != nil {
 		return nil, err
 	}
-
-	// Configure jsoniter to sort map keys alpha, unless key is "name", which goes first
-	jsonConfig := jsoniter.Config{
-		SortMapKeys:           true,
-		DisallowUnknownFields: false,
-	}.Froze()
-	jsonConfig.RegisterExtension(&nameFirstKeyExtension{
-		sorter: &nameFirstKeySorter{},
-	})
-	// Configure jsonpatch to use jsoniter with custom sorter for merging json
-	jsonpatch.SetAPI(jsonConfig)
 
 	combined, err := jsonpatch.MergePatch(existingBytes, newBytes)
 	if err != nil {
@@ -370,8 +346,13 @@ func combineJSONFile(newFileReader io.ReadCloser, existingFileReader FileReader,
 	if err != nil {
 		return nil, err
 	}
+	// remarshal to sort keys
+	sorted, err := JSONRemarshal(indented.Bytes())
+	if err != nil {
+		return nil, err
+	}
 
-	return ioutil.NopCloser(bytes.NewReader(indented.Bytes())), nil
+	return ioutil.NopCloser(bytes.NewReader(sorted)), nil
 }
 
 func getRetrievePlan(api *platform.RestApi, appName string) (map[string]types.Plan, error) {
@@ -423,7 +404,7 @@ func executeRetrievePlan(api *platform.RestApi, plans map[string]types.Plan) ([]
 	for _, plan := range plans {
 		metadataBytes, err := json.Marshal(types.RetrieveRequest{
 			Metadata: plan.Metadata,
-			DoZip: !nozip,
+			DoZip:    !nozip,
 		})
 		if err != nil {
 			return nil, err
