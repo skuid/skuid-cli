@@ -341,18 +341,18 @@ func combineJSONFile(newFileReader io.ReadCloser, existingFileReader FileReader,
 		return nil, err
 	}
 
-	var indented bytes.Buffer
-	err = json.Indent(&indented, combined, "", "\t")
+	// remarshal to sort keys
+	sorted, err := JSONRemarshal(combined)
 	if err != nil {
 		return nil, err
 	}
-	// remarshal to sort keys
-	sorted, err := JSONRemarshal(indented.Bytes())
+	var indented bytes.Buffer
+	err = json.Indent(&indented, sorted, "", "\t")
 	if err != nil {
 		return nil, err
 	}
 
-	return ioutil.NopCloser(bytes.NewReader(sorted)), nil
+	return ioutil.NopCloser(bytes.NewReader(indented.Bytes())), nil
 }
 
 func getRetrievePlan(api *platform.RestApi, appName string) (map[string]types.Plan, error) {

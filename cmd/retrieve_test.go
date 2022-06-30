@@ -14,14 +14,14 @@ import (
 )
 
 const existingProfileBody = `{
-	"name": "Admin",
 	"enableSignupUi": false,
+	"name": "Admin",
 	"requireEmailVerificationOnSignup": true
 }`
 
 const messyProfileBody = `{
-	"signupUi": null,
 	"name": "Admin",
+	"signupUi": null,
 	"permissionSet": {
 		"dataSourcePermissions": {
 			"Racer": {
@@ -41,9 +41,9 @@ const messyProfileBody = `{
 }`
 
 const mergedProfileBody = `{
-	"name": "Admin",
 	"enableSignupApi": false,
 	"enableSignupUi": false,
+	"name": "Admin",
 	"permissionSet": {
 		"appPermissions": {
 			"Admin": {
@@ -75,84 +75,73 @@ func TestRetrieve(t *testing.T) {
 		wantError       error
 	}{
 		{
-			"retrieve nothing",
-			"",
-			[]RetrieveFile{},
-			[]RetrieveFile{},
-			[]string{},
-			nil,
+			testDescription: "retrieve nothing",
+			giveFiles:       []RetrieveFile{},
+			wantFiles:       []RetrieveFile{},
+			wantDirectories: []string{},
 		},
 		{
-			"retrieve nonvalid skuid metadata files",
-			"",
-			[]RetrieveFile{
+			testDescription: "retrieve nonvalid skuid metadata files",
+			giveFiles: []RetrieveFile{
 				{"readme.txt", "This archive contains some text files."},
 				{"gopher.txt", "Gopher names:\nGeorge\nGeoffrey\nGonzo"},
 				{"todo.txt", "Get animal handling licence.\nWrite more examples."},
 			},
-			[]RetrieveFile{},
-			[]string{},
-			nil,
+			wantFiles:       []RetrieveFile{},
+			wantDirectories: []string{},
 		},
 		{
-			"retrieve a data source",
-			"",
-			[]RetrieveFile{
+			testDescription: "retrieve a data source",
+			giveFiles: []RetrieveFile{
 				{"datasources/mydatasource.json", "this is not even close to good JSON"},
 			},
-			[]RetrieveFile{
+			wantFiles: []RetrieveFile{
 				{filepath.FromSlash("datasources/mydatasource.json"), "this is not even close to good JSON"},
 			},
-			[]string{
+			wantDirectories: []string{
 				"datasources",
 			},
-			nil,
 		},
 		{
-			"retrieve two data sources",
-			"",
-			[]RetrieveFile{
+			testDescription: "retrieve two data sources",
+			giveFiles: []RetrieveFile{
 				{"datasources/mydatasource.json", "this is not even close to good JSON"},
 				{"datasources/mydatasource2.json", "this is not even close to good JSON2"},
 			},
-			[]RetrieveFile{
+			wantFiles: []RetrieveFile{
 				{filepath.FromSlash("datasources/mydatasource.json"), "this is not even close to good JSON"},
 				{filepath.FromSlash("datasources/mydatasource2.json"), "this is not even close to good JSON2"},
 			},
-			[]string{
+			wantDirectories: []string{
 				"datasources",
 			},
-			nil,
 		},
 		{
-			"retrieve a data source with targetdir",
-			"myTargetDir",
-			[]RetrieveFile{
+			testDescription: "retrieve a data source with targetdir",
+			giveTargetDir:   "myTargetDir",
+			giveFiles: []RetrieveFile{
 				{"datasources/mydatasource.json", "this is not even close to good JSON"},
 			},
-			[]RetrieveFile{
+			wantFiles: []RetrieveFile{
 				{filepath.FromSlash("myTargetDir/datasources/mydatasource.json"), "this is not even close to good JSON"},
 			},
-			[]string{
+			wantDirectories: []string{
 				"myTargetDir",
 				filepath.FromSlash("myTargetDir/datasources"),
 			},
-			nil,
 		},
 		{
-			"retrieve merged profile",
-			"",
-			[]RetrieveFile{
+			testDescription: "retrieve merged profile",
+			giveFiles: []RetrieveFile{
 				{"profiles/myprofile.json", existingProfileBody},
 				{"profiles/myprofile.json", messyProfileBody},
 			},
-			[]RetrieveFile{
+			wantFiles: []RetrieveFile{
 				{filepath.FromSlash("profiles/myprofile.json"), mergedProfileBody},
 			},
-			[]string{
+			wantDirectories: []string{
 				"profiles",
 			},
-			nil,
 		},
 	}
 
