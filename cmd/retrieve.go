@@ -112,7 +112,7 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 	fields["finished"] = time.Now()
 	fields["retrievalDuration"] = time.Since(start)
 
-	logging.WithFields(fields).Debugf("Received %v Results.", len(results))
+	logging.WithFields(fields).Debugf("Received %v Results.", color.Green.Sprint(len(results)))
 
 	var directory string
 	if directory, err = cmd.Flags().GetString(flags.Directory.Name); err != nil {
@@ -122,18 +122,18 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 	fields["directory"] = directory
 	logging.WithFields(fields).Debugf("Target directory is %v.", color.Magenta.Sprint(directory))
 
-	var resultBytes [][]byte = make([][]byte, 0)
-	for _, result := range results {
-		resultBytes = append(resultBytes, result.Data)
-	}
-
 	fields["writeStart"] = time.Now()
 
-	if err = util.WriteResultsToDisk(
-		directory,
-		resultBytes,
-	); err != nil {
-		return
+	for _, v := range results {
+		if err = util.WriteResultsToDisk(
+			directory,
+			util.WritePayload{
+				PlanName: v.PlanName,
+				PlanData: v.Data,
+			},
+		); err != nil {
+			return
+		}
 	}
 
 	logging.WithFields(fields).Debug("Finished writing to disk.")

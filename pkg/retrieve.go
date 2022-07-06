@@ -8,7 +8,6 @@ import (
 	"github.com/gookit/color"
 	"github.com/sirupsen/logrus"
 	"github.com/valyala/fasthttp"
-	"golang.org/x/sync/errgroup"
 
 	"github.com/skuid/tides/pkg/logging"
 )
@@ -57,74 +56,60 @@ func ExecuteRetrieval(auth *Authorization, plans NlxPlanPayload) (duration time.
 	start := time.Now()
 	defer func() { duration = time.Since(start) }()
 
-	// we're going to create different threads
-	// for both of the plans
-	eg := &errgroup.Group{}
-	ch := make(chan NlxRetrievalResult)
-
 	// this function generically handles a plan based on name / stuff
-	executePlan := func(name string, plan NlxPlan) func() error {
-		return func() error {
-			log := logging.WithField("planName", name)
-			log.Debugf("Firing off %v", color.Magenta.Sprint(name))
+	executePlan := func(name string, plan NlxPlan) (retrievalResult NlxRetrievalResult, err error) {
+		log := logging.WithField("planName", name)
+		log.Debugf("Firing off %v", color.Magenta.Sprint(name))
 
-			headers := GeneratePlanHeaders(auth, plan)
-			headers[fasthttp.HeaderContentType] = JSON_CONTENT_TYPE
+		headers := GeneratePlanHeaders(auth, plan)
+		headers[fasthttp.HeaderContentType] = JSON_CONTENT_TYPE
 
-			for k, header := range headers {
-				log.Tracef("header: (%v => %v)", color.Yellow.Sprint(k), color.Green.Sprint(header))
-			}
-
-			url := GenerateRoute(auth, plan)
-
-			log.Tracef("URL: %v", color.Blue.Sprint(url))
-
-			if result, err := FastRequest(
-				url, fasthttp.MethodPost, NewRetrievalRequestBody(plan.Metadata), headers,
-			); err == nil {
-				ch <- NlxRetrievalResult{
-					Plan:     plan,
-					PlanName: name,
-					Url:      url,
-					Data:     result,
-				}
-			} else {
-				log = log.WithFields(logrus.Fields{
-					"plan":     plan,
-					"planName": name,
-					"url":      url,
-				})
-				log = log.WithError(err)
-				log.Errorf("error with %v request", color.Magenta.Sprint(name))
-				return err
-			}
-
-			return nil
+		for k, header := range headers {
+			log.Tracef("header: (%v => %v)", color.Yellow.Sprint(k), color.Green.Sprint(header))
 		}
+
+		url := GenerateRoute(auth, plan)
+
+		log.Tracef("URL: %v", color.Blue.Sprint(url))
+
+		result, err := FastRequest(
+			url, fasthttp.MethodPost, NewRetrievalRequestBody(plan.Metadata), headers,
+		)
+
+		if err != nil {
+			log = log.WithFields(logrus.Fields{
+				"plan":     plan,
+				"planName": name,
+				"url":      url,
+			})
+			log = log.WithError(err)
+			log.Errorf("error with %v request", color.Magenta.Sprint(name))
+			return
+		}
+
+		retrievalResult = NlxRetrievalResult{
+			Plan:     plan,
+			PlanName: name,
+			Url:      url,
+			Data:     result,
+		}
+
+		return
 	}
 
 	// fire off the threads
-	eg.Go(executePlan("Warden", plans.CloudDataService))
-	eg.Go(executePlan("Pliny", plans.MetadataService))
-
-	// fire off another thread that polls for the conclusion of
-	// the waitgroup, then closes the channel. The following lines (for range := chan)
-	// is blocking until close(chan) is called, so this frees it up once that's done.
-	go func() {
-		err := eg.Wait()
-		close(ch)
-		// if there's an error, we won't consume the results below
-		// and we'll output the error
-		if err != nil {
-			logging.Get().Errorf("Error when executing retrieval plan: %v", err)
-		}
-	}()
+	var warden, pliny NlxRetrievalResult
+	warden, err = executePlan("Warden", plans.CloudDataService)
+	if err != nil {
+		return
+	}
+	pliny, err = executePlan("Pliny", plans.MetadataService)
+	if err != nil {
+		return
+	}
 
 	// consume the closed channel (probably return an array; todo)
-	for result := range ch {
-		logging.Get().Tracef("%v\n", result)
-		results = append(results, result)
-	}
+	results = []NlxRetrievalResult{warden, pliny}
 
 	return
 }

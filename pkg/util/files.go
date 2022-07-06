@@ -4,11 +4,14 @@ import (
 	"archive/zip"
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
+	"math/rand"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/gookit/color"
 	"github.com/sirupsen/logrus"
@@ -58,11 +61,16 @@ func SanitizePath(directory string) (friendlyResult string, err error) {
 
 }
 
-func WriteResultsToDisk(targetDirectory string, results [][]byte) (err error) {
-	return WriteResultsToDiskInjection(targetDirectory, results, CopyToFile, CreateDirectoryDeep, ioutil.ReadFile)
+type WritePayload struct {
+	PlanName string
+	PlanData []byte
 }
 
-func WriteResultsToDiskInjection(targetDirectory string, results [][]byte, copyToFile FileCreator, createDirectoryDeep DirectoryCreator, ioutilReadFile FileReader) (err error) {
+func WriteResultsToDisk(targetDirectory string, result WritePayload) (err error) {
+	return WriteResultsToDiskInjection(targetDirectory, result, CopyToFile, CreateDirectoryDeep, ioutil.ReadFile)
+}
+
+func WriteResultsToDiskInjection(targetDirectory string, result WritePayload, copyToFile FileCreator, createDirectoryDeep DirectoryCreator, ioutilReadFile FileReader) (err error) {
 	fields := logrus.Fields{
 		"function": "WriteResultsToDiskInjection",
 	}
@@ -84,43 +92,67 @@ func WriteResultsToDiskInjection(targetDirectory string, results [][]byte, copyT
 	// to determine if we need to modify a file or overwrite it.
 	pathMap := map[string]bool{}
 
-	for _, result := range results {
-		tmpFileName, err := CreateTemporaryFile(result)
-		if err != nil {
-			log.WithFields(logrus.Fields{
-				"fileName": tmpFileName,
-			}).
-				WithError(err).
-				Error("error creating temporary file")
-			return err
-		}
-		// schedule cleanup of temp file
-		defer os.Remove(tmpFileName)
+	tmpFileName, err := CreateTemporaryFile(result.PlanName, result.PlanData)
+	if err != nil {
+		log.WithFields(logrus.Fields{
+			"fileName": tmpFileName,
+		}).
+			WithError(err).
+			Error("error creating temporary file")
+		return err
+	}
+	defer os.Remove(tmpFileName)
 
-		// unzip the contents of our temp zip file
-		err = UnzipArchive(tmpFileName, targetDirectory, pathMap, copyToFile, createDirectoryDeep, ioutilReadFile)
-		if err != nil {
-			log.WithFields(logrus.Fields{
-				"fileName":        tmpFileName,
-				"targetDirectory": targetDirectory,
-				"pathMap":         pathMap,
-			}).
-				WithError(err).
-				Warn("Error with UnzipArchive")
-			return err
-		}
+	// unzip the contents of our temp zip file
+	if err = UnzipArchive(
+		tmpFileName,
+		targetDirectory,
+		pathMap,
+		copyToFile,
+		createDirectoryDeep,
+		ioutilReadFile,
+	); err != nil {
+		log.WithFields(logrus.Fields{
+			"fileName":        tmpFileName,
+			"targetDirectory": targetDirectory,
+			"pathMap":         pathMap,
+		}).WithError(err).
+			Warn("Error with UnzipArchive")
+		return err
 	}
 
-	log.Debugf("Results written to %s\n", color.Cyan.Sprint(targetDirFriendly))
+	log.Debugf("%v results written to %s\n", color.Magenta.Sprint(result.PlanName), color.Cyan.Sprint(targetDirFriendly))
 
 	return nil
 }
 
-func CreateTemporaryFile(data []byte) (name string, err error) {
+const (
+	MAX_ATTEMPTS = 5
+)
+
+func CreateTemporaryFile(planName string, data []byte) (name string, err error) {
 	var tmpfile *os.File
-	if tmpfile, err = ioutil.TempFile("", "skuid"); err != nil {
+	var n int
+	rand.Seed(time.Now().Unix())
+
+	for attempts := 0; attempts < MAX_ATTEMPTS; attempts++ {
+		if tmpfile, err = os.CreateTemp("", planName); err == nil {
+			break
+		}
+		time.NewTimer(time.Second * time.Duration(attempts))
+	}
+
+	if err != nil {
+		logging.Get().WithError(err).Warn("Couldn't create tempfile")
 		return
-	} else if _, err = tmpfile.Write(data); err != nil {
+	}
+
+	if n, err = tmpfile.Write(data); err != nil {
+		logging.Get().WithError(err).Warn("Couldn't write to temp file")
+		return
+	} else if n == 0 {
+		err = fmt.Errorf("didn't write anything")
+		logging.Get().WithError(err).Warn("wrote nothing to tempfile")
 		return
 	} else {
 		name = tmpfile.Name()
