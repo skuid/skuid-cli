@@ -15,6 +15,16 @@ import (
 	"github.com/skuid/tides/pkg/util"
 )
 
+func JSONRemarshal(bytes []byte) ([]byte, error) {
+	var ifce interface{}
+	var json = jsoniter.ConfigCompatibleWithStandardLibrary
+	err := json.Unmarshal(bytes, &ifce)
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(ifce)
+}
+
 // retrieveCmd represents the retrieve command
 var (
 	retrieveCmd = &cobra.Command{
