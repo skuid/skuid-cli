@@ -52,13 +52,13 @@ func ArchiveWithFilterFunc(inFilePath string, filter func(string) bool) (result 
 		}
 
 		if fileInfo.IsDir() {
-			logging.Get().Trace(color.Magenta.Sprint(filePath))
+			logging.Get().Debugf("Zipping: %v", color.Cyan.Sprint(filePath))
 			return
 		}
 
 		var relativeFilePath string
 		if relativeFilePath, err = filepath.Rel(basePath, filePath); err != nil {
-			logging.Get().Tracef("Relative Filepath Error: %v", err)
+			logging.Get().Warnf("Relative Filepath Error: %v", err)
 			return
 		}
 
@@ -69,16 +69,16 @@ func ArchiveWithFilterFunc(inFilePath string, filter func(string) bool) (result 
 		// so we are going to truncate the archive path
 		archivePath := path.Join(encapsulatingFolder, fileName)
 
-		if strings.HasPrefix(archivePath, "") || !filter(relativeFilePath) {
-			logging.Get().Tracef(color.Gray.Sprintf("Ignoring: %v", filePath))
+		if strings.HasPrefix(archivePath, ".") || !filter(relativeFilePath) {
+			logging.Get().Debugf(color.Gray.Sprintf("Ignoring: %v", filePath))
 			return
-		} else {
-			logging.Get().Infof("Processing: %v => %v", color.Green.Sprint(filePath), color.Yellow.Sprint(archivePath))
 		}
 
 		// spin off a thread archiving the file
 		eg.Go(func() error {
+			logging.Get().Tracef("Processing: %v => %v", color.Green.Sprint(filePath), color.Yellow.Sprint(archivePath))
 			if bytes, err := ioutil.ReadFile(filePath); err != nil {
+				logging.Get().Warnf("Error Processing %v: %v", filePath, err)
 				return err
 			} else {
 				ch <- archiveSuccess{
@@ -103,14 +103,16 @@ func ArchiveWithFilterFunc(inFilePath string, filter func(string) bool) (result 
 	}()
 
 	for success := range ch {
+		logging.Get().Tracef("Finished Processing %v", color.Green.Sprint(success.FilePath))
 		if zipFileWriter, e := zipWriter.Create(success.FilePath); err != nil {
 			err = e
+			logging.Get().Warnf("Error processing %v: %v", success.FilePath, err)
 			return
 		} else if _, e := zipFileWriter.Write(success.Bytes); e != nil {
+			logging.Get().Warnf("Error writing %v: %v", success.FilePath, err)
 			err = e
 			return
 		}
-		logging.Get().Trace(color.Green.Sprintf("Finished Processing %v", success.FilePath))
 	}
 
 	zipWriter.Close()

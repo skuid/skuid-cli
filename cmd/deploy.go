@@ -3,6 +3,7 @@ package cmd
 import (
 	"time"
 
+	"github.com/gookit/color"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
@@ -33,7 +34,7 @@ func Deploy(cmd *cobra.Command, _ []string) (err error) {
 	fields := make(logrus.Fields)
 	fields["start"] = time.Now()
 	fields["process"] = "deploy"
-	logging.WithFields(fields).Info("Starting Deploy")
+	logging.WithFields(fields).Info(color.Green.Sprint("Starting Deploy"))
 
 	// get required authentication arguments
 	var host, username, password string
@@ -56,7 +57,7 @@ func Deploy(cmd *cobra.Command, _ []string) (err error) {
 	}
 
 	fields["authorized"] = true
-	logging.WithFields(fields).Debug("Successfully Authenticated")
+	logging.WithFields(fields).Info("Authentication Successful")
 
 	// we want the filter nil because it will be discarded without
 	// initialization
@@ -100,7 +101,7 @@ func Deploy(cmd *cobra.Command, _ []string) (err error) {
 		fields["targetDirectory"] = targetDirectory
 	}
 
-	logging.WithFields(fields).Debug("Getting Deployment Plan")
+	logging.WithFields(fields).Info("Getting Deployment Plan")
 
 	var deploymentPlan []byte
 	if deploymentPlan, err = pkg.Archive(targetDirectory, nil); err != nil {
@@ -108,27 +109,33 @@ func Deploy(cmd *cobra.Command, _ []string) (err error) {
 	}
 
 	fields["deploymentBytes"] = len(deploymentPlan)
-	logging.WithFields(fields).Debugf("Got Deployment Plan: Size (%v)", len(deploymentPlan))
+	logging.WithFields(fields).Infof("Got Deployment Plan")
 
 	// get the plan
 	var plans pkg.NlxDynamicPlanMap
 	if _, plans, err = pkg.PrepareDeployment(auth, deploymentPlan, filter); err != nil {
+		logging.Get().Warnf("Unable to prepare deployment: %v", err)
 		return
 	}
 
 	fields["plans"] = len(plans)
 	logging.WithFields(fields)
 
+	logging.Get().Info("Executing Deployment Plan")
+
 	var results []pkg.NlxDeploymentResult
 	if _, results, err = pkg.ExecuteDeployPlan(auth, plans, targetDirectory); err != nil {
+		logging.Get().Errorf("Unable to execute deployment: %v", color.Red.Sprint(err))
 		return
 	}
 
 	fields["results"] = len(results)
 
 	for _, result := range results {
-		logging.Get().Debugf("result: %v\n", result)
+		logging.Get().Tracef("result: %v", result.Url)
 	}
+
+	logging.Get().Info(color.Green.Sprint("Finished Deploy"))
 
 	return
 }

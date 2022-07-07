@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gookit/color"
 	"github.com/valyala/fasthttp"
 	"golang.org/x/sync/errgroup"
 
@@ -47,7 +48,7 @@ type FilteredRequestBody struct {
 func PrepareDeployment(auth *Authorization, deploymentPlan []byte, filter *NlxPlanFilter) (duration time.Duration, results NlxDynamicPlanMap, err error) {
 	logging.Get().Trace("Getting Deploy Plan")
 	start := time.Now()
-	defer func() { duration = time.Since(start) }()
+	defer func() { logging.Get().Tracef("Prepare deployment took: %v", time.Since(start)) }()
 
 	// pliny request, use access token
 	headers := GenerateHeaders(auth.Host, auth.AccessToken)
@@ -55,7 +56,7 @@ func PrepareDeployment(auth *Authorization, deploymentPlan []byte, filter *NlxPl
 
 	var body []byte
 	if filter != nil {
-		logging.Get().Trace("With filter")
+		logging.Get().Debug("Using file filter")
 		// change content type to json
 		headers[fasthttp.HeaderContentType] = JSON_CONTENT_TYPE
 		// we instead add the deployment plan bytes to the payload
@@ -66,6 +67,7 @@ func PrepareDeployment(auth *Authorization, deploymentPlan []byte, filter *NlxPl
 			deploymentPlan,
 		}
 		if body, err = json.Marshal(requestBody); err != nil {
+			logging.Get().Warnf("Error marshalling filter request: %v", err)
 			return
 		}
 	} else {
@@ -80,8 +82,6 @@ func PrepareDeployment(auth *Authorization, deploymentPlan []byte, filter *NlxPl
 		body,
 		headers,
 	)
-
-	logging.Get().Tracef("This took %v", time.Since(start))
 
 	return
 }
@@ -122,6 +122,7 @@ func ExecuteDeployPlan(auth *Authorization, plans NlxDynamicPlanMap, targetDir s
 
 	executePlan := func(plan NlxPlan) func() error {
 		return func() error {
+			logging.Get().Infof("Deploying %v", color.Magenta.Sprint(plan.Type))
 
 			logging.Get().Tracef("Archiving %v", targetDir)
 			deploy, err := Archive(targetDir, &plan.Metadata)
@@ -152,6 +153,8 @@ func ExecuteDeployPlan(auth *Authorization, plans NlxDynamicPlanMap, targetDir s
 				logging.Get().Tracef("Error on request: %v\n", err.Error())
 				return err
 			}
+
+			logging.Get().Infof("Finished Deploying %v", color.Magenta.Sprint(plan.Type))
 
 			return nil
 

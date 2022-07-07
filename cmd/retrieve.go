@@ -35,7 +35,7 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 	fields["process"] = "retrieve"
 	fields["start"] = start
 
-	logging.Get().Info(color.Green.Sprint("Starting retrieve"))
+	logging.Get().Info(color.Green.Sprint("Starting Retrieve"))
 	// get required arguments
 	var host, username, password string
 	if host, err = cmd.Flags().GetString(flags.PlinyHost.Name); err != nil {
@@ -57,7 +57,7 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 	}
 
 	fields["authorized"] = true
-	logging.WithFields(fields).Info("Authentication successful")
+	logging.WithFields(fields).Info("Authentication Successful")
 
 	// we want the filter nil because it will be discarded without
 	// initialization
@@ -120,7 +120,7 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 	}
 
 	fields["directory"] = directory
-	logging.WithFields(fields).Infof("Target directory is %v", color.Cyan.Sprint(directory))
+	logging.WithFields(fields).Infof("Target Directory is %v", color.Cyan.Sprint(directory))
 
 	fields["writeStart"] = time.Now()
 
@@ -136,8 +136,8 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 		}
 	}
 
-	logging.Get().Infof("Finished writing to %v", color.Cyan.Sprint(directory))
-	logging.WithFields(fields).Info(color.Green.Sprint("Finished retrieve"))
+	logging.Get().Infof("Finished Writing to %v", color.Cyan.Sprint(directory))
+	logging.WithFields(fields).Info(color.Green.Sprint("Finished Retrieve"))
 
 	return
 }
