@@ -29,20 +29,20 @@ func FromWindowsPath(path string) string {
 // GetAbsolutePath gets the absolute path for the directory from the relative path
 func GetAbsolutePath(relative string) (absolute string) {
 	wd, _ := os.Getwd()
-	log := logging.WithFields(logrus.Fields{
+	logging.WithFields(logrus.Fields{
 		"function": "GetAbsolutePath",
 	})
-	log.Tracef("Working Directory: %v", wd)
+	logging.Get().Tracef("Working Directory: %v", wd)
 
 	if strings.Contains(relative, wd) {
-		log.Tracef("Absolute path: %v", relative)
+		logging.Get().Tracef("Absolute path: %v", relative)
 		return relative
 	} else {
-		log.Trace("Relative Path")
+		logging.Get().Trace("Relative Path")
 	}
 
 	absolute, _ = filepath.Abs(filepath.Join(wd, relative))
-	log.Tracef("Target Directory: %v", absolute)
+	logging.Get().Tracef("Target Directory: %v", absolute)
 	return
 }
 
@@ -74,19 +74,18 @@ func WriteResultsToDiskInjection(targetDirectory string, result WritePayload, co
 	fields := logrus.Fields{
 		"function": "WriteResultsToDiskInjection",
 	}
-	log := logging.WithFields(fields)
+	logging.WithFields(fields)
 
 	// unzip the archive into the output directory
 	targetDirFriendly, err := SanitizePath(targetDirectory)
 	if err != nil {
 		return err
 	}
-
-	log.Tracef("Writing results to %v\n", color.Cyan.Sprint(targetDirFriendly))
-
 	if err := os.MkdirAll(targetDirFriendly, 0777); err != nil {
-		log.Tracef("Error making target dir: %v", err.Error())
+		logging.Get().Tracef("Error making target dir: %v", err.Error())
 	}
+
+	logging.Get().Tracef("Writing results to %v\n", color.Cyan.Sprint(targetDirFriendly))
 
 	// Store a map of paths that we've already encountered. We'll use this
 	// to determine if we need to modify a file or overwrite it.
@@ -94,34 +93,35 @@ func WriteResultsToDiskInjection(targetDirectory string, result WritePayload, co
 
 	tmpFileName, err := CreateTemporaryFile(result.PlanName, result.PlanData)
 	if err != nil {
-		log.WithFields(logrus.Fields{
+		logging.Get().WithFields(logrus.Fields{
 			"fileName": tmpFileName,
 		}).
 			WithError(err).
 			Error("error creating temporary file")
 		return err
 	}
-	defer os.Remove(tmpFileName)
+	// defer os.Remove(tmpFileName)
 
 	// unzip the contents of our temp zip file
-	if err = UnzipArchive(
+	err = UnzipArchive(
 		tmpFileName,
-		targetDirectory,
+		targetDirFriendly,
 		pathMap,
 		copyToFile,
 		createDirectoryDeep,
 		ioutilReadFile,
-	); err != nil {
-		log.WithFields(logrus.Fields{
-			"fileName":        tmpFileName,
-			"targetDirectory": targetDirectory,
-			"pathMap":         pathMap,
-		}).WithError(err).
-			Warn("Error with UnzipArchive")
+	)
+
+	if err != nil {
+		logging.Get().WithFields(logrus.Fields{
+			"fileName":                tmpFileName,
+			"targetDirectoryFriendly": targetDirFriendly,
+			"pathMap":                 pathMap,
+		}).WithError(err).Warn("Error with UnzipArchive")
 		return err
 	}
 
-	log.Debugf("%v results written to %s\n", color.Magenta.Sprint(result.PlanName), color.Cyan.Sprint(targetDirFriendly))
+	logging.Get().Debugf("%v results written to %s\n", color.Magenta.Sprint(result.PlanName), color.Cyan.Sprint(targetDirFriendly))
 
 	return nil
 }
@@ -147,6 +147,8 @@ func CreateTemporaryFile(planName string, data []byte) (name string, err error) 
 		return
 	}
 
+	logging.Get().Tracef("created temp file: %v", color.Green.Sprintf(tmpfile.Name()))
+
 	if n, err = tmpfile.Write(data); err != nil {
 		logging.Get().WithError(err).Warn("Couldn't write to temp file")
 		return
@@ -169,18 +171,18 @@ func UnzipArchive(sourceFileLocation, targetLocation string, pathMap map[string]
 		"sourceFileLocation": sourceFileLocation,
 		"targetLocation":     targetLocation,
 	}
-	log := logging.WithFields(fields)
-	log.Tracef("Unzipping Archive: %v => %v", color.Green.Sprint(sourceFileLocation), color.Blue.Sprint(targetLocation))
+	logging.WithFields(fields).Tracef("Unzipping Archive: %v => %v", color.Green.Sprint(sourceFileLocation), color.Blue.Sprint(targetLocation))
 	var reader *zip.ReadCloser
 	if reader, err = zip.OpenReader(sourceFileLocation); err != nil {
-		log.WithError(err).Warn("unable to unzip archive")
+		logging.Get().WithError(err).Warn("unable to unzip archive")
 		return
 	}
+	defer reader.Close()
 
 	// If we have a non-empty target directory, ensure it exists
 	if targetLocation != "" {
 		if err = directoryCreator(targetLocation, 0755); err != nil {
-			log.Warnf("directoryCreator: %v", err)
+			logging.Get().Warnf("directoryCreator: %v", err)
 			return
 		}
 	}
@@ -188,14 +190,59 @@ func UnzipArchive(sourceFileLocation, targetLocation string, pathMap map[string]
 	for _, file := range reader.File {
 		path := filepath.Join(targetLocation, filepath.FromSlash(file.Name))
 		// Check to see if we've already written to this file in this retrieve
-
 		_, fileAlreadyWritten := pathMap[path]
 		if !fileAlreadyWritten {
 			pathMap[path] = true
 		}
 
-		if err = readFileFromZipAndWriteToFilesystem(file, path, fileAlreadyWritten, fileCreator, directoryCreator, existingFileReader); err != nil {
-			log.Warnf("readFileFromZipAndWriteToFilesystem: %v", err)
+		logging.Get().Tracef("Extracting from Zip: %v", color.Blue.Sprint(path))
+
+		// If this file name contains a /, make sure that we create the directory it belongs in
+		if pathParts := strings.Split(path, string(filepath.Separator)); len(pathParts) > 0 {
+			// Remove the actual file name from the slice,
+			// i.e. pages/MyAwesomePage.xml ---> pages
+			pathParts = pathParts[:len(pathParts)-1]
+			// and then make dirs for all paths up to that point, i.e. pages, apps
+			if intermediatePath := filepath.Join(strings.Join(pathParts[:], string(filepath.Separator))); intermediatePath != "" {
+				if err = directoryCreator(intermediatePath, 0755); err != nil {
+					logging.Get().Warnf("Unable to create intermediary directory: %v", err)
+					return
+				}
+			} else {
+				// If we don't have an intermediate path, skip out.
+				// Currently Skuid CLI does not create any files in the base directory
+				return nil
+			}
+		}
+
+		if file.FileInfo().IsDir() {
+			logging.Get().Tracef("Creating Directory: %v", color.Blue.Sprint(file.Name))
+			return directoryCreator(path, file.Mode())
+		}
+
+		var fileReader io.ReadCloser
+		if fileReader, err = file.Open(); err != nil {
+			logging.Get().Warnf("Error opening file: %v", err)
+			return
+		}
+		defer fileReader.Close()
+
+		if filepath.Ext(path) == ".json" {
+			if fileReader, err = sanitizeZip(fileReader); err != nil {
+				logging.Get().Warnf("Error Sanitizing Zip: %v", err)
+				return
+			}
+		}
+
+		if fileAlreadyWritten {
+			if fileReader, err = CombineJSON(fileReader, existingFileReader, path); err != nil {
+				logging.Get().Warnf("Error Combining JSON: %v", err)
+				return
+			}
+		}
+
+		if err = fileCreator(fileReader, path); err != nil {
+			logging.Get().Warnf("Error with file creator: %v", err)
 			return
 		}
 	}
@@ -206,81 +253,17 @@ func UnzipArchive(sourceFileLocation, targetLocation string, pathMap map[string]
 func sanitizeZip(reader io.ReadCloser) (newReader io.ReadCloser, err error) {
 	var b []byte
 	if b, err = ioutil.ReadAll(reader); err != nil {
+		logging.Get().Warnf("unable to read all: %v", err)
 		return
 	}
-	reader.Close()
+	// defer reader.Close()
 
 	if b, err = ReSortJson(b); err != nil {
+		logging.Get().Warnf("unable to re-sort: %v", err)
 		return
 	}
 
 	newReader = ioutil.NopCloser(bytes.NewBuffer(b))
-
-	return
-}
-
-func readFileFromZipAndWriteToFilesystem(
-	file *zip.File,
-	fullPath string,
-	fileAlreadyWritten bool,
-	fileCreator FileCreator,
-	directoryCreator DirectoryCreator,
-	existingFileReader FileReader,
-) (err error) {
-	fields := logrus.Fields{
-		"func":     "readFileFromZipAndWriteToFilesystem",
-		"fullPath": fullPath,
-	}
-	log := logging.WithFields(fields)
-	log.Tracef("Extracting from Zip: %v", color.Blue.Sprint(fullPath))
-
-	// If this file name contains a /, make sure that we create the directory it belongs in
-	if pathParts := strings.Split(fullPath, string(filepath.Separator)); len(pathParts) > 0 {
-		// Remove the actual file name from the slice,
-		// i.e. pages/MyAwesomePage.xml ---> pages
-		pathParts = pathParts[:len(pathParts)-1]
-		// and then make dirs for all paths up to that point, i.e. pages, apps
-		if intermediatePath := filepath.Join(strings.Join(pathParts[:], string(filepath.Separator))); intermediatePath != "" {
-
-			if err = directoryCreator(intermediatePath, 0755); err != nil {
-				return
-			}
-		} else {
-			// If we don't have an intermediate path, skip out.
-			// Currently Skuid CLI does not create any files in the base directory
-			return nil
-		}
-	}
-
-	if file.FileInfo().IsDir() {
-		log.Trace("Creating Directory.")
-		return directoryCreator(fullPath, file.Mode())
-	}
-
-	var fileReader io.ReadCloser
-	if fileReader, err = file.Open(); err != nil {
-		return
-	}
-	defer fileReader.Close()
-
-	if filepath.Ext(fullPath) == ".json" {
-		log.Trace("Sanitizing Zip.")
-		if fileReader, err = sanitizeZip(fileReader); err != nil {
-			log.Tracef("Error: %v", err)
-			return
-		}
-	}
-
-	if fileAlreadyWritten {
-		log.Tracef("Augmenting existing file with more data: %s\n", color.Magenta.Sprint(file.Name))
-		if fileReader, err = CombineJSON(fileReader, existingFileReader, fullPath); err != nil {
-			return
-		}
-	}
-
-	if err = fileCreator(fileReader, fullPath); err != nil {
-		return
-	}
 
 	return
 }
@@ -317,24 +300,24 @@ func CombineJSON(newFileReader io.ReadCloser, existingFileReader FileReader, pat
 	fields := logrus.Fields{
 		"function": "CombineJSON",
 	}
-	log := logging.WithFields(fields)
-	log.Tracef("Augmenting File with more JSON Data: %v\n", color.Magenta.Sprint(path))
+
+	logging.WithFields(fields).Tracef("Augmenting File with more JSON Data: %v\n", color.Magenta.Sprint(path))
 	existingBytes, err := existingFileReader(path)
 	if err != nil {
-		log.Tracef("existingFileReader: %v", err)
+		logging.Get().Warnf("existingFileReader: %v", err)
 		return
 	}
 
 	newBytes, err := ioutil.ReadAll(newFileReader)
 	if err != nil {
-		log.Tracef("ioutil.ReadAll: %v")
+		logging.Get().Warnf("ioutil.ReadAll: %v", err)
 		return
 	}
 
 	// merge the files together using the json patch library
 	combined, err := jsonpatch.MergePatch(existingBytes, newBytes)
 	if err != nil {
-		log.Tracef("jsonpatch.MergePatch: %v", err)
+		logging.Get().Warnf("jsonpatch.MergePatch: %v", err)
 		return
 	}
 
@@ -342,13 +325,14 @@ func CombineJSON(newFileReader io.ReadCloser, existingFileReader FileReader, pat
 	// this puts "name" first, then everything alphanumerically
 	sorted, err := ReSortJsonIndent(combined, true)
 	if err != nil {
-		log.Tracef("ReSortJsonIndent: %v", err)
+		logging.Get().Warnf("ReSortJsonIndent: %v", err)
 		return
 	}
 
 	var indented bytes.Buffer
 	err = json.Indent(&indented, sorted, "", "\t")
 	if err != nil {
+		logging.Get().Warnf("Indent: %v", err)
 		return
 	}
 

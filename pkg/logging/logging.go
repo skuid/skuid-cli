@@ -20,6 +20,7 @@ var (
 	safe            sync.Mutex
 	loggerSingleton logrus.Ext1FieldLogger
 	fileLogging     bool
+	fieldLogging    bool
 	LineSeparator   = strings.Repeat("-", SEPARATOR_LENGTH)
 	StarSeparator   = strings.Repeat("*", SEPARATOR_LENGTH)
 
@@ -51,6 +52,10 @@ func SetTrace() logrus.Ext1FieldLogger {
 	l, _ := loggerSingleton.(*logrus.Logger)
 	l.SetLevel(logrus.TraceLevel)
 	return loggerSingleton
+}
+
+func FieldLogging(b bool) {
+	fieldLogging = b
 }
 
 func SetFileLogging(loggingDirectory string) (err error) {
@@ -96,7 +101,7 @@ func SetFileLogging(loggingDirectory string) (err error) {
 
 func WithFields(fields logrus.Fields) logrus.Ext1FieldLogger {
 	loggerSingleton = Get()
-	if fileLogging || Level(loggerSingleton) == logrus.TraceLevel {
+	if fileLogging || Level(loggerSingleton) == logrus.TraceLevel && fieldLogging {
 		loggerSingleton = loggerSingleton.WithFields(fields)
 	}
 	return loggerSingleton
@@ -104,7 +109,7 @@ func WithFields(fields logrus.Fields) logrus.Ext1FieldLogger {
 
 func WithField(field string, value interface{}) logrus.Ext1FieldLogger {
 	loggerSingleton = Get()
-	if fileLogging || Level(loggerSingleton) == logrus.TraceLevel {
+	if fileLogging || Level(loggerSingleton) == logrus.TraceLevel && fieldLogging {
 		loggerSingleton = loggerSingleton.WithField(field, value)
 	}
 	return loggerSingleton

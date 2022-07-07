@@ -29,4 +29,11 @@ var (
 		EnvVarNames: []string{constants.ENV_TIDES_FILE_LOGGING},
 		Global:      true,
 	}
+
+	FieldLogging = &Flag[bool]{
+		Name:        "field-logging",
+		Usage:       "Log additioal fields with each log statement",
+		EnvVarNames: []string{constants.ENV_TIDES_FIELD_LOGGING},
+		Global:      true,
+	}
 )

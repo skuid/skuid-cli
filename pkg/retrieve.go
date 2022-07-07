@@ -58,32 +58,32 @@ func ExecuteRetrieval(auth *Authorization, plans NlxPlanPayload) (duration time.
 
 	// this function generically handles a plan based on name / stuff
 	executePlan := func(name string, plan NlxPlan) (retrievalResult NlxRetrievalResult, err error) {
-		log := logging.WithField("planName", name)
-		log.Debugf("Firing off %v", color.Magenta.Sprint(name))
+		logging.WithField("planName", name)
+		logging.Get().Debugf("Firing off %v", color.Magenta.Sprint(name))
 
 		headers := GeneratePlanHeaders(auth, plan)
 		headers[fasthttp.HeaderContentType] = JSON_CONTENT_TYPE
 
 		for k, header := range headers {
-			log.Tracef("header: (%v => %v)", color.Yellow.Sprint(k), color.Green.Sprint(header))
+			logging.Get().Tracef("header: (%v => %v)", color.Yellow.Sprint(k), color.Green.Sprint(header))
 		}
 
 		url := GenerateRoute(auth, plan)
 
-		log.Tracef("URL: %v", color.Blue.Sprint(url))
+		logging.Get().Tracef("URL: %v", color.Blue.Sprint(url))
 
 		result, err := FastRequest(
 			url, fasthttp.MethodPost, NewRetrievalRequestBody(plan.Metadata), headers,
 		)
 
 		if err != nil {
-			log = log.WithFields(logrus.Fields{
+			logging.Get().WithFields(logrus.Fields{
 				"plan":     plan,
 				"planName": name,
 				"url":      url,
 			})
-			log = log.WithError(err)
-			log.Errorf("error with %v request", color.Magenta.Sprint(name))
+			logging.Get().WithError(err)
+			logging.Get().Errorf("error with %v request", color.Magenta.Sprint(name))
 			return
 		}
 
@@ -99,17 +99,20 @@ func ExecuteRetrieval(auth *Authorization, plans NlxPlanPayload) (duration time.
 
 	// fire off the threads
 	var warden, pliny NlxRetrievalResult
-	warden, err = executePlan("Warden", plans.CloudDataService)
-	if err != nil {
-		return
-	}
+
+	// has to be pliny, then warden
 	pliny, err = executePlan("Pliny", plans.MetadataService)
 	if err != nil {
 		return
 	}
 
-	// consume the closed channel (probably return an array; todo)
-	results = []NlxRetrievalResult{warden, pliny}
+	warden, err = executePlan("Warden", plans.CloudDataService)
+	if err != nil {
+		return
+	}
+
+	// has to be pliny, then warden.
+	results = []NlxRetrievalResult{pliny, warden}
 
 	return
 }
