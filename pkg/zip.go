@@ -69,7 +69,7 @@ func ArchiveWithFilterFunc(inFilePath string, filter func(string) bool) (result 
 		// so we are going to truncate the archive path
 		archivePath := path.Join(encapsulatingFolder, fileName)
 
-		if strings.HasPrefix(archivePath, ".") || !filter(relativeFilePath) {
+		if strings.HasPrefix(archivePath, "") || !filter(relativeFilePath) {
 			logging.Get().Tracef(color.Gray.Sprintf("Ignoring: %v", filePath))
 			return
 		} else {

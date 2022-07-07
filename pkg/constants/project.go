@@ -6,3 +6,8 @@ const (
 	// Name of this version of the Skuid CLI
 	PROJECT_NAME = "tides" // used to be skuid-cli
 )
+
+const (
+	WARDEN = "Skuid Cloud Data Service"
+	PLINY  = "Skuid Metadata Service"
+)

@@ -55,7 +55,7 @@ func PrepareDeployment(auth *Authorization, deploymentPlan []byte, filter *NlxPl
 
 	var body []byte
 	if filter != nil {
-		logging.Get().Trace("With filter.")
+		logging.Get().Trace("With filter")
 		// change content type to json
 		headers[fasthttp.HeaderContentType] = JSON_CONTENT_TYPE
 		// we instead add the deployment plan bytes to the payload
@@ -81,7 +81,7 @@ func PrepareDeployment(auth *Authorization, deploymentPlan []byte, filter *NlxPl
 		headers,
 	)
 
-	logging.Get().Tracef("This took %v.", time.Since(start))
+	logging.Get().Tracef("This took %v", time.Since(start))
 
 	return
 }
@@ -99,7 +99,7 @@ func DeployModifiedFiles(auth *Authorization, targetDir, modifiedFile string) (e
 		return
 	}
 
-	logging.Get().Tracef("Received Deployment Plan for (%v), Deploying.", modifiedFile)
+	logging.Get().Tracef("Received Deployment Plan for (%v), Deploying", modifiedFile)
 
 	_, _, err = ExecuteDeployPlan(auth, plan, targetDir)
 	if err != nil {

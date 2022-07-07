@@ -55,6 +55,6 @@ func init() {
 		}
 	})
 
-	flags.AddFlags(TidesCmd, flags.Verbose, flags.Trace, flags.FileLogging, flags.FieldLogging)
+	flags.AddFlags(TidesCmd, flags.Verbose, flags.Trace, flags.FileLogging, flags.Diagnostic)
 	flags.AddFlags(TidesCmd, flags.FileLoggingDirectory)
 }

@@ -30,9 +30,9 @@ var (
 		Global:      true,
 	}
 
-	FieldLogging = &Flag[bool]{
-		Name:        "field-logging",
-		Usage:       "Log additioal fields with each log statement",
+	Diagnostic = &Flag[bool]{
+		Name:        "diagnostic",
+		Usage:       "Log additioal fields with each log statement. Used for diagnostic purposes.",
 		EnvVarNames: []string{constants.ENV_TIDES_FIELD_LOGGING},
 		Global:      true,
 	}

@@ -16,8 +16,8 @@ var deployCmd = &cobra.Command{
 	SilenceErrors:     true,
 	SilenceUsage:      true,
 	Use:               "deploy",
-	Short:             "Deploy local Skuid metadata to a Skuid NLX Site.",
-	Long:              "Deploy Skuid metadata stored within a local file system directory to a Skuid NLX Site.",
+	Short:             "Deploy local Skuid metadata to a Skuid NLX Site",
+	Long:              "Deploy Skuid metadata stored within a local file system directory to a Skuid NLX Site",
 	PersistentPreRunE: common.PrerunValidation,
 	RunE:              Deploy,
 }
@@ -33,7 +33,7 @@ func Deploy(cmd *cobra.Command, _ []string) (err error) {
 	fields := make(logrus.Fields)
 	fields["start"] = time.Now()
 	fields["process"] = "deploy"
-	logging.WithFields(fields).Info("Starting Deploy.")
+	logging.WithFields(fields).Info("Starting Deploy")
 
 	// get required authentication arguments
 	var host, username, password string
@@ -47,7 +47,7 @@ func Deploy(cmd *cobra.Command, _ []string) (err error) {
 
 	fields["host"] = host
 	fields["username"] = username
-	logging.WithFields(fields).Debug("Gathered credentials.")
+	logging.WithFields(fields).Debug("Gathered credentials")
 
 	// auth
 	var auth *pkg.Authorization
@@ -56,7 +56,7 @@ func Deploy(cmd *cobra.Command, _ []string) (err error) {
 	}
 
 	fields["authorized"] = true
-	logging.WithFields(fields).Debug("Successfully Authenticated.")
+	logging.WithFields(fields).Debug("Successfully Authenticated")
 
 	// we want the filter nil because it will be discarded without
 	// initialization
@@ -100,7 +100,7 @@ func Deploy(cmd *cobra.Command, _ []string) (err error) {
 		fields["targetDirectory"] = targetDirectory
 	}
 
-	logging.WithFields(fields).Debug("Getting Deployment Plan.")
+	logging.WithFields(fields).Debug("Getting Deployment Plan")
 
 	var deploymentPlan []byte
 	if deploymentPlan, err = pkg.Archive(targetDirectory, nil); err != nil {

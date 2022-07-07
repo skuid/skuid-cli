@@ -91,7 +91,7 @@ func FastRequestHelper(
 		route = fmt.Sprintf("https://%v", route)
 	}
 
-	logging.Get().Trace("Assembling Request.")
+	logging.Get().Trace("Assembling Request")
 
 	// Prepare resources for the http request
 	req := fasthttp.AcquireRequest()
@@ -141,7 +141,7 @@ func FastRequestHelper(
 
 	// perform the request. errors only pop up if there's an issue
 	// with assembly/resources.
-	logging.Get().Trace(color.Blue.Sprint("Making Request."))
+	logging.Get().Trace(color.Blue.Sprint("Making Request"))
 	if err = fasthttp.Do(req, resp); err != nil {
 		return
 	}

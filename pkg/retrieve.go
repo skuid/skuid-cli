@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/valyala/fasthttp"
 
+	"github.com/skuid/tides/pkg/constants"
 	"github.com/skuid/tides/pkg/logging"
 )
 
@@ -101,12 +102,12 @@ func ExecuteRetrieval(auth *Authorization, plans NlxPlanPayload) (duration time.
 	var warden, pliny NlxRetrievalResult
 
 	// has to be pliny, then warden
-	pliny, err = executePlan("Pliny", plans.MetadataService)
+	pliny, err = executePlan(constants.PLINY, plans.MetadataService)
 	if err != nil {
 		return
 	}
 
-	warden, err = executePlan("Warden", plans.CloudDataService)
+	warden, err = executePlan(constants.WARDEN, plans.CloudDataService)
 	if err != nil {
 		return
 	}

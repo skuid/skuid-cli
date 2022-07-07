@@ -23,6 +23,12 @@ func PrerunValidation(cmd *cobra.Command, _ []string) error {
 		logging.SetTrace()
 	}
 
+	if diagnostic, err := cmd.Flags().GetBool(flags.Diagnostic.Name); err != nil {
+		return err
+	} else if diagnostic {
+		logging.SetDiagnostic()
+	}
+
 	if err := LoggingValidation(cmd, []string{}); err != nil {
 		return err
 	}

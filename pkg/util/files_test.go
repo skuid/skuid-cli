@@ -154,7 +154,7 @@ func TestRetrieve(t *testing.T) {
 		{
 			testDescription: "retrieve nonvalid skuid metadata files",
 			giveTargetDir:   "",
-			giveFiles:       []RetrieveFile{{"readme.txt", "This archive contains some text files."}, {"gopher.txt", "Gopher names:\nGeorge\nGeoffrey\nGonzo"}, {"todo.txt", "Get animal handling licence.\nWrite more examples."}},
+			giveFiles:       []RetrieveFile{{"readme.txt", "This archive contains some text files"}, {"gopher.txt", "Gopher names:\nGeorge\nGeoffrey\nGonzo"}, {"todo.txt", "Get animal handling licence.\nWrite more examples"}},
 			wantFiles:       []RetrieveFile{},
 			wantDirectories: []string{},
 			wantError:       nil,

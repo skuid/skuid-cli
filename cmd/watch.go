@@ -22,8 +22,8 @@ var watchCmd = &cobra.Command{
 	SilenceErrors:     true,
 	SilenceUsage:      true,
 	Use:               "watch",
-	Short:             "Watch for changes to local Skuid metadata, and deploy changes to a Skuid NLX Site.",
-	Long:              "Watches for changes to local Skuid metadata on your file system, and automatically deploys the changed files to a Skuid NLX Site.",
+	Short:             "Watch for changes to local Skuid metadata, and deploy changes to a Skuid NLX Site",
+	Long:              "Watches for changes to local Skuid metadata on your file system, and automatically deploys the changed files to a Skuid NLX Site",
 	PersistentPreRunE: common.PrerunValidation,
 	RunE:              Watch,
 }
@@ -50,7 +50,7 @@ func Watch(cmd *cobra.Command, _ []string) (err error) {
 	fields["host"] = host
 	fields["username"] = username
 
-	logging.WithFields(fields).Debug("Gathered Credentials.")
+	logging.WithFields(fields).Debug("Gathered Credentials")
 
 	var auth *pkg.Authorization
 	if auth, err = pkg.Authorize(host, username, password); err != nil {
@@ -58,7 +58,7 @@ func Watch(cmd *cobra.Command, _ []string) (err error) {
 	}
 
 	fields["authorized"] = true
-	logging.WithFields(fields).Debug("Successfully Logged In.")
+	logging.WithFields(fields).Debug("Successfully Logged In")
 
 	var targetDir string
 	if targetDir, err = cmd.Flags().GetString(flags.Directory.Name); err != nil {
@@ -82,7 +82,7 @@ func Watch(cmd *cobra.Command, _ []string) (err error) {
 	}()
 
 	if targetDir == "" {
-		targetDir = "."
+		targetDir = ""
 	}
 
 	var friendly string
@@ -97,13 +97,13 @@ func Watch(cmd *cobra.Command, _ []string) (err error) {
 	w.SetMaxEvents(1)
 
 	fields["targetDir"] = targetDir
-	logging.WithFields(fields).Debug("Starting Watch.")
+	logging.WithFields(fields).Debug("Starting Watch")
 
 	go func() {
 		for {
 			select {
 			case event := <-w.Event:
-				logging.WithFields(fields).Debug("Event Detected.")
+				logging.WithFields(fields).Debug("Event Detected")
 				cleanRelativeFilePath := util.FromWindowsPath(strings.Split(event.Path, friendly)[1])
 				dirSplit := strings.Split(cleanRelativeFilePath, string(filepath.Separator))
 				metadataType, remainder := dirSplit[1], dirSplit[2]
@@ -113,7 +113,7 @@ func Watch(cmd *cobra.Command, _ []string) (err error) {
 				} else if metadataType == "site" {
 					changedEntity = "site"
 				} else {
-					changedEntity = filepath.Join(metadataType, strings.Split(remainder, ".")[0])
+					changedEntity = filepath.Join(metadataType, strings.Split(remainder, "")[0])
 				}
 				logging.WithFields(fields).Debug("Detected change to metadata type: " + changedEntity)
 				go func() {
@@ -130,7 +130,7 @@ func Watch(cmd *cobra.Command, _ []string) (err error) {
 	}()
 
 	// Watch targetDir recursively for changes.
-	if err = w.AddRecursive("."); err != nil {
+	if err = w.AddRecursive(""); err != nil {
 		return
 	}
 
@@ -140,7 +140,7 @@ func Watch(cmd *cobra.Command, _ []string) (err error) {
 	for path, f := range w.WatchedFiles() {
 		logging.WithFields(fields).Debug(fmt.Sprintf("%s: %s", path, f.Name()))
 	}
-	logging.WithFields(fields).Debug("Waiting for changes...")
+	logging.WithFields(fields).Debug("Waiting for changes..")
 
 	// Start the watching process - it'll check for changes every 100ms.
 	if err = w.Start(time.Millisecond * 100); err != nil {

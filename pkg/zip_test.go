@@ -13,7 +13,7 @@ import (
 func TestZip(t *testing.T) {
 	util.SkipIntegrationTest(t)
 	cd, _ := os.Getwd()
-	relpath := filepath.Join(cd, "..", "..", "_deploy")
+	relpath := filepath.Join(cd, ".", ".", "_deploy")
 	bb, err := pkg.Archive(relpath, nil)
 	if err != nil {
 		logging.Get().Fatal(err)

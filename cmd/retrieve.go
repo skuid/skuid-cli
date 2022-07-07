@@ -22,8 +22,8 @@ var (
 		SilenceErrors:     true, // we do not want to show users raw errors
 		Example:           "retrieve -u myUser -p myPassword --host my-site.skuidsite.com --dir ./retrieval",
 		Use:               "retrieve",
-		Short:             "Retrieve Skuid metadata from an Skuid NLX Site into a local directory.",
-		Long:              "Retrieve Skuid metadata from a Skuid NLX Site and output it into a local directory.",
+		Short:             "Retrieve Skuid metadata from an Skuid NLX Site into a local directory",
+		Long:              "Retrieve Skuid metadata from a Skuid NLX Site and output it into a local directory",
 		PersistentPreRunE: common.PrerunValidation,
 		RunE:              Retrieve,
 	}
@@ -35,7 +35,7 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 	fields["process"] = "retrieve"
 	fields["start"] = start
 
-	logging.Get().Info("Starting retrieve")
+	logging.Get().Info(color.Green.Sprint("Starting retrieve"))
 	// get required arguments
 	var host, username, password string
 	if host, err = cmd.Flags().GetString(flags.PlinyHost.Name); err != nil {
@@ -49,7 +49,7 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 	fields["host"] = host
 	fields["username"] = username
 	fields["password"] = password != ""
-	logging.WithFields(fields).Debug("Credentials gathered.")
+	logging.WithFields(fields).Debug("Credentials gathered")
 
 	var auth *pkg.Authorization
 	if auth, err = pkg.Authorize(host, username, password); err != nil {
@@ -57,7 +57,7 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 	}
 
 	fields["authorized"] = true
-	logging.WithFields(fields).Debug("Authentication successful")
+	logging.WithFields(fields).Info("Authentication successful")
 
 	// we want the filter nil because it will be discarded without
 	// initialization
@@ -68,7 +68,7 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 	// expand the pattern down the road as more things
 	// are required to be build
 	initFilter := func() {
-		logging.WithFields(fields).Debug("Using filter.")
+		logging.WithFields(fields).Debug("Using filter")
 		if filter == nil {
 			filter = &pkg.NlxPlanFilter{}
 		}
@@ -94,14 +94,14 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 		filter.PageNames = pageNames
 	}
 
-	logging.WithFields(fields).Debug("Getting Retrieve Plan.")
+	logging.WithFields(fields).Info("Getting Retrieve Plan")
 
 	var plans pkg.NlxPlanPayload
 	if _, plans, err = pkg.GetRetrievePlan(auth, filter); err != nil {
 		return
 	}
 
-	logging.WithFields(fields).Debug("Got Retrieve Plan.")
+	logging.WithFields(fields).Info("Got Retrieve Plan")
 
 	var results []pkg.NlxRetrievalResult
 	if _, results, err = pkg.ExecuteRetrieval(auth, plans); err != nil {
@@ -112,7 +112,7 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 	fields["finished"] = time.Now()
 	fields["retrievalDuration"] = time.Since(start)
 
-	logging.WithFields(fields).Debugf("Received %v Results.", color.Green.Sprint(len(results)))
+	logging.WithFields(fields).Debugf("Received %v Results", color.Green.Sprint(len(results)))
 
 	var directory string
 	if directory, err = cmd.Flags().GetString(flags.Directory.Name); err != nil {
@@ -120,7 +120,7 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 	}
 
 	fields["directory"] = directory
-	logging.WithFields(fields).Debugf("Target directory is %v.", color.Magenta.Sprint(directory))
+	logging.WithFields(fields).Infof("Target directory is %v", color.Cyan.Sprint(directory))
 
 	fields["writeStart"] = time.Now()
 
@@ -136,7 +136,8 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 		}
 	}
 
-	logging.WithFields(fields).Debug("Finished writing to disk.")
+	logging.Get().Infof("Finished writing to %v", color.Cyan.Sprint(directory))
+	logging.WithFields(fields).Info(color.Green.Sprint("Finished retrieve"))
 
 	return
 }

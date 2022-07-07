@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 
+	"github.com/gookit/color"
 	"github.com/joho/godotenv"
 
 	"github.com/skuid/tides/cmd"
@@ -15,8 +16,7 @@ func main() {
 
 func Run() {
 	if err := cmd.TidesCmd.Execute(); err != nil {
-		logging.Get().Errorf("Error Encountered During Run.")
-		logging.Get().Error(err)
+		logging.Get().WithError(err).Errorf("Error Encountered During Run: %v", color.Red.Sprint(err))
 		os.Exit(1)
 	}
 }

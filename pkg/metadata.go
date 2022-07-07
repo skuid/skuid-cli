@@ -73,7 +73,7 @@ func (m NlxMetadata) FilterItem(item string) (keep bool) {
 
 	validMetadataNames, err := m.GetFieldValueByName(metadataType)
 	if validMetadataNames == nil || len(validMetadataNames) == 0 {
-		logging.Get().Trace("No valid names for this directory.")
+		logging.Get().Trace("No valid names for this directory")
 		return
 	}
 

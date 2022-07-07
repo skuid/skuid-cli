@@ -54,7 +54,15 @@ func SetTrace() logrus.Ext1FieldLogger {
 	return loggerSingleton
 }
 
-func FieldLogging(b bool) {
+func SetDiagnostic() logrus.Ext1FieldLogger {
+	loggerSingleton = Get()
+	l, _ := loggerSingleton.(*logrus.Logger)
+	l.SetLevel(logrus.TraceLevel)
+	SetFieldLogging(true)
+	return loggerSingleton
+}
+
+func SetFieldLogging(b bool) {
 	fieldLogging = b
 }
 

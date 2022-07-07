@@ -52,12 +52,12 @@ var (
 	AppName = &Flag[string]{
 		Name:      "app-name",
 		Shorthand: "a",
-		Usage:     "Scope the operation to a specific Skuid NLX App (name).",
+		Usage:     "Scope the operation to a specific Skuid NLX App (name)",
 	}
 
 	VariableDataService = &Flag[string]{
 		Name:  "dataservice",
-		Usage: "Optional, the name of a private data service in which the variable should be created. Leave blank to store in the default data service.",
+		Usage: "Optional, the name of a private data service in which the variable should be created. Leave blank to store in the default data service",
 	}
 
 	VariableValue = &Flag[string]{
@@ -74,7 +74,7 @@ var (
 		Name: "directory",
 		// Aliases:   []string{"directory"},
 		Shorthand:   "d",
-		Usage:       "Target directory for this operation.",
+		Usage:       "Target directory for this operation",
 		EnvVarNames: []string{constants.ENV_TIDES_DEFAULT_FOLDER},
 	}
 
