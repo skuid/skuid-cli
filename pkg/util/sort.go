@@ -44,7 +44,7 @@ func ReplaceNamePlaceholders(in []byte) []byte {
 }
 
 func ReSortJson(data []byte) (replaced []byte, err error) {
-	return ReSortJsonIndent(data, false)
+	return ReSortJsonIndent(data, true)
 }
 
 // this takes marshalled json in bytes and resorts it recursively the way
