@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/skuid/tides/pkg"
 	"github.com/skuid/tides/pkg/util"
 )
@@ -26,21 +28,12 @@ func TestRetrievePlan(t *testing.T) {
 		{},
 	} {
 		t.Run(tc.description, func(t *testing.T) {
-			duration, result, err := pkg.GetRetrievePlan(auth, tc.givenFilter)
-			t.Log(duration)
-			t.Log(err)
+			_, result, err := pkg.GetRetrievePlan(auth, tc.givenFilter)
+			assert.NoError(t, err)
 
 			data, err := json.Marshal(result)
 			t.Log(string(data))
-			t.Log(err)
-
-			for _, plan := range []pkg.NlxPlan{
-				result.CloudDataService, result.MetadataService,
-			} {
-				t.Logf("PLAN (%v):", plan.Type)
-				b, _ := json.MarshalIndent(plan, "", " ")
-				t.Log(string(b))
-			}
+			assert.NoError(t, err)
 		})
 	}
 }
