@@ -19,7 +19,7 @@ func TestGetDeployPlan(t *testing.T) {
 	}
 
 	wd, _ := os.Getwd()
-	fp := filepath.Join(wd, ".", ".", "_deploy")
+	fp := filepath.Join(wd, "..", "..", "_deploy")
 
 	deploymentPlan, err := pkg.Archive(fp, nil)
 	if err != nil {

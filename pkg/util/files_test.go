@@ -80,7 +80,9 @@ func TestWindowsPath(t *testing.T) {
 
 const badJson = "this is not even close to good JSON"
 
-const goodJson = `{"good":"json"}`
+const goodJson = `{
+	"good": "json"
+}`
 
 const existingProfileBody = `{
 	"name": "Admin",

@@ -101,12 +101,12 @@ func WriteResultsToDiskInjection(targetDirectory string, result WritePayload, co
 			Error("error creating temporary file")
 		return err
 	}
-	// defer os.Remove(tmpFileName)
+	defer os.Remove(tmpFileName)
 
 	// unzip the contents of our temp zip file
 	err = UnzipArchive(
 		tmpFileName,
-		targetDirFriendly,
+		targetDirectory,
 		pathMap,
 		copyToFile,
 		createDirectoryDeep,
@@ -265,7 +265,7 @@ func sanitizeZip(reader io.ReadCloser) (newReader io.ReadCloser, err error) {
 		logging.Get().Warnf("unable to read all: %v", err)
 		return
 	}
-	// defer reader.Close()
+	defer reader.Close()
 
 	if b, err = ReSortJson(b); err != nil {
 		logging.Get().Warnf("unable to re-sort: %v", err)
