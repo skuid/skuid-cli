@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gookit/color"
@@ -136,7 +137,7 @@ func CreateTemporaryFile(planName string, data []byte) (name string, err error) 
 	rand.Seed(time.Now().Unix())
 
 	for attempts := 0; attempts < MAX_ATTEMPTS; attempts++ {
-		if tmpfile, err = os.CreateTemp("", planName); err == nil {
+		if tmpfile, err = os.CreateTemp("", strings.ReplaceAll(planName, " ", "-")); err == nil {
 			break
 		}
 		time.NewTimer(time.Second * time.Duration(attempts))
@@ -164,8 +165,16 @@ func CreateTemporaryFile(planName string, data []byte) (name string, err error) 
 	return
 }
 
+// add thread protection
+var (
+	unzipMutex sync.Mutex
+)
+
 // Unzips a ZIP archive and recreates the folders and file structure within it locally
 func UnzipArchive(sourceFileLocation, targetLocation string, pathMap map[string]bool, fileCreator FileCreator, directoryCreator DirectoryCreator, existingFileReader FileReader) (err error) {
+	unzipMutex.Lock()
+	defer unzipMutex.Unlock()
+
 	fields := logrus.Fields{
 		"function":           "UnzipArchive",
 		"sourceFileLocation": sourceFileLocation,
