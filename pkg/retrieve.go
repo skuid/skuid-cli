@@ -58,7 +58,7 @@ func ExecuteRetrieval(auth *Authorization, plans NlxPlanPayload) (duration time.
 	defer func() { duration = time.Since(start) }()
 
 	// this function generically handles a plan based on name / stuff
-	executePlan := func(name string, plan NlxPlan) (retrievalResult NlxRetrievalResult, err error) {
+	executePlan := func(name string, plan NlxPlan) error {
 		logging.WithField("planName", name)
 		logging.Get().Debugf("Firing off %v", color.Magenta.Sprint(name))
 
@@ -85,35 +85,31 @@ func ExecuteRetrieval(auth *Authorization, plans NlxPlanPayload) (duration time.
 			})
 			logging.Get().WithError(err)
 			logging.Get().Errorf("error with %v request", color.Magenta.Sprint(name))
-			return
+			return err
 		}
 
-		retrievalResult = NlxRetrievalResult{
+		results = append(results, NlxRetrievalResult{
 			Plan:     plan,
 			PlanName: name,
 			Url:      url,
 			Data:     result,
-		}
+		})
 
-		return
+		return nil
 	}
-
-	// fire off the threads
-	var warden, pliny NlxRetrievalResult
 
 	// has to be pliny, then warden
-	pliny, err = executePlan(constants.PLINY, plans.MetadataService)
-	if err != nil {
-		return
+	if plans.MetadataService != nil {
+		if err = executePlan(constants.PLINY, *plans.MetadataService); err != nil {
+			return
+		}
 	}
 
-	warden, err = executePlan(constants.WARDEN, plans.CloudDataService)
-	if err != nil {
-		return
+	if plans.CloudDataService != nil {
+		if err = executePlan(constants.WARDEN, *plans.CloudDataService); err != nil {
+			return
+		}
 	}
-
-	// has to be pliny, then warden.
-	results = []NlxRetrievalResult{pliny, warden}
 
 	return
 }

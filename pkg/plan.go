@@ -12,9 +12,9 @@ import (
 // deployment retrieval plan endpoint
 type NlxPlanPayload struct {
 	// Cloud Data Service is WARDEN
-	CloudDataService NlxPlan `json:"skuidCloudDataService"`
+	CloudDataService *NlxPlan `json:"skuidCloudDataService"`
 	// Metadata Service is PLINY
-	MetadataService NlxPlan `json:"skuidMetadataService"`
+	MetadataService *NlxPlan `json:"skuidMetadataService"`
 }
 
 type NlxPlan struct {
