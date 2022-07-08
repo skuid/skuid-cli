@@ -2,9 +2,9 @@ package ui
 
 import (
 	"fmt"
+	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 	"github.com/spf13/cobra"
 
 	"github.com/skuid/tides/ui/help"
@@ -81,9 +81,13 @@ func (v run) View() string {
 }
 
 func (v run) body() string {
-	return lipgloss.JoinHorizontal(lipgloss.Left,
-		style.CommandText(v.cmd),
-	) + v.output()
+	return strings.Join(
+		[]string{
+			style.CommandText(v.cmd),
+			v.output(),
+		},
+		"\n",
+	)
 }
 
 func (v run) output() string {

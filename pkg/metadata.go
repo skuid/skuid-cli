@@ -5,6 +5,8 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/gookit/color"
+
 	"github.com/skuid/tides/pkg/errors"
 	"github.com/skuid/tides/pkg/logging"
 	"github.com/skuid/tides/pkg/util"
@@ -73,7 +75,7 @@ func (m NlxMetadata) FilterItem(item string) (keep bool) {
 
 	validMetadataNames, err := m.GetFieldValueByName(metadataType)
 	if validMetadataNames == nil || len(validMetadataNames) == 0 {
-		logging.Get().Trace("No valid names for this directory")
+		logging.Get().Tracef("No valid names for this directory: %v", color.Gray.Sprint(item))
 		return
 	}
 

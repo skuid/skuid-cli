@@ -20,14 +20,13 @@ var (
 			Height(Height).
 			PaddingLeft(PadLeft).
 			PaddingRight(PadRight).
-			Width(Width).
-			Border(lipgloss.RoundedBorder(), true, true, true, true)
+			Width(Width)
+		// Border(lipgloss.RoundedBorder(), true, true, true, true)
 
 	HeaderStyle = lipgloss.NewStyle().
 			Height(HeaderHeight).
-			Border(lipgloss.DoubleBorder(), false, false, true).
-			Width(Width - (PadLeft + PadRight)).
-			Align(lipgloss.Center)
+		// Border(lipgloss.DoubleBorder(), false, false, true).
+		Width(Width - (PadLeft + PadRight))
 
 	ASCII_WIDTH = 50
 
@@ -44,9 +43,9 @@ var (
 
 	HelpStyle = lipgloss.NewStyle().
 			Height(HelpHeight).
-			Border(lipgloss.DoubleBorder(), true, false, false, false).
-			Width(Width - (PadLeft + PadRight)).
-			Align(lipgloss.Right)
+		// Border(lipgloss.DoubleBorder(), true, false, false, false).
+		Width(Width - (PadLeft + PadRight))
+	// Align(lipgloss.Right)
 )
 
 // StandardView is what we'll use to create the logic that handles the frontend.
@@ -55,9 +54,10 @@ func StandardView(header string, body string, help string) string {
 
 	styledHeader := HeaderStyle.Render(header)
 
-	styledBody := lipgloss.JoinHorizontal(lipgloss.Left,
-		LeftStyle.Render(strings.Join(SKUID_ASCII, "\n")), BodyStyle.Render(body),
-	)
+	styledBody := BodyStyle.Render(body)
+	// lipgloss.JoinHorizontal(lipgloss.Left,
+	// 	LeftStyle.Render(strings.Join(SKUID_ASCII, "\n")), BodyStyle.Render(body),
+	// )
 
 	styledFooter := HelpStyle.Render(help)
 

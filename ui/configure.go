@@ -105,7 +105,7 @@ func (v configure) Update(msg tea.Msg) (m tea.Model, c tea.Cmd) {
 			v.focus(v.index)
 			v.reset()
 		case keys.ENTER:
-			if v.index == RUN_INDEX {
+			if v.index == len(v.inputs) {
 				m = Run(
 					&v,
 					v.sub,
@@ -135,7 +135,7 @@ func (v configure) Update(msg tea.Msg) (m tea.Model, c tea.Cmd) {
 }
 
 func (v configure) focus(index int) (cmd tea.Cmd) {
-	focusIndex := index - 1 // because EXECUTE is first
+	focusIndex := index
 
 	for i := range v.inputs {
 		if i == focusIndex {
@@ -152,7 +152,7 @@ func (v configure) focus(index int) (cmd tea.Cmd) {
 }
 
 func (v configure) save(index int) (m tea.Model, cmd tea.Cmd) {
-	saveIndex := index - 1 // because EXECUTE is first
+	saveIndex := index // because EXECUTE is first
 	input := v.inputs[saveIndex]
 	flag := v.getFlags()[saveIndex]
 	switch f := flag.Value.(type) {
@@ -195,13 +195,13 @@ func (v configure) getFlags() []*pflag.Flag {
 func (v configure) body() string {
 	var lines []string
 	// add execute checkbox
-	lines = append(lines, style.Checkbox("run the command ", v.index == 0, false))
-	lines = append(lines, style.HighlightIf(indent.String(style.CommandText(v.sub), 2), v.index == 0))
-	lines = append(lines, style.StyleSubtle.Render(strings.Repeat("-", 60)))
-	lines = append(lines, style.HighlightIf("flags:", v.index != 0))
+	lines = append(lines, style.HighlightIf("flags:", v.index != len(v.inputs)))
 	// add text inputs
 	for i := range v.inputs {
 		lines = append(lines, v.inputs[i].View())
 	}
+	lines = append(lines, style.StyleSubtle.Render(strings.Repeat("-", 60)))
+	lines = append(lines, style.Checkbox("run the command ", v.index == len(v.inputs), false))
+	lines = append(lines, style.HighlightIf(indent.String(style.CommandText(v.sub), 2), v.index == len(v.inputs)))
 	return strings.Join(lines, "\n")
 }
