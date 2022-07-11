@@ -82,8 +82,11 @@ func WriteResultsToDiskInjection(targetDirectory string, result WritePayload, co
 	if err != nil {
 		return err
 	}
-	if err := os.MkdirAll(targetDirFriendly, 0777); err != nil {
-		logging.Get().Tracef("Error making target dir: %v", err.Error())
+
+	if targetDirectory != "" {
+		if err := createDirectoryDeep(targetDirectory, 0777); err != nil {
+			logging.Get().Tracef("Error making target dir: %v", err.Error())
+		}
 	}
 
 	logging.Get().Tracef("Writing results to %v\n", color.Cyan.Sprint(targetDirFriendly))
