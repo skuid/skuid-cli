@@ -11,10 +11,6 @@ import (
 	"github.com/skuid/tides/pkg/util"
 )
 
-var (
-	testPassword = "testPassword"
-)
-
 func TestRemovePassword(t *testing.T) {
 	for _, tc := range []struct {
 		description    string
