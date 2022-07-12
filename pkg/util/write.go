@@ -1,6 +1,7 @@
 package util
 
 import (
+	"io/ioutil"
 	"os"
 
 	"github.com/gookit/color"
@@ -12,6 +13,10 @@ import (
 type WritePayload struct {
 	PlanName string
 	PlanData []byte
+}
+
+func WriteResultsToDisk(targetDirectory string, result WritePayload) (err error) {
+	return WriteResults(targetDirectory, result, CopyToFile, CreateDirectoryDeep, ioutil.ReadFile)
 }
 
 func WriteResults(targetDirectory string, result WritePayload, copyToFile FileCreator, createDirectoryDeep DirectoryCreator, ioutilReadFile FileReader) (err error) {

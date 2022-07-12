@@ -17,10 +17,6 @@ import (
 	"github.com/skuid/tides/pkg/logging"
 )
 
-func WriteResultsToDisk(targetDirectory string, result WritePayload) (err error) {
-	return WriteResults(targetDirectory, result, CopyToFile, CreateDirectoryDeep, ioutil.ReadFile)
-}
-
 // add thread protection
 var (
 	unzipMutex sync.Mutex

@@ -13,19 +13,19 @@ import (
 	"github.com/skuid/tides/pkg/logging"
 )
 
-func CombineJSON(newFileReader io.ReadCloser, existingFileReader FileReader, path string) (rc io.ReadCloser, err error) {
+func CombineJSON(readCloser io.ReadCloser, fileReader FileReader, path string) (newReadCloser io.ReadCloser, err error) {
 	fields := logrus.Fields{
 		"function": "CombineJSON",
 	}
 
 	logging.WithFields(fields).Tracef("Augmenting File with more JSON Data: %v\n", color.Magenta.Sprint(path))
-	existingBytes, err := existingFileReader(path)
+	existingBytes, err := fileReader(path)
 	if err != nil {
 		logging.Get().Warnf("existingFileReader: %v", err)
 		return
 	}
 
-	newBytes, err := ioutil.ReadAll(newFileReader)
+	newBytes, err := ioutil.ReadAll(readCloser)
 	if err != nil {
 		logging.Get().Warnf("ioutil.ReadAll: %v", err)
 		return
@@ -53,7 +53,7 @@ func CombineJSON(newFileReader io.ReadCloser, existingFileReader FileReader, pat
 		return
 	}
 
-	rc = ioutil.NopCloser(bytes.NewReader(indented.Bytes()))
+	newReadCloser = ioutil.NopCloser(bytes.NewReader(indented.Bytes()))
 
 	return
 }
