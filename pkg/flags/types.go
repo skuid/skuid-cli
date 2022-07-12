@@ -91,6 +91,11 @@ func (flag Flag[T]) GetValue() T {
 	return *flag.argument
 }
 
+// FOR TESTING PURPOSES ONLY
+func (flag *Flag[T]) Set(t *T) {
+	flag.argument = t
+}
+
 func Add[T any](flag *Flag[T]) func(*cobra.Command) error {
 	return func(to *cobra.Command) error {
 		// three required fields
