@@ -84,7 +84,7 @@ func WriteResultsToDiskInjection(targetDirectory string, result WritePayload, co
 	}
 
 	if targetDirectory != "" {
-		if err := createDirectoryDeep(targetDirectory, 0777); err != nil {
+		if err := createDirectoryDeep(targetDirectory, 0755); err != nil {
 			logging.Get().Tracef("Error making target dir: %v", err.Error())
 		}
 	}
