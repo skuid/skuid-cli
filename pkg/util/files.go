@@ -49,17 +49,13 @@ func GetAbsolutePath(relative string) (absolute string) {
 
 // SanitizePath returns the "friendly" path for the given string.
 // This really only occurs if the directory is non-existent...
-func SanitizePath(directory string) (friendlyResult string, err error) {
+func SanitizePath(directory string) (sanitizedResult string, err error) {
 	if directory == "" {
-		if friendlyResult, err = filepath.Abs(filepath.Dir(os.Args[0])); err != nil {
-			return
-		}
+		return filepath.Abs(filepath.Dir(os.Args[0]))
 	} else {
-		friendlyResult = directory
+		sanitizedResult = directory
 	}
-
 	return
-
 }
 
 type WritePayload struct {
