@@ -261,7 +261,7 @@ func TestRetrieve(t *testing.T) {
 				return []byte(existingProfileBody), nil
 			}
 
-			err = util.WriteResultsToDiskInjection(tc.giveTargetDir, util.WritePayload{PlanData: buf.Bytes(), PlanName: "test"}, mockFileMaker, mockDirectoryMaker, mockExistingFileReader)
+			err = util.WriteResults(tc.giveTargetDir, util.WritePayload{PlanData: buf.Bytes(), PlanName: "test"}, mockFileMaker, mockDirectoryMaker, mockExistingFileReader)
 			if tc.wantError != nil {
 				assert.Equal(t, tc.wantError.Error(), err.Error())
 			} else if err != nil {

@@ -64,10 +64,10 @@ type WritePayload struct {
 }
 
 func WriteResultsToDisk(targetDirectory string, result WritePayload) (err error) {
-	return WriteResultsToDiskInjection(targetDirectory, result, CopyToFile, CreateDirectoryDeep, ioutil.ReadFile)
+	return WriteResults(targetDirectory, result, CopyToFile, CreateDirectoryDeep, ioutil.ReadFile)
 }
 
-func WriteResultsToDiskInjection(targetDirectory string, result WritePayload, copyToFile FileCreator, createDirectoryDeep DirectoryCreator, ioutilReadFile FileReader) (err error) {
+func WriteResults(targetDirectory string, result WritePayload, copyToFile FileCreator, createDirectoryDeep DirectoryCreator, ioutilReadFile FileReader) (err error) {
 	fields := logrus.Fields{
 		"function": "WriteResultsToDiskInjection",
 	}
