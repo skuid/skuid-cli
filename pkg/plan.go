@@ -29,8 +29,8 @@ type NlxPlan struct {
 // Serialize this and provide it with the
 // request for retrieval
 type NlxPlanFilter struct {
-	AppName   string   `json:"appName"`
-	PageNames []string `json:"pages"`
+	AppName   string   `json:"appName,omitempty"`
+	PageNames []string `json:"pages,omitempty"`
 }
 
 func GetDeployPlan(auth *Authorization) (duration time.Duration, result NlxPlanPayload, err error) {
