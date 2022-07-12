@@ -67,7 +67,7 @@ release:
 # then generates a readable html file in .coverage/coverage.html
 cover:
 	@mkdir .coverage || echo "hidden coverage folder exists"
-	@go test -v -cover ./... -coverprofile .coverage/coverage.out
+	@go test -short -v -cover ./... -coverprofile .coverage/coverage.out
 	@go tool cover -html=.coverage/coverage.out -o .coverage/coverage.html
 
 # this opens the file .coverage/coverage.html after
