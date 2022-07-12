@@ -11,10 +11,6 @@ import (
 )
 
 var (
-	testFileReader util.FileReader = func(path string) ([]byte, error) {
-		return []byte{}, nil
-	}
-
 	testData = []byte(`{"a":"b"}`)
 )
 
@@ -39,6 +35,8 @@ func TestCombineJSON(t *testing.T) {
 		readcloser  TestReadCloser
 		reader      util.FileReader
 		path        string
+
+		expectedError error
 	}{
 		{
 			description: "reader error",
@@ -49,6 +47,7 @@ func TestCombineJSON(t *testing.T) {
 			reader: func(path string) ([]byte, error) {
 				return []byte{}, fmt.Errorf("reader")
 			},
+			expectedError: fmt.Errorf("reader"),
 		},
 		{
 			description: "read error",
@@ -58,6 +57,7 @@ func TestCombineJSON(t *testing.T) {
 			reader: func(path string) ([]byte, error) {
 				return []byte{}, nil
 			},
+			expectedError: fmt.Errorf("read"),
 		},
 		{
 			description: "invalid json patch",
@@ -67,6 +67,7 @@ func TestCombineJSON(t *testing.T) {
 			reader: func(path string) ([]byte, error) {
 				return []byte{}, nil
 			},
+			expectedError: fmt.Errorf("invalid json patch"),
 		},
 		{
 			description: "success",
@@ -89,7 +90,11 @@ func TestCombineJSON(t *testing.T) {
 	} {
 		t.Run(tc.description, func(t *testing.T) {
 			_, err := util.CombineJSON(tc.readcloser, tc.reader, tc.path)
-			assert.NoError(t, err)
+			if tc.expectedError != nil {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
 		})
 	}
 }
