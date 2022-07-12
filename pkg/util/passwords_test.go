@@ -45,6 +45,8 @@ func TestRemovePassword(t *testing.T) {
 			flags.Password.Set(&tc.givenPassword)
 			result := util.RemovePassword(tc.givenString)
 			assert.Equal(t, tc.expectedString, result)
+			bytes := util.RemovePasswordBytes([]byte(tc.givenString))
+			assert.Equal(t, []byte(tc.expectedString), bytes)
 		})
 	}
 }
