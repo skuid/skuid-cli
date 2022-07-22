@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/gookit/color"
-	"github.com/valyala/fasthttp"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/skuid/tides/pkg/logging"
@@ -52,13 +51,13 @@ func PrepareDeployment(auth *Authorization, deploymentPlan []byte, filter *NlxPl
 
 	// pliny request, use access token
 	headers := GenerateHeaders(auth.Host, auth.AccessToken)
-	headers[fasthttp.HeaderContentType] = ZIP_CONTENT_TYPE
+	headers[HeaderContentType] = ZIP_CONTENT_TYPE
 
 	var body []byte
 	if filter != nil {
 		logging.Get().Debug("Using file filter")
 		// change content type to json
-		headers[fasthttp.HeaderContentType] = JSON_CONTENT_TYPE
+		headers[HeaderContentType] = JSON_CONTENT_TYPE
 		// we instead add the deployment plan bytes to the payload
 		// instead of just using that as the payload
 		requestBody := FilteredRequestBody{
@@ -76,9 +75,9 @@ func PrepareDeployment(auth *Authorization, deploymentPlan []byte, filter *NlxPl
 	}
 
 	// make the request
-	results, err = FastJsonBodyRequest[NlxDynamicPlanMap](
+	results, err = JsonBodyRequest[NlxDynamicPlanMap](
 		fmt.Sprintf("%s/%s", auth.Host, DeployPlanRoute),
-		fasthttp.MethodPost,
+		http.MethodPost,
 		body,
 		headers,
 	)
@@ -137,7 +136,7 @@ func ExecuteDeployPlan(auth *Authorization, plans NlxDynamicPlanMap, targetDir s
 			url := GenerateRoute(auth, plan)
 			logging.Get().Tracef("Plan Request: %v\n", url)
 
-			if result, err := FastRequest(
+			if result, err := Request(
 				url,
 				http.MethodPost,
 				deploy,

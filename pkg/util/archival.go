@@ -9,7 +9,6 @@ import (
 	"io/ioutil"
 	"path/filepath"
 	"strings"
-	"sync"
 
 	"github.com/gookit/color"
 	"github.com/sirupsen/logrus"
@@ -17,16 +16,8 @@ import (
 	"github.com/skuid/tides/pkg/logging"
 )
 
-// add thread protection
-var (
-	unzipMutex sync.Mutex
-)
-
 // Unzips a ZIP archive and recreates the folders and file structure within it locally
 func UnzipArchive(sourceFileLocation, targetLocation string, pathMap map[string]bool, fileCreator FileCreator, directoryCreator DirectoryCreator, existingFileReader FileReader) (err error) {
-	unzipMutex.Lock()
-	defer unzipMutex.Unlock()
-
 	fields := logrus.Fields{
 		"function":           "UnzipArchive",
 		"sourceFileLocation": sourceFileLocation,

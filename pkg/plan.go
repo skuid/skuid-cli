@@ -3,9 +3,8 @@ package pkg
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"time"
-
-	"github.com/valyala/fasthttp"
 )
 
 // This is the result of getting the plan from the pliny
@@ -37,13 +36,13 @@ func GetDeployPlan(auth *Authorization) (duration time.Duration, result NlxPlanP
 	planStart := time.Now()
 	defer func() { duration = time.Since(planStart) }()
 
-	if result, err = FastJsonBodyRequest[NlxPlanPayload](
+	if result, err = JsonBodyRequest[NlxPlanPayload](
 		fmt.Sprintf("%s/api/%v/metadata/deploy/plan", auth.Host, DEFAULT_API_VERSION),
-		fasthttp.MethodPost,
+		http.MethodPost,
 		[]byte{},
 		RequestHeaders{
-			fasthttp.HeaderContentType:   DEFAULT_CONTENT_TYPE,
-			fasthttp.HeaderAuthorization: fmt.Sprintf("Bearer %v", auth.AuthorizationToken),
+			HeaderContentType:   DEFAULT_CONTENT_TYPE,
+			HeaderAuthorization: fmt.Sprintf("Bearer %v", auth.AuthorizationToken),
 		},
 	); err != nil {
 		return

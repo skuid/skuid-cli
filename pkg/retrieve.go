@@ -3,11 +3,12 @@ package pkg
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"sync"
 	"time"
 
 	"github.com/gookit/color"
 	"github.com/sirupsen/logrus"
-	"github.com/valyala/fasthttp"
 
 	"github.com/skuid/tides/pkg/constants"
 	"github.com/skuid/tides/pkg/logging"
@@ -31,10 +32,15 @@ func GetRetrievePlan(auth *Authorization, filter *NlxPlanFilter) (duration time.
 
 	// this is a pliny request, so we provide the access token
 	headers := GenerateHeaders(auth.Host, auth.AccessToken)
-	headers[fasthttp.HeaderContentType] = JSON_CONTENT_TYPE
-	result, err = FastJsonBodyRequest[NlxPlanPayload](
+
+	// no matter what we want to pass application/json
+	// because the application/zip is discarded by pliny
+	// and warden will throw an error
+	headers[HeaderContentType] = JSON_CONTENT_TYPE
+
+	result, err = JsonBodyRequest[NlxPlanPayload](
 		fmt.Sprintf("%s/%s", auth.Host, RetrievePlanRoute),
-		fasthttp.MethodPost,
+		http.MethodPost,
 		body,
 		headers,
 	)
@@ -57,13 +63,17 @@ func ExecuteRetrieval(auth *Authorization, plans NlxPlanPayload) (duration time.
 	start := time.Now()
 	defer func() { duration = time.Since(start) }()
 
+	var mu sync.Mutex
 	// this function generically handles a plan based on name / stuff
 	executePlan := func(name string, plan NlxPlan) error {
+		mu.Lock()
+		defer mu.Unlock()
+
 		logging.WithField("planName", name)
 		logging.Get().Debugf("Firing off %v", color.Magenta.Sprint(name))
 
 		headers := GeneratePlanHeaders(auth, plan)
-		headers[fasthttp.HeaderContentType] = JSON_CONTENT_TYPE
+		headers[HeaderContentType] = JSON_CONTENT_TYPE
 
 		for k, header := range headers {
 			logging.Get().Tracef("header: (%v => %v)", color.Yellow.Sprint(k), color.Green.Sprint(header))
@@ -73,8 +83,8 @@ func ExecuteRetrieval(auth *Authorization, plans NlxPlanPayload) (duration time.
 
 		logging.Get().Tracef("URL: %v", color.Blue.Sprint(url))
 
-		result, err := FastRequest(
-			url, fasthttp.MethodPost, NewRetrievalRequestBody(plan.Metadata), headers,
+		result, err := Request(
+			url, http.MethodPost, NewRetrievalRequestBody(plan.Metadata), headers,
 		)
 
 		if err != nil {
@@ -113,8 +123,6 @@ func ExecuteRetrieval(auth *Authorization, plans NlxPlanPayload) (duration time.
 
 	return
 }
-
-// NlxRetrievalResult is only used
 
 func (x NlxRetrievalResult) String() string {
 	return fmt.Sprintf("(%v => %v (size: %v))", x.PlanName, x.Url, len(x.Data))

@@ -1,18 +1,18 @@
 package pkg
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/http"
 	"strings"
 
 	"github.com/gookit/color"
-	"github.com/sirupsen/logrus"
-	"github.com/valyala/fasthttp"
 
 	"github.com/skuid/tides/pkg/constants"
 	"github.com/skuid/tides/pkg/errors"
 	"github.com/skuid/tides/pkg/logging"
-	"github.com/skuid/tides/pkg/util"
 )
 
 var (
@@ -28,26 +28,14 @@ const (
 	MAX_AUTHORIZATION_ATTEMPTS = 3 // 5 will lock you out iirc
 )
 
-// FastJsonBodyRequest takes a type parameter and automatically
-// Unmarshals the body of the payload response into a value of that type.
-//
-// Leveraging the fasthttp lib, this should outperform the stdlib http package.
-//
-// Some patterns require acquiring and releasing resources from fasthttp.
-//
-// The package 'fasthttp' handles multithreading for us and removes
-// allocs during processes.
-//
-// For instance, this login operation
-// takes about 44 allocs. The http standard lib requires about 221 allocs.
-func FastJsonBodyRequest[T any](
+func JsonBodyRequest[T any](
 	route string,
 	method string,
 	body []byte,
 	additionalHeaders map[string]string,
 ) (r T, err error) {
 	var responseBody []byte
-	if responseBody, err = FastRequest(route, method, body, additionalHeaders); err != nil {
+	if responseBody, err = Request(route, method, body, additionalHeaders); err != nil {
 		return
 	}
 
@@ -60,114 +48,75 @@ func FastJsonBodyRequest[T any](
 	return
 }
 
-func FastRequest(
+func Request(
 	route string,
 	method string,
 	body []byte,
 	headers RequestHeaders,
 ) (response []byte, err error) {
-	return FastRequestHelper(route, method, body, headers, 0)
+	return RequestHelper(route, method, body, headers, 0)
 }
 
-func FastRequestHelper(
+func RequestHelper(
 	route string,
 	method string,
 	body []byte,
 	headers RequestHeaders,
 	attempts int,
 ) (response []byte, err error) {
-	logging.WithFields(logrus.Fields{
-		"route":    route,
-		"method":   method,
-		"headers":  headers,
-		"attempts": attempts,
-	})
 	// only https
 	if strings.HasPrefix(route, "http://") {
 		route = strings.Replace(route, "http://", "https://", 1)
 	}
-	// only https
 	if !strings.HasPrefix(route, "https://") {
 		route = fmt.Sprintf("https://%v", route)
 	}
 
-	logging.Get().Trace("Assembling Request")
-
-	// Prepare resources for the http request
-	req := fasthttp.AcquireRequest()
-	defer fasthttp.ReleaseRequest(req)
-
-	// Prepare resources for the URI
-	uri := fasthttp.AcquireURI()
-	defer fasthttp.ReleaseURI(uri)
-	// by passing `nil` as the first argument, the whole url will be parsed
-	// by the uri.parse function.
-	if err = uri.Parse(nil, []byte(route)); err != nil {
-		return
+	req, err := http.NewRequest(method, route, bytes.NewReader(body))
+	for header, value := range headers {
+		req.Header.Add(header, value)
 	}
-	// Set the URI for the request
-	req.SetURI(uri)
-	logging.Get().Tracef("URI: %v", color.Blue.Sprint(uri.String()))
+	logging.Get().Tracef("URI: %v", color.Blue.Sprint(route))
 
-	// Set the body for the request (if found)
-	// (empty bodies will be discarded)
-	//
-	// ...For login: this is the url encoded bytes that we prepared beforehand
-	// ...along with the grant_type: password
-	if len(body) > 0 {
-		if len(body) < 1e4 {
-			logging.Get().Tracef("With body: %v\n", color.Cyan.Sprint(string(util.RemovePasswordBytes(body))))
-		} else {
-			logging.Get().Tracef("(With large body, too large to print)\n")
-		}
-		req.SetBody(body)
-	}
+	// // prep the request headers
+	// req.Header.SetMethod(method)
+	req.Header.Set("User-Agent", SkuidUserAgent)
 
-	// prep the request headers
-	req.Header.SetMethod(method)
-	req.Header.Set(fasthttp.HeaderUserAgent, SkuidUserAgent)
-	if headers != nil {
-		for headerName, headerValue := range headers {
-			logging.Get().Tracef("Setting header %v: %v", color.Yellow.Sprint(headerName), color.Green.Sprint(headerValue))
-			req.Header.Set(headerName, headerValue)
-		}
-	}
-
-	logging.Get().Tracef("Header Length: %v", req.Header.Len())
-
-	// prep for the response
-	resp := fasthttp.AcquireResponse()
-	defer fasthttp.ReleaseResponse(resp)
-
-	// perform the request. errors only pop up if there's an issue
-	// with assembly/resources.
+	// // perform the request. errors only pop up if there's an issue
+	// // with assembly/resources.
 	logging.Get().Trace(color.Blue.Sprint("Making Request"))
-	if err = fasthttp.Do(req, resp); err != nil {
+	var resp *http.Response
+	if resp, err = (&http.Client{}).Do(req); err != nil {
 		return
 	}
 
-	// check the validity of the body and grab the access token
-	responseBody := resp.Body()
-	statusCode := resp.StatusCode()
+	// // check the validity of the body and grab the access token
+	var responseBody []byte
+	responseBody, err = ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+	defer resp.Body.Close()
+	statusCode := resp.StatusCode
 
 	httpError := func() error {
 		return errors.Critical("%s:\nStatus Code: %v\nBody: %v\nURI: %v\nHeaders: %v",
 			color.Red.Sprint("ERROR"),
 			color.Yellow.Sprint(statusCode),
 			color.Cyan.Sprint(string(responseBody)),
-			color.Red.Sprint(uri),
+			color.Red.Sprint(route),
 			color.Cyan.Sprint(headers),
 		)
 	}
 
 	switch statusCode {
-	case fasthttp.StatusUnauthorized:
+	case http.StatusUnauthorized:
 		if attempts < MAX_AUTHORIZATION_ATTEMPTS {
-			return FastRequestHelper(route, method, body, headers, attempts+1)
+			return RequestHelper(route, method, body, headers, attempts+1)
 		} else {
 			err = httpError()
 		}
-	case fasthttp.StatusOK:
+	case http.StatusOK:
 		// we're good
 	default:
 		err = httpError()
@@ -180,17 +129,6 @@ func FastRequestHelper(
 	logging.Get().Trace(color.Green.Sprint("Successful Request"))
 
 	response = responseBody
-
-	// don't output something huge
-	if len(response) < 1e3 {
-		// Debug and output the marshalled body
-		if isJson := resp.Header.Peek(fasthttp.HeaderContentType); strings.Contains(string(isJson), JSON_CONTENT_TYPE) {
-			var prettyMarshal interface{}
-			json.Unmarshal(response, &prettyMarshal)
-			pretty, _ := json.MarshalIndent(prettyMarshal, "", " ")
-			logging.Get().Tracef("Pretty Response Body: %v", color.Cyan.Sprint(string(pretty)))
-		}
-	}
 
 	return
 }

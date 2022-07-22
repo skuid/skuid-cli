@@ -2,9 +2,8 @@ package pkg
 
 import (
 	"fmt"
+	"net/http"
 	"net/url"
-
-	"github.com/valyala/fasthttp"
 )
 
 type Authorization struct {
@@ -47,12 +46,12 @@ func GetAccessToken(host, username, password string) (accessToken string, err er
 	}
 
 	var resp AccessTokenResponse
-	if resp, err = FastJsonBodyRequest[AccessTokenResponse](
+	if resp, err = JsonBodyRequest[AccessTokenResponse](
 		host+"/auth/oauth/token",
-		fasthttp.MethodPost,
+		http.MethodPost,
 		body,
 		map[string]string{
-			fasthttp.HeaderContentType: URL_ENCODED_CONTENT_TYPE,
+			HeaderContentType: URL_ENCODED_CONTENT_TYPE,
 		},
 	); err != nil {
 		return
@@ -69,12 +68,12 @@ func GetAuthorizationToken(host, accessToken string) (authToken string, err erro
 	}
 
 	var resp AuthorizationTokenResponse
-	if resp, err = FastJsonBodyRequest[AuthorizationTokenResponse](
+	if resp, err = JsonBodyRequest[AuthorizationTokenResponse](
 		fmt.Sprintf("%v/api/%v/auth/token", host, DEFAULT_API_VERSION),
-		fasthttp.MethodGet,
+		http.MethodGet,
 		[]byte{},
 		map[string]string{
-			fasthttp.HeaderAuthorization: fmt.Sprintf("Bearer %v", string(accessToken)),
+			HeaderAuthorization: fmt.Sprintf("Bearer %v", string(accessToken)),
 		},
 	); err != nil {
 		return

@@ -9,5 +9,5 @@ const (
 
 const (
 	WARDEN = "Skuid Cloud Data Service"
-	PLINY  = "Skuid Metadata Service"
+	PLINY  = "Skuid NLX"
 )

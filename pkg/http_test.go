@@ -2,16 +2,16 @@ package pkg_test
 
 import (
 	"fmt"
+	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/valyala/fasthttp"
 
 	"github.com/skuid/tides/pkg"
 	"github.com/skuid/tides/pkg/util"
 )
 
-func TestFasthttpMethods(t *testing.T) {
+func TestHttpMethods(t *testing.T) {
 	util.SkipIntegrationTest(t)
 	const YES_NO_API = "yesno.wtf/api"
 
@@ -56,9 +56,9 @@ func TestFasthttpMethods(t *testing.T) {
 		},
 	} {
 		t.Run(tc.description, func(subtest *testing.T) {
-			actual, actualError := pkg.FastJsonBodyRequest[YesNoResponse](
+			actual, actualError := pkg.JsonBodyRequest[YesNoResponse](
 				tc.givenHost,
-				fasthttp.MethodGet,
+				http.MethodGet,
 				[]byte{},
 				tc.givenHeaders,
 			)
