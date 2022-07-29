@@ -79,10 +79,12 @@ func UnzipArchive(sourceFileLocation, targetLocation string, pathMap map[string]
 		}
 		defer fileReader.Close()
 
-		if filepath.Ext(path) == ".json" {
-			if fileReader, err = SanitizeZip(fileReader); err != nil {
-				logging.Get().Warnf("Error Sanitizing Zip: %v", err)
-				return
+		if !strings.Contains(path, "files") {
+			if filepath.Ext(path) == ".json" {
+				if fileReader, err = SanitizeZip(fileReader); err != nil {
+					logging.Get().Warnf("Error Sanitizing Zip: %v", err)
+					return
+				}
 			}
 		}
 

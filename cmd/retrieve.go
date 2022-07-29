@@ -122,6 +122,8 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 	fields["directory"] = directory
 	logging.WithFields(fields).Infof("Target Directory is %v", color.Cyan.Sprint(directory))
 
+	pkg.ClearDirectories(directory)
+
 	fields["writeStart"] = time.Now()
 
 	for _, v := range results {
