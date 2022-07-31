@@ -66,6 +66,8 @@ func CreateDirectoryDeep(path string, fileMode os.FileMode) (err error) {
 }
 
 func CopyToFile(fileReader io.ReadCloser, path string) (err error) {
+	logging.Get().Debugf("%v: %v", color.Yellow.Sprint("Creating File"), path)
+
 	var targetFile *os.File
 	if targetFile, err = os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644); err != nil {
 		logging.Get().WithError(err).Warn("unable to open file in copytofile")
