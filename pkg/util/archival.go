@@ -16,8 +16,16 @@ import (
 	"github.com/skuid/tides/pkg/logging"
 )
 
+var (
+	pathMap map[string]bool = make(map[string]bool, 0)
+)
+
+func ResetPathMap() {
+	pathMap = make(map[string]bool)
+}
+
 // Unzips a ZIP archive and recreates the folders and file structure within it locally
-func UnzipArchive(sourceFileLocation, targetLocation string, pathMap map[string]bool, fileCreator FileCreator, directoryCreator DirectoryCreator, existingFileReader FileReader) (err error) {
+func UnzipArchive(sourceFileLocation, targetLocation string, fileCreator FileCreator, directoryCreator DirectoryCreator, existingFileReader FileReader) (err error) {
 	fields := logrus.Fields{
 		"function":           "UnzipArchive",
 		"sourceFileLocation": sourceFileLocation,
@@ -79,7 +87,7 @@ func UnzipArchive(sourceFileLocation, targetLocation string, pathMap map[string]
 		}
 		defer fileReader.Close()
 
-		if !strings.Contains(path, "files") {
+		if !strings.Contains(path, "/files") {
 			if filepath.Ext(path) == ".json" {
 				if fileReader, err = SanitizeZip(fileReader); err != nil {
 					logging.Get().Warnf("Error Sanitizing Zip: %v", err)

@@ -149,6 +149,7 @@ func TestWrite(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.testDescription, func(t *testing.T) {
+			util.ResetPathMap()
 
 			// Create a buffer to write our archive to.
 			buf := new(bytes.Buffer)

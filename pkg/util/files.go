@@ -80,5 +80,7 @@ func CopyToFile(fileReader io.ReadCloser, path string) (err error) {
 		return
 	}
 
+	logging.Get().Tracef("%v: %v", color.Yellow.Sprint("Copied to File"), path)
+
 	return
 }

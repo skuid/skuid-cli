@@ -39,10 +39,6 @@ func WriteResults(targetDirectory string, result WritePayload, copyToFile FileCr
 
 	logging.Get().Tracef("Writing results to %v\n", color.Cyan.Sprint(targetDirFriendly))
 
-	// Store a map of paths that we've already encountered. We'll use this
-	// to determine if we need to modify a file or overwrite it.
-	pathMap := map[string]bool{}
-
 	tmpFileName, err := CreateTemporaryFile(result.PlanName, result.PlanData)
 	if err != nil {
 		logging.Get().WithFields(logrus.Fields{
@@ -58,7 +54,6 @@ func WriteResults(targetDirectory string, result WritePayload, copyToFile FileCr
 	err = UnzipArchive(
 		tmpFileName,
 		targetDirectory,
-		pathMap,
 		copyToFile,
 		createDirectoryDeep,
 		ioutilReadFile,
@@ -68,7 +63,6 @@ func WriteResults(targetDirectory string, result WritePayload, copyToFile FileCr
 		logging.Get().WithFields(logrus.Fields{
 			"fileName":                tmpFileName,
 			"targetDirectoryFriendly": targetDirFriendly,
-			"pathMap":                 pathMap,
 		}).WithError(err).Warn("Error with UnzipArchive")
 		return err
 	}
