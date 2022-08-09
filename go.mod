@@ -8,7 +8,6 @@ require (
 	github.com/charmbracelet/lipgloss v0.4.0
 	github.com/gookit/color v1.5.0
 	github.com/joho/godotenv v1.4.0
-	github.com/json-iterator/go v1.1.12
 	github.com/muesli/reflow v0.3.0
 	github.com/radovskyb/watcher v1.0.7
 	github.com/sirupsen/logrus v1.8.1
@@ -33,8 +32,6 @@ require (
 	github.com/mattn/go-isatty v0.0.14 // indirect
 	github.com/mattn/go-runewidth v0.0.13 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
-	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
-	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/muesli/ansi v0.0.0-20211018074035-2e021307bc4b // indirect
 	github.com/muesli/termenv v0.11.1-0.20220212125758-44cd13922739 // indirect
 	github.com/pelletier/go-toml v1.9.5 // indirect
@@ -51,7 +48,6 @@ require (
 	golang.org/x/term v0.0.0-20220411215600-e5f449aeb171 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
-	gopkg.in/evanphx/json-patch.v5 v5.6.0 // indirect
 	gopkg.in/ini.v1 v1.66.4 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
