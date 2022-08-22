@@ -44,10 +44,9 @@ If you have `curl`, `grep` and `awk` in your environment, you can quickly instal
 
 ```bash
 # macOS:
-curl -Lo skuid $(curl -sL https://api.github.com/repos/skuid/skuid-cli/releases/latest | grep "browser_download_url.*darwin" | awk -F '"' '{print $4}')
-
+curl -Lo skuid https://github.com/skuid/skuid-cli/releases/latest/download/skuid_darwin_amd64
 # Linux:
-# curl -Lo skuid $(curl -sL https://api.github.com/repos/skuid/skuid-cli/releases/latest | grep "browser_download_url.*linux" | awk -F '"' '{print $4}')
+curl -Lo skuid https://github.com/skuid/skuid-cli/releases/latest/download/skuid_linux_amd64
 
 # Give the skuid application the permissions it needs to run
 chmod +x skuid
@@ -82,13 +81,20 @@ To manually install the application, follow these steps:
    chmod +x skuid
    ```
 
-1. Move the application to a folder in your `$PATH` variable, like `/usr/local/bin`, or add the application's folder to the PATH variable:
+1. Ensure the binary is accessible in your `$PATH` variable. This can be done one of two ways
 
-   ```bash
-   mv skuid /usr/local/bin/skuid
-   # or add the below to your shell profile
-   export PATH=$PATH:/path/to/a-folder
-   ```
+   - Move the application to a folder that's already in your `$PATH` variable, like `/usr/local/bin`
+
+     ```bash
+     mv skuid /usr/local/bin/skuid
+     ```
+
+   - Add the application's folder to the PATH variable:
+
+     ```bash
+     # Assuming the `skuid` binary is located in ~/Documents/Skuid
+     export PATH=$PATH:~/Documents/Skuid
+     ```
 
    ```eval_rst
    .. note:: If you choose to update your shell profile you'll need to `source` your shell profile or restart your session for those changes to take effect.
