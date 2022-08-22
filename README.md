@@ -81,7 +81,7 @@ To manually install the application, follow these steps:
    chmod +x skuid
    ```
 
-1. Ensure the binary is accessible in your `$PATH` variable. This can be done one of two ways
+1. Ensure the binary is accessible in your `$PATH` variable. This can be done one of two ways:
 
    - Move the application to a folder that's already in your `$PATH` variable, like `/usr/local/bin`
 
