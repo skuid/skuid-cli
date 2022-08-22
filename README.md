@@ -92,7 +92,10 @@ To manually install the application, follow these steps:
    - Add the application's folder to the PATH variable:
 
      ```bash
-     # Assuming the `skuid` binary is located in ~/Documents/Skuid
+     # This method doesn't require moving the `skuid` binary, which may be not be possible depending on user permissions.
+     # The location of the `skuid` binary isn't important in this use case, but try to store it in a folder it's unlikely to move from.
+
+     # This examle assume the `skuid` binary is located in ~/Documents/Skuid
      export PATH=$PATH:~/Documents/Skuid
      ```
 
