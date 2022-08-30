@@ -11,11 +11,11 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
+	"github.com/skuid/domain"
+	"github.com/skuid/domain/flags"
+	"github.com/skuid/domain/logging"
+	"github.com/skuid/domain/util"
 	"github.com/skuid/tides/cmd/common"
-	"github.com/skuid/tides/pkg"
-	"github.com/skuid/tides/pkg/flags"
-	"github.com/skuid/tides/pkg/logging"
-	"github.com/skuid/tides/pkg/util"
 )
 
 var watchCmd = &cobra.Command{
@@ -52,8 +52,8 @@ func Watch(cmd *cobra.Command, _ []string) (err error) {
 
 	logging.WithFields(fields).Debug("Gathered Credentials")
 
-	var auth *pkg.Authorization
-	if auth, err = pkg.Authorize(host, username, password); err != nil {
+	var auth *domain.Authorization
+	if auth, err = domain.Authorize(host, username, password); err != nil {
 		return
 	}
 
@@ -117,7 +117,7 @@ func Watch(cmd *cobra.Command, _ []string) (err error) {
 				}
 				logging.WithFields(fields).Debug("Detected change to metadata type: " + changedEntity)
 				go func() {
-					if err := pkg.DeployModifiedFiles(auth, targetDir, changedEntity); err != nil {
+					if err := domain.DeployModifiedFiles(auth, targetDir, changedEntity); err != nil {
 						w.Error <- err
 					}
 				}()

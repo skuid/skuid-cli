@@ -3,8 +3,8 @@ package common
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/skuid/tides/pkg/flags"
-	"github.com/skuid/tides/pkg/logging"
+	"github.com/skuid/domain/flags"
+	"github.com/skuid/domain/logging"
 )
 
 // PrerunValidation does generic validation for a function to make sure it has

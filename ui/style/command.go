@@ -7,8 +7,8 @@ import (
 	"github.com/muesli/reflow/indent"
 	"github.com/spf13/cobra"
 
-	"github.com/skuid/tides/pkg/constants"
-	"github.com/skuid/tides/pkg/util"
+	"github.com/skuid/domain/constants"
+	"github.com/skuid/domain/util"
 )
 
 func CommandText(cmd *cobra.Command) string {

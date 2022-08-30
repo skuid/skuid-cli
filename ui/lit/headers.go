@@ -3,7 +3,7 @@ package lit
 import (
 	"fmt"
 
-	"github.com/skuid/tides/pkg/constants"
+	"github.com/skuid/domain/constants"
 	"github.com/skuid/tides/ui/style"
 )
 

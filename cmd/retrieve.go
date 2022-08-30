@@ -6,13 +6,13 @@ import (
 	// jsoniter. Fork of github.com/json-iterator/go
 	"github.com/gookit/color"
 	"github.com/sirupsen/logrus"
+	"github.com/skuid/domain"
+	"github.com/skuid/domain/flags"
+	"github.com/skuid/domain/logging"
+	"github.com/skuid/domain/util"
 	"github.com/spf13/cobra"
 
 	"github.com/skuid/tides/cmd/common"
-	"github.com/skuid/tides/pkg"
-	"github.com/skuid/tides/pkg/flags"
-	"github.com/skuid/tides/pkg/logging"
-	"github.com/skuid/tides/pkg/util"
 )
 
 // retrieveCmd represents the retrieve command
@@ -51,8 +51,8 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 	fields["password"] = password != ""
 	logging.WithFields(fields).Debug("Credentials gathered")
 
-	var auth *pkg.Authorization
-	if auth, err = pkg.Authorize(host, username, password); err != nil {
+	var auth *domain.Authorization
+	if auth, err = domain.Authorize(host, username, password); err != nil {
 		return
 	}
 
@@ -61,7 +61,7 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 
 	// we want the filter nil because it will be discarded without
 	// initialization
-	var filter *pkg.NlxPlanFilter = nil
+	var filter *domain.NlxPlanFilter = nil
 
 	// initialize the filter dynamically based on
 	// optional filter arguments. This lets us
@@ -70,7 +70,7 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 	initFilter := func() {
 		logging.WithFields(fields).Debug("Using filter")
 		if filter == nil {
-			filter = &pkg.NlxPlanFilter{}
+			filter = &domain.NlxPlanFilter{}
 		}
 	}
 
@@ -96,15 +96,15 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 
 	logging.WithFields(fields).Info("Getting Retrieve Plan")
 
-	var plans pkg.NlxPlanPayload
-	if _, plans, err = pkg.GetRetrievePlan(auth, filter); err != nil {
+	var plans domain.NlxPlanPayload
+	if _, plans, err = domain.GetRetrievePlan(auth, filter); err != nil {
 		return
 	}
 
 	logging.WithFields(fields).Info("Got Retrieve Plan")
 
-	var results []pkg.NlxRetrievalResult
-	if _, results, err = pkg.ExecuteRetrieval(auth, plans); err != nil {
+	var results []domain.NlxRetrievalResult
+	if _, results, err = domain.ExecuteRetrieval(auth, plans); err != nil {
 		return
 	}
 
@@ -122,7 +122,7 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 	fields["directory"] = directory
 	logging.WithFields(fields).Infof("Target Directory is %v", color.Cyan.Sprint(directory))
 
-	pkg.ClearDirectories(directory)
+	domain.ClearDirectories(directory)
 
 	fields["writeStart"] = time.Now()
 

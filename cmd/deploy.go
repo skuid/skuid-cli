@@ -5,12 +5,12 @@ import (
 
 	"github.com/gookit/color"
 	"github.com/sirupsen/logrus"
+	"github.com/skuid/domain"
+	"github.com/skuid/domain/flags"
+	"github.com/skuid/domain/logging"
 	"github.com/spf13/cobra"
 
 	"github.com/skuid/tides/cmd/common"
-	"github.com/skuid/tides/pkg"
-	"github.com/skuid/tides/pkg/flags"
-	"github.com/skuid/tides/pkg/logging"
 )
 
 var deployCmd = &cobra.Command{
@@ -51,8 +51,8 @@ func Deploy(cmd *cobra.Command, _ []string) (err error) {
 	logging.WithFields(fields).Debug("Gathered credentials")
 
 	// auth
-	var auth *pkg.Authorization
-	if auth, err = pkg.Authorize(host, username, password); err != nil {
+	var auth *domain.Authorization
+	if auth, err = domain.Authorize(host, username, password); err != nil {
 		return
 	}
 
@@ -61,7 +61,7 @@ func Deploy(cmd *cobra.Command, _ []string) (err error) {
 
 	// we want the filter nil because it will be discarded without
 	// initialization
-	var filter *pkg.NlxPlanFilter = nil
+	var filter *domain.NlxPlanFilter = nil
 
 	// initialize the filter dynamically based on
 	// optional filter arguments. This lets us
@@ -69,7 +69,7 @@ func Deploy(cmd *cobra.Command, _ []string) (err error) {
 	// are required to be build
 	initFilter := func() {
 		if filter == nil {
-			filter = &pkg.NlxPlanFilter{}
+			filter = &domain.NlxPlanFilter{}
 		}
 	}
 
@@ -104,7 +104,7 @@ func Deploy(cmd *cobra.Command, _ []string) (err error) {
 	logging.WithFields(fields).Info("Getting Deployment Plan")
 
 	var deploymentPlan []byte
-	if deploymentPlan, err = pkg.Archive(targetDirectory, nil); err != nil {
+	if deploymentPlan, err = domain.Archive(targetDirectory, nil); err != nil {
 		return
 	}
 
@@ -112,8 +112,8 @@ func Deploy(cmd *cobra.Command, _ []string) (err error) {
 	logging.WithFields(fields).Infof("Got Deployment Plan")
 
 	// get the plan
-	var plans pkg.NlxDynamicPlanMap
-	if _, plans, err = pkg.PrepareDeployment(auth, deploymentPlan, filter); err != nil {
+	var plans domain.NlxDynamicPlanMap
+	if _, plans, err = domain.PrepareDeployment(auth, deploymentPlan, filter); err != nil {
 		logging.Get().Warnf("Unable to prepare deployment: %v", err)
 		return
 	}
@@ -123,8 +123,8 @@ func Deploy(cmd *cobra.Command, _ []string) (err error) {
 
 	logging.Get().Info("Executing Deployment Plan")
 
-	var results []pkg.NlxDeploymentResult
-	if _, results, err = pkg.ExecuteDeployPlan(auth, plans, targetDirectory); err != nil {
+	var results []domain.NlxDeploymentResult
+	if _, results, err = domain.ExecuteDeployPlan(auth, plans, targetDirectory); err != nil {
 		logging.Get().Errorf("Unable to execute deployment: %v", color.Red.Sprint(err))
 		return
 	}

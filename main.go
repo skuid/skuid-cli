@@ -5,9 +5,9 @@ import (
 
 	"github.com/gookit/color"
 	"github.com/joho/godotenv"
+	"github.com/skuid/domain/logging"
 
 	"github.com/skuid/tides/cmd"
-	"github.com/skuid/tides/pkg/logging"
 )
 
 func main() {
