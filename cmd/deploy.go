@@ -1,137 +1,141 @@
 package cmd
 
 import (
-	"bytes"
-	"encoding/json"
-	"fmt"
-	"io"
-	"log"
-	"os"
-	"path/filepath"
 	"time"
 
-	"github.com/skuid/skuid-cli/platform"
-	"github.com/skuid/skuid-cli/text"
-	"github.com/skuid/skuid-cli/types"
-	"github.com/skuid/skuid-cli/ziputils"
+	"github.com/gookit/color"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+
+	"github.com/skuid/tides/cmd/common"
+	"github.com/skuid/tides/pkg"
+	"github.com/skuid/tides/pkg/flags"
+	"github.com/skuid/tides/pkg/logging"
 )
 
 var deployCmd = &cobra.Command{
-	Use:   "deploy",
-	Short: "Deploy local Skuid metadata to a Skuid Platform Site.",
-	Long:  "Deploy Skuid metadata stored within a local file system directory to a Skuid Platform Site.",
-	Run: func(cmd *cobra.Command, args []string) {
-
-		fmt.Println(text.RunCommand("Deploy Metadata"))
-
-		api, err := platform.Login(
-			host,
-			username,
-			password,
-			apiVersion,
-			metadataServiceProxy,
-			dataServiceProxy,
-			verbose,
-		)
-
-		if err != nil {
-			fmt.Println(text.PrettyError("Error logging in to Skuid site", err))
-			os.Exit(1)
-		}
-
-		deployStart := time.Now()
-
-		var currDir string
-
-		currentDirectory, err := os.Getwd()
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		defer func() {
-			err := os.Chdir(currentDirectory)
-			if err != nil {
-				log.Fatal(err)
-			}
-		}()
-
-		// If target directory is provided,
-		// switch to that target directory and later switch back.
-		if targetDir != "" {
-			err := os.Chdir(targetDir)
-			if err != nil {
-				log.Fatal(err)
-			}
-		}
-
-		dotDir := "."
-		currDir, err = filepath.Abs(filepath.Dir(dotDir))
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		if verbose {
-			fmt.Println("Deploying site from", currDir)
-		}
-
-		// Create a buffer to write our archive to.
-		bufPlan := new(bytes.Buffer)
-		err = ziputils.Archive(".", bufPlan, nil)
-		if err != nil {
-			fmt.Println(text.PrettyError("Error creating deployment ZIP archive", err))
-			os.Exit(1)
-		}
-
-		var deployPlan io.Reader
-		mimeType := "application/zip"
-		if appName != "" {
-			filter := types.DeployFilter{
-				AppName: appName,
-				Plan:    bufPlan.Bytes(),
-			}
-			deployBytes, err := json.Marshal(filter)
-			if err != nil {
-				fmt.Println(text.PrettyError("Error creating deployment plan payload", err))
-				os.Exit(1)
-			}
-			deployPlan = bytes.NewReader(deployBytes)
-			mimeType = "application/json"
-		} else {
-			deployPlan = bufPlan
-		}
-
-		plan, err := api.GetDeployPlan(deployPlan, mimeType, verbose)
-		if err != nil {
-			fmt.Println(text.PrettyError("Error getting deploy plan", err))
-			os.Exit(1)
-		}
-
-		for _, service := range plan {
-			if service.Warnings != nil {
-				for _, warning := range service.Warnings {
-					fmt.Println(warning)
-				}
-			}
-		}
-
-		_, err = api.ExecuteDeployPlan(plan, dotDir, verbose)
-		if err != nil {
-			fmt.Println(text.PrettyError("Error executing deploy plan", err))
-			os.Exit(1)
-		}
-
-		successMessage := "Successfully deployed metadata to Skuid Site"
-
-		if verbose {
-			fmt.Println(text.SuccessWithTime(successMessage, deployStart))
-		} else {
-			fmt.Println(successMessage + ".")
-		}
-
-	},
+	SilenceErrors:     true,
+	SilenceUsage:      true,
+	Use:               "deploy",
+	Short:             "Deploy local Skuid metadata to a Skuid NLX Site",
+	Long:              "Deploy Skuid metadata stored within a local file system directory to a Skuid NLX Site",
+	PersistentPreRunE: common.PrerunValidation,
+	RunE:              Deploy,
 }
 
 func init() {
-	RootCmd.AddCommand(deployCmd)
+	TidesCmd.AddCommand(deployCmd)
+	flags.AddFlags(deployCmd, flags.NLXLoginFlags...)
+	flags.AddFlags(deployCmd, flags.Directory, flags.AppName, flags.ApiVersion)
+	flags.AddFlags(deployCmd, flags.Pages)
+}
+
+func Deploy(cmd *cobra.Command, _ []string) (err error) {
+	fields := make(logrus.Fields)
+	fields["start"] = time.Now()
+	fields["process"] = "deploy"
+	logging.WithFields(fields).Info(color.Green.Sprint("Starting Deploy"))
+
+	// get required authentication arguments
+	var host, username, password string
+	if host, err = cmd.Flags().GetString(flags.PlinyHost.Name); err != nil {
+		return
+	} else if username, err = cmd.Flags().GetString(flags.Username.Name); err != nil {
+		return
+	} else if password, err = cmd.Flags().GetString(flags.Password.Name); err != nil {
+		return
+	}
+
+	fields["host"] = host
+	fields["username"] = username
+	logging.WithFields(fields).Debug("Gathered credentials")
+
+	// auth
+	var auth *pkg.Authorization
+	if auth, err = pkg.Authorize(host, username, password); err != nil {
+		return
+	}
+
+	fields["authorized"] = true
+	logging.WithFields(fields).Info("Authentication Successful")
+
+	// we want the filter nil because it will be discarded without
+	// initialization
+	var filter *pkg.NlxPlanFilter = nil
+
+	// initialize the filter dynamically based on
+	// optional filter arguments. This lets us
+	// expand the pattern down the road as more things
+	// are required to be build
+	initFilter := func() {
+		if filter == nil {
+			filter = &pkg.NlxPlanFilter{}
+		}
+	}
+
+	// filter by app name
+	var appName string
+	if appName, err = cmd.Flags().GetString(flags.AppName.Name); err != nil {
+		return
+	} else if appName != "" {
+		initFilter()
+		fields["appName"] = appName
+		filter.AppName = appName
+	}
+
+	// filter by page name
+	var pageNames []string
+	if pageNames, err = cmd.Flags().GetStringArray(flags.Pages.Name); err != nil {
+		return
+	} else if len(pageNames) > 0 {
+		initFilter()
+		fields["pages"] = pageNames
+		filter.PageNames = pageNames
+	}
+
+	// get directory argument
+	var targetDirectory string
+	if targetDirectory, err = cmd.Flags().GetString(flags.Directory.Name); err != nil {
+		return
+	} else if targetDirectory != "" {
+		fields["targetDirectory"] = targetDirectory
+	}
+
+	logging.WithFields(fields).Info("Getting Deployment Plan")
+
+	var deploymentPlan []byte
+	if deploymentPlan, err = pkg.Archive(targetDirectory, nil); err != nil {
+		return
+	}
+
+	fields["deploymentBytes"] = len(deploymentPlan)
+	logging.WithFields(fields).Infof("Got Deployment Plan")
+
+	// get the plan
+	var plans pkg.NlxDynamicPlanMap
+	if _, plans, err = pkg.PrepareDeployment(auth, deploymentPlan, filter); err != nil {
+		logging.Get().Warnf("Unable to prepare deployment: %v", err)
+		return
+	}
+
+	fields["plans"] = len(plans)
+	logging.WithFields(fields)
+
+	logging.Get().Info("Executing Deployment Plan")
+
+	var results []pkg.NlxDeploymentResult
+	if _, results, err = pkg.ExecuteDeployPlan(auth, plans, targetDirectory); err != nil {
+		logging.Get().Errorf("Unable to execute deployment: %v", color.Red.Sprint(err))
+		return
+	}
+
+	fields["results"] = len(results)
+
+	for _, result := range results {
+		logging.Get().Tracef("result: %v", result.Url)
+	}
+
+	logging.Get().Info(color.Green.Sprint("Finished Deploy"))
+
+	return
 }
