@@ -1,453 +1,153 @@
 package cmd
 
 import (
-	"archive/zip"
-	"bytes"
-	"encoding/json"
-	"fmt"
-	"io"
-	"io/ioutil"
-	"net/http"
-	"os"
-	"path/filepath"
-	"strings"
 	"time"
 
-	jsonpatch "github.com/evanphx/json-patch/v5"
-	jsoniter "github.com/json-iterator/go"
-	"github.com/skuid/skuid-cli/platform"
-	"github.com/skuid/skuid-cli/text"
-	"github.com/skuid/skuid-cli/types"
+	// jsoniter. Fork of github.com/json-iterator/go
+	"github.com/gookit/color"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+
+	"github.com/skuid/tides/cmd/common"
+	"github.com/skuid/tides/pkg"
+	"github.com/skuid/tides/pkg/flags"
+	"github.com/skuid/tides/pkg/logging"
+	"github.com/skuid/tides/pkg/util"
 )
 
-func JSONRemarshal(bytes []byte) ([]byte, error) {
-	var ifce interface{}
-	var json = jsoniter.ConfigCompatibleWithStandardLibrary
-	err := json.Unmarshal(bytes, &ifce)
-	if err != nil {
-		return nil, err
-	}
-	return json.Marshal(ifce)
-}
-
 // retrieveCmd represents the retrieve command
-var retrieveCmd = &cobra.Command{
-	Use:   "retrieve",
-	Short: "Retrieve Skuid metadata from a Site into a local directory.",
-	Long:  "Retrieve Skuid metadata from a Skuid Platform Site and output it into a local directory.",
-	Run: func(cmd *cobra.Command, args []string) {
-
-		fmt.Println(text.RunCommand("Retrieve Metadata"))
-
-		api, err := platform.Login(
-			host,
-			username,
-			password,
-			apiVersion,
-			metadataServiceProxy,
-			dataServiceProxy,
-			verbose,
-		)
-
-		retrieveStart := time.Now()
-
-		if err != nil {
-			fmt.Println(text.PrettyError("Error logging in to Skuid site", err))
-			os.Exit(1)
-		}
-
-		plan, err := getRetrievePlan(api, appName)
-		if err != nil {
-			fmt.Println(text.PrettyError("Error getting retrieve plan", err))
-			os.Exit(1)
-		}
-
-		results, err := executeRetrievePlan(api, plan)
-		if err != nil {
-			fmt.Println(text.PrettyError("Error executing retrieve plan", err))
-			os.Exit(1)
-		}
-
-		err = writeResultsToDisk(results, writeNewFile, createDirectory, readExistingFile)
-		if err != nil {
-			fmt.Println(text.PrettyError("Error writing results to disk", err))
-			os.Exit(1)
-		}
-
-		successMessage := "Successfully retrieved metadata from Skuid Site"
-		if verbose {
-			fmt.Println(text.SuccessWithTime(successMessage, retrieveStart))
-		} else {
-			fmt.Println(successMessage + ".")
-		}
-	},
-}
-
-func getFriendlyURL(targetDir string) (string, error) {
-	if targetDir == "" {
-		friendlyResult, err := filepath.Abs(filepath.Dir(os.Args[0]))
-		if err != nil {
-			return "", err
-		}
-		return friendlyResult, nil
+var (
+	retrieveCmd = &cobra.Command{
+		SilenceUsage:      true,
+		SilenceErrors:     true, // we do not want to show users raw errors
+		Example:           "retrieve -u myUser -p myPassword --host my-site.skuidsite.com --dir ./retrieval",
+		Use:               "retrieve",
+		Short:             "Retrieve Skuid metadata from an Skuid NLX Site into a local directory",
+		Long:              "Retrieve Skuid metadata from a Skuid NLX Site and output it into a local directory",
+		PersistentPreRunE: common.PrerunValidation,
+		RunE:              Retrieve,
 	}
-	return targetDir, nil
+)
 
-}
+func Retrieve(cmd *cobra.Command, _ []string) (err error) {
+	fields := make(logrus.Fields)
+	start := time.Now()
+	fields["process"] = "retrieve"
+	fields["start"] = start
 
-func writeResultsToDisk(results []*io.ReadCloser, fileCreator FileCreator, directoryCreator DirectoryCreator, existingFileReader FileReader) error {
-
-	// unzip the archive into the output directory
-	targetDirFriendly, err := getFriendlyURL(targetDir)
-	if err != nil {
-		return err
+	logging.Get().Info(color.Green.Sprint("Starting Retrieve"))
+	// get required arguments
+	var host, username, password string
+	if host, err = cmd.Flags().GetString(flags.PlinyHost.Name); err != nil {
+		return
+	} else if username, err = cmd.Flags().GetString(flags.Username.Name); err != nil {
+		return
+	} else if password, err = cmd.Flags().GetString(flags.Password.Name); err != nil {
+		return
 	}
 
-	if verbose {
-		fmt.Println(text.VerboseSection("Writing results to " + targetDirFriendly))
+	fields["host"] = host
+	fields["username"] = username
+	fields["password"] = password != ""
+	logging.WithFields(fields).Debug("Credentials gathered")
+
+	var auth *pkg.Authorization
+	if auth, err = pkg.Authorize(host, username, password); err != nil {
+		return
 	}
 
-	// Remove all of our metadata directories so we get a clean slate.
-	// We may want to improve this later when we do partial retrieves so that
-	// we don't clear out the whole directory every time we retrieve.
-	for _, dirName := range types.GetMetadataTypeDirNames() {
-		dirPath := filepath.Join(targetDir, dirName)
-		if verbose {
-			fmt.Println("Deleting Directory: " + dirPath)
-		}
-		os.RemoveAll(dirPath)
-	}
+	fields["authorized"] = true
+	logging.WithFields(fields).Info("Authentication Successful")
 
-	// Store a map of paths that we've already encountered. We'll use this
-	// to determine if we need to modify a file or overwrite it.
-	pathMap := map[string]bool{}
+	// we want the filter nil because it will be discarded without
+	// initialization
+	var filter *pkg.NlxPlanFilter = nil
 
-	for _, result := range results {
-
-		tmpFileName, err := createTemporaryFile(result)
-		if err != nil {
-			return err
-		}
-		// schedule cleanup of temp file
-		defer os.Remove(tmpFileName)
-
-		if nozip {
-			err = moveTempFile(tmpFileName, targetDir, pathMap, fileCreator, directoryCreator, existingFileReader)
-			if err != nil {
-				return err
-			}
-			continue
-		}
-
-		// unzip the contents of our temp zip file
-		err = unzip(tmpFileName, targetDir, pathMap, fileCreator, directoryCreator, existingFileReader)
-		if err != nil {
-			return err
+	// initialize the filter dynamically based on
+	// optional filter arguments. This lets us
+	// expand the pattern down the road as more things
+	// are required to be build
+	initFilter := func() {
+		logging.WithFields(fields).Debug("Using filter")
+		if filter == nil {
+			filter = &pkg.NlxPlanFilter{}
 		}
 	}
 
-	fmt.Printf("Results written to %s\n", targetDirFriendly)
-
-	return nil
-}
-
-func createTemporaryFile(data *io.ReadCloser) (name string, err error) {
-	tmpfile, err := ioutil.TempFile("", "skuid")
-	if err != nil {
-		return "", err
-	}
-	defer (*data).Close()
-	// write to our new file
-	if _, err := io.Copy(tmpfile, *data); err != nil {
-		return "", err
+	// filter by app name
+	var appName string
+	if appName, err = cmd.Flags().GetString(flags.AppName.Name); err != nil {
+		return
+	} else if appName != "" {
+		initFilter()
+		fields["appName"] = appName
+		filter.AppName = appName
 	}
 
-	return tmpfile.Name(), nil
-}
-
-func moveTempFile(sourceFileLocation, targetLocation string, pathMap map[string]bool, fileCreator FileCreator, directoryCreator DirectoryCreator, existingFileReader FileReader) error {
-	// If we have a non-empty target directory, ensure it exists
-	if targetLocation != "" {
-		if err := directoryCreator(targetLocation, 0755); err != nil {
-			return err
-		}
-	}
-	fi, err := os.Open(sourceFileLocation)
-	if err != nil {
-		return err
-	}
-	defer fi.Close()
-	fstat, err := fi.Stat()
-	if err != nil {
-		return err
-	}
-	fileReader := ioutil.NopCloser(fi)
-
-	path := filepath.Join(targetLocation, filepath.FromSlash(fi.Name()))
-	_, fileAlreadyWritten := pathMap[path]
-	if !fileAlreadyWritten {
-		pathMap[path] = true
-	}
-	if fstat.IsDir() {
-		return directoryCreator(path, fstat.Mode())
-	}
-	if fileAlreadyWritten {
-		if verbose {
-			fmt.Println("Augmenting existing file with more data: " + fi.Name())
-		}
-		fileReader, err = combineJSONFile(fileReader, existingFileReader, path)
-		if err != nil {
-			return err
-		}
-	}
-	if verbose {
-		fmt.Println("Creating file: " + fi.Name())
-	}
-	err = fileCreator(fileReader, path)
-	if err != nil {
-		return err
+	// filter by page name
+	var pageNames []string
+	if pageNames, err = cmd.Flags().GetStringArray(flags.Pages.Name); err != nil {
+		return
+	} else if len(pageNames) > 0 {
+		initFilter()
+		fields["pageNames"] = pageNames
+		filter.PageNames = pageNames
 	}
 
-	return nil
-}
+	logging.WithFields(fields).Info("Getting Retrieve Plan")
 
-// Unzips a ZIP archive and recreates the folders and file structure within it locally
-func unzip(sourceFileLocation, targetLocation string, pathMap map[string]bool, fileCreator FileCreator, directoryCreator DirectoryCreator, existingFileReader FileReader) error {
-
-	reader, err := zip.OpenReader(sourceFileLocation)
-	if err != nil {
-		return err
+	var plans pkg.NlxPlanPayload
+	if _, plans, err = pkg.GetRetrievePlan(auth, filter); err != nil {
+		return
 	}
 
-	// If we have a non-empty target directory, ensure it exists
-	if targetLocation != "" {
-		if err := directoryCreator(targetLocation, 0755); err != nil {
-			return err
+	logging.WithFields(fields).Info("Got Retrieve Plan")
+
+	var results []pkg.NlxRetrievalResult
+	if _, results, err = pkg.ExecuteRetrieval(auth, plans); err != nil {
+		return
+	}
+
+	fields["results"] = len(results)
+	fields["finished"] = time.Now()
+	fields["retrievalDuration"] = time.Since(start)
+
+	logging.WithFields(fields).Debugf("Received %v Results", color.Green.Sprint(len(results)))
+
+	var directory string
+	if directory, err = cmd.Flags().GetString(flags.Directory.Name); err != nil {
+		return
+	}
+
+	fields["directory"] = directory
+	logging.WithFields(fields).Infof("Target Directory is %v", color.Cyan.Sprint(directory))
+
+	pkg.ClearDirectories(directory)
+
+	fields["writeStart"] = time.Now()
+
+	for _, v := range results {
+		if err = util.WriteResultsToDisk(
+			directory,
+			util.WritePayload{
+				PlanName: v.PlanName,
+				PlanData: v.Data,
+			},
+		); err != nil {
+			return
 		}
 	}
 
-	for _, file := range reader.File {
-		path := filepath.Join(targetLocation, filepath.FromSlash(file.Name))
-		// Check to see if we've already written to this file in this retrieve
-		_, fileAlreadyWritten := pathMap[path]
-		if !fileAlreadyWritten {
-			pathMap[path] = true
-		}
-		err := readFileFromZipAndWriteToFilesystem(file, path, fileAlreadyWritten, fileCreator, directoryCreator, existingFileReader)
-		if err != nil {
-			return err
-		}
-	}
+	logging.Get().Infof("Finished Writing to %v", color.Cyan.Sprint(directory))
+	logging.WithFields(fields).Info(color.Green.Sprint("Finished Retrieve"))
 
-	return nil
-}
-
-func readFileFromZipAndWriteToFilesystem(file *zip.File, fullPath string, fileAlreadyWritten bool, fileCreator FileCreator, directoryCreator DirectoryCreator, existingFileReader FileReader) error {
-
-	// If this file name contains a /, make sure that we create the directory it belongs in
-	if pathParts := strings.Split(fullPath, string(filepath.Separator)); len(pathParts) > 0 {
-		// Remove the actual file name from the slice,
-		// i.e. pages/MyAwesomePage.xml ---> pages
-		pathParts = pathParts[:len(pathParts)-1]
-		// and then make dirs for all paths up to that point, i.e. pages, apps
-		intermediatePath := filepath.Join(strings.Join(pathParts[:], string(filepath.Separator)))
-		if intermediatePath != "" {
-			err := directoryCreator(intermediatePath, 0755)
-			if err != nil {
-				return err
-			}
-		} else {
-			// If we don't have an intermediate path, skip out.
-			// Currently Skuid CLI does not create any files in the base directory
-			return nil
-		}
-	}
-
-	if file.FileInfo().IsDir() {
-		return directoryCreator(fullPath, file.Mode())
-	}
-
-	fileReader, err := file.Open()
-	if err != nil {
-		return err
-	}
-	defer fileReader.Close()
-
-	if fileAlreadyWritten {
-		if verbose {
-			fmt.Println("Augmenting existing file with more data: " + file.Name)
-		}
-		fileReader, err = combineJSONFile(fileReader, existingFileReader, fullPath)
-		if err != nil {
-			return err
-		}
-
-	}
-	if verbose {
-		fmt.Println("Creating file: " + file.Name)
-	}
-	err = fileCreator(fileReader, fullPath)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func createDirectory(path string, fileMode os.FileMode) error {
-	if _, err := os.Stat(path); err != nil {
-		if verbose {
-			fmt.Println("Creating intermediate directory: " + path)
-		}
-		return os.MkdirAll(path, fileMode)
-	}
-	return nil
-}
-
-type FileCreator func(fileReader io.ReadCloser, path string) error
-type DirectoryCreator func(path string, fileMode os.FileMode) error
-type FileReader func(path string) ([]byte, error)
-
-func writeNewFile(fileReader io.ReadCloser, path string) error {
-	targetFile, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
-	if err != nil {
-		return err
-	}
-	defer targetFile.Close()
-	if _, err := io.Copy(targetFile, fileReader); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func readExistingFile(path string) ([]byte, error) {
-	return ioutil.ReadFile(path)
-}
-
-func combineJSONFile(newFileReader io.ReadCloser, existingFileReader FileReader, path string) (io.ReadCloser, error) {
-	existingBytes, err := existingFileReader(path)
-	if err != nil {
-		return nil, err
-	}
-	newBytes, err := ioutil.ReadAll(newFileReader)
-	if err != nil {
-		return nil, err
-	}
-
-	combined, err := jsonpatch.MergePatch(existingBytes, newBytes)
-	if err != nil {
-		return nil, err
-	}
-
-	// remarshal to sort keys
-	sorted, err := JSONRemarshal(combined)
-	if err != nil {
-		return nil, err
-	}
-	var indented bytes.Buffer
-	err = json.Indent(&indented, sorted, "", "\t")
-	if err != nil {
-		return nil, err
-	}
-
-	return ioutil.NopCloser(bytes.NewReader(indented.Bytes())), nil
-}
-
-func getRetrievePlan(api *platform.RestApi, appName string) (map[string]types.Plan, error) {
-	if verbose {
-		fmt.Println(text.VerboseSection("Getting Retrieve Plan"))
-	}
-	var postBody io.Reader
-	if appName != "" {
-		retFilter, err := json.Marshal(types.RetrieveFilter{
-			AppName: appName,
-		})
-		if err != nil {
-			return nil, err
-		}
-		postBody = bytes.NewReader(retFilter)
-	}
-
-	planStart := time.Now()
-	// Get a retrieve plan
-	planResult, err := api.Connection.MakeRequest(
-		http.MethodPost,
-		"/metadata/retrieve/plan",
-		postBody,
-		"application/json",
-	)
-
-	if err != nil {
-		return nil, err
-	}
-
-	if verbose {
-		fmt.Println(text.SuccessWithTime("Success Getting Retrieve Plan", planStart))
-	}
-
-	defer (*planResult).Close()
-
-	var plans map[string]types.Plan
-	if err := json.NewDecoder(*planResult).Decode(&plans); err != nil {
-		return nil, err
-	}
-	return plans, nil
-}
-
-func executeRetrievePlan(api *platform.RestApi, plans map[string]types.Plan) ([]*io.ReadCloser, error) {
-	if verbose {
-		fmt.Println(text.VerboseSection("Executing Retrieve Plan"))
-	}
-	planResults := []*io.ReadCloser{}
-	for _, plan := range plans {
-		metadataBytes, err := json.Marshal(types.RetrieveRequest{
-			Metadata: plan.Metadata,
-			DoZip:    !nozip,
-		})
-		if err != nil {
-			return nil, err
-		}
-		retrieveStart := time.Now()
-		if plan.Host == "" {
-			if verbose {
-				fmt.Println(fmt.Sprintf("Making Retrieve Request: URL: [%s] Type: [%s]", plan.URL, plan.Type))
-			}
-			planResult, err := api.Connection.MakeRequest(
-				http.MethodPost,
-				plan.URL,
-				bytes.NewReader(metadataBytes),
-				"application/json",
-			)
-			if err != nil {
-				return nil, err
-			}
-			planResults = append(planResults, planResult)
-		} else {
-			url := fmt.Sprintf("%s:%s/api/v2%s", plan.Host, plan.Port, plan.URL)
-			if verbose {
-				fmt.Println(fmt.Sprintf("Making Retrieve Request: URL: [%s] Type: [%s]", url, plan.Type))
-			}
-			planResult, err := api.Connection.MakeJWTRequest(
-				http.MethodPost,
-				url,
-				bytes.NewReader(metadataBytes),
-				"application/json",
-			)
-			if err != nil {
-				return nil, err
-			}
-			planResults = append(planResults, planResult)
-		}
-
-		if verbose {
-			fmt.Println(text.SuccessWithTime("Success Retrieving from Source", retrieveStart))
-		}
-	}
-	return planResults, nil
+	return
 }
 
 func init() {
-	RootCmd.AddCommand(retrieveCmd)
+	TidesCmd.AddCommand(retrieveCmd)
+
+	flags.AddFlags(retrieveCmd, flags.NLXLoginFlags...)
+	flags.AddFlags(retrieveCmd, flags.Directory, flags.AppName, flags.ApiVersion)
+	flags.AddFlags(retrieveCmd, flags.Pages)
 }

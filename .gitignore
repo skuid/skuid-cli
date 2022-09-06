@@ -2,9 +2,23 @@ skuidpages
 .env
 .envrc
 skuid
+tides
 !vendor/github.com/skuid
 skuid-cli
 skuid_darwin_amd64
 skuid_linux_amd64
 skuid_windows_amd64.exe
 .idea
+.scripts
+.test*
+# all test environment files lol
+**/**/.testenv
+.coverage
+**/**/.retrieve
+**/**/.deploy
+**/**/_retrieve
+**/**/_deploy
+logs
+.logs
+**/**/*.log
+work/
