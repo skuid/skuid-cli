@@ -1,4 +1,4 @@
-# Skuid Tides 
+# Skuid Tides
 
 ## Command-Line Application
 
