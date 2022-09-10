@@ -8,3 +8,8 @@ skuid_darwin_amd64
 skuid_linux_amd64
 skuid_windows_amd64.exe
 .idea
+tides
+tides_darwin_amd64
+tides_linux_amd64
+tides_windows_amd64.exe
+*.log
