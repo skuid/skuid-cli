@@ -9,23 +9,20 @@ import (
 
 	"github.com/radovskyb/watcher"
 	"github.com/sirupsen/logrus"
-	"github.com/spf13/cobra"
-
 	"github.com/skuid/domain"
 	"github.com/skuid/domain/flags"
 	"github.com/skuid/domain/logging"
 	"github.com/skuid/domain/util"
-	"github.com/skuid/tides/cmd/common"
+	"github.com/spf13/cobra"
 )
 
 var watchCmd = &cobra.Command{
-	SilenceErrors:     true,
-	SilenceUsage:      true,
-	Use:               "watch",
-	Short:             "Watch for changes to local Skuid metadata, and deploy changes to a Skuid NLX Site",
-	Long:              "Watches for changes to local Skuid metadata on your file system, and automatically deploys the changed files to a Skuid NLX Site",
-	PersistentPreRunE: common.PrerunValidation,
-	RunE:              Watch,
+	SilenceErrors: true,
+	SilenceUsage:  true,
+	Use:           "watch",
+	Short:         "Watch for changes to local Skuid metadata, and deploy changes to a Skuid NLX Site",
+	Long:          "Watches for changes to local Skuid metadata on your file system, and automatically deploys the changed files to a Skuid NLX Site",
+	RunE:          Watch,
 }
 
 func init() {

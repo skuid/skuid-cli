@@ -11,21 +11,18 @@ import (
 	"github.com/skuid/domain/logging"
 	"github.com/skuid/domain/util"
 	"github.com/spf13/cobra"
-
-	"github.com/skuid/tides/cmd/common"
 )
 
 // retrieveCmd represents the retrieve command
 var (
 	retrieveCmd = &cobra.Command{
-		SilenceUsage:      true,
-		SilenceErrors:     true, // we do not want to show users raw errors
-		Example:           "retrieve -u myUser -p myPassword --host my-site.skuidsite.com --dir ./retrieval",
-		Use:               "retrieve",
-		Short:             "Retrieve Skuid metadata from an Skuid NLX Site into a local directory",
-		Long:              "Retrieve Skuid metadata from a Skuid NLX Site and output it into a local directory",
-		PersistentPreRunE: common.PrerunValidation,
-		RunE:              Retrieve,
+		SilenceUsage:  true,
+		SilenceErrors: true, // we do not want to show users raw errors
+		Example:       "retrieve -u myUser -p myPassword --host my-site.skuidsite.com --dir ./retrieval",
+		Use:           "retrieve",
+		Short:         "Retrieve Skuid metadata from an Skuid NLX Site into a local directory",
+		Long:          "Retrieve Skuid metadata from a Skuid NLX Site and output it into a local directory",
+		RunE:          Retrieve,
 	}
 )
 

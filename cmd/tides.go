@@ -1,12 +1,13 @@
 package cmd
 
 import (
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
-
 	"github.com/skuid/domain/constants"
 	"github.com/skuid/domain/flags"
 	"github.com/skuid/domain/logging"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+
+	"github.com/skuid/tides/cmd/common"
 )
 
 var (
@@ -22,22 +23,8 @@ var (
 		CompletionOptions: cobra.CompletionOptions{
 			DisableDefaultCmd: true,
 		},
-		Version: constants.VERSION_NAME,
-		// PreRunE: common.LoggingValidation,
-		// Run: func(cmd *cobra.Command, _ []string) {
-
-		// 	// want to hide the logger if we're not file logging
-		// 	if fileLogging, err := cmd.Flags().GetBool(flags.FileLogging.Name); err != nil {
-		// 		logging.Get().Panicf("we need to know if we're file logging: %v", err)
-		// 	} else if !fileLogging {
-		// 		logging.DisableLogging()
-		// 	}
-
-		// 	p := tea.NewProgram(ui.Main(cmd))
-		// 	if err := p.Start(); err != nil {
-		// 		logging.Get().Errorf("Unable to Start User Interface: %v", err)
-		// 	}
-		// },
+		Version:           constants.VERSION_NAME,
+		PersistentPreRunE: common.PrerunValidation,
 	}
 )
 

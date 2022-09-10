@@ -9,18 +9,15 @@ import (
 	"github.com/skuid/domain/flags"
 	"github.com/skuid/domain/logging"
 	"github.com/spf13/cobra"
-
-	"github.com/skuid/tides/cmd/common"
 )
 
 var deployCmd = &cobra.Command{
-	SilenceErrors:     true,
-	SilenceUsage:      true,
-	Use:               "deploy",
-	Short:             "Deploy local Skuid metadata to a Skuid NLX Site",
-	Long:              "Deploy Skuid metadata stored within a local file system directory to a Skuid NLX Site",
-	PersistentPreRunE: common.PrerunValidation,
-	RunE:              Deploy,
+	SilenceErrors: true,
+	SilenceUsage:  true,
+	Use:           "deploy",
+	Short:         "Deploy local Skuid metadata to a Skuid NLX Site",
+	Long:          "Deploy Skuid metadata stored within a local file system directory to a Skuid NLX Site",
+	RunE:          Deploy,
 }
 
 func init() {
