@@ -3,6 +3,7 @@ package pkg
 import (
 	"archive/zip"
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
@@ -69,11 +70,21 @@ func ArchiveWithFilterFunc(inFilePath string, filter func(string) bool) (result 
 		// so we are going to truncate the archive path
 		archivePath := path.Join(encapsulatingFolder, fileName)
 
-		if strings.HasPrefix(archivePath, ".") || !filter(relativeFilePath) {
+		if strings.HasPrefix(archivePath, "..") {
+			fmt.Println("DOT")
+		}
+		fmt.Println("======================")
+		fmt.Println(encapsulatingFolder)
+		if (strings.HasPrefix(archivePath, ".") && strings.HasSuffix(archivePath, ".")) || !filter(relativeFilePath) {
 			// todo: fix this; it's not properly filtering off of the low level directory and the filename
 			logging.Get().Debugf(color.Gray.Sprintf("Ignoring: %v", filePath))
+			fmt.Println(filter(relativeFilePath))
+			fmt.Println(strings.HasPrefix(archivePath, "."))
+			fmt.Println(archivePath)
+			fmt.Println("======================")
 			return
 		}
+		fmt.Println("======================")
 
 		// spin off a thread archiving the file
 		eg.Go(func() error {

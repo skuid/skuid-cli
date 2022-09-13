@@ -97,7 +97,7 @@ func (m NlxMetadata) FilterItem(item string) (keep bool) {
 	// Check for children of a component pack
 	if metadataType == "componentpacks" {
 		filePathParts := strings.Split(filePath, string(filepath.Separator))
-		if len(filePathParts) == 2 && util.StringSliceContainsKey(validMetadataNames, filePathParts[0]) {
+		if len(filePathParts) >= 2 && util.StringSliceContainsKey(validMetadataNames, filePathParts[0]) {
 			logging.Get().Tracef("Keeping componentpack metadata file: %v", filePath)
 			keep = true
 			return
