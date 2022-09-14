@@ -3,10 +3,8 @@ package pkg
 import (
 	"archive/zip"
 	"bytes"
-	"fmt"
 	"io/ioutil"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 
@@ -63,34 +61,23 @@ func ArchiveWithFilterFunc(inFilePath string, filter func(string) bool) (result 
 			return
 		}
 
-		archivePathskcli := path.Join(filepath.SplitList(relativeFilePath)...)
-		encapsulatingDirectory, fileName := filepath.Split(filePath)
-		encapsulatingFolder := filepath.Base(encapsulatingDirectory)
-
 		// we only want the immediate directory and the filename for the archive path
-		// so we are going to truncate the archive path
-		archivePath := path.Join(encapsulatingFolder, fileName)
-
-		if strings.HasPrefix(archivePath, "..") {
-			fmt.Println("DOT")
+		// so we are going to truncate the file path
+		var archivePath string
+		if archivePath, err = filepath.Rel(inFilePath, filePath); err != nil {
+			logging.Get().Warnf("ArchivePath Error: %v", err)
+			return
 		}
 
-		if (strings.HasPrefix(archivePath, ".") && strings.HasSuffix(archivePath, ".")) || !filter(relativeFilePath) {
+		if (strings.HasPrefix(archivePath, ".")) || !filter(relativeFilePath) {
 			// todo: fix this; it's not properly filtering off of the low level directory and the filename
-			fmt.Println("======================")
-			fmt.Println(encapsulatingFolder)
 			logging.Get().Debugf(color.Gray.Sprintf("Ignoring: %v", filePath))
-			fmt.Println(filter(relativeFilePath))
-			fmt.Println(strings.HasPrefix(archivePath, "."))
-			fmt.Println(archivePath)
-			fmt.Println("======================")
 			return
 		}
 
 		// spin off a thread archiving the file
 		eg.Go(func() error {
-			logging.Get().Debugf("Processing: %v => %v", color.Red.Sprint(relativeFilePath), color.Magenta.Sprint(archivePathskcli))
-			logging.Get().Debugf("Processing: %v => %v", color.Green.Sprint(filePath), color.Yellow.Sprint(archivePath))
+			logging.Get().Tracef("Processing: %v => %v", color.Green.Sprint(filePath), color.Yellow.Sprint(archivePath))
 			if bytes, err := ioutil.ReadFile(filePath); err != nil {
 				logging.Get().Warnf("Error Processing %v: %v", filePath, err)
 				return err
