@@ -1,6 +1,8 @@
 # **Skuid CLI CDK**: Tides 
 
 ![GitHub go.mod Go version (subdirectory of monorepo)](https://img.shields.io/github/go-mod/go-version/skuid/skuid-cli) ![GitHub release (latest by date)](https://img.shields.io/github/v/release/skuid/skuid-cli)
+![Supported Operating Systems](https://img.shields.io/badge/os-mac-brightgreen)
+![Supported Operating Systems](https://img.shields.io/badge/os-linux-brightgreen)
 ## Description
 
 **Skuid** `tides` is a command-line, cloud development kit. This package is meant to help with 
@@ -18,11 +20,14 @@ A common use case is to have **Skuid** `tides` assist as a migration tool from _
 ## Looking for Skuid CLI for Salesforce?
 
 We now have [`skuid-sfdx`](https://github.com/skuid/skuid-sfdx), our open-source Salesforce CLI plugin designed to handle Skuid metadata on the Salesforce platform.
-<!-- 
-If you work primarily on **Skuid Platform**, then continue using the `skuid CLI`.
+## Supported Operating Systems
+![Supported Operating Systems](https://img.shields.io/badge/os-mac-brightgreen)
+![Supported Operating Systems](https://img.shields.io/badge/os-linux-brightgreen)
 
-## Prerequisites
 
+## Contributing <!-- TODO: add this to CONTRIBUTING.md -->
+![GitHub go.mod Go version (subdirectory of monorepo)](https://img.shields.io/github/go-mod/go-version/skuid/skuid-cli)
+<!--
 - Some basic knowledge of the command line is required, including how to open and use a command line program such as Terminal or Powershell.
   - You should feel comfortable interacting with the file system with commands like `cd`, `mv`, and `rm`.
   - You should feel comfortable using the `skuid` command with the necessary environment variables and flags.
