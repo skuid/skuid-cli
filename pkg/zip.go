@@ -117,14 +117,6 @@ func ArchiveWithFilterFunc(inFilePath string, filter func(string) bool) (result 
 	}
 
 	zipWriter.Close()
-	result, err = ioutil.ReadAll(buffer)
-	if _, err2 := os.Stat("file.zip"); err2 == nil {
-		os.Remove("file.zip")
-	}
-
-	f, _ := os.Create("file.zip")
-	f.Write(result)
-	f.Close()
 
 	return
 }
