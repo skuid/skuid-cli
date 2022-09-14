@@ -5,15 +5,9 @@ import (
 	"strings"
 
 	"github.com/muesli/reflow/indent"
-	"github.com/spf13/cobra"
-
-<<<<<<< HEAD
 	"github.com/skuid/domain/constants"
 	"github.com/skuid/domain/util"
-=======
-	"github.com/skuid/tides/pkg/constants"
-	"github.com/skuid/tides/pkg/util"
->>>>>>> master
+	"github.com/spf13/cobra"
 )
 
 func CommandText(cmd *cobra.Command) string {
