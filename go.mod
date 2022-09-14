@@ -11,7 +11,7 @@ require (
 	github.com/muesli/reflow v0.3.0
 	github.com/radovskyb/watcher v1.0.7
 	github.com/sirupsen/logrus v1.9.0
-	github.com/skuid/domain v1.0.4
+	github.com/skuid/domain v1.0.5
 	github.com/spf13/cobra v1.5.0
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.13.0

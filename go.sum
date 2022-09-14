@@ -209,6 +209,8 @@ github.com/sirupsen/logrus v1.9.0 h1:trlNQbNUG3OdDrDil03MCb1H2o9nJ1x4/5LYw7byDE0
 github.com/sirupsen/logrus v1.9.0/go.mod h1:naHLuLoDiP4jHNo9R0sCBMtWGeIprob74mVsIT4qYEQ=
 github.com/skuid/domain v1.0.4 h1:hULFcoub99vspfDhHaRY95Z+2/Cn8QWz/TIwJrMG8VM=
 github.com/skuid/domain v1.0.4/go.mod h1:SPyh5uUdVQWaiCOTS+Py+p1EEHswOh3oTZHzoZKTllY=
+github.com/skuid/domain v1.0.5 h1:1D86PDwogM+LUv2zyU92BwYhwW10vyYhU35bVcPFq7s=
+github.com/skuid/domain v1.0.5/go.mod h1:SYCZbWNArXuapuZ033Zk2OxPVLRmsxvxP6wT6aQDOp4=
 github.com/skuid/json-patch v4.5.2+incompatible h1:+MT+74kmLpQkY9JZ7N+PiFB3eLlu1XG45I314PhyPkc=
 github.com/skuid/json-patch v4.5.2+incompatible/go.mod h1:ImvkhrAhzQBrLCBod0jzJX9F9PWSuwhg5qhVGKhCZFE=
 github.com/spf13/afero v1.8.2 h1:xehSyVa0YnHWsJ49JFljMpg1HX19V6NDZ1fkm1Xznbo=
