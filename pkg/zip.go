@@ -63,6 +63,7 @@ func ArchiveWithFilterFunc(inFilePath string, filter func(string) bool) (result 
 			return
 		}
 
+		archivePathskcli := path.Join(filepath.SplitList(relativeFilePath)...)
 		encapsulatingDirectory, fileName := filepath.Split(filePath)
 		encapsulatingFolder := filepath.Base(encapsulatingDirectory)
 
@@ -73,10 +74,11 @@ func ArchiveWithFilterFunc(inFilePath string, filter func(string) bool) (result 
 		if strings.HasPrefix(archivePath, "..") {
 			fmt.Println("DOT")
 		}
-		fmt.Println("======================")
-		fmt.Println(encapsulatingFolder)
+
 		if (strings.HasPrefix(archivePath, ".") && strings.HasSuffix(archivePath, ".")) || !filter(relativeFilePath) {
 			// todo: fix this; it's not properly filtering off of the low level directory and the filename
+			fmt.Println("======================")
+			fmt.Println(encapsulatingFolder)
 			logging.Get().Debugf(color.Gray.Sprintf("Ignoring: %v", filePath))
 			fmt.Println(filter(relativeFilePath))
 			fmt.Println(strings.HasPrefix(archivePath, "."))
@@ -84,11 +86,11 @@ func ArchiveWithFilterFunc(inFilePath string, filter func(string) bool) (result 
 			fmt.Println("======================")
 			return
 		}
-		fmt.Println("======================")
 
 		// spin off a thread archiving the file
 		eg.Go(func() error {
-			logging.Get().Tracef("Processing: %v => %v", color.Green.Sprint(filePath), color.Yellow.Sprint(archivePath))
+			logging.Get().Debugf("Processing: %v => %v", color.Red.Sprint(relativeFilePath), color.Magenta.Sprint(archivePathskcli))
+			logging.Get().Debugf("Processing: %v => %v", color.Green.Sprint(filePath), color.Yellow.Sprint(archivePath))
 			if bytes, err := ioutil.ReadFile(filePath); err != nil {
 				logging.Get().Warnf("Error Processing %v: %v", filePath, err)
 				return err
@@ -129,6 +131,13 @@ func ArchiveWithFilterFunc(inFilePath string, filter func(string) bool) (result 
 
 	zipWriter.Close()
 	result, err = ioutil.ReadAll(buffer)
+	if _, err2 := os.Stat("file.zip"); err2 == nil {
+		os.Remove("file.zip")
+	}
+
+	f, _ := os.Create("file.zip")
+	f.Write(result)
+	f.Close()
 
 	return
 }
