@@ -1,10 +1,9 @@
 package common
 
 import (
-	"github.com/spf13/cobra"
-
 	"github.com/skuid/domain/flags"
 	"github.com/skuid/domain/logging"
+	"github.com/spf13/cobra"
 )
 
 // PrerunValidation does generic validation for a function to make sure it has

@@ -114,6 +114,7 @@ func Watch(cmd *cobra.Command, _ []string) (err error) {
 				}
 				logging.WithFields(fields).Debug("Detected change to metadata type: " + changedEntity)
 				go func() {
+
 					if err := domain.DeployModifiedFiles(auth, targetDir, changedEntity); err != nil {
 						w.Error <- err
 					}

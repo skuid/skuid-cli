@@ -58,6 +58,7 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 
 	// we want the filter nil because it will be discarded without
 	// initialization
+
 	var filter *domain.NlxPlanFilter = nil
 
 	// initialize the filter dynamically based on
@@ -110,7 +111,6 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 	fields["retrievalDuration"] = time.Since(start)
 
 	logging.WithFields(fields).Debugf("Received %v Results", color.Green.Sprint(len(results)))
-
 	var directory string
 	if directory, err = cmd.Flags().GetString(flags.Directory.Name); err != nil {
 		return

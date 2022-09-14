@@ -3,7 +3,11 @@ package lit
 import (
 	"fmt"
 
+<<<<<<< HEAD
 	"github.com/skuid/domain/constants"
+=======
+	"github.com/skuid/tides/pkg/constants"
+>>>>>>> master
 	"github.com/skuid/tides/ui/style"
 )
 

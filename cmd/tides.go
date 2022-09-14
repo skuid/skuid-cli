@@ -6,8 +6,6 @@ import (
 	"github.com/skuid/domain/logging"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-
-	"github.com/skuid/tides/cmd/common"
 )
 
 var (
@@ -19,12 +17,11 @@ var (
 	TidesCmd = &cobra.Command{
 		Use:   constants.PROJECT_NAME,
 		Short: "Tides: A CLI for interacting with Skuid APIs",
-		Long:  `Tides: Deploy and retrieve Skuid metadata to / from Skuid domain.`,
+		Long:  `Tides: Deploy and retrieve Skuid metadata to / from Skuid pkg.`,
 		CompletionOptions: cobra.CompletionOptions{
 			DisableDefaultCmd: true,
 		},
-		Version:           constants.VERSION_NAME,
-		PersistentPreRunE: common.PrerunValidation,
+		Version: constants.VERSION_NAME,
 	}
 )
 

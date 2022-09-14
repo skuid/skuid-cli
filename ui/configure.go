@@ -10,8 +10,13 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
+<<<<<<< HEAD
 	"github.com/skuid/domain/constants"
 	"github.com/skuid/domain/util"
+=======
+	"github.com/skuid/tides/pkg/constants"
+	"github.com/skuid/tides/pkg/util"
+>>>>>>> master
 	"github.com/skuid/tides/ui/help"
 	"github.com/skuid/tides/ui/keys"
 	"github.com/skuid/tides/ui/lit"

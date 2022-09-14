@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # **Skuid CLI CDK**: Tides 
 
 ![GitHub go.mod Go version (subdirectory of monorepo)](https://img.shields.io/github/go-mod/go-version/skuid/skuid-cli) ![GitHub release (latest by date)](https://img.shields.io/github/v/release/skuid/skuid-cli)
@@ -537,3 +538,10 @@ Some possible error messages include:
 ## skuid vs skuid-grunt
 
 [`skuid-grunt`](https://github.com/skuid/skuid-grunt) previously provided the above-documented push/pull functionality as a Grunt plugin. While great for projects already using NodeJS and Grunt, the plugin was problematic if you didn't want to require those dependencies. `skuid` solves that dependency problem by producing a self-contained CLI to perform all the same operations. -->
+=======
+# Skuid Tides
+
+## Command-Line Application
+
+`tides` is a command line interface (CLI) for retrieving and deploying Skuid objects (data and metadata) on both Skuid Platform sites and Salesforce orgs running the Skuid managed package.
+>>>>>>> master

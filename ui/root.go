@@ -7,7 +7,11 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
 
+<<<<<<< HEAD
 	"github.com/skuid/domain/constants"
+=======
+	"github.com/skuid/tides/pkg/constants"
+>>>>>>> master
 	"github.com/skuid/tides/ui/help"
 	"github.com/skuid/tides/ui/keys"
 	"github.com/skuid/tides/ui/lit"
