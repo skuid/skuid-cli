@@ -117,6 +117,7 @@ func ArchiveWithFilterFunc(inFilePath string, filter func(string) bool) (result 
 	}
 
 	zipWriter.Close()
+	result, err = ioutil.ReadAll(buffer)
 
 	return
 }
