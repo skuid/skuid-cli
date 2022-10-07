@@ -1,6 +1,6 @@
 # skuid CLI
 
-skuid CLI a command line interface for deploying and retrieving Skuid metadata between environments.
+skuid CLI is a command line interface for deploying and retrieving Skuid metadata between environments.
 
 This repository's main branch currently represents the in-progress development of the next major release of the project.
 
