@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/skuid/tides/pkg/logging"
+	"github.com/skuid/skuid-cli/pkg/logging"
 )
 
 // hopefully this doesn't mess with anything lol

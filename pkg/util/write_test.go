@@ -13,7 +13,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/skuid/tides/pkg/util"
+	"github.com/skuid/skuid-cli/pkg/util"
 )
 
 const badJson = "this is not even close to good JSON"

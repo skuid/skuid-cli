@@ -10,7 +10,7 @@ import (
 	"github.com/gookit/color"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/skuid/tides/pkg/logging"
+	"github.com/skuid/skuid-cli/pkg/logging"
 )
 
 var (
@@ -44,7 +44,7 @@ type FilteredRequestBody struct {
 	PlanBytes []byte   `json:"plan"`
 }
 
-func PrepareDeployment(auth *Authorization, deploymentPlan []byte, filter *NlxPlanFilter) (duration time.Duration, results NlxDynamicPlanMap, err error) {
+func GetDeployPlan(auth *Authorization, deploymentPlan []byte, filter *NlxPlanFilter) (duration time.Duration, results NlxDynamicPlanMap, err error) {
 	logging.Get().Trace("Getting Deploy Plan")
 	start := time.Now()
 	defer func() { logging.Get().Tracef("Prepare deployment took: %v", time.Since(start)) }()
@@ -93,7 +93,7 @@ func DeployModifiedFiles(auth *Authorization, targetDir, modifiedFile string) (e
 
 	logging.Get().Tracef("Getting Deployment Plan for Modified File (%v)", modifiedFile)
 
-	_, plan, err := PrepareDeployment(auth, planBody, nil)
+	_, plan, err := GetDeployPlan(auth, planBody, nil)
 	if err != nil {
 		return
 	}

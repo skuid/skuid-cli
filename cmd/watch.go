@@ -11,11 +11,11 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"github.com/skuid/tides/cmd/common"
-	"github.com/skuid/tides/pkg"
-	"github.com/skuid/tides/pkg/flags"
-	"github.com/skuid/tides/pkg/logging"
-	"github.com/skuid/tides/pkg/util"
+	"github.com/skuid/skuid-cli/cmd/common"
+	"github.com/skuid/skuid-cli/pkg"
+	"github.com/skuid/skuid-cli/pkg/flags"
+	"github.com/skuid/skuid-cli/pkg/logging"
+	"github.com/skuid/skuid-cli/pkg/util"
 )
 
 var watchCmd = &cobra.Command{
@@ -29,7 +29,7 @@ var watchCmd = &cobra.Command{
 }
 
 func init() {
-	TidesCmd.AddCommand(watchCmd)
+	SkuidCmd.AddCommand(watchCmd)
 	flags.AddFlags(watchCmd, flags.NLXLoginFlags...)
 	flags.AddFlags(watchCmd, flags.Directory)
 }
@@ -38,12 +38,16 @@ func Watch(cmd *cobra.Command, _ []string) (err error) {
 	fields := make(logrus.Fields)
 	fields["process"] = "watch"
 	// get required arguments
-	var host, username, password string
-	if host, err = cmd.Flags().GetString(flags.PlinyHost.Name); err != nil {
+	host, err := cmd.Flags().GetString(flags.PlinyHost.Name)
+	if err != nil {
 		return
-	} else if username, err = cmd.Flags().GetString(flags.Username.Name); err != nil {
+	}
+	username, err := cmd.Flags().GetString(flags.Username.Name)
+	if err != nil {
 		return
-	} else if password, err = cmd.Flags().GetString(flags.Password.Name); err != nil {
+	}
+	password, err := cmd.Flags().GetString(flags.Password.Name)
+	if err != nil {
 		return
 	}
 
@@ -66,23 +70,19 @@ func Watch(cmd *cobra.Command, _ []string) (err error) {
 	}
 
 	// If target directory is provided,
-	var back string
-	back, err = os.Getwd()
-	if err != nil {
-		return
-	}
-
 	// switch back to directory
-	defer func() {
-		if targetDir != "" {
+	if targetDir != "" {
+		var back string
+		back, err = os.Getwd()
+		if err != nil {
+			return
+		}
+
+		defer func() {
 			if err := os.Chdir(back); err != nil {
 				logging.WithFields(fields).Fatalf("Failed changing back to directory '%v': %v", back, err)
 			}
-		}
-	}()
-
-	if targetDir == "" {
-		targetDir = ""
+		}()
 	}
 
 	var friendly string

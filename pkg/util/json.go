@@ -4,13 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
-	"io/ioutil"
 
 	"github.com/gookit/color"
 	"github.com/sirupsen/logrus"
 	jsonpatch "github.com/skuid/json-patch"
 
-	"github.com/skuid/tides/pkg/logging"
+	"github.com/skuid/skuid-cli/pkg/logging"
 )
 
 func CombineJSON(readCloser io.ReadCloser, fileReader FileReader, path string) (newReadCloser io.ReadCloser, err error) {
@@ -25,7 +24,7 @@ func CombineJSON(readCloser io.ReadCloser, fileReader FileReader, path string) (
 		return
 	}
 
-	newBytes, err := ioutil.ReadAll(readCloser)
+	newBytes, err := io.ReadAll(readCloser)
 	if err != nil {
 		logging.Get().Warnf("ioutil.ReadAll: %v", err)
 		return
@@ -53,7 +52,7 @@ func CombineJSON(readCloser io.ReadCloser, fileReader FileReader, path string) (
 		return
 	}
 
-	newReadCloser = ioutil.NopCloser(bytes.NewReader(indented.Bytes()))
+	newReadCloser = io.NopCloser(bytes.NewReader(indented.Bytes()))
 
 	return
 }

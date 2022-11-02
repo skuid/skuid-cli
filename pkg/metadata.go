@@ -7,9 +7,9 @@ import (
 
 	"github.com/gookit/color"
 
-	"github.com/skuid/tides/pkg/errors"
-	"github.com/skuid/tides/pkg/logging"
-	"github.com/skuid/tides/pkg/util"
+	"github.com/skuid/skuid-cli/pkg/errors"
+	"github.com/skuid/skuid-cli/pkg/logging"
+	"github.com/skuid/skuid-cli/pkg/util"
 )
 
 type NlxMetadata struct {

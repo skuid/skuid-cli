@@ -4,14 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"sync"
 	"time"
 
 	"github.com/gookit/color"
 	"github.com/sirupsen/logrus"
 
-	"github.com/skuid/tides/pkg/constants"
-	"github.com/skuid/tides/pkg/logging"
+	"github.com/skuid/skuid-cli/pkg/constants"
+	"github.com/skuid/skuid-cli/pkg/logging"
 )
 
 var (
@@ -63,11 +62,8 @@ func ExecuteRetrieval(auth *Authorization, plans NlxPlanPayload) (duration time.
 	start := time.Now()
 	defer func() { duration = time.Since(start) }()
 
-	var mu sync.Mutex
 	// this function generically handles a plan based on name / stuff
 	executePlan := func(name string, plan NlxPlan) error {
-		mu.Lock()
-		defer mu.Unlock()
 
 		logging.WithField("planName", name)
 		logging.Get().Debugf("Firing off %v", color.Magenta.Sprint(name))
@@ -122,8 +118,4 @@ func ExecuteRetrieval(auth *Authorization, plans NlxPlanPayload) (duration time.
 	}
 
 	return
-}
-
-func (x NlxRetrievalResult) String() string {
-	return fmt.Sprintf("(%v => %v (size: %v))", x.PlanName, x.Url, len(x.Data))
 }

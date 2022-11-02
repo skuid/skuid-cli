@@ -9,12 +9,12 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
-	"github.com/skuid/tides/pkg/constants"
-	"github.com/skuid/tides/pkg/errors"
-	"github.com/skuid/tides/pkg/logging"
+	"github.com/skuid/skuid-cli/pkg/constants"
+	"github.com/skuid/skuid-cli/pkg/errors"
+	"github.com/skuid/skuid-cli/pkg/logging"
 )
 
-// Generic flag type that can take a type variable and use a pointer
+// Flag is a generic flag type that can take a type variable and use a pointer
 // to that type as the thing we're going to add
 // just reflecting the external pflags stuff
 type Flag[T any] struct {
@@ -56,7 +56,7 @@ func AddFlagFunctions(cmd *cobra.Command, adds ...func(*cobra.Command) error) {
 	}
 }
 
-// Same as AddFlagFunctions but for any type of flag (of consistent type... ugh)
+// AddFlags is the same as AddFlagFunctions but for any type of flag (of consistent type... ugh)
 func AddFlags[T any](cmd *cobra.Command, flags ...*Flag[T]) {
 	for _, flag := range flags {
 		if err := Add(flag)(cmd); err != nil {
@@ -79,10 +79,6 @@ func environmentVariablePossible(environmentVariableNames []string, usageText st
 	usageText = usageText + "\n" +
 		color.Gray.Sprintf("Available as environment variable(s): %v", color.Yellow.Sprint(strings.Join(environmentVariableNames, ", ")))
 	return usageText
-}
-
-func aliasInformationString(flagName, usageText string) string {
-	return color.Gray.Sprintf("Alias for '--%v'\n", flagName) + usageText
 }
 
 // ReadOnly access of value
@@ -150,11 +146,6 @@ func Add[T any](flag *Flag[T]) func(*cobra.Command) error {
 			} else {
 				flags.StringVar(f.argument, flag.Name, defaultVar, usageText)
 			}
-			// if len(flag.Aliases) > 0 {
-			// 	for _, alias := range flag.Aliases {
-			// 		flags.StringVar(f.argument, alias, defaultVar, aliasInformationString(flag.Name, usageText))
-			// 	}
-			// }
 
 		// handle bools
 		case *Flag[bool]:
@@ -197,12 +188,6 @@ func Add[T any](flag *Flag[T]) func(*cobra.Command) error {
 				flags.Bool(flag.Name, defaultValue, usageText)
 			}
 
-			// if len(flag.Aliases) > 0 {
-			// 	for _, alias := range flag.Aliases {
-			// 		flags.BoolVar(f.argument, alias, defaultValue, aliasInformationString(flag.Name, usageText))
-			// 	}
-			// }
-
 		// handle string arrays
 		case *Flag[[]string]:
 			defaultVar := f.Default
@@ -228,12 +213,6 @@ func Add[T any](flag *Flag[T]) func(*cobra.Command) error {
 			} else {
 				flags.StringArray(flag.Name, defaultVar, usageText)
 			}
-
-		// if len(flag.Aliases) > 0 {
-		// 	for _, alias := range flag.Aliases {
-		// 		flags.StringArrayVar(f.argument, alias, defaultVar, aliasInformationString(flag.Name, usageText))
-		// 	}
-		// }
 
 		case *Flag[int]:
 			defaultVar := f.Default

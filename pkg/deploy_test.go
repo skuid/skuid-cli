@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/skuid/tides/pkg"
-	"github.com/skuid/tides/pkg/util"
+	"github.com/skuid/skuid-cli/pkg"
+	"github.com/skuid/skuid-cli/pkg/util"
 )
 
 func TestGetDeployPlan(t *testing.T) {
@@ -27,7 +27,7 @@ func TestGetDeployPlan(t *testing.T) {
 		t.FailNow()
 	}
 
-	duration, plans, err := pkg.PrepareDeployment(auth, deploymentPlan, nil)
+	duration, plans, err := pkg.GetDeployPlan(auth, deploymentPlan, nil)
 	if err != nil {
 		t.Log(err)
 		t.FailNow()
@@ -49,7 +49,7 @@ func BenchmarkDeploymentPlan(b *testing.B) {
 	wd, _ := os.Getwd()
 	fp := filepath.Join(wd, ".", ".", "_deploy")
 	deploymentPlan, _ := pkg.Archive(fp, nil)
-	_, plans, _ := pkg.PrepareDeployment(auth, deploymentPlan, nil)
+	_, plans, _ := pkg.GetDeployPlan(auth, deploymentPlan, nil)
 	b.ResetTimer()
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {

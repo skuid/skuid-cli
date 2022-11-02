@@ -4,19 +4,19 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 
 	"github.com/gookit/color"
 
-	"github.com/skuid/tides/pkg/constants"
-	"github.com/skuid/tides/pkg/errors"
-	"github.com/skuid/tides/pkg/logging"
+	"github.com/skuid/skuid-cli/pkg/constants"
+	"github.com/skuid/skuid-cli/pkg/errors"
+	"github.com/skuid/skuid-cli/pkg/logging"
 )
 
 var (
-	SkuidUserAgent = fmt.Sprintf("Tides/%s", constants.VERSION_NAME)
+	SkuidUserAgent = fmt.Sprintf("skuid-cli/%s", constants.VERSION_NAME)
 
 	AcceptableProtocols = []string{
 		"http", "https",
@@ -25,7 +25,7 @@ var (
 
 const (
 	DEFAULT_API_VERSION        = "v2"
-	MAX_AUTHORIZATION_ATTEMPTS = 3 // 5 will lock you out iirc
+	MAX_AUTHORIZATION_ATTEMPTS = 1 // 5 will lock you out
 )
 
 func JsonBodyRequest[T any](
@@ -92,7 +92,7 @@ func RequestHelper(
 
 	// // check the validity of the body and grab the access token
 	var responseBody []byte
-	responseBody, err = ioutil.ReadAll(resp.Body)
+	responseBody, err = io.ReadAll(resp.Body)
 	if err != nil {
 		return
 	}

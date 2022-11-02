@@ -12,7 +12,7 @@ import (
 	"github.com/gookit/color"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/skuid/tides/pkg/logging"
+	"github.com/skuid/skuid-cli/pkg/logging"
 )
 
 // Archive compresses a file/directory to a writer

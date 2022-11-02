@@ -6,7 +6,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/skuid/tides/pkg/util"
+	"github.com/skuid/skuid-cli/pkg/util"
 )
 
 func TestFlag(t *testing.T) {

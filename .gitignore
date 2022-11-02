@@ -11,7 +11,6 @@ skuid_windows_amd64.exe
 .idea
 .scripts
 .test*
-# all test environment files lol
 **/**/.testenv
 .coverage
 **/**/.retrieve
