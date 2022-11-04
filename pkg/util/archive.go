@@ -6,7 +6,6 @@ import (
 	"archive/zip"
 	"bytes"
 	"io"
-	"io/ioutil"
 	"path/filepath"
 	"strings"
 
@@ -118,7 +117,7 @@ func UnzipArchive(sourceFileLocation, targetLocation string, fileCreator FileCre
 
 func SanitizeZip(reader io.ReadCloser) (newReader io.ReadCloser, err error) {
 	var b []byte
-	if b, err = ioutil.ReadAll(reader); err != nil {
+	if b, err = io.ReadAll(reader); err != nil {
 		logging.Get().Warnf("unable to read all: %v", err)
 		return
 	}
@@ -129,7 +128,7 @@ func SanitizeZip(reader io.ReadCloser) (newReader io.ReadCloser, err error) {
 		return
 	}
 
-	newReader = ioutil.NopCloser(bytes.NewBuffer(b))
+	newReader = io.NopCloser(bytes.NewBuffer(b))
 
 	return
 }

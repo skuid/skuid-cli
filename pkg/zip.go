@@ -3,7 +3,7 @@ package pkg
 import (
 	"archive/zip"
 	"bytes"
-	"io/ioutil"
+	"io"
 	"os"
 	"path"
 	"path/filepath"
@@ -78,7 +78,7 @@ func ArchiveWithFilterFunc(inFilePath string, filter func(string) bool) (result 
 		// spin off a thread archiving the file
 		eg.Go(func() error {
 			logging.Get().Tracef("Processing: %v => %v", color.Green.Sprint(filePath), color.Yellow.Sprint(archivePath))
-			if bytes, err := ioutil.ReadFile(filePath); err != nil {
+			if bytes, err := os.ReadFile(filePath); err != nil {
 				logging.Get().Warnf("Error Processing %v: %v", filePath, err)
 				return err
 			} else {
@@ -117,7 +117,7 @@ func ArchiveWithFilterFunc(inFilePath string, filter func(string) bool) (result 
 	}
 
 	zipWriter.Close()
-	result, err = ioutil.ReadAll(buffer)
+	result, err = io.ReadAll(buffer)
 
 	return
 }

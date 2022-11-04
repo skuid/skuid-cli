@@ -22,7 +22,7 @@ func GetRetrievePlan(auth *Authorization, filter *NlxPlanFilter) (duration time.
 	planStart := time.Now()
 	defer func() { duration = time.Since(planStart) }()
 
-	var body []byte = make([]byte, 0)
+	var body = make([]byte, 0)
 	if filter != nil {
 		if body, err = json.Marshal(filter); err != nil {
 			return

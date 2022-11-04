@@ -74,7 +74,7 @@ func (m NlxMetadata) FilterItem(item string) (keep bool) {
 	filePath := strings.Join(filePathArray, string(filepath.Separator))
 
 	validMetadataNames, err := m.GetFieldValueByName(metadataType)
-	if validMetadataNames == nil || len(validMetadataNames) == 0 {
+	if len(validMetadataNames) == 0 {
 		logging.Get().Tracef("No valid names for this directory: %v", color.Gray.Sprint(item))
 		return
 	}

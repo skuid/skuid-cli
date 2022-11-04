@@ -99,8 +99,7 @@ func Add[T any](flag *Flag[T]) func(*cobra.Command) error {
 			return err
 		}
 
-		// these are the three variables
-		// that are going to change based on what
+		// these are the three variables that are going to change based on what
 		// we're getting
 		required := flag.Required
 		usageText := flag.Usage
@@ -112,8 +111,7 @@ func Add[T any](flag *Flag[T]) func(*cobra.Command) error {
 			flags = to.Flags()
 		}
 
-		// TODO: comment this and explain what we're doing with
-		// the type switch
+		// TODO: comment this and explain what we're doing with the type switch
 		switch f := any(flag).(type) {
 		// handle string
 		case *Flag[string]:
@@ -125,7 +123,7 @@ func Add[T any](flag *Flag[T]) func(*cobra.Command) error {
 				for _, envVarName := range flag.EnvVarNames {
 					defaultVar = os.Getenv(envVarName)
 					if defaultVar != "" {
-						// the only time we disabled required
+						// the only time we disable required
 						// is when we have the environment variable name
 						// and we find an environment variable value
 						required = false

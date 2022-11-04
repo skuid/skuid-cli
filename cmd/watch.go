@@ -85,8 +85,8 @@ func Watch(cmd *cobra.Command, _ []string) (err error) {
 		}()
 	}
 
-	var friendly string
-	if friendly, err = util.SanitizePath(targetDir); err != nil {
+	var targetDirFriendly string
+	if targetDirFriendly, err = util.SanitizePath(targetDir); err != nil {
 		return
 	}
 
@@ -104,7 +104,7 @@ func Watch(cmd *cobra.Command, _ []string) (err error) {
 			select {
 			case event := <-w.Event:
 				logging.WithFields(fields).Debug("Event Detected")
-				cleanRelativeFilePath := util.FromWindowsPath(strings.Split(event.Path, friendly)[1])
+				cleanRelativeFilePath := util.FromWindowsPath(strings.Split(event.Path, targetDirFriendly)[1])
 				dirSplit := strings.Split(cleanRelativeFilePath, string(filepath.Separator))
 				metadataType, remainder := dirSplit[1], dirSplit[2]
 				var changedEntity string

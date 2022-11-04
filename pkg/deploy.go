@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/gookit/color"
@@ -18,25 +17,6 @@ var (
 )
 
 type NlxDynamicPlanMap map[string]NlxPlan
-
-// maybe?
-func (df *NlxPlanFilter) Filter(plans NlxDynamicPlanMap) (filtered NlxDynamicPlanMap) {
-	// filter by app name
-	for k, plan := range plans {
-		// filter by app name
-		if df.AppName != "" {
-			var apps []string
-			for _, app := range plan.Metadata.Apps {
-				if strings.Contains(app, df.AppName) {
-					apps = append(apps, app)
-				}
-			}
-			plan.Metadata.Apps = apps
-		}
-		filtered[k] = plan
-	}
-	return
-}
 
 type FilteredRequestBody struct {
 	AppName   string   `json:"appName"`
