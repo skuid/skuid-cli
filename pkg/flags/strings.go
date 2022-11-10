@@ -36,8 +36,7 @@ var (
 	}
 
 	Directory = &Flag[string]{
-		Name: "directory",
-		// Aliases:   []string{"directory"},
+		Name:        "dir",
 		Shorthand:   "d",
 		Usage:       "Target directory for this operation",
 		EnvVarNames: []string{constants.ENV_SKUID_DEFAULT_FOLDER},

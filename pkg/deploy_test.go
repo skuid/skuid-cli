@@ -1,11 +1,13 @@
 package pkg_test
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/skuid/skuid-cli/pkg"
+	"github.com/skuid/skuid-cli/pkg/constants"
 	"github.com/skuid/skuid-cli/pkg/util"
 )
 
@@ -18,8 +20,15 @@ func TestGetDeployPlan(t *testing.T) {
 		t.FailNow()
 	}
 
-	wd, _ := os.Getwd()
-	fp := filepath.Join(wd, "..", "..", "_deploy")
+	var fp string
+	envdir := os.Getenv(constants.ENV_SKUID_DEFAULT_FOLDER)
+	if envdir != "" {
+		fp = envdir
+	} else {
+		wd, _ := os.Getwd()
+		fp = filepath.Join(wd, "..", "..", "_deploy")
+	}
+	fmt.Printf("using directory %s\n", fp)
 
 	deploymentPlan, err := pkg.Archive(fp, nil)
 	if err != nil {
@@ -40,7 +49,6 @@ func TestGetDeployPlan(t *testing.T) {
 		t.FailNow()
 	}
 	t.Log(duration)
-
 }
 
 func BenchmarkDeploymentPlan(b *testing.B) {

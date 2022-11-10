@@ -62,7 +62,7 @@ func (from NlxMetadata) GetFieldValueByName(target string) (names []string, err 
 	return
 }
 
-func (m NlxMetadata) FilterItem(item string) (keep bool) {
+func (from NlxMetadata) FilterItem(item string) (keep bool) {
 	cleanRelativeFilePath := util.FromWindowsPath(item)
 	directory := filepath.Dir(cleanRelativeFilePath)
 	baseName := filepath.Base(cleanRelativeFilePath)
@@ -73,7 +73,7 @@ func (m NlxMetadata) FilterItem(item string) (keep bool) {
 	filePathArray := append(subFolders, baseName)
 	filePath := strings.Join(filePathArray, string(filepath.Separator))
 
-	validMetadataNames, err := m.GetFieldValueByName(metadataType)
+	validMetadataNames, err := from.GetFieldValueByName(metadataType)
 	if len(validMetadataNames) == 0 {
 		logging.Get().Tracef("No valid names for this directory: %v", color.Gray.Sprint(item))
 		return

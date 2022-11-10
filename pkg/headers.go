@@ -9,8 +9,6 @@ const (
 	JSON_CONTENT_TYPE        = "application/json"
 	URL_ENCODED_CONTENT_TYPE = "application/x-www-form-urlencoded"
 
-	DEFAULT_CONTENT_TYPE = JSON_CONTENT_TYPE
-
 	HEADER_SKUID_PUBLIC_KEY_ENDPOINT = "x-skuid-public-key-endpoint"
 )
 
@@ -180,7 +178,7 @@ const (
 
 type RequestHeaders map[string]string
 
-// easy macro for the authorization headers we want
+// GenerateHeaders is an easy macro for the authorization headers we want
 func GenerateHeaders(host, token string) RequestHeaders {
 	return RequestHeaders{
 		HeaderAuthorization:              fmt.Sprintf("Bearer %v", token),
