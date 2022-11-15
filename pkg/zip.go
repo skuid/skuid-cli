@@ -69,8 +69,7 @@ func ArchiveWithFilterFunc(inFilePath string, filter func(string) bool) (result 
 			return
 		}
 
-		if (strings.HasPrefix(archivePath, ".")) || !filter(relativeFilePath) {
-			// todo: fix this; it's not properly filtering off of the low level directory and the filename
+		if strings.HasPrefix(archivePath, ".") || !filter(relativeFilePath) {
 			logging.Get().Debugf(color.Gray.Sprintf("Ignoring: %v", filePath))
 			return
 		}
