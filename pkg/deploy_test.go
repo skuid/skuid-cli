@@ -1,7 +1,6 @@
 package pkg_test
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -28,7 +27,6 @@ func TestGetDeployPlan(t *testing.T) {
 		wd, _ := os.Getwd()
 		fp = filepath.Join(wd, "..", "..", "_deploy")
 	}
-	fmt.Printf("using directory %s\n", fp)
 
 	deploymentPlan, err := pkg.Archive(fp, nil)
 	if err != nil {
