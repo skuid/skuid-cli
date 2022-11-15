@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"io"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 
@@ -62,14 +61,15 @@ func ArchiveWithFilterFunc(inFilePath string, filter func(string) bool) (result 
 			return
 		}
 
-		encapsulatingDirectory, fileName := filepath.Split(filePath)
-		encapsulatingFolder := filepath.Base(encapsulatingDirectory)
-
 		// we only want the immediate directory and the filename for the archive path
-		// so we are going to truncate the archive path
-		archivePath := path.Join(encapsulatingFolder, fileName)
+		// so we are going to truncate the file path
+		var archivePath string
+		if archivePath, err = filepath.Rel(inFilePath, filePath); err != nil {
+			logging.Get().Warnf("ArchivePath Error: %v", err)
+			return
+		}
 
-		if strings.HasPrefix(archivePath, ".") || !filter(relativeFilePath) {
+		if (strings.HasPrefix(archivePath, ".")) || !filter(relativeFilePath) {
 			// todo: fix this; it's not properly filtering off of the low level directory and the filename
 			logging.Get().Debugf(color.Gray.Sprintf("Ignoring: %v", filePath))
 			return
