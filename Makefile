@@ -14,12 +14,6 @@ LDFLAGS=-ldflags="-w -X github.com/skuid/skuid-cli/version.Name=$(VERSION)"
 
 .PHONY: setup fmt vendored
 
-# fails if coverage < 85%
-# see MainTest for details
-# (TODO: add coverfail=true)
-cover:
-	go test -v -cover ./...
-
 test:
 	go test -v -short ./...
 
