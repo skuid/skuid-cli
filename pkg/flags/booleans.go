@@ -32,7 +32,7 @@ var (
 
 	Diagnostic = &Flag[bool]{
 		Name:        "diagnostic",
-		Usage:       "Log additioal fields with each log statement. Used for diagnostic purposes.",
+		Usage:       "Log additional fields with each log statement. Used for diagnostic purposes.",
 		EnvVarNames: []string{constants.ENV_SKUID_FIELD_LOGGING},
 		Global:      true,
 	}
