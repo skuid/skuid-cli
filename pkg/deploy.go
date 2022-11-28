@@ -7,8 +7,6 @@ import (
 	"time"
 
 	"github.com/gookit/color"
-	"golang.org/x/sync/errgroup"
-
 	"github.com/skuid/skuid-cli/pkg/logging"
 )
 
@@ -96,68 +94,51 @@ func ExecuteDeployPlan(auth *Authorization, plans NlxDynamicPlanMap, targetDir s
 	defer func() { duration = time.Since(start) }()
 	logging.Get().Trace("Executing Deploy Plan")
 
-	eg := &errgroup.Group{}
-	ch := make(chan NlxDeploymentResult)
+	planResults = make([]NlxDeploymentResult, 0)
 
-	executePlan := func(plan NlxPlan) func() error {
-		return func() error {
-			logging.Get().Infof("Deploying %v", color.Magenta.Sprint(plan.Type))
+	executePlan := func(plan NlxPlan) (err error) {
+		logging.Get().Infof("Deploying %v", color.Magenta.Sprint(plan.Type))
 
-			logging.Get().Tracef("Archiving %v", targetDir)
-			deploy, err := Archive(targetDir, &plan.Metadata)
-			if err != nil {
-				logging.Get().Trace("Error creating deployment ZIP archive")
-				return err
-			}
-
-			headers := GeneratePlanHeaders(auth, plan)
-			logging.Get().Tracef("Plan Headers: %v\n", headers)
-
-			url := GenerateRoute(auth, plan)
-			logging.Get().Tracef("Plan Request: %v\n", url)
-
-			if result, err := Request(
-				url,
-				http.MethodPost,
-				deploy,
-				headers,
-			); err == nil {
-				ch <- NlxDeploymentResult{
-					Plan: plan,
-					Url:  url,
-					Data: result,
-				}
-			} else {
-				logging.Get().Tracef("Url: %v", url)
-				logging.Get().Tracef("Error on request: %v\n", err.Error())
-				return err
-			}
-
-			logging.Get().Infof("Finished Deploying %v", color.Magenta.Sprint(plan.Type))
-
-			return nil
-
+		logging.Get().Tracef("Archiving %v", targetDir)
+		payload, err := Archive(targetDir, &plan.Metadata)
+		if err != nil {
+			logging.Get().Trace("Error creating deployment ZIP archive")
+			return
 		}
+
+		headers := GeneratePlanHeaders(auth, plan)
+		logging.Get().Tracef("Plan Headers: %v\n", headers)
+
+		url := GenerateRoute(auth, plan)
+		logging.Get().Tracef("Plan Request: %v\n", url)
+
+		var response []byte
+		if response, err = Request(
+			url,
+			http.MethodPost,
+			payload,
+			headers,
+		); err == nil {
+			planResults = append(planResults, NlxDeploymentResult{
+				Plan: plan,
+				Url:  url,
+				Data: response,
+			})
+		} else {
+			logging.Get().Tracef("Url: %v", url)
+			logging.Get().Tracef("Error on request: %v\n", err.Error())
+			return
+		}
+		logging.Get().Infof("Finished Deploying %v", color.Magenta.Sprint(plan.Type))
+
+		return
 	}
 
 	for _, plan := range plans {
-		p := plan
-		eg.Go(executePlan(p))
-	}
-
-	go func() {
-		err := eg.Wait()
-		close(ch)
-		// if there's an error, we won't consume the results below
-		// and we'll output the error
+		err = executePlan(plan)
 		if err != nil {
-			logging.Get().Errorf("Error when executing deployment plan: %v", err)
+			return // bail
 		}
-	}()
-
-	planResults = make([]NlxDeploymentResult, 0)
-	for planResult := range ch {
-		planResults = append(planResults, planResult)
 	}
 
 	return

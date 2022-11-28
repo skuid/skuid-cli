@@ -61,14 +61,8 @@ func Deploy(cmd *cobra.Command, _ []string) (err error) {
 	fields["authorized"] = true
 	logging.WithFields(fields).Info("Authentication Successful")
 
-	// we want the filter nil because it will be discarded without
-	// initialization
+	// only create the filter struct if it hasn't been created yet
 	var filter *pkg.NlxPlanFilter = nil
-
-	// initialize the filter dynamically based on
-	// optional filter arguments. This lets us
-	// expand the pattern down the road as more things
-	// are required to be build
 	initFilter := func() {
 		if filter == nil {
 			filter = &pkg.NlxPlanFilter{}
@@ -117,19 +111,18 @@ func Deploy(cmd *cobra.Command, _ []string) (err error) {
 	logging.WithFields(fields).Info("Getting Deployment Plan")
 	var plans pkg.NlxDynamicPlanMap
 	if _, plans, err = pkg.GetDeployPlan(auth, deploymentPlan, filter); err != nil {
-		logging.Get().Warnf("Unable to prepare deployment: %v", err)
+		logging.Get().Errorf("Unable to prepare deployment: %v", err)
 		return
 	}
 	logging.WithFields(fields).Info("Got Deployment Plan")
 
 	fields["plans"] = len(plans)
-	logging.WithFields(fields)
 
-	logging.Get().Info("Executing Deployment Plan")
+	logging.WithFields(fields).Info("Executing Deployment Plan")
 
 	var results []pkg.NlxDeploymentResult
 	if _, results, err = pkg.ExecuteDeployPlan(auth, plans, targetDirectory); err != nil {
-		logging.Get().Errorf("Unable to execute deployment: %v", color.Red.Sprint(err))
+		logging.Get().Errorf("Unable to execute deployment: %v", err)
 		return
 	}
 

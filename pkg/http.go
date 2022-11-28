@@ -78,12 +78,10 @@ func RequestHelper(
 	}
 	logging.Get().Tracef("URI: %v", color.Blue.Sprint(route))
 
-	// // prep the request headers
-	// req.Header.SetMethod(method)
-	req.Header.Set("User-Agent", SkuidUserAgent)
+	// prep the request headers
+	req.Header.Set(HeaderUserAgent, SkuidUserAgent)
 
-	// // perform the request. errors only pop up if there's an issue
-	// // with assembly/resources.
+	// perform the request. errors only pop up if there's an issue with assembly/resources.
 	logging.Get().Trace(color.Blue.Sprint("Making Request"))
 	var resp *http.Response
 	if resp, err = (&http.Client{}).Do(req); err != nil {
@@ -110,14 +108,14 @@ func RequestHelper(
 	}
 
 	switch statusCode {
+	case http.StatusOK, http.StatusCreated, http.StatusAccepted, http.StatusNoContent:
+		// we're good
 	case http.StatusUnauthorized:
 		if attempts < MAX_AUTHORIZATION_ATTEMPTS {
 			return RequestHelper(route, method, body, headers, attempts+1)
 		} else {
 			err = httpError()
 		}
-	case http.StatusOK:
-		// we're good
 	default:
 		err = httpError()
 	}

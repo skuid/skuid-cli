@@ -36,7 +36,8 @@ func (from NlxMetadata) GetFieldValueByName(target string) (names []string, err 
 	mType := reflect.TypeOf(NlxMetadata{})
 
 	var name string
-	for i := 0; i < mType.NumField(); i++ {
+	fieldCount := mType.NumField()
+	for i := 0; i < fieldCount; i++ {
 		field := mType.Field(i)
 		if field.Tag.Get("json") == target {
 			name = field.Name
@@ -62,6 +63,7 @@ func (from NlxMetadata) GetFieldValueByName(target string) (names []string, err 
 	return
 }
 
+// FilterItem returns true if the path meets the filter criteria, otherwise it returns false
 func (from NlxMetadata) FilterItem(item string) (keep bool) {
 	cleanRelativeFilePath := util.FromWindowsPath(item)
 	directory := filepath.Dir(cleanRelativeFilePath)

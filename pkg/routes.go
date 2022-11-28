@@ -5,8 +5,8 @@ import "fmt"
 // GenerateRoute is similar to GenerateHeaders. We basically just check
 // whether or not something is a pliny or a warden request
 func GenerateRoute(info *Authorization, plan NlxPlan) (url string) {
-	// warden requests all have a different host than the one we originall authenticated
-	// with.
+	// pliny requests will be to the same host that info authorization came from,
+	// so plan.Host will be empty string
 	wardenRequest := plan.Host != ""
 
 	// when given a warden request we have to use the plan information

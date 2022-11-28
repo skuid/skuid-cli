@@ -189,8 +189,8 @@ func GenerateHeaders(host, token string) RequestHeaders {
 // GeneratePlanHeaders is a lot like GenerateRoute. We check whether it's a warden
 // or a pliny request, then change the parameters depending on that.
 func GeneratePlanHeaders(info *Authorization, plan NlxPlan) (headers RequestHeaders) {
-	// warden requests all have a different host than the one we originall authenticated
-	// with.
+	// pliny requests will be to the same host that info authorization came from,
+	// so plan.Host will be empty string
 	wardenRequest := plan.Host != ""
 
 	// when given a warden request we need to provide the authorization / jwt token
