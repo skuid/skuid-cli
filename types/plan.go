@@ -113,7 +113,7 @@ func (m Metadata) FilterMetadataItem(relativeFilePath string) bool {
 	// Check for children of a component pack
 	if metadataType == "componentpacks" {
 		filePathParts := strings.Split(filePath, string(filepath.Separator))
-		if len(filePathParts) == 2 && StringSliceContainsKey(validMetadataNames, filePathParts[0]) {
+		if len(filePathParts) >= 2 && StringSliceContainsKey(validMetadataNames, filePathParts[0]) {
 			return true
 		}
 	}

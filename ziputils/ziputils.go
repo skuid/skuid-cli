@@ -63,7 +63,7 @@ func Archive(inFilePath string, writer io.Writer, metadataFilter *types.Metadata
 				return false
 			}
 		}
-		return true 
+		return true
 	})
 }
 
