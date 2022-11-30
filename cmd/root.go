@@ -9,6 +9,8 @@ import (
 	"github.com/skuid/skuid-cli/pkg/logging"
 )
 
+var VERSION_NAME string
+
 var (
 	// SkuidCmd represents the base command when called without any subcommands
 	SkuidCmd = &cobra.Command{
@@ -18,7 +20,7 @@ var (
 		CompletionOptions: cobra.CompletionOptions{
 			DisableDefaultCmd: true,
 		},
-		Version: constants.VERSION_NAME,
+		Version: VERSION_NAME,
 	}
 )
 

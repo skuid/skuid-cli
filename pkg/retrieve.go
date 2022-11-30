@@ -66,7 +66,7 @@ func ExecuteRetrieval(auth *Authorization, plans NlxPlanPayload) (duration time.
 	executePlan := func(name string, plan NlxPlan) error {
 
 		logging.WithField("planName", name)
-		logging.Get().Debugf("Firing off %v", color.Magenta.Sprint(name))
+		logging.Get().Debugf("Beginning plan %v", color.Magenta.Sprint(name))
 
 		headers := GeneratePlanHeaders(auth, plan)
 		headers[HeaderContentType] = JSON_CONTENT_TYPE

@@ -10,13 +10,14 @@ import (
 
 	"github.com/gookit/color"
 
-	"github.com/skuid/skuid-cli/pkg/constants"
 	"github.com/skuid/skuid-cli/pkg/errors"
 	"github.com/skuid/skuid-cli/pkg/logging"
 )
 
+var VERSION_NAME string
+
 var (
-	SkuidUserAgent = fmt.Sprintf("skuid-cli/%s", constants.VERSION_NAME)
+	SkuidUserAgent = fmt.Sprintf("skuid-cli/%s", VERSION_NAME)
 
 	AcceptableProtocols = []string{
 		"http", "https",
