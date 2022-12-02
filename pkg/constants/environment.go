@@ -12,7 +12,6 @@ const (
 	ENV_PLINY_HOST = "PLINY_HOST"
 )
 
-// tides-specific
 const (
 	ENV_SKUID_VERBOSE          = "SKUID_VERBOSE"
 	ENV_SKUID_DEFAULT_FOLDER   = "SKUID_DEFAULT_FOLDER"

@@ -14,9 +14,11 @@ var VERSION_NAME string
 var (
 	// SkuidCmd represents the base command when called without any subcommands
 	SkuidCmd = &cobra.Command{
-		Use:   constants.PROJECT_NAME,
-		Short: "A CLI for Skuid APIs",
-		Long:  `A command-line interface used to retrieve and deploy Skuid NLX sites.`,
+		SilenceErrors: true,
+		SilenceUsage:  true,
+		Use:           constants.PROJECT_NAME,
+		Short:         "A CLI for Skuid APIs",
+		Long:          `A command-line interface used to retrieve and deploy Skuid NLX sites.`,
 		CompletionOptions: cobra.CompletionOptions{
 			DisableDefaultCmd: true,
 		},

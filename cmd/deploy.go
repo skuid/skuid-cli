@@ -14,6 +14,7 @@ import (
 )
 
 var deployCmd = &cobra.Command{
+	SilenceUsage:      true,
 	Use:               "deploy",
 	Short:             "Deploy local Skuid metadata to a Skuid NLX Site",
 	Long:              "Deploy Skuid metadata stored within a local file system directory to a Skuid NLX Site",

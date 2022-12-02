@@ -19,7 +19,6 @@ import (
 )
 
 var watchCmd = &cobra.Command{
-	SilenceErrors:     true,
 	SilenceUsage:      true,
 	Use:               "watch",
 	Short:             "Watch for changes to local Skuid metadata, and deploy changes to a Skuid NLX Site",

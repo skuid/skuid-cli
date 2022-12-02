@@ -106,7 +106,6 @@ func ArchiveWithFilterFunc(inFilePath string, filterKeep func(string) bool) (res
 	}()
 
 	for success := range ch {
-		//for _, success := range successes {
 		var zipFileWriter io.Writer
 		logging.Get().Tracef("Finished Processing %v", color.Green.Sprint(success.FilePath))
 		zipFileWriter, err = zipWriter.Create(success.FilePath)

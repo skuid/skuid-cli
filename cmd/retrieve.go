@@ -18,6 +18,7 @@ import (
 // retrieveCmd represents the retrieve command
 var (
 	retrieveCmd = &cobra.Command{
+		SilenceUsage:      true,
 		Example:           "retrieve -u myUser -p myPassword --host my-site.skuidsite.com --dir ./retrieval",
 		Use:               "retrieve",
 		Short:             "Retrieve a Skuid NLX Site",
