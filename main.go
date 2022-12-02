@@ -3,6 +3,7 @@ package main
 import (
 	_ "embed"
 	"os"
+	"strings"
 
 	"github.com/gookit/color"
 	"github.com/skuid/skuid-cli/cmd"
@@ -17,6 +18,7 @@ import (
 var VERSION_NAME string
 
 func init() {
+	VERSION_NAME = strings.TrimSpace(VERSION_NAME)
 	cmd.VERSION_NAME = VERSION_NAME
 	pkg.VERSION_NAME = VERSION_NAME
 }
