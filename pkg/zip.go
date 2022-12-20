@@ -4,6 +4,8 @@ import (
 	"archive/zip"
 	"bytes"
 	"context"
+	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -40,6 +42,16 @@ type archiveSuccess struct {
 }
 
 func ArchiveWithFilterFunc(inFilePath string, filterKeep func(string) bool) (result []byte, err error) {
+	inFileStat, err := os.Stat(inFilePath)
+	if err != nil {
+		return nil, err
+	}
+	if !inFileStat.IsDir() {
+		msg := fmt.Sprintf("Requested folder %s is not a directory", inFilePath)
+		logging.Get().Warnf(msg)
+		return nil, errors.New(msg)
+	}
+
 	buffer := new(bytes.Buffer)
 	zipWriter := zip.NewWriter(buffer)
 
