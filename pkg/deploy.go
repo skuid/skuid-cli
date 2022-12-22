@@ -14,12 +14,36 @@ var (
 	DeployPlanRoute = fmt.Sprintf("api/%v/metadata/deploy/plan", DEFAULT_API_VERSION)
 )
 
+const (
+	METADATA_PLAN_KEY  = "skuidMetadataService"
+	METADATA_PLAN_TYPE = "metadataService"
+	DATA_PLAN_KEY      = "skuidCloudDataService"
+	DATA_PLAN_TYPE     = "dataService"
+)
+
 type NlxDynamicPlanMap map[string]NlxPlan
 
 type FilteredRequestBody struct {
 	AppName   string   `json:"appName"`
 	PageNames []string `json:"pageNames"`
 	PlanBytes []byte   `json:"plan"`
+}
+
+type PermissionSetResult struct {
+	AppId          string `json:"app_id"`
+	AppName        string `json:"app_name"`
+	Id             string `json:"id"`
+	Name           string `json:"name"`
+	Description    string `json:"description"`
+	OrganizationId string `json:"organization_id"`
+}
+type permissionSetResults struct {
+	Inserts []PermissionSetResult `json:"inserts"`
+	Updates []PermissionSetResult `json:"updates"`
+	Deletes []PermissionSetResult `json:"deletes"`
+}
+type plinyResult struct {
+	PermissionSets permissionSetResults `json:"permissionSets"`
 }
 
 func GetDeployPlan(auth *Authorization, deploymentPlan []byte, filter *NlxPlanFilter) (duration time.Duration, results NlxDynamicPlanMap, err error) {
@@ -94,6 +118,11 @@ func ExecuteDeployPlan(auth *Authorization, plans NlxDynamicPlanMap, targetDir s
 	defer func() { duration = time.Since(start) }()
 	logging.Get().Trace("Executing Deploy Plan")
 
+	metaPlan, mok := plans[METADATA_PLAN_KEY]
+	dataPlan, dok := plans[DATA_PLAN_KEY]
+	if !mok || !dok {
+		return
+	}
 	planResults = make([]NlxDeploymentResult, 0)
 
 	executePlan := func(plan NlxPlan) (err error) {
@@ -111,6 +140,27 @@ func ExecuteDeployPlan(auth *Authorization, plans NlxDynamicPlanMap, targetDir s
 
 		url := GenerateRoute(auth, plan)
 		logging.Get().Tracef("Plan Request: %v\n", url)
+
+		if plan.Type == DATA_PLAN_TYPE && len(plan.NewPermissionSets) > 0 {
+			// Create new permission sets with the UUIDs that the metadata service generated and assigned
+			newPsPlan := plan // we do not need deep copy, as we are only changing the path
+			newPsPlan.Endpoint = "/metadata/permissionsets"
+			psurl := GenerateRoute(auth, newPsPlan)
+			var pspayload []byte
+			pspayload, err = json.Marshal(newPsPlan.NewPermissionSets)
+			if err != nil {
+				return
+			}
+			_, err = Request(
+				psurl,
+				http.MethodPost,
+				pspayload,
+				headers,
+			)
+			if err != nil {
+				return
+			}
+		}
 
 		var response []byte
 		if response, err = Request(
@@ -131,14 +181,29 @@ func ExecuteDeployPlan(auth *Authorization, plans NlxDynamicPlanMap, targetDir s
 		}
 		logging.Get().Infof("Finished Deploying %v", color.Magenta.Sprint(plan.Type))
 
+		if plan.Type == METADATA_PLAN_TYPE {
+			// Collect new permission set UUIDs so we can create them in warden with matching UUIDs
+			resultMap := plinyResult{}
+			err = json.Unmarshal(response, &resultMap)
+			if err != nil {
+				return
+			}
+			dataPlan.NewPermissionSets = make([]PermissionSetResult, len(resultMap.PermissionSets.Inserts))
+			for i, v := range resultMap.PermissionSets.Inserts {
+				dataPlan.NewPermissionSets[i] = v
+			}
+		}
 		return
 	}
 
-	for _, plan := range plans {
-		err = executePlan(plan)
-		if err != nil {
-			return // bail
-		}
+	// Run metadata plan first, because there may be new PermissionSets to sync up with the data plan
+	err = executePlan(metaPlan)
+	if err != nil {
+		return
+	}
+	err = executePlan(dataPlan)
+	if err != nil {
+		return
 	}
 
 	return

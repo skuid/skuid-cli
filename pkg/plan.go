@@ -14,12 +14,13 @@ type NlxPlanPayload struct {
 }
 
 type NlxPlan struct {
-	Host     string      `json:"host"`
-	Port     string      `json:"port"`
-	Endpoint string      `json:"url"`
-	Type     string      `json:"type"`
-	Metadata NlxMetadata `json:"metadata"`
-	Warnings []string    `json:"warnings"`
+	Host              string                `json:"host"`
+	Port              string                `json:"port"`
+	Endpoint          string                `json:"url"`
+	Type              string                `json:"type"`
+	Metadata          NlxMetadata           `json:"metadata"`
+	Warnings          []string              `json:"warnings"`
+	NewPermissionSets []PermissionSetResult `json:"newPermissionSets"`
 }
 
 // NlxPlanFilter should be serialized and provided with the
