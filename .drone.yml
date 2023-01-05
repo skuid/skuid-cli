@@ -5,7 +5,7 @@ name: skuid-cli
 
 workspace:
   base: /go
-  path: src/github.com/skuid/skuid-cli/
+  path: src/github.com/skuid/skuid-cli
 
 volumes:
   - name: output
@@ -20,7 +20,7 @@ steps:
     image: golang:1.15-alpine
     commands:
       - apk add git
-      - go test -v -cover -short ./...
+      - go test -v ./...
     environment:
       CGO_ENABLED: '0'
   - name: build
