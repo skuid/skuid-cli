@@ -1,11 +1,11 @@
 ---
 kind: pipeline
 type: docker
-name: tides
+name: skuid-cli
 
 workspace:
   base: /go
-  path: src/github.com/skuid/tides
+  path: src/github.com/skuid/skuid-cli/
 
 volumes:
   - name: output
@@ -17,14 +17,14 @@ steps:
     commands:
       - git fetch --tags
   - name: test
-    image: golang:1.18-alpine
+    image: golang:1.15-alpine
     commands:
       - apk add git
-      - go test -v -cover -short ./... # -args coverfail=true
+      - go test -v -cover -short ./...
     environment:
       CGO_ENABLED: '0'
   - name: build
-    image: golang:1.18-alpine
+    image: golang:1.15-alpine
     commands:
       - go mod download
       - VERSION=$(cat .version)
