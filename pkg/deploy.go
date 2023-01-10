@@ -206,6 +206,18 @@ func ExecuteDeployPlan(auth *Authorization, plans NlxDynamicPlanMap, targetDir s
 		return
 	}
 
+	// Tell pliny to sync datasource external_id field with warden ids
+	syncPlan := metaPlan
+	headers := GeneratePlanHeaders(auth, syncPlan)
+	syncPlan.Endpoint = "/metadata/deploy/sync"
+	url := GenerateRoute(auth, syncPlan)
+	_, err = Request(
+		url,
+		http.MethodPost,
+		[]byte{},
+		headers,
+	)
+
 	return
 }
 
