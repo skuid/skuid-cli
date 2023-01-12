@@ -120,7 +120,7 @@ func ExecuteDeployPlan(auth *Authorization, plans NlxDynamicPlanMap, targetDir s
 
 	metaPlan, mok := plans[METADATA_PLAN_KEY]
 	dataPlan, dok := plans[DATA_PLAN_KEY]
-	if !mok || !dok {
+	if !mok && !dok {
 		return
 	}
 	planResults = make([]NlxDeploymentResult, 0)
@@ -197,26 +197,32 @@ func ExecuteDeployPlan(auth *Authorization, plans NlxDynamicPlanMap, targetDir s
 	}
 
 	// Run metadata plan first, because there may be new PermissionSets to sync up with the data plan
-	err = executePlan(metaPlan)
-	if err != nil {
-		return
+	if mok {
+		err = executePlan(metaPlan)
+		if err != nil {
+			return
+		}
 	}
-	err = executePlan(dataPlan)
-	if err != nil {
-		return
+	if dok {
+		err = executePlan(dataPlan)
+		if err != nil {
+			return
+		}
 	}
 
 	// Tell pliny to sync datasource external_id field with warden ids
-	syncPlan := metaPlan
-	headers := GeneratePlanHeaders(auth, syncPlan)
-	syncPlan.Endpoint = "/metadata/deploy/sync"
-	url := GenerateRoute(auth, syncPlan)
-	_, err = Request(
-		url,
-		http.MethodPost,
-		[]byte{},
-		headers,
-	)
+	if mok && dok {
+		syncPlan := metaPlan
+		headers := GeneratePlanHeaders(auth, syncPlan)
+		syncPlan.Endpoint = "/metadata/deploy/sync"
+		url := GenerateRoute(auth, syncPlan)
+		_, err = Request(
+			url,
+			http.MethodPost,
+			[]byte{},
+			headers,
+		)
+	}
 
 	return
 }
