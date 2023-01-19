@@ -1,13 +1,12 @@
 package util
 
 import (
-	"io/ioutil"
 	"os"
 
 	"github.com/gookit/color"
 	"github.com/sirupsen/logrus"
 
-	"github.com/skuid/tides/pkg/logging"
+	"github.com/skuid/skuid-cli/pkg/logging"
 )
 
 type WritePayload struct {
@@ -16,7 +15,7 @@ type WritePayload struct {
 }
 
 func WriteResultsToDisk(targetDirectory string, result WritePayload) (err error) {
-	return WriteResults(targetDirectory, result, CopyToFile, CreateDirectoryDeep, ioutil.ReadFile)
+	return WriteResults(targetDirectory, result, CopyToFile, CreateDirectoryDeep, os.ReadFile)
 }
 
 func WriteResults(targetDirectory string, result WritePayload, copyToFile FileCreator, createDirectoryDeep DirectoryCreator, ioutilReadFile FileReader) (err error) {
@@ -48,7 +47,9 @@ func WriteResults(targetDirectory string, result WritePayload, copyToFile FileCr
 			Error("error creating temporary file")
 		return err
 	}
-	defer os.Remove(tmpFileName)
+	defer func(path string) {
+		_ = os.RemoveAll(path)
+	}(tmpFileName)
 
 	// unzip the contents of our temp zip file
 	err = UnzipArchive(

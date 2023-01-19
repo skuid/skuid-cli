@@ -11,14 +11,10 @@ skuid_windows_amd64.exe
 .idea
 .scripts
 .test*
-# all test environment files lol
-**/**/.testenv
+pkg/.testenv
 .coverage
-**/**/.retrieve
-**/**/.deploy
-**/**/_retrieve
-**/**/_deploy
 logs
 .logs
 **/**/*.log
 work/
+.DS_Store

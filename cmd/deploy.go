@@ -7,14 +7,13 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"github.com/skuid/tides/cmd/common"
-	"github.com/skuid/tides/pkg"
-	"github.com/skuid/tides/pkg/flags"
-	"github.com/skuid/tides/pkg/logging"
+	"github.com/skuid/skuid-cli/cmd/common"
+	"github.com/skuid/skuid-cli/pkg"
+	"github.com/skuid/skuid-cli/pkg/flags"
+	"github.com/skuid/skuid-cli/pkg/logging"
 )
 
 var deployCmd = &cobra.Command{
-	SilenceErrors:     true,
 	SilenceUsage:      true,
 	Use:               "deploy",
 	Short:             "Deploy local Skuid metadata to a Skuid NLX Site",
@@ -24,9 +23,9 @@ var deployCmd = &cobra.Command{
 }
 
 func init() {
-	TidesCmd.AddCommand(deployCmd)
+	SkuidCmd.AddCommand(deployCmd)
 	flags.AddFlags(deployCmd, flags.NLXLoginFlags...)
-	flags.AddFlags(deployCmd, flags.Directory, flags.AppName, flags.ApiVersion)
+	flags.AddFlags(deployCmd, flags.Directory, flags.AppName)
 	flags.AddFlags(deployCmd, flags.Pages)
 }
 
@@ -37,12 +36,16 @@ func Deploy(cmd *cobra.Command, _ []string) (err error) {
 	logging.WithFields(fields).Info(color.Green.Sprint("Starting Deploy"))
 
 	// get required authentication arguments
-	var host, username, password string
-	if host, err = cmd.Flags().GetString(flags.PlinyHost.Name); err != nil {
+	host, err := cmd.Flags().GetString(flags.PlinyHost.Name)
+	if err != nil {
 		return
-	} else if username, err = cmd.Flags().GetString(flags.Username.Name); err != nil {
+	}
+	username, err := cmd.Flags().GetString(flags.Username.Name)
+	if err != nil {
 		return
-	} else if password, err = cmd.Flags().GetString(flags.Password.Name); err != nil {
+	}
+	password, err := cmd.Flags().GetString(flags.Password.Name)
+	if err != nil {
 		return
 	}
 
@@ -59,14 +62,8 @@ func Deploy(cmd *cobra.Command, _ []string) (err error) {
 	fields["authorized"] = true
 	logging.WithFields(fields).Info("Authentication Successful")
 
-	// we want the filter nil because it will be discarded without
-	// initialization
+	// only create the filter struct if it hasn't been created yet
 	var filter *pkg.NlxPlanFilter = nil
-
-	// initialize the filter dynamically based on
-	// optional filter arguments. This lets us
-	// expand the pattern down the road as more things
-	// are required to be build
 	initFilter := func() {
 		if filter == nil {
 			filter = &pkg.NlxPlanFilter{}
@@ -101,7 +98,7 @@ func Deploy(cmd *cobra.Command, _ []string) (err error) {
 		fields["targetDirectory"] = targetDirectory
 	}
 
-	logging.WithFields(fields).Info("Getting Deployment Plan")
+	logging.WithFields(fields).Info("Getting Deployment Payload")
 
 	var deploymentPlan []byte
 	if deploymentPlan, err = pkg.Archive(targetDirectory, nil); err != nil {
@@ -109,23 +106,24 @@ func Deploy(cmd *cobra.Command, _ []string) (err error) {
 	}
 
 	fields["deploymentBytes"] = len(deploymentPlan)
-	logging.WithFields(fields).Infof("Got Deployment Plan")
+	logging.WithFields(fields).Info("Got Deployment Payload")
 
 	// get the plan
+	logging.WithFields(fields).Info("Getting Deployment Plan")
 	var plans pkg.NlxDynamicPlanMap
-	if _, plans, err = pkg.PrepareDeployment(auth, deploymentPlan, filter); err != nil {
-		logging.Get().Warnf("Unable to prepare deployment: %v", err)
+	if _, plans, err = pkg.GetDeployPlan(auth, deploymentPlan, filter); err != nil {
+		logging.Get().Errorf("Unable to prepare deployment: %v", err)
 		return
 	}
+	logging.WithFields(fields).Info("Got Deployment Plan")
 
 	fields["plans"] = len(plans)
-	logging.WithFields(fields)
 
-	logging.Get().Info("Executing Deployment Plan")
+	logging.WithFields(fields).Info("Executing Deployment Plan")
 
 	var results []pkg.NlxDeploymentResult
 	if _, results, err = pkg.ExecuteDeployPlan(auth, plans, targetDirectory); err != nil {
-		logging.Get().Errorf("Unable to execute deployment: %v", color.Red.Sprint(err))
+		logging.Get().Errorf("Unable to execute deployment: %v", err)
 		return
 	}
 

@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/skuid/tides/pkg/util"
+	"github.com/skuid/skuid-cli/pkg/util"
 )
 
 func TestStringSliceContainsKey(t *testing.T) {

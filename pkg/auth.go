@@ -31,7 +31,6 @@ func (a *Authorization) Refresh() (err error) {
 	return
 }
 
-// GetAccessToken
 func GetAccessToken(host, username, password string) (accessToken string, err error) {
 	// prep the body
 	body := []byte(url.Values{

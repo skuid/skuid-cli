@@ -8,21 +8,20 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"github.com/skuid/tides/cmd/common"
-	"github.com/skuid/tides/pkg"
-	"github.com/skuid/tides/pkg/flags"
-	"github.com/skuid/tides/pkg/logging"
-	"github.com/skuid/tides/pkg/util"
+	"github.com/skuid/skuid-cli/cmd/common"
+	"github.com/skuid/skuid-cli/pkg"
+	"github.com/skuid/skuid-cli/pkg/flags"
+	"github.com/skuid/skuid-cli/pkg/logging"
+	"github.com/skuid/skuid-cli/pkg/util"
 )
 
 // retrieveCmd represents the retrieve command
 var (
 	retrieveCmd = &cobra.Command{
 		SilenceUsage:      true,
-		SilenceErrors:     true, // we do not want to show users raw errors
 		Example:           "retrieve -u myUser -p myPassword --host my-site.skuidsite.com --dir ./retrieval",
 		Use:               "retrieve",
-		Short:             "Retrieve Skuid metadata from an Skuid NLX Site into a local directory",
+		Short:             "Retrieve a Skuid NLX Site",
 		Long:              "Retrieve Skuid metadata from a Skuid NLX Site and output it into a local directory",
 		PersistentPreRunE: common.PrerunValidation,
 		RunE:              Retrieve,
@@ -37,18 +36,21 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 
 	logging.Get().Info(color.Green.Sprint("Starting Retrieve"))
 	// get required arguments
-	var host, username, password string
-	if host, err = cmd.Flags().GetString(flags.PlinyHost.Name); err != nil {
+	host, err := cmd.Flags().GetString(flags.PlinyHost.Name)
+	if err != nil {
 		return
-	} else if username, err = cmd.Flags().GetString(flags.Username.Name); err != nil {
+	}
+	username, err := cmd.Flags().GetString(flags.Username.Name)
+	if err != nil {
 		return
-	} else if password, err = cmd.Flags().GetString(flags.Password.Name); err != nil {
+	}
+	password, err := cmd.Flags().GetString(flags.Password.Name)
+	if err != nil {
 		return
 	}
 
 	fields["host"] = host
 	fields["username"] = username
-	fields["password"] = password != ""
 	logging.WithFields(fields).Debug("Credentials gathered")
 
 	var auth *pkg.Authorization
@@ -122,7 +124,8 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 	fields["directory"] = directory
 	logging.WithFields(fields).Infof("Target Directory is %v", color.Cyan.Sprint(directory))
 
-	pkg.ClearDirectories(directory)
+	// TODO: put this behind a boolean command flag
+	//pkg.ClearDirectories(directory)
 
 	fields["writeStart"] = time.Now()
 
@@ -145,9 +148,9 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 }
 
 func init() {
-	TidesCmd.AddCommand(retrieveCmd)
+	SkuidCmd.AddCommand(retrieveCmd)
 
 	flags.AddFlags(retrieveCmd, flags.NLXLoginFlags...)
-	flags.AddFlags(retrieveCmd, flags.Directory, flags.AppName, flags.ApiVersion)
+	flags.AddFlags(retrieveCmd, flags.Directory, flags.AppName)
 	flags.AddFlags(retrieveCmd, flags.Pages)
 }

@@ -10,11 +10,11 @@ import (
 
 	"github.com/gookit/color"
 
-	"github.com/skuid/tides/pkg/logging"
+	"github.com/skuid/skuid-cli/pkg/logging"
 )
 
 const (
-	MAX_ATTEMPTS = 5
+	MAX_ATTEMPTS = 2
 )
 
 type FileCreator func(fileReader io.ReadCloser, path string) error

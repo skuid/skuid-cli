@@ -3,23 +3,27 @@ package pkg
 import (
 	"archive/zip"
 	"bytes"
-	"io/ioutil"
+	"context"
+	"errors"
+	"fmt"
+	"io"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 
 	"github.com/gookit/color"
+	"github.com/skuid/skuid-cli/pkg/logging"
 	"golang.org/x/sync/errgroup"
-
-	"github.com/skuid/tides/pkg/logging"
 )
 
 // Archive compresses a file/directory to a writer
 func Archive(inFilePath string, filter *NlxMetadata) (result []byte, err error) {
 	return ArchiveWithFilterFunc(inFilePath, func(relativePath string) bool {
 		if filter != nil {
-			return !filter.FilterItem(relativePath)
+			keep := filter.FilterItem(relativePath)
+			if !keep {
+				return false
+			}
 		}
 		return true
 	})
@@ -37,16 +41,25 @@ type archiveSuccess struct {
 	FilePath string
 }
 
-func ArchiveWithFilterFunc(inFilePath string, filter func(string) bool) (result []byte, err error) {
+func ArchiveWithFilterFunc(inFilePath string, filterKeep func(string) bool) (result []byte, err error) {
+	inFileStat, err := os.Stat(inFilePath)
+	if err != nil {
+		return nil, err
+	}
+	if !inFileStat.IsDir() {
+		msg := fmt.Sprintf("Requested folder %s is not a directory", inFilePath)
+		logging.Get().Warnf(msg)
+		return nil, errors.New(msg)
+	}
+
 	buffer := new(bytes.Buffer)
 	zipWriter := zip.NewWriter(buffer)
-	basePath := filepath.Dir(inFilePath)
 
-	// halves the time of archival
-	eg := &errgroup.Group{}
+	// https://pkg.go.dev/golang.org/x/sync/errgroup#example-Group-Pipeline
+	g, ctx := errgroup.WithContext(context.Background())
 	ch := make(chan archiveSuccess)
 
-	if err = filepath.Walk(inFilePath, func(filePath string, fileInfo os.FileInfo, e error) (err error) {
+	err = filepath.Walk(inFilePath, func(filePath string, fileInfo os.FileInfo, e error) (err error) {
 		if e != nil {
 			return e
 		}
@@ -56,68 +69,71 @@ func ArchiveWithFilterFunc(inFilePath string, filter func(string) bool) (result 
 			return
 		}
 
-		var relativeFilePath string
-		if relativeFilePath, err = filepath.Rel(basePath, filePath); err != nil {
-			logging.Get().Warnf("Relative Filepath Error: %v", err)
-			return
-		}
-
-		encapsulatingDirectory, fileName := filepath.Split(filePath)
-		encapsulatingFolder := filepath.Base(encapsulatingDirectory)
-
 		// we only want the immediate directory and the filename for the archive path
-		// so we are going to truncate the archive path
-		archivePath := path.Join(encapsulatingFolder, fileName)
-
-		if strings.HasPrefix(archivePath, ".") || !filter(relativeFilePath) {
-			// todo: fix this; it's not properly filtering off of the low level directory and the filename
-			logging.Get().Debugf(color.Gray.Sprintf("Ignoring: %v", filePath))
+		var archivePath string
+		if archivePath, err = filepath.Rel(inFilePath, filePath); err != nil {
+			logging.Get().Warnf("ArchivePath Error: %v", err)
 			return
 		}
 
-		// spin off a thread archiving the file
-		eg.Go(func() error {
-			logging.Get().Tracef("Processing: %v => %v", color.Green.Sprint(filePath), color.Yellow.Sprint(archivePath))
-			if bytes, err := ioutil.ReadFile(filePath); err != nil {
-				logging.Get().Warnf("Error Processing %v: %v", filePath, err)
-				return err
-			} else {
-				ch <- archiveSuccess{
-					Bytes:    bytes,
-					FilePath: archivePath,
-				}
-			}
-			return nil
-		})
+		if strings.HasPrefix(archivePath, ".") {
+			logging.Get().Debugf(color.Gray.Sprintf("Ignoring hidden file: %v", filePath))
+			return
+		}
 
-		return err
-	}); err != nil {
+		if !filterKeep(archivePath) {
+			logging.Get().Debugf(color.Gray.Sprintf("Ignoring filtered file: %v", filePath))
+			return
+		}
+
+		// spin off a thread archiving each file
+		g.Go(func() (err error) {
+			logging.Get().Tracef("Processing: %v => %v", color.Green.Sprint(filePath), color.Yellow.Sprint(archivePath))
+			var fileBytes []byte
+			fileBytes, err = os.ReadFile(filePath)
+			if err != nil {
+				logging.Get().Warnf("Error Processing %v: %v", filePath, err)
+				return
+			}
+			success := archiveSuccess{
+				Bytes:    fileBytes,
+				FilePath: archivePath,
+			}
+			select {
+			case ch <- success:
+			case <-ctx.Done():
+				return ctx.Err()
+			}
+			return
+		})
 		return
-	}
+	})
 
 	go func() {
-		err = eg.Wait()
+		err = g.Wait()
+		close(ch) // after all workers in group are done, we can close channel to begin range
 		if err != nil {
 			logging.Get().WithError(err).Fatal("failed during ArchiveWithFilterFunc")
 		}
-		close(ch)
 	}()
 
 	for success := range ch {
+		var zipFileWriter io.Writer
 		logging.Get().Tracef("Finished Processing %v", color.Green.Sprint(success.FilePath))
-		if zipFileWriter, e := zipWriter.Create(success.FilePath); err != nil {
-			err = e
-			logging.Get().Warnf("Error processing %v: %v", success.FilePath, err)
+		zipFileWriter, err = zipWriter.Create(success.FilePath)
+		if err != nil {
+			logging.Get().Errorf("Error processing %v: %v", success.FilePath, err)
 			return
-		} else if _, e := zipFileWriter.Write(success.Bytes); e != nil {
-			logging.Get().Warnf("Error writing %v: %v", success.FilePath, err)
-			err = e
+		}
+		_, err = zipFileWriter.Write(success.Bytes)
+		if err != nil {
+			logging.Get().Errorf("Error writing %v: %v", success.FilePath, err)
 			return
 		}
 	}
 
-	zipWriter.Close()
-	result, err = ioutil.ReadAll(buffer)
+	_ = zipWriter.Close()
+	result, err = io.ReadAll(buffer)
 
 	return
 }

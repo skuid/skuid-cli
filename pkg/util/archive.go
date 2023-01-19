@@ -6,18 +6,17 @@ import (
 	"archive/zip"
 	"bytes"
 	"io"
-	"io/ioutil"
 	"path/filepath"
 	"strings"
 
 	"github.com/gookit/color"
 	"github.com/sirupsen/logrus"
 
-	"github.com/skuid/tides/pkg/logging"
+	"github.com/skuid/skuid-cli/pkg/logging"
 )
 
 var (
-	pathMap map[string]bool = make(map[string]bool, 0)
+	pathMap = make(map[string]bool, 0)
 )
 
 func ResetPathMap() {
@@ -85,7 +84,6 @@ func UnzipArchive(sourceFileLocation, targetLocation string, fileCreator FileCre
 			logging.Get().Warnf("Error opening file: %v", err)
 			return
 		}
-		defer fileReader.Close()
 
 		if !strings.Contains(path, "/files") {
 			if filepath.Ext(path) == ".json" {
@@ -103,9 +101,14 @@ func UnzipArchive(sourceFileLocation, targetLocation string, fileCreator FileCre
 			}
 		}
 
-		if err = fileCreator(fileReader, path); err != nil {
+		err = fileCreator(fileReader, path)
+		if err != nil {
 			logging.Get().Warnf("Error with file creator: %v", err)
 			return
+		}
+		err = fileReader.Close()
+		if err != nil {
+			return err
 		}
 	}
 
@@ -114,7 +117,7 @@ func UnzipArchive(sourceFileLocation, targetLocation string, fileCreator FileCre
 
 func SanitizeZip(reader io.ReadCloser) (newReader io.ReadCloser, err error) {
 	var b []byte
-	if b, err = ioutil.ReadAll(reader); err != nil {
+	if b, err = io.ReadAll(reader); err != nil {
 		logging.Get().Warnf("unable to read all: %v", err)
 		return
 	}
@@ -125,7 +128,7 @@ func SanitizeZip(reader io.ReadCloser) (newReader io.ReadCloser, err error) {
 		return
 	}
 
-	newReader = ioutil.NopCloser(bytes.NewBuffer(b))
+	newReader = io.NopCloser(bytes.NewBuffer(b))
 
 	return
 }

@@ -4,19 +4,20 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 
 	"github.com/gookit/color"
 
-	"github.com/skuid/tides/pkg/constants"
-	"github.com/skuid/tides/pkg/errors"
-	"github.com/skuid/tides/pkg/logging"
+	"github.com/skuid/skuid-cli/pkg/errors"
+	"github.com/skuid/skuid-cli/pkg/logging"
 )
 
+var VERSION_NAME string
+
 var (
-	SkuidUserAgent = fmt.Sprintf("Tides/%s", constants.VERSION_NAME)
+	SkuidUserAgent = fmt.Sprintf("skuid-cli/%s", VERSION_NAME)
 
 	AcceptableProtocols = []string{
 		"http", "https",
@@ -25,7 +26,7 @@ var (
 
 const (
 	DEFAULT_API_VERSION        = "v2"
-	MAX_AUTHORIZATION_ATTEMPTS = 3 // 5 will lock you out iirc
+	MAX_AUTHORIZATION_ATTEMPTS = 1 // 5 will lock you out
 )
 
 func JsonBodyRequest[T any](
@@ -78,12 +79,10 @@ func RequestHelper(
 	}
 	logging.Get().Tracef("URI: %v", color.Blue.Sprint(route))
 
-	// // prep the request headers
-	// req.Header.SetMethod(method)
-	req.Header.Set("User-Agent", SkuidUserAgent)
+	// prep the request headers
+	req.Header.Set(HeaderUserAgent, SkuidUserAgent)
 
-	// // perform the request. errors only pop up if there's an issue
-	// // with assembly/resources.
+	// perform the request. errors only pop up if there's an issue with assembly/resources.
 	logging.Get().Trace(color.Blue.Sprint("Making Request"))
 	var resp *http.Response
 	if resp, err = (&http.Client{}).Do(req); err != nil {
@@ -92,7 +91,7 @@ func RequestHelper(
 
 	// // check the validity of the body and grab the access token
 	var responseBody []byte
-	responseBody, err = ioutil.ReadAll(resp.Body)
+	responseBody, err = io.ReadAll(resp.Body)
 	if err != nil {
 		return
 	}
@@ -110,14 +109,14 @@ func RequestHelper(
 	}
 
 	switch statusCode {
+	case http.StatusOK, http.StatusCreated, http.StatusAccepted, http.StatusNoContent:
+		// we're good
 	case http.StatusUnauthorized:
 		if attempts < MAX_AUTHORIZATION_ATTEMPTS {
 			return RequestHelper(route, method, body, headers, attempts+1)
 		} else {
 			err = httpError()
 		}
-	case http.StatusOK:
-		// we're good
 	default:
 		err = httpError()
 	}

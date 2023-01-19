@@ -3,12 +3,11 @@ package common
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/skuid/tides/pkg/flags"
-	"github.com/skuid/tides/pkg/logging"
+	"github.com/skuid/skuid-cli/pkg/flags"
+	"github.com/skuid/skuid-cli/pkg/logging"
 )
 
-// PrerunValidation does generic validation for a function to make sure it has
-// https (as was in the main function)
+// PrerunValidation sets up logging according to command flags
 func PrerunValidation(cmd *cobra.Command, _ []string) error {
 	// set verbosity
 	if verbose, err := cmd.Flags().GetBool(flags.Verbose.Name); err != nil {
@@ -29,29 +28,18 @@ func PrerunValidation(cmd *cobra.Command, _ []string) error {
 		logging.SetDiagnostic()
 	}
 
-	if err := LoggingValidation(cmd, []string{}); err != nil {
+	fileLoggingEnabled, err := cmd.Flags().GetBool(flags.FileLogging.Name)
+	if err != nil {
 		return err
 	}
 
-	return nil
-}
-
-func LoggingValidation(cmd *cobra.Command, _ []string) (err error) {
-	var fileLoggingEnabled bool
-	if fileLoggingEnabled, err = cmd.Flags().GetBool(flags.FileLogging.Name); err != nil {
-		return
+	loggingDirectory, err := cmd.Flags().GetString(flags.FileLoggingDirectory.Name)
+	if err != nil {
+		return err
 	}
 
-	var loggingDirectory string
-	if loggingDirectory, err = cmd.Flags().GetString(flags.FileLoggingDirectory.Name); err != nil {
-		return
-	}
-
-	// try to open a file for this run off this
 	if fileLoggingEnabled {
 		logging.SetFileLogging(loggingDirectory)
 	}
-
-	return
-
+	return nil
 }
