@@ -2,30 +2,21 @@ SHA = $(shell git rev-parse --short HEAD)
 GO_PKGS = $$(go list ./... | grep -v vendor)
 REPOSITORY = 095427547185.dkr.ecr.us-west-2.amazonaws.com/skuid/skuid
 TAG = latest
-VOL_PATH=/go/src/github.com/skuid/tides
-GO_VERSION=1.15
+VOL_PATH=/go/src/github.com/skuid/skuid-cli
+GO_VERSION=1.18
 IMAGE ?= golang
 
 ARCH=amd64
 OS=darwin
 
 VERSION=`cat .version`
-LDFLAGS=-ldflags="-w -X github.com/skuid/tides/version.Name=$(VERSION)"
+LDFLAGS=-ldflags="-w -X github.com/skuid/skuid-cli/version.Name=$(VERSION)"
 
 .PHONY: setup fmt vendored
 
-# fails if coverage < 85%
-# see MainTest for details
-# (TODO: add coverfail=true)
-ci:
-	go test -v -cover ./... -args 
-
 test:
 	go test -v -short ./...
-	
-it:
-	go test -v ./...
-	
+
 bench:
 	go test -benchmem -v -bench=. ./...
 
@@ -58,9 +49,9 @@ push:
 
 # specifically used for downloads via github.
 release:
-	GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -o tides_linux_amd64
-	GOOS=darwin GOARCH=amd64 go build $(LDFLAGS) -o tides_darwin_amd64
-	GOOS=windows GOARCH=amd64 go build $(LDFLAGS) -o tides_windows_amd64.exe
+	GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -o skuid-cli_linux_amd64
+	GOOS=darwin GOARCH=amd64 go build $(LDFLAGS) -o skuid-cli_darwin_amd64
+	GOOS=windows GOARCH=amd64 go build $(LDFLAGS) -o skuid-cli_windows_amd64.exe
 
 # this command creates a directory .coverage 
 # then outputs coverage data into .coverage/cover.out, 
@@ -69,9 +60,3 @@ cover:
 	@mkdir .coverage || echo "hidden coverage folder exists"
 	@go test -short -v -cover ./... -coverprofile .coverage/coverage.out
 	@go tool cover -html=.coverage/coverage.out -o .coverage/coverage.html
-
-# this opens the file .coverage/coverage.html after
-# generating the consumable html coverage report
-covero:
-	@make cover
-	@open .coverage/coverage.html

@@ -84,7 +84,7 @@ func SetFileLogging(loggingDirectory string) (err error) {
 			return err
 		}
 	} else if !stat.IsDir() {
-		err = fmt.Errorf("Directory required at loc: %v", dir)
+		err = fmt.Errorf("directory required at loc: %v", dir)
 		return
 	}
 

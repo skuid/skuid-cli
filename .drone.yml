@@ -1,11 +1,11 @@
 ---
 kind: pipeline
 type: docker
-name: tides
+name: skuid-cli
 
 workspace:
   base: /go
-  path: src/github.com/skuid/tides
+  path: src/github.com/skuid/skuid-cli/
 
 volumes:
   - name: output
@@ -20,7 +20,7 @@ steps:
     image: golang:1.18-alpine
     commands:
       - apk add git
-      - go test -v -cover -short ./... # -args coverfail=true
+      - go test -v -cover -short ./...
     environment:
       CGO_ENABLED: '0'
   - name: build
@@ -28,9 +28,9 @@ steps:
     commands:
       - go mod download
       - VERSION=$(cat .version)
-      - GOOS=linux GOARCH=amd64 go build -ldflags="-w -X github.com/skuid/tides/version.Name=$VERSION" -o /tmp/dist/skuid_linux_amd64
-      - GOOS=darwin GOARCH=amd64 go build -ldflags="-w -X github.com/skuid/tides/version.Name=$VERSION" -o /tmp/dist/skuid_darwin_amd64
-      - GOOS=windows GOARCH=amd64 go build -ldflags="-w -X github.com/skuid/tides/version.Name=$VERSION" -o /tmp/dist/skuid_windows_amd64.exe
+      - GOOS=linux GOARCH=amd64 go build -ldflags="-w -X github.com/skuid/skuid-cli/version.Name=$VERSION" -o /tmp/dist/skuid_linux_amd64
+      - GOOS=darwin GOARCH=amd64 go build -ldflags="-w -X github.com/skuid/skuid-cli/version.Name=$VERSION" -o /tmp/dist/skuid_darwin_amd64
+      - GOOS=windows GOARCH=amd64 go build -ldflags="-w -X github.com/skuid/skuid-cli/version.Name=$VERSION" -o /tmp/dist/skuid_windows_amd64.exe
     environment:
       CGO_ENABLED: '0'
     volumes:

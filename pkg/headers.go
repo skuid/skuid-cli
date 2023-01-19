@@ -9,8 +9,6 @@ const (
 	JSON_CONTENT_TYPE        = "application/json"
 	URL_ENCODED_CONTENT_TYPE = "application/x-www-form-urlencoded"
 
-	DEFAULT_CONTENT_TYPE = JSON_CONTENT_TYPE
-
 	HEADER_SKUID_PUBLIC_KEY_ENDPOINT = "x-skuid-public-key-endpoint"
 )
 
@@ -180,7 +178,7 @@ const (
 
 type RequestHeaders map[string]string
 
-// easy macro for the authorization headers we want
+// GenerateHeaders is an easy macro for the authorization headers we want
 func GenerateHeaders(host, token string) RequestHeaders {
 	return RequestHeaders{
 		HeaderAuthorization:              fmt.Sprintf("Bearer %v", token),
@@ -191,15 +189,15 @@ func GenerateHeaders(host, token string) RequestHeaders {
 // GeneratePlanHeaders is a lot like GenerateRoute. We check whether it's a warden
 // or a pliny request, then change the parameters depending on that.
 func GeneratePlanHeaders(info *Authorization, plan NlxPlan) (headers RequestHeaders) {
-	// warden requests all have a different host than the one we originall authenticated
-	// with.
+	// pliny requests will be to the same host that info authorization came from,
+	// so plan.Host will be empty string
 	wardenRequest := plan.Host != ""
 
 	// when given a warden request we need to provide the authorization / jwt token
 	if wardenRequest {
-		headers = GenerateHeaders(plan.Host, info.AuthorizationToken)
+		headers = GenerateHeaders(info.Host, info.AuthorizationToken)
 	} else {
-		headers = GenerateHeaders(plan.Host, info.AccessToken)
+		headers = GenerateHeaders(info.Host, info.AccessToken)
 	}
 
 	return

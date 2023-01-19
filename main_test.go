@@ -35,7 +35,3 @@ func TestMain(m *testing.M) {
 	os.Exit(rc)
 
 }
-
-func TestRun(t *testing.T) {
-	// TODO
-}

@@ -3,7 +3,7 @@ package pkg_test
 import (
 	"testing"
 
-	"github.com/skuid/tides/pkg"
+	"github.com/skuid/skuid-cli/pkg"
 	"github.com/stretchr/testify/assert"
 )
 

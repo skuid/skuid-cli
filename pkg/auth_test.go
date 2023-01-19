@@ -7,9 +7,9 @@ import (
 	"github.com/gookit/color"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/skuid/tides/pkg"
-	"github.com/skuid/tides/pkg/constants"
-	"github.com/skuid/tides/pkg/util"
+	"github.com/skuid/skuid-cli/pkg"
+	"github.com/skuid/skuid-cli/pkg/constants"
+	"github.com/skuid/skuid-cli/pkg/util"
 )
 
 var (

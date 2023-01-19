@@ -7,9 +7,9 @@ import (
 
 	"github.com/gookit/color"
 
-	"github.com/skuid/tides/pkg/errors"
-	"github.com/skuid/tides/pkg/logging"
-	"github.com/skuid/tides/pkg/util"
+	"github.com/skuid/skuid-cli/pkg/errors"
+	"github.com/skuid/skuid-cli/pkg/logging"
+	"github.com/skuid/skuid-cli/pkg/util"
 )
 
 type NlxMetadata struct {
@@ -24,6 +24,7 @@ type NlxMetadata struct {
 	Pages              []string `json:"pages"`
 	PermissionSets     []string `json:"permissionsets"`
 	SitePermissionSets []string `json:"sitepermissionsets"`
+	Profiles           []string `json:"profiles"`
 	Site               []string `json:"site"`
 	Themes             []string `json:"themes"`
 }
@@ -36,7 +37,8 @@ func (from NlxMetadata) GetFieldValueByName(target string) (names []string, err 
 	mType := reflect.TypeOf(NlxMetadata{})
 
 	var name string
-	for i := 0; i < mType.NumField(); i++ {
+	fieldCount := mType.NumField()
+	for i := 0; i < fieldCount; i++ {
 		field := mType.Field(i)
 		if field.Tag.Get("json") == target {
 			name = field.Name
@@ -62,7 +64,8 @@ func (from NlxMetadata) GetFieldValueByName(target string) (names []string, err 
 	return
 }
 
-func (m NlxMetadata) FilterItem(item string) (keep bool) {
+// FilterItem returns true if the path meets the filter criteria, otherwise it returns false
+func (from NlxMetadata) FilterItem(item string) (keep bool) {
 	cleanRelativeFilePath := util.FromWindowsPath(item)
 	directory := filepath.Dir(cleanRelativeFilePath)
 	baseName := filepath.Base(cleanRelativeFilePath)
@@ -73,8 +76,8 @@ func (m NlxMetadata) FilterItem(item string) (keep bool) {
 	filePathArray := append(subFolders, baseName)
 	filePath := strings.Join(filePathArray, string(filepath.Separator))
 
-	validMetadataNames, err := m.GetFieldValueByName(metadataType)
-	if validMetadataNames == nil || len(validMetadataNames) == 0 {
+	validMetadataNames, err := from.GetFieldValueByName(metadataType)
+	if len(validMetadataNames) == 0 {
 		logging.Get().Tracef("No valid names for this directory: %v", color.Gray.Sprint(item))
 		return
 	}
@@ -97,7 +100,7 @@ func (m NlxMetadata) FilterItem(item string) (keep bool) {
 	// Check for children of a component pack
 	if metadataType == "componentpacks" {
 		filePathParts := strings.Split(filePath, string(filepath.Separator))
-		if len(filePathParts) == 2 && util.StringSliceContainsKey(validMetadataNames, filePathParts[0]) {
+		if len(filePathParts) >= 2 && util.StringSliceContainsKey(validMetadataNames, filePathParts[0]) {
 			logging.Get().Tracef("Keeping componentpack metadata file: %v", filePath)
 			keep = true
 			return

@@ -6,7 +6,7 @@ import (
 
 	"github.com/gookit/color"
 
-	"github.com/skuid/tides/pkg/logging"
+	"github.com/skuid/skuid-cli/pkg/logging"
 )
 
 func ClearDirectories(targetDir string) {

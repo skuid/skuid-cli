@@ -7,7 +7,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/skuid/tides/pkg/logging"
+	"github.com/skuid/skuid-cli/pkg/logging"
 )
 
 // FromWindowsPath takes a `path` string and replaces double back-ticks

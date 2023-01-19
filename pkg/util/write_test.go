@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -13,7 +12,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/skuid/tides/pkg/util"
+	"github.com/skuid/skuid-cli/pkg/util"
 )
 
 const badJson = "this is not even close to good JSON"
@@ -178,7 +177,7 @@ func TestWrite(t *testing.T) {
 			var directoriesCreated = []string{}
 
 			var mockFileMaker = func(fileReader io.ReadCloser, path string) error {
-				body, err := ioutil.ReadAll(fileReader)
+				body, err := io.ReadAll(fileReader)
 				if err != nil {
 					t.Fatal(err)
 				}

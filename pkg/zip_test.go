@@ -5,9 +5,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/skuid/tides/pkg"
-	"github.com/skuid/tides/pkg/logging"
-	"github.com/skuid/tides/pkg/util"
+	"github.com/skuid/skuid-cli/pkg"
+	"github.com/skuid/skuid-cli/pkg/logging"
+	"github.com/skuid/skuid-cli/pkg/util"
 )
 
 func TestZip(t *testing.T) {

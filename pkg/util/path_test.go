@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/skuid/tides/pkg/util"
+	"github.com/skuid/skuid-cli/pkg/util"
 )
 
 func TestWindowsPath(t *testing.T) {
