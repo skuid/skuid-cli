@@ -180,6 +180,7 @@ type RequestHeaders map[string]string
 
 // GenerateHeaders is an easy macro for the authorization headers we want
 func GenerateHeaders(host, token string) RequestHeaders {
+	host = FixUrl(host)
 	return RequestHeaders{
 		HeaderAuthorization:              fmt.Sprintf("Bearer %v", token),
 		HEADER_SKUID_PUBLIC_KEY_ENDPOINT: fmt.Sprintf("%v/api/v1/site/verificationkey", host),
