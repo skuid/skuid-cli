@@ -23,10 +23,10 @@ var deployCmd = &cobra.Command{
 }
 
 func init() {
-	SkuidCmd.AddCommand(deployCmd)
 	flags.AddFlags(deployCmd, flags.NLXLoginFlags...)
 	flags.AddFlags(deployCmd, flags.Directory, flags.AppName)
 	flags.AddFlags(deployCmd, flags.Pages)
+	AppCmd = append(AppCmd, deployCmd)
 }
 
 func Deploy(cmd *cobra.Command, _ []string) (err error) {

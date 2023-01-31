@@ -8,3 +8,5 @@ const (
 	WARDEN = "Skuid Cloud Data Service"
 	PLINY  = "Skuid NLX"
 )
+
+var VERSION_NAME string = "unknown"
