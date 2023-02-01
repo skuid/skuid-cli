@@ -124,8 +124,8 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 	fields["directory"] = directory
 	logging.WithFields(fields).Infof("Target Directory is %v", color.Cyan.Sprint(directory))
 
-	// TODO: put this behind a boolean command flag
-	//pkg.ClearDirectories(directory)
+	// TODO: put this behind a boolean command flag to avoid this process
+	pkg.ClearDirectories(directory)
 
 	fields["writeStart"] = time.Now()
 
