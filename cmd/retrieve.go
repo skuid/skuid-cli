@@ -148,9 +148,8 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 }
 
 func init() {
-	SkuidCmd.AddCommand(retrieveCmd)
-
 	flags.AddFlags(retrieveCmd, flags.NLXLoginFlags...)
 	flags.AddFlags(retrieveCmd, flags.Directory, flags.AppName)
 	flags.AddFlags(retrieveCmd, flags.Pages)
+	AppCmd = append(AppCmd, retrieveCmd)
 }

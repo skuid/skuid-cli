@@ -3,12 +3,15 @@ package common
 import (
 	"github.com/spf13/cobra"
 
+	"github.com/skuid/skuid-cli/pkg/constants"
 	"github.com/skuid/skuid-cli/pkg/flags"
 	"github.com/skuid/skuid-cli/pkg/logging"
 )
 
 // PrerunValidation sets up logging according to command flags
 func PrerunValidation(cmd *cobra.Command, _ []string) error {
+	logging.Get().Infof("Skuid CLI Version %v", constants.VERSION_NAME)
+
 	// set verbosity
 	if verbose, err := cmd.Flags().GetBool(flags.Verbose.Name); err != nil {
 		return err
