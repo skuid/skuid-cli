@@ -28,9 +28,9 @@ var watchCmd = &cobra.Command{
 }
 
 func init() {
-	SkuidCmd.AddCommand(watchCmd)
 	flags.AddFlags(watchCmd, flags.NLXLoginFlags...)
 	flags.AddFlags(watchCmd, flags.Directory)
+	AppCmd = append(AppCmd, watchCmd)
 }
 
 func Watch(cmd *cobra.Command, _ []string) (err error) {

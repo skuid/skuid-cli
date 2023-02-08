@@ -10,15 +10,12 @@ import (
 
 	"github.com/gookit/color"
 
+	"github.com/skuid/skuid-cli/pkg/constants"
 	"github.com/skuid/skuid-cli/pkg/errors"
 	"github.com/skuid/skuid-cli/pkg/logging"
 )
 
-var VERSION_NAME string
-
 var (
-	SkuidUserAgent = fmt.Sprintf("skuid-cli/%s", VERSION_NAME)
-
 	AcceptableProtocols = []string{
 		"http", "https",
 	}
@@ -80,6 +77,7 @@ func RequestHelper(
 	logging.Get().Tracef("URI: %v", color.Blue.Sprint(route))
 
 	// prep the request headers
+	SkuidUserAgent := fmt.Sprintf("%s/%s", constants.PROJECT_NAME, constants.VERSION_NAME)
 	req.Header.Set(HeaderUserAgent, SkuidUserAgent)
 
 	// perform the request. errors only pop up if there's an issue with assembly/resources.
