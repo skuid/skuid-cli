@@ -94,10 +94,11 @@ func Deploy(cmd *cobra.Command, _ []string) (err error) {
 	var targetDirectory string
 	if targetDirectory, err = cmd.Flags().GetString(flags.Directory.Name); err != nil {
 		return
-	} else if targetDirectory != "" {
-		fields["targetDirectory"] = targetDirectory
+	} else if targetDirectory == "" {
+		targetDirectory = "."
 	}
 
+	fields["targetDirectory"] = targetDirectory
 	logging.WithFields(fields).Info("Getting Deployment Payload")
 
 	var deploymentPlan []byte
