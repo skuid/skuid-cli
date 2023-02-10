@@ -55,13 +55,7 @@ func Request(
 	return RequestHelper(route, method, body, headers, 0)
 }
 
-func RequestHelper(
-	route string,
-	method string,
-	body []byte,
-	headers RequestHeaders,
-	attempts int,
-) (response []byte, err error) {
+func FixUrl(route string) string {
 	// only https
 	if strings.HasPrefix(route, "http://") {
 		route = strings.Replace(route, "http://", "https://", 1)
@@ -69,6 +63,18 @@ func RequestHelper(
 	if !strings.HasPrefix(route, "https://") {
 		route = fmt.Sprintf("https://%v", route)
 	}
+
+	return route
+}
+
+func RequestHelper(
+	route string,
+	method string,
+	body []byte,
+	headers RequestHeaders,
+	attempts int,
+) (response []byte, err error) {
+	route = FixUrl(route)
 
 	req, err := http.NewRequest(method, route, bytes.NewReader(body))
 	for header, value := range headers {
