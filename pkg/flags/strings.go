@@ -50,4 +50,11 @@ var (
 		EnvVarNames: []string{constants.ENV_SKUID_LOGGING_LOCATION},
 		Global:      true,
 	}
+
+	Since = &Flag[string]{
+		Name:        "since",
+		Shorthand:   "s",
+		Usage:       "Timestamp or time span specifying only updated records to retrieve",
+		EnvVarNames: []string{constants.ENV_SKUID_RETRIEVE_SINCE},
+	}
 )

@@ -1,7 +1,12 @@
 package cmd
 
 import (
+	"math"
+	"regexp"
+	"strconv"
+	"strings"
 	"time"
+	"unicode"
 
 	// jsoniter. Fork of github.com/json-iterator/go
 	"github.com/gookit/color"
@@ -19,7 +24,7 @@ import (
 var (
 	retrieveCmd = &cobra.Command{
 		SilenceUsage:      true,
-		Example:           "retrieve -u myUser -p myPassword --host my-site.skuidsite.com --dir ./retrieval",
+		Example:           "retrieve -u myUser -p myPassword --host my-site.skuidsite.com --dir ./retrieval --since 4h",
 		Use:               "retrieve",
 		Short:             "Retrieve a Skuid NLX Site",
 		Long:              "Retrieve Skuid metadata from a Skuid NLX Site and output it into a local directory",
@@ -27,6 +32,17 @@ var (
 		RunE:              Retrieve,
 	}
 )
+
+// stringclean makes sure string contains only letters, digits, or "."
+func stringClean(str string) string {
+	str = strings.ToLower(str)
+	return strings.Map(func(r rune) rune {
+		if !(unicode.IsLetter(r) || unicode.IsDigit(r) || r == '.') {
+			return -1
+		}
+		return r
+	}, str)
+}
 
 func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 	fields := make(logrus.Fields)
@@ -96,6 +112,98 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 		filter.PageNames = pageNames
 	}
 
+	timeUnits := map[string][]string{
+		"s": {
+			"s",
+			"ss",
+			"sec",
+			"secs",
+			"second",
+			"seconds",
+		},
+		"m": {
+			"m",
+			"mm",
+			"min",
+			"mins",
+			"minute",
+			"minutes",
+		},
+		"h": {
+			"h",
+			"hh",
+			"hr",
+			"hrs",
+			"hour",
+			"hours",
+		},
+		"d": {
+			"d",
+			"day",
+			"days",
+		},
+		"M": {
+			"MM",
+			"mo",
+			"Mo",
+			"mos",
+			"Mos",
+			"mon",
+			"month",
+			"months",
+		},
+		"y": {
+			"yy",
+			"yyyy",
+			"yr",
+			"yrs",
+			"year",
+			"years",
+		},
+	}
+	var sinceStr, lsinceStr string
+	since := time.Now()
+	if sinceStr, err = cmd.Flags().GetString(flags.Since.Name); err != nil {
+		return err
+	} else if len(sinceStr) > 0 {
+		// First deal with capital 'M' month
+		for _, alias := range timeUnits["M"] {
+			if strings.Contains(sinceStr, alias) {
+				sinceStr = strings.ReplaceAll(sinceStr, alias, "M")
+			}
+		}
+		// lowercase and remove everything but digits, letters, and '.'
+		lsinceStr = stringClean(sinceStr)
+		for k, aliases := range timeUnits {
+			for _, alias := range aliases {
+				if strings.Contains(lsinceStr, alias) {
+					sinceStr = strings.ReplaceAll(lsinceStr, alias, k)
+				}
+			}
+		}
+	}
+	spanr, err := regexp.Compile(`/(\d+(?:\.\d+)?[smhdMy])/gm`)
+	if err != nil {
+		return err
+	}
+	for _, match := range spanr.FindAllString(sinceStr, -1) {
+		lc := len(match) - 1
+		timeQuant, err := strconv.ParseFloat(match[:lc], 64)
+		if err != nil {
+			continue
+		}
+		timeQuant = math.Abs(timeQuant) * -1.0
+		var timeDur time.Duration
+		switch match[lc:] {
+		case "s", "m", "h":
+			timeDur, err = time.ParseDuration(match)
+			if err != nil {
+				continue
+			}
+			since.Add(-1.0 * timeDur)
+		}
+	}
+
 	logging.WithFields(fields).Info("Getting Retrieve Plan")
 
 	var plans pkg.NlxPlanPayload
@@ -151,5 +259,6 @@ func init() {
 	flags.AddFlags(retrieveCmd, flags.NLXLoginFlags...)
 	flags.AddFlags(retrieveCmd, flags.Directory, flags.AppName)
 	flags.AddFlags(retrieveCmd, flags.Pages)
+	flags.AddFlags(retrieveCmd, flags.Since)
 	AppCmd = append(AppCmd, retrieveCmd)
 }
