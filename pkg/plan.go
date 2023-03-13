@@ -2,6 +2,7 @@ package pkg
 
 import (
 	"encoding/json"
+	"time"
 )
 
 // NlxPlanPayload is the result of getting the plan from the pliny
@@ -26,9 +27,10 @@ type NlxPlan struct {
 // NlxPlanFilter should be serialized and provided with the
 // request for retrieval
 type NlxPlanFilter struct {
-	AppName       string   `json:"appName,omitempty"`
-	PageNames     []string `json:"pages,omitempty"`
-	IgnoreSkuidDb bool     `json:"ignoreSkuidDb,omitempty"`
+	AppName       string    `json:"appName,omitempty"`
+	PageNames     []string  `json:"pages,omitempty"`
+	IgnoreSkuidDb bool      `json:"ignoreSkuidDb,omitempty"`
+	Since         time.Time `json:"since,omitempty"`
 }
 
 // NewRetrievalRequestBody marshals the NlxMetadata into json and returns

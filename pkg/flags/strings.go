@@ -54,7 +54,7 @@ var (
 	Since = &Flag[string]{
 		Name:        "since",
 		Shorthand:   "s",
-		Usage:       "Timestamp or time span specifying only updated records to retrieve",
+		Usage:       "Timestamp or time span specifying only updated records to retrieve. Valid timestamp formats are at https://pkg.go.dev/time@go1.20.2#pkg-constants. Valid timespans look like various combination of \"1y2M3d8h30m\" or \"3 days\"",
 		EnvVarNames: []string{constants.ENV_SKUID_RETRIEVE_SINCE},
 	}
 )

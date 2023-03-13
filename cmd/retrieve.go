@@ -11,6 +11,7 @@ import (
 	// jsoniter. Fork of github.com/json-iterator/go
 	"github.com/gookit/color"
 	"github.com/sirupsen/logrus"
+	"github.com/skuid/skuid-cli/pkg/constants"
 	"github.com/spf13/cobra"
 
 	"github.com/skuid/skuid-cli/cmd/common"
@@ -112,96 +113,76 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 		filter.PageNames = pageNames
 	}
 
-	timeUnits := map[string][]string{
-		"s": {
-			"s",
-			"ss",
-			"sec",
-			"secs",
-			"second",
-			"seconds",
-		},
-		"m": {
-			"m",
-			"mm",
-			"min",
-			"mins",
-			"minute",
-			"minutes",
-		},
-		"h": {
-			"h",
-			"hh",
-			"hr",
-			"hrs",
-			"hour",
-			"hours",
-		},
-		"d": {
-			"d",
-			"day",
-			"days",
-		},
-		"M": {
-			"MM",
-			"mo",
-			"Mo",
-			"mos",
-			"Mos",
-			"mon",
-			"month",
-			"months",
-		},
-		"y": {
-			"yy",
-			"yyyy",
-			"yr",
-			"yrs",
-			"year",
-			"years",
-		},
-	}
-	var sinceStr, lsinceStr string
+	var sinceStr string
 	since := time.Now()
+	hasSince := false
 	if sinceStr, err = cmd.Flags().GetString(flags.Since.Name); err != nil {
 		return err
 	} else if len(sinceStr) > 0 {
-		// First deal with capital 'M' month
-		for _, alias := range timeUnits["M"] {
-			if strings.Contains(sinceStr, alias) {
-				sinceStr = strings.ReplaceAll(sinceStr, alias, "M")
+		// First try to parse something like "01/02 03:04:05PM '06 -0700"
+		if parseTry, err := time.Parse(time.Layout, sinceStr); err == nil {
+			hasSince = true
+			since = parseTry
+		}
+		// Next try to parse with the other layout constants in time
+		if !hasSince {
+			for _, layout := range constants.TimeFormatStrings {
+				sinceStrHyphen := strings.ReplaceAll(sinceStr, "/", "-")
+				if parseTry, err := time.Parse(layout, sinceStrHyphen); err == nil {
+					hasSince = true
+					since = parseTry
+					break
+				}
 			}
 		}
-		// lowercase and remove everything but digits, letters, and '.'
-		lsinceStr = stringClean(sinceStr)
-		for k, aliases := range timeUnits {
-			for _, alias := range aliases {
-				if strings.Contains(lsinceStr, alias) {
-					sinceStr = strings.ReplaceAll(lsinceStr, alias, k)
+		// Next try to parse as a timespan like "2days3hours" or "2d3h"
+		if !hasSince {
+			// First deal with capital 'M' month
+			for _, alias := range constants.TimeUnits["M"] {
+				if strings.Contains(sinceStr, alias) {
+					sinceStr = strings.ReplaceAll(sinceStr, alias, "M")
+				}
+			}
+			// lowercase and remove everything but digits, letters, and '.'
+			lsinceStr := stringClean(sinceStr)
+			for k, aliases := range constants.TimeUnits {
+				for _, alias := range aliases {
+					if strings.Contains(lsinceStr, alias) {
+						sinceStr = strings.ReplaceAll(lsinceStr, alias, k)
+					}
+				}
+			}
+			spanr, err := regexp.Compile(`(\d+(?:\.\d+)?[smhdMy])`)
+			if err != nil {
+				return err
+			}
+			for _, match := range spanr.FindAllString(sinceStr, -1) {
+				lc := len(match) - 1
+				timeQuant, err := strconv.ParseFloat(match[:lc], 64)
+				if err != nil {
+					continue
+				}
+				hasSince = true
+				timeInt := int(math.Abs(math.Round(timeQuant))) * -1
+				switch match[lc:] {
+				case "s", "m", "h":
+					timeDur, err := time.ParseDuration(match)
+					if err != nil {
+						continue
+					}
+					since = since.Add(-1.0 * timeDur)
+				case "d":
+					since = since.AddDate(0, 0, timeInt)
+				case "M":
+					since = since.AddDate(0, timeInt, 0)
+				case "y":
+					since = since.AddDate(timeInt, 0, 0)
 				}
 			}
 		}
 	}
-	spanr, err := regexp.Compile(`/(\d+(?:\.\d+)?[smhdMy])/gm`)
-	if err != nil {
-		return err
-	}
-	for _, match := range spanr.FindAllString(sinceStr, -1) {
-		lc := len(match) - 1
-		timeQuant, err := strconv.ParseFloat(match[:lc], 64)
-		if err != nil {
-			continue
-		}
-		timeQuant = math.Abs(timeQuant) * -1.0
-		var timeDur time.Duration
-		switch match[lc:] {
-		case "s", "m", "h":
-			timeDur, err = time.ParseDuration(match)
-			if err != nil {
-				continue
-			}
-			since.Add(-1.0 * timeDur)
-		}
+	if hasSince {
+		filter.Since = since
 	}
 
 	logging.WithFields(fields).Info("Getting Retrieve Plan")
