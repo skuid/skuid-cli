@@ -182,6 +182,7 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 		}
 	}
 	if hasSince {
+		initFilter()
 		filter.Since = since
 	}
 
