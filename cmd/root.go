@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
@@ -40,7 +42,7 @@ func Execute() error {
 		},
 		Version: constants.VERSION_NAME,
 	}
-
+	SkuidCmd.SetVersionTemplate(fmt.Sprintf("Skuid CLI Version %v\n", constants.VERSION_NAME))
 	flags.AddFlags(SkuidCmd, flags.Verbose, flags.Trace, flags.FileLogging, flags.Diagnostic)
 	flags.AddFlags(SkuidCmd, flags.FileLoggingDirectory)
 
