@@ -183,7 +183,8 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 	}
 	if hasSince {
 		initFilter()
-		filter.Since = since
+		filter.Since = pkg.JSONTime(since)
+		sinceStr = since.Format(time.RFC3339)
 	}
 
 	logging.WithFields(fields).Info("Getting Retrieve Plan")
@@ -194,6 +195,16 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 	}
 
 	logging.WithFields(fields).Info("Got Retrieve Plan")
+
+	// pliny and warden are supposed to give the since value back for the retrieve, but just in case...
+	if hasSince {
+		if plans.MetadataService.Since == "" {
+			plans.MetadataService.Since = sinceStr
+		}
+		if plans.CloudDataService.Since == "" {
+			plans.CloudDataService.Since = sinceStr
+		}
+	}
 
 	var results []pkg.NlxRetrievalResult
 	if _, results, err = pkg.ExecuteRetrieval(auth, plans); err != nil {

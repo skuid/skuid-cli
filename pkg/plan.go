@@ -2,6 +2,7 @@ package pkg
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 )
 
@@ -20,8 +21,16 @@ type NlxPlan struct {
 	Endpoint          string                `json:"url"`
 	Type              string                `json:"type"`
 	Metadata          NlxMetadata           `json:"metadata"`
+	Since             string                `json:"since"`
 	Warnings          []string              `json:"warnings"`
 	NewPermissionSets []PermissionSetResult `json:"newPermissionSets"`
+}
+
+type JSONTime time.Time
+
+func (t JSONTime) MarshalJSON() ([]byte, error) {
+	tstr := fmt.Sprintf("\"%s\"", time.Time(t).Format(time.RFC3339))
+	return []byte(tstr), nil
 }
 
 // NlxPlanFilter should be serialized and provided with the
@@ -35,12 +44,14 @@ type NlxPlanFilter struct {
 
 // NewRetrievalRequestBody marshals the NlxMetadata into json and returns
 // the body. This is the payload expected for the Retrieval Request
-func NewRetrievalRequestBody(metadata NlxMetadata) (body []byte) {
+func NewRetrievalRequestBody(metadata NlxMetadata, since string) (body []byte) {
 	// there should be no issue marshalling this thing.
 	body, _ = json.Marshal(struct {
 		Metadata NlxMetadata `json:"metadata"`
+		Since    string      `json:"since"`
 	}{
 		Metadata: metadata,
+		Since:    since,
 	})
 	return
 }
