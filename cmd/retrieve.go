@@ -183,6 +183,7 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 	}
 	if hasSince {
 		initFilter()
+		since = since.UTC()
 		filter.Since = pkg.JSONTime(since)
 		sinceStr = since.Format(time.RFC3339)
 	}
