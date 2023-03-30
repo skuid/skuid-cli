@@ -24,9 +24,10 @@ const (
 type NlxDynamicPlanMap map[string]NlxPlan
 
 type FilteredRequestBody struct {
-	AppName   string   `json:"appName"`
-	PageNames []string `json:"pageNames"`
-	PlanBytes []byte   `json:"plan"`
+	AppName       string   `json:"appName"`
+	PageNames     []string `json:"pageNames"`
+	PlanBytes     []byte   `json:"plan"`
+	IgnoreSkuidDb bool     `json:"ignoreSkuidDb"`
 }
 
 type PermissionSetResult struct {
@@ -66,7 +67,9 @@ func GetDeployPlan(auth *Authorization, deploymentPlan []byte, filter *NlxPlanFi
 			filter.AppName,
 			filter.PageNames,
 			deploymentPlan,
+			filter.IgnoreSkuidDb,
 		}
+
 		if body, err = json.Marshal(requestBody); err != nil {
 			logging.Get().Warnf("Error marshalling filter request: %v", err)
 			return
@@ -123,6 +126,17 @@ func ExecuteDeployPlan(auth *Authorization, plans NlxDynamicPlanMap, targetDir s
 	if !mok && !dok {
 		return
 	}
+
+	// Warning for metaplan
+	for _, warning := range metaPlan.Warnings {
+		logging.Get().Warnf("Warning %v", color.Magenta.Sprint(warning))
+	}
+
+	// Warning for dataplan
+	for _, warning := range dataPlan.Warnings {
+		logging.Get().Warnf("Warning %v", color.Magenta.Sprint(warning))
+	}
+
 	planResults = make([]NlxDeploymentResult, 0)
 
 	executePlan := func(plan NlxPlan) (err error) {

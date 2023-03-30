@@ -26,8 +26,9 @@ type NlxPlan struct {
 // NlxPlanFilter should be serialized and provided with the
 // request for retrieval
 type NlxPlanFilter struct {
-	AppName   string   `json:"appName,omitempty"`
-	PageNames []string `json:"pages,omitempty"`
+	AppName       string   `json:"appName,omitempty"`
+	PageNames     []string `json:"pages,omitempty"`
+	IgnoreSkuidDb bool     `json:"ignoreSkuidDb,omitempty"`
 }
 
 // NewRetrievalRequestBody marshals the NlxMetadata into json and returns
