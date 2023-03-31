@@ -129,12 +129,12 @@ func ExecuteDeployPlan(auth *Authorization, plans NlxDynamicPlanMap, targetDir s
 
 	// Warning for metaplan
 	for _, warning := range metaPlan.Warnings {
-		logging.Get().Warnf("Warning %v", color.Magenta.Sprint(warning))
+		logging.Get().Warnf("Warning %v", warning)
 	}
 
 	// Warning for dataplan
 	for _, warning := range dataPlan.Warnings {
-		logging.Get().Warnf("Warning %v", color.Magenta.Sprint(warning))
+		logging.Get().Warnf("Warning %v", warning)
 	}
 
 	planResults = make([]NlxDeploymentResult, 0)
