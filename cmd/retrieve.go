@@ -181,6 +181,10 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 			}
 		}
 	}
+	if sinceStr != "" && !hasSince {
+		logging.WithFields(fields).Fatal("A --since option was provided but was not parsable as a time or duration")
+		return
+	}
 	if hasSince {
 		// If the user specifies just 14:30:05 then the date is 0000-01-01, but no site is almost one year older than Jesus.
 		now := time.Now()
