@@ -120,7 +120,7 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 		return err
 	} else if len(sinceStr) > 0 {
 		// First try to parse something like "01/02 03:04:05PM '06 -0700"
-		if parseTry, err := time.Parse(time.Layout, sinceStr); err == nil {
+		if parseTry, err := time.ParseInLocation(time.Layout, sinceStr, time.Local); err == nil {
 			hasSince = true
 			since = parseTry
 		}
@@ -128,7 +128,7 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 		if !hasSince {
 			for _, layout := range constants.TimeFormatStrings {
 				sinceStrHyphen := strings.ReplaceAll(sinceStr, "/", "-")
-				if parseTry, err := time.Parse(layout, sinceStrHyphen); err == nil {
+				if parseTry, err := time.ParseInLocation(layout, sinceStrHyphen, time.Local); err == nil {
 					hasSince = true
 					since = parseTry
 					break
@@ -182,6 +182,12 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 		}
 	}
 	if hasSince {
+		// If the user specifies just 14:30:05 then the date is 0000-01-01, but no site is almost one year older than Jesus.
+		now := time.Now()
+		if since.Year() == 0 {
+			since = since.AddDate(now.Year(), int(now.Month())-1, now.Day()-1)
+		}
+
 		initFilter()
 		since = since.UTC()
 		filter.Since = pkg.JSONTime(since)
