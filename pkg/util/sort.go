@@ -23,7 +23,8 @@ func InsertNamePlaceholders(in map[string]interface{}) map[string]interface{} {
 	for k, v := range in {
 		if k == "name" {
 			delete(in, k)
-			in[fmt.Sprintf("%v", PLACEHOLDER)] = v
+			k = fmt.Sprintf("%v", PLACEHOLDER)
+			in[k] = v
 		}
 		if m, anotherMap := v.(map[string]interface{}); anotherMap {
 			in[k] = InsertNamePlaceholders(m)
