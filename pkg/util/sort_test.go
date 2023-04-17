@@ -53,6 +53,40 @@ var (
 		"d": "d",
 		"x":"x"
 	}`
+
+	sortedNestedNameObject = `{
+		"name": {
+			"createable": false,
+			"queryable": false,
+			"updateable": false
+		},
+		"a": "a",
+		"c": "c",
+		"d": "d",
+		"nested": {
+			"name":"name",
+			"a":"a"
+		},
+		"x":"x",
+		"z": "z"
+	}`
+
+	unsortedNestedNameObject = `{
+		"a": "a",
+		"z": "z",
+		"c": "c",
+		"name": {
+			"createable": false,
+			"queryable": false,
+			"updateable": false
+		},
+		"nested": {
+			"a":"a",
+			"name":"name"
+		},
+		"d": "d",
+		"x":"x"
+	}`
 )
 
 func TestSortJson(t *testing.T) {
@@ -80,6 +114,16 @@ func TestSortJson(t *testing.T) {
 			description: "unsorted nested",
 			given:       unsortedNested,
 			expected:    sortedNested,
+		},
+		{
+			description: "sorted nested name object",
+			given:       sortedNestedNameObject,
+			expected:    sortedNestedNameObject,
+		},
+		{
+			description: "unsorted nested name object",
+			given:       unsortedNestedNameObject,
+			expected:    sortedNestedNameObject,
 		},
 	} {
 		t.Run(tc.description, func(t *testing.T) {
