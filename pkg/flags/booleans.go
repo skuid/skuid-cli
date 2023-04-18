@@ -36,4 +36,11 @@ var (
 		EnvVarNames: []string{constants.ENV_SKUID_FIELD_LOGGING},
 		Global:      true,
 	}
+
+	IgnoreSkuidDb = &Flag[bool]{
+		Name:        "ignore-skuid-db",
+		Shorthand:   "i",
+		Usage:       "Force deployment by ignoring skuid db errors",
+		EnvVarNames: []string{constants.ENV_SKUID_IGNORE_SKUIDDB},
+	}
 )
