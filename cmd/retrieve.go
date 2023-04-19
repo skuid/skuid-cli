@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"math"
 	"regexp"
 	"strconv"
@@ -120,7 +121,7 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 		return err
 	} else if len(sinceStr) > 0 {
 		// First try to parse something like "01/02 03:04:05PM '06 -0700"
-		if parseTry, err := time.ParseInLocation(time.Layout, sinceStr, time.Local); err == nil {
+		if parseTry, err := time.ParseInLocation(constants.DefaultTimeFormat, sinceStr, time.Local); err == nil {
 			hasSince = true
 			since = parseTry
 		}
@@ -186,16 +187,21 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 		}
 	}
 	if hasSince {
-		// If the user specifies just 14:30:05 then the date is 0000-01-01, but no site is almost one year older than Jesus.
 		now := time.Now()
+		// If the user specifies just 14:30:05 then the date is 0000-01-01, but no site is almost one year older than Jesus.
 		if since.Year() == 0 {
 			since = since.AddDate(now.Year(), int(now.Month())-1, now.Day()-1)
+		}
+		if since.Compare(now) > 0 {
+			logging.WithFields(fields).Fatal("A --since option in the future was specified. This is probably not what you mean.")
+			return
 		}
 
 		initFilter()
 		since = since.UTC()
 		filter.Since = pkg.JSONTime(since)
 		sinceStr = since.Format(time.RFC3339)
+		logging.WithFields(fields).Info(fmt.Sprintf("retrieving metadata records updated since: %s", sinceStr))
 	}
 
 	logging.WithFields(fields).Info("Getting Retrieve Plan")
