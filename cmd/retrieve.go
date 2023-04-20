@@ -211,10 +211,8 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 
 		initFilter()
 		since = since.UTC()
-		filter.Since = pkg.JSONTime(since)
+		filter.Since = since
 		sinceStr = since.Format(time.RFC3339)
-		fmt.Printf("since %s\n", sinceStr)
-		return
 		logging.WithFields(fields).Info(fmt.Sprintf("retrieving metadata records updated since: %s", sinceStr))
 	}
 
