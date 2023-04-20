@@ -3,23 +3,21 @@ package cmd
 import (
 	"fmt"
 	"math"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
 	"unicode"
 
-	// jsoniter. Fork of github.com/json-iterator/go
+	"github.com/dlclark/regexp2"
 	"github.com/gookit/color"
 	"github.com/sirupsen/logrus"
-	"github.com/skuid/skuid-cli/pkg/constants"
-	"github.com/spf13/cobra"
-
 	"github.com/skuid/skuid-cli/cmd/common"
 	"github.com/skuid/skuid-cli/pkg"
+	"github.com/skuid/skuid-cli/pkg/constants"
 	"github.com/skuid/skuid-cli/pkg/flags"
 	"github.com/skuid/skuid-cli/pkg/logging"
 	"github.com/skuid/skuid-cli/pkg/util"
+	"github.com/spf13/cobra"
 )
 
 // retrieveCmd represents the retrieve command
@@ -37,13 +35,22 @@ var (
 
 // stringclean makes sure string contains only letters, digits, or "."
 func stringClean(str string) string {
-	str = strings.ToLower(str)
 	return strings.Map(func(r rune) rune {
 		if !(unicode.IsLetter(r) || unicode.IsDigit(r) || r == '.') {
 			return -1
 		}
 		return r
 	}, str)
+}
+
+func regexp2FindAllMatch(re *regexp2.Regexp, s string) []*regexp2.Match {
+	var matches []*regexp2.Match
+	m, _ := re.FindStringMatch(s)
+	for m != nil {
+		matches = append(matches, m)
+		m, _ = re.FindNextMatch(m)
+	}
+	return matches
 }
 
 func Retrieve(cmd *cobra.Command, _ []string) (err error) {
@@ -128,9 +135,12 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 		// Next try to parse with the other layout constants in time
 		if !hasSince {
 			for _, layout := range constants.TimeFormatStrings {
-				sinceStrHyphen := strings.ReplaceAll(sinceStr, "/", "-")
-				if parseTry, err := time.ParseInLocation(layout, sinceStrHyphen, time.Local); err == nil {
+				//sinceStrHyphen := strings.ReplaceAll(sinceStr, "/", "-")
+				if parseTry, err := time.ParseInLocation(layout, sinceStr, time.Local); err == nil {
 					hasSince = true
+					if layout == time.Stamp { // this layout includes month and day, but year will be "0000"
+						parseTry = parseTry.AddDate(since.Year(), 0, 0)
+					}
 					since = parseTry
 					break
 				}
@@ -144,7 +154,7 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 					sinceStr = strings.ReplaceAll(sinceStr, alias, "M")
 				}
 			}
-			// lowercase and remove everything but digits, letters, and '.'
+			// remove everything but digits, letters, and '.'
 			lsinceStr := stringClean(sinceStr)
 			for k, aliases := range constants.TimeUnits {
 				for _, alias := range aliases {
@@ -153,21 +163,23 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 					}
 				}
 			}
-			spanr, err := regexp.Compile(`(\d+(?:\.\d+)?[smhdMy])`)
+			spanr, err := regexp2.Compile(`(?P<timeunit>\d+(?:\.\d+)?[smhdMy])(?=[\d\s]+|$)`, regexp2.RE2)
 			if err != nil {
 				return err
 			}
-			for _, match := range spanr.FindAllString(sinceStr, -1) {
-				lc := len(match) - 1
-				timeQuant, err := strconv.ParseFloat(match[:lc], 64)
+			//for _, match := range spanr.FindAllString(sinceStr, -1) {
+			for _, match := range regexp2FindAllMatch(spanr, sinceStr) {
+				submatch := match.String()
+				lc := len(submatch) - 1
+				timeQuant, err := strconv.ParseFloat(submatch[:lc], 64)
 				if err != nil {
 					continue
 				}
 				hasSince = true
 				timeInt := int(math.Abs(math.Round(timeQuant))) * -1
-				switch match[lc:] {
+				switch submatch[lc:] {
 				case "s", "m", "h":
-					timeDur, err := time.ParseDuration(match)
+					timeDur, err := time.ParseDuration(submatch)
 					if err != nil {
 						continue
 					}
@@ -201,6 +213,8 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 		since = since.UTC()
 		filter.Since = pkg.JSONTime(since)
 		sinceStr = since.Format(time.RFC3339)
+		fmt.Printf("since %s\n", sinceStr)
+		return
 		logging.WithFields(fields).Info(fmt.Sprintf("retrieving metadata records updated since: %s", sinceStr))
 	}
 
@@ -218,8 +232,10 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 		if plans.MetadataService.Since == "" {
 			plans.MetadataService.Since = sinceStr
 		}
-		if plans.CloudDataService.Since == "" {
-			plans.CloudDataService.Since = sinceStr
+		if plans.CloudDataService != nil {
+			if plans.CloudDataService.Since == "" {
+				plans.CloudDataService.Since = sinceStr
+			}
 		}
 	}
 
