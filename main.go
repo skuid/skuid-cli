@@ -1,11 +1,11 @@
 package main
 
 import (
-	"github.com/skuid/skuid-cli/pkg/constants"
-
 	_ "embed"
 	"os"
 	"strings"
+
+	"github.com/skuid/skuid-cli/pkg/constants"
 
 	"github.com/gookit/color"
 	"github.com/skuid/skuid-cli/cmd"
