@@ -17,14 +17,14 @@ steps:
     commands:
       - git fetch --tags
   - name: test
-    image: golang:1.18-alpine
+    image: golang:1.20-alpine
     commands:
       - apk add git
       - go test -v -cover -short ./...
     environment:
       CGO_ENABLED: '0'
   - name: build
-    image: golang:1.18-alpine
+    image: golang:1.20-alpine
     commands:
       - go mod download
       - VERSION=$(cat .version)
