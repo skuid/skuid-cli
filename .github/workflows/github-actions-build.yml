@@ -1,0 +1,16 @@
+name: Skuid CLI binary build
+run-name: ${{ github.actor }} testing go build
+on: [release]
+jobs:
+  Test:
+    runs-on: macos-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+      - run: go test -v -short ./...
+        env:
+          CGO_ENABLED: '0'
+      - run: go get
+      - run: GOOS=linux GOARCH=amd64 go build -ldflags="-w -X github.com/skuid/skuid-cli/version.Name=$VERSION" -o /tmp/dist/skuid_linux_amd64
+      - run: GOOS=darwin GOARCH=amd64 go build -ldflags="-w -X github.com/skuid/skuid-cli/version.Name=$VERSION" -o /tmp/dist/skuid_darwin_amd64
+      - run: GOOS=windows GOARCH=amd64 go build -ldflags="-w -X github.com/skuid/skuid-cli/version.Name=$VERSION" -o /tmp/dist/skuid_windows_amd64.exe
