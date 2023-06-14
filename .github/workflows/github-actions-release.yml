@@ -1,0 +1,52 @@
+name: Skuid CLI binary release build
+
+on: [release]
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      QUILL_SIGN_P12: ${{ secrets.SKUID_CLI_SIGNING_CERT }}
+      QUILL_SIGN_PASSWORD: ${{ secrets.SKUID_CLI_SIGNING_CERT_PASSWORD }}
+      QUILL_NOTARY_KEY: ${{ secrets.SKUID_CLI_NOTARY_KEY }}
+      QUILL_NOTARY_KEY_ID: ${{ secrets.SKUID_CLI_NOTARY_KEY_ID }}
+      QUILL_NOTARY_ISSUER: ${{ secrets.SKUID_CLI_NOTARY_KEY_ISSUER }}
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.20
+
+      - name: build
+        run: go build -v ./...
+
+      - name: test
+        run: go test -v -short ./...
+        env:
+          CGO_ENABLED: '0'
+
+      - run: GOOS=linux GOARCH=amd64 go build -ldflags="-w -X github.com/skuid/skuid-cli/version.Name=${{ github.ref_name }}" -o skuid_linux_amd64
+      - run: GOOS=darwin GOARCH=amd64 go build -ldflags="-w -X github.com/skuid/skuid-cli/version.Name=${{ github.ref_name }}" -o skuid_darwin_amd64
+      - run: GOOS=darwin GOARCH=arm64 go build -ldflags="-w -X github.com/skuid/skuid-cli/version.Name=${{ github.ref_name }}" -o skuid_darwin_arm64
+      - run: GOOS=windows GOARCH=amd64 go build -ldflags="-w -X github.com/skuid/skuid-cli/version.Name=${{ github.ref_name }}" -o skuid_windows_amd64.exe
+
+      - name: Install quill
+        run: curl -sSfL https://raw.githubusercontent.com/anchore/quill/main/install.sh | sh -s -- -b ./
+
+      - name: Sign and notarize Intel
+        run: ./quill sign-and-notarize skuid_darwin_amd64
+
+      - name: Sign and notarize M1
+        run: ./quill sign-and-notarize skuid_darwin_arm64
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            skuid_linux_amd64
+            skuid_darwin_amd64
+            skuid_darwin_arm64
+            skuid_windows_amd64.exe
