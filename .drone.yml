@@ -23,29 +23,3 @@ steps:
       - go test -v -cover -short ./...
     environment:
       CGO_ENABLED: '0'
-  - name: build
-    image: golang:1.20-alpine
-    commands:
-      - go mod download
-      - VERSION=$(cat .version)
-      - GOOS=linux GOARCH=amd64 go build -ldflags="-w -X github.com/skuid/skuid-cli/version.Name=$VERSION" -o /tmp/dist/skuid_linux_amd64
-      - GOOS=darwin GOARCH=amd64 go build -ldflags="-w -X github.com/skuid/skuid-cli/version.Name=$VERSION" -o /tmp/dist/skuid_darwin_amd64
-      - GOOS=windows GOARCH=amd64 go build -ldflags="-w -X github.com/skuid/skuid-cli/version.Name=$VERSION" -o /tmp/dist/skuid_windows_amd64.exe
-    environment:
-      CGO_ENABLED: '0'
-    volumes:
-      - name: output
-        path: /tmp/dist
-    when:
-      event: [ tag ]
-  - name: release
-    image: plugins/github-release
-    settings:
-      api_key:
-        from_secret: github_key
-      files: /tmp/dist/*
-    volumes:
-      - name: output
-        path: /tmp/dist
-    when:
-      event: [ tag ]
