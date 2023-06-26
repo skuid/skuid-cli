@@ -136,7 +136,7 @@ func Deploy(cmd *cobra.Command, _ []string) (err error) {
 
 	var results []pkg.NlxDeploymentResult
 	if _, results, err = pkg.ExecuteDeployPlan(auth, plans, targetDirectory); err != nil {
-		logging.Get().Errorf("Unable to execute deployment: %v", err)
+		// Error will be logged via main.go
 		return
 	}
 
