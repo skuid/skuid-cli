@@ -13,6 +13,7 @@ jobs:
       QUILL_NOTARY_KEY: ${{ secrets.SKUID_CLI_NOTARY_KEY }}
       QUILL_NOTARY_KEY_ID: ${{ secrets.SKUID_CLI_NOTARY_KEY_ID }}
       QUILL_NOTARY_ISSUER: ${{ secrets.SKUID_CLI_NOTARY_KEY_ISSUER }}
+      CGO_ENABLED: '0' # necessary for builds to run on alpine linux
     steps:
       - name: Check out repository code
         uses: actions/checkout@v3
@@ -30,8 +31,6 @@ jobs:
 
       - name: Test
         run: go test -v -short ./...
-        env:
-          CGO_ENABLED: '0'
 
       - run: GOOS=linux GOARCH=amd64 go build -ldflags="-w -X github.com/skuid/skuid-cli/version.Name=${{ github.ref_name }}" -o skuid_linux_amd64
       - run: GOOS=darwin GOARCH=amd64 go build -ldflags="-w -X github.com/skuid/skuid-cli/version.Name=${{ github.ref_name }}" -o skuid_darwin_amd64
