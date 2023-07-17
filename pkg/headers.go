@@ -8,6 +8,7 @@ const (
 	ZIP_CONTENT_TYPE         = "application/zip"
 	JSON_CONTENT_TYPE        = "application/json"
 	URL_ENCODED_CONTENT_TYPE = "application/x-www-form-urlencoded"
+	GZIP_CONTENT_ENCODING    = "gzip"
 
 	HEADER_SKUID_PUBLIC_KEY_ENDPOINT = "x-skuid-public-key-endpoint"
 )
@@ -185,6 +186,16 @@ func GenerateHeaders(host, token string) RequestHeaders {
 		HeaderAuthorization:              fmt.Sprintf("Bearer %v", token),
 		HEADER_SKUID_PUBLIC_KEY_ENDPOINT: fmt.Sprintf("%v/api/v1/site/verificationkey", host),
 	}
+}
+
+// ContainsHeader checks to see if a set of headers contain a specified header - value pair
+func ContainsHeader(headers RequestHeaders, header string, value string) bool {
+	for k, v := range headers {
+		if k == header && v == value {
+			return true
+		}
+	}
+	return false
 }
 
 // GeneratePlanHeaders is a lot like GenerateRoute. We check whether it's a warden
