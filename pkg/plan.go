@@ -22,6 +22,7 @@ type NlxPlan struct {
 	Type              string                `json:"type"`
 	Metadata          NlxMetadata           `json:"metadata"`
 	Since             string                `json:"since"`
+	AppSpecific       bool                  `json:"appSpecific"`
 	Warnings          []string              `json:"warnings"`
 	NewPermissionSets []PermissionSetResult `json:"newPermissionSets"`
 }
@@ -44,14 +45,16 @@ type NlxPlanFilter struct {
 
 // NewRetrievalRequestBody marshals the NlxMetadata into json and returns
 // the body. This is the payload expected for the Retrieval Request
-func NewRetrievalRequestBody(metadata NlxMetadata, since string) (body []byte) {
+func NewRetrievalRequestBody(metadata NlxMetadata, since string, appSpecific bool) (body []byte) {
 	// there should be no issue marshalling this thing.
 	body, _ = json.Marshal(struct {
-		Metadata NlxMetadata `json:"metadata"`
-		Since    string      `json:"since"`
+		Metadata    NlxMetadata `json:"metadata"`
+		Since       string      `json:"since"`
+		AppSpecific bool        `json:"appSpecific"`
 	}{
-		Metadata: metadata,
-		Since:    since,
+		Metadata:    metadata,
+		Since:       since,
+		AppSpecific: appSpecific,
 	})
 	return
 }
