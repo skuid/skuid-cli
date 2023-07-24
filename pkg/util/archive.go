@@ -85,7 +85,8 @@ func UnzipArchive(sourceFileLocation, targetLocation string, fileCreator FileCre
 			return
 		}
 
-		if !strings.Contains(path, "/files") {
+		// Sanitize all metadata .json files that aren't included as files on the site itself
+		if !strings.Contains(path, "files/") {
 			if filepath.Ext(path) == ".json" {
 				if fileReader, err = SanitizeZip(fileReader); err != nil {
 					logging.Get().Warnf("Error Sanitizing Zip: %v", err)
