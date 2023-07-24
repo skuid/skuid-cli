@@ -2,6 +2,7 @@ package pkg
 
 import (
 	"bytes"
+	"compress/gzip"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -75,8 +76,22 @@ func RequestHelper(
 	attempts int,
 ) (response []byte, err error) {
 	route = FixUrl(route)
+	var req *http.Request
 
-	req, err := http.NewRequest(method, route, bytes.NewReader(body))
+	if ContainsHeader(headers, HeaderContentEncoding, GZIP_CONTENT_ENCODING) {
+		var buf bytes.Buffer
+		g := gzip.NewWriter(&buf)
+		if _, err = g.Write(body); err != nil {
+			return
+		}
+		if err = g.Close(); err != nil {
+			return
+		}
+		req, err = http.NewRequest(method, route, &buf)
+	} else {
+		req, err = http.NewRequest(method, route, bytes.NewReader(body))
+	}
+
 	for header, value := range headers {
 		req.Header.Add(header, value)
 	}
