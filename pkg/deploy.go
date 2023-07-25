@@ -59,9 +59,10 @@ func GetDeployPlan(auth *Authorization, deploymentPlan []byte, filter *NlxPlanFi
 	var body []byte
 	if filter != nil {
 		logging.Get().Debug("Using file filter")
-		// change content type to json
+		// change content type to json and add content encoding
 		headers[HeaderContentType] = JSON_CONTENT_TYPE
-		// we instead add the deployment plan bytes to the payload
+		headers[HeaderContentEncoding] = GZIP_CONTENT_ENCODING
+		// add the deployment plan bytes to the payload
 		// instead of just using that as the payload
 		requestBody := FilteredRequestBody{
 			filter.AppName,
