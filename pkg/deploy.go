@@ -31,12 +31,13 @@ type FilteredRequestBody struct {
 }
 
 type PermissionSetResult struct {
-	AppId          string `json:"app_id"`
-	AppName        string `json:"app_name"`
-	Id             string `json:"id"`
-	Name           string `json:"name"`
-	Description    string `json:"description"`
-	OrganizationId string `json:"organization_id"`
+	AppId                 string      `json:"app_id"`
+	AppName               string      `json:"app_name"`
+	Id                    string      `json:"id"`
+	Name                  string      `json:"name"`
+	Description           string      `json:"description"`
+	OrganizationId        string      `json:"organization_id"`
+	DatasourcePermissions interface{} `json:"dataSourcePermissions"`
 }
 type permissionSetResults struct {
 	Inserts []PermissionSetResult `json:"inserts"`
@@ -117,6 +118,14 @@ func DeployModifiedFiles(auth *Authorization, targetDir, modifiedFile string) (e
 }
 
 // ExecuteDeployPlan executes a map of plan items in a deployment plan
+// A summary of its steps:
+// 1. Deploy metadata plan aka pliny resources
+// 2. After pliny is deployed, take the results from that deploy and pull out the app permission set ids
+// (and their datasource permissions) that were inserted / updated
+// 3. Deploy data plan aka warden
+// 4. After its deployed take the app permission set ids from the pliny deploy and deploy those permission sets to warden
+// 5. If metadata and data was deployed, send a request to pliny to sync its datasources' external_ids with warden datasource
+// ids, in case they changed during the deploy
 func ExecuteDeployPlan(auth *Authorization, plans NlxDynamicPlanMap, targetDir string) (duration time.Duration, planResults []NlxDeploymentResult, err error) {
 	start := time.Now()
 	defer func() { duration = time.Since(start) }()
@@ -156,27 +165,6 @@ func ExecuteDeployPlan(auth *Authorization, plans NlxDynamicPlanMap, targetDir s
 		url := GenerateRoute(auth, plan)
 		logging.Get().Tracef("Plan Request: %v\n", url)
 
-		if plan.Type == DATA_PLAN_TYPE && len(plan.NewPermissionSets) > 0 {
-			// Create new permission sets with the UUIDs that the metadata service generated and assigned
-			newPsPlan := plan // we do not need deep copy, as we are only changing the path
-			newPsPlan.Endpoint = "/metadata/permissionsets"
-			psurl := GenerateRoute(auth, newPsPlan)
-			var pspayload []byte
-			pspayload, err = json.Marshal(newPsPlan.NewPermissionSets)
-			if err != nil {
-				return
-			}
-			_, err = Request(
-				psurl,
-				http.MethodPost,
-				pspayload,
-				headers,
-			)
-			if err != nil {
-				return
-			}
-		}
-
 		var response []byte
 		if response, err = Request(
 			url,
@@ -197,21 +185,52 @@ func ExecuteDeployPlan(auth *Authorization, plans NlxDynamicPlanMap, targetDir s
 		logging.Get().Infof("Finished Deploying %v", color.Magenta.Sprint(plan.Type))
 
 		if plan.Type == METADATA_PLAN_TYPE {
-			// Collect new permission set UUIDs so we can create them in warden with matching UUIDs
+			// Collect all app permission set UUIDs and datasource permissions from pliny so we can use them to create
+			// datasource permissions in warden. This is necessary because we need the UUIDs and the deploy plan only has the names
 			resultMap := plinyResult{}
 			err = json.Unmarshal(response, &resultMap)
 			if err != nil {
 				return
 			}
-			dataPlan.NewPermissionSets = make([]PermissionSetResult, len(resultMap.PermissionSets.Inserts))
-			for i, v := range resultMap.PermissionSets.Inserts {
-				dataPlan.NewPermissionSets[i] = v
+			insertLen := len(resultMap.PermissionSets.Inserts)
+			updateLen := len(resultMap.PermissionSets.Updates)
+			dataPlan.AllPermissionSets = make([]PermissionSetResult, insertLen+updateLen)
+			i := 0
+			for _, v := range resultMap.PermissionSets.Inserts {
+				dataPlan.AllPermissionSets[i] = v
+				i++
+			}
+			for _, v := range resultMap.PermissionSets.Updates {
+				dataPlan.AllPermissionSets[i] = v
+				i++
+			}
+		}
+
+		if plan.Type == DATA_PLAN_TYPE && len(plan.AllPermissionSets) > 0 {
+			// Create permission set datasource permissions with the UUIDs that the metadata service generated and assigned
+			newPsPlan := plan // we do not need a deep copy, as we are only changing the path
+			newPsPlan.Endpoint = "/metadata/update-permissionsets"
+			psurl := GenerateRoute(auth, newPsPlan)
+			var pspayload []byte
+			pay := newPsPlan.AllPermissionSets
+			pspayload, err = json.Marshal(pay)
+			if err != nil {
+				return
+			}
+			_, err = Request(
+				psurl,
+				http.MethodPost,
+				pspayload,
+				headers,
+			)
+			if err != nil {
+				return
 			}
 		}
 		return
 	}
 
-	// Run metadata plan first, because there may be new PermissionSets to sync up with the data plan
+	// Run metadata plan first, because there may be PermissionSet data to create
 	if mok {
 		err = executePlan(metaPlan)
 		if err != nil {

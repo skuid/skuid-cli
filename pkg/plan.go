@@ -23,7 +23,7 @@ type NlxPlan struct {
 	Metadata          NlxMetadata           `json:"metadata"`
 	Since             string                `json:"since"`
 	Warnings          []string              `json:"warnings"`
-	NewPermissionSets []PermissionSetResult `json:"newPermissionSets"`
+	AllPermissionSets []PermissionSetResult `json:"allPermissionSets"`
 }
 
 type JSONTime time.Time
