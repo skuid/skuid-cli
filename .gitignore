@@ -18,4 +18,4 @@ logs
 **/**/*.log
 work/
 .DS_Store
-.vscode
+.vscode/

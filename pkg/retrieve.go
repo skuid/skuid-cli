@@ -80,7 +80,7 @@ func ExecuteRetrieval(auth *Authorization, plans NlxPlanPayload) (duration time.
 		logging.Get().Tracef("URL: %v", color.Blue.Sprint(url))
 
 		result, err := Request(
-			url, http.MethodPost, NewRetrievalRequestBody(plan.Metadata, plan.Since), headers,
+			url, http.MethodPost, NewRetrievalRequestBody(plan.Metadata, plan.Since, plan.AppSpecific), headers,
 		)
 
 		if err != nil {
