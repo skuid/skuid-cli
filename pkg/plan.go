@@ -24,7 +24,7 @@ type NlxPlan struct {
 	Since             string                `json:"since"`
 	AppSpecific       bool                  `json:"appSpecific"`
 	Warnings          []string              `json:"warnings"`
-	NewPermissionSets []PermissionSetResult `json:"newPermissionSets"`
+	AllPermissionSets []PermissionSetResult `json:"allPermissionSets"`
 }
 
 type JSONTime time.Time
