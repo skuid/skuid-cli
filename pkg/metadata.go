@@ -25,7 +25,6 @@ type NlxMetadata struct {
 	PermissionSets     []string `json:"permissionsets"`
 	SitePermissionSets []string `json:"sitepermissionsets"`
 	SessionVariables   []string `json:"sessionvariables"`
-	Profiles           []string `json:"profiles"`
 	Site               []string `json:"site"`
 	Themes             []string `json:"themes"`
 }
