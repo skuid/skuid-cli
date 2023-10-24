@@ -30,7 +30,7 @@ func main() {
 // Run is a function so that TestMain can execute it
 func Run() {
 	if err := cmd.Execute(); err != nil {
-		logging.Get().WithError(err).Errorf("Error Encountered During Run: %v", color.Red.Sprint(err))
+		logging.Get().Errorf("Error Encountered During Run: %v", color.Red.Sprint(err))
 		os.Exit(1)
 	}
 }
