@@ -25,18 +25,16 @@ func WriteResults(targetDirectory string, result WritePayload, copyToFile FileCr
 	logging.WithFields(fields)
 
 	// unzip the archive into the output directory
-	targetDirFriendly, err := SanitizePath(targetDirectory)
+	targetDirectory, err = SanitizePath(targetDirectory)
 	if err != nil {
 		return err
 	}
 
-	if targetDirectory != "" {
-		if err := createDirectoryDeep(targetDirectory, 0755); err != nil {
-			logging.Get().Tracef("Error making target dir: %v", err.Error())
-		}
+	if err := createDirectoryDeep(targetDirectory, 0755); err != nil {
+		logging.Get().Tracef("Error making target dir: %v", err.Error())
 	}
 
-	logging.Get().Tracef("Writing results to %v\n", color.Cyan.Sprint(targetDirFriendly))
+	logging.Get().Tracef("Writing results to %v\n", color.Cyan.Sprint(targetDirectory))
 
 	tmpFileName, err := CreateTemporaryFile(result.PlanName, result.PlanData)
 	if err != nil {
@@ -62,13 +60,13 @@ func WriteResults(targetDirectory string, result WritePayload, copyToFile FileCr
 
 	if err != nil {
 		logging.Get().WithFields(logrus.Fields{
-			"fileName":                tmpFileName,
-			"targetDirectoryFriendly": targetDirFriendly,
+			"fileName":        tmpFileName,
+			"targetDirectory": targetDirectory,
 		}).WithError(err).Warn("Error with UnzipArchive")
 		return err
 	}
 
-	logging.Get().Debugf("%v results written to %s\n", color.Magenta.Sprint(result.PlanName), color.Cyan.Sprint(targetDirFriendly))
+	logging.Get().Debugf("%v results written to %s\n", color.Magenta.Sprint(result.PlanName), color.Cyan.Sprint(targetDirectory))
 
 	return nil
 }
