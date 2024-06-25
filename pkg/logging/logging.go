@@ -110,7 +110,7 @@ func SetFileLogging(loggingDirectory string) (err error) {
 func WithFields(fields logrus.Fields) logrus.Ext1FieldLogger {
 	loggerSingleton = Get()
 	if fileLogging || Level(loggerSingleton) == logrus.TraceLevel && fieldLogging {
-		loggerSingleton = loggerSingleton.WithFields(fields)
+		return loggerSingleton.WithFields(fields)
 	}
 	return loggerSingleton
 }
@@ -118,7 +118,7 @@ func WithFields(fields logrus.Fields) logrus.Ext1FieldLogger {
 func WithField(field string, value interface{}) logrus.Ext1FieldLogger {
 	loggerSingleton = Get()
 	if fileLogging || Level(loggerSingleton) == logrus.TraceLevel && fieldLogging {
-		loggerSingleton = loggerSingleton.WithField(field, value)
+		return loggerSingleton.WithField(field, value)
 	}
 	return loggerSingleton
 }
