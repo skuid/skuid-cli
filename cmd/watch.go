@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -15,7 +14,6 @@ import (
 	"github.com/skuid/skuid-cli/pkg"
 	"github.com/skuid/skuid-cli/pkg/flags"
 	"github.com/skuid/skuid-cli/pkg/logging"
-	"github.com/skuid/skuid-cli/pkg/util"
 )
 
 var watchCmd = &cobra.Command{
@@ -66,27 +64,14 @@ func Watch(cmd *cobra.Command, _ []string) (err error) {
 	var targetDir string
 	if targetDir, err = cmd.Flags().GetString(flags.Directory.Name); err != nil {
 		return
+	} else if targetDir == "" {
+		targetDir = "."
 	}
 
-	// If target directory is provided,
-	// switch back to directory
-	if targetDir != "" {
-		var back string
-		back, err = os.Getwd()
-		if err != nil {
+	if !filepath.IsAbs(targetDir) {
+		if targetDir, err = filepath.Abs(targetDir); err != nil {
 			return
 		}
-
-		defer func() {
-			if err := os.Chdir(back); err != nil {
-				logging.WithFields(fields).Fatalf("Failed changing back to directory '%v': %v", back, err)
-			}
-		}()
-	}
-
-	var targetDirFriendly string
-	if targetDirFriendly, err = util.SanitizePath(targetDir); err != nil {
-		return
 	}
 
 	// Create our watcher
@@ -103,16 +88,19 @@ func Watch(cmd *cobra.Command, _ []string) (err error) {
 			select {
 			case event := <-w.Event:
 				logging.WithFields(fields).Debug("Event Detected")
-				cleanRelativeFilePath := util.FromWindowsPath(strings.Split(event.Path, targetDirFriendly)[1])
-				dirSplit := strings.Split(cleanRelativeFilePath, string(filepath.Separator))
-				metadataType, remainder := dirSplit[1], dirSplit[2]
+				var relativeFilePath string
+				if relativeFilePath, err = filepath.Rel(targetDir, event.Path); err != nil {
+					return
+				}
+				metadataType := filepath.Dir(relativeFilePath)
+				fileName := filepath.Base(relativeFilePath)
 				var changedEntity string
 				if metadataType == "componentpacks" {
-					changedEntity = filepath.Join(metadataType, remainder)
+					changedEntity = relativeFilePath
 				} else if metadataType == "site" {
 					changedEntity = "site"
 				} else {
-					changedEntity = filepath.Join(metadataType, strings.Split(remainder, "")[0])
+					changedEntity = filepath.Join(metadataType, strings.Split(fileName, ".")[0])
 				}
 				logging.WithFields(fields).Debug("Detected change to metadata type: " + changedEntity)
 				go func() {
@@ -129,7 +117,7 @@ func Watch(cmd *cobra.Command, _ []string) (err error) {
 	}()
 
 	// Watch targetDir recursively for changes.
-	if err = w.AddRecursive(""); err != nil {
+	if err = w.AddRecursive(targetDir); err != nil {
 		return
 	}
 
