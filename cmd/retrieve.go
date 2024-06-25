@@ -253,7 +253,11 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 		return
 	}
 
-	fields["directory"] = directory
+	if directory, err = util.SanitizePath(directory); err != nil {
+		return
+	}
+
+	fields["targetDirectory"] = directory
 	logging.WithFields(fields).Infof("Target Directory is %v", color.Cyan.Sprint(directory))
 
 	// TODO: put this behind a boolean command flag to avoid this process

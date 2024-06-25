@@ -11,6 +11,7 @@ import (
 	"github.com/skuid/skuid-cli/pkg"
 	"github.com/skuid/skuid-cli/pkg/flags"
 	"github.com/skuid/skuid-cli/pkg/logging"
+	"github.com/skuid/skuid-cli/pkg/util"
 )
 
 var deployCmd = &cobra.Command{
@@ -106,8 +107,10 @@ func Deploy(cmd *cobra.Command, _ []string) (err error) {
 	var targetDirectory string
 	if targetDirectory, err = cmd.Flags().GetString(flags.Directory.Name); err != nil {
 		return
-	} else if targetDirectory == "" {
-		targetDirectory = "."
+	}
+
+	if targetDirectory, err = util.SanitizePath(targetDirectory); err != nil {
+		return
 	}
 
 	fields["targetDirectory"] = targetDirectory

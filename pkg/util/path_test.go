@@ -61,7 +61,7 @@ func TestGetAbs(t *testing.T) {
 		},
 	} {
 		t.Run(tc.description, func(t *testing.T) {
-			actual := util.GetAbsolutePath(tc.given)
+			actual, _ := util.GetAbsolutePath(tc.given)
 			if actual != tc.expected {
 				t.Logf("actual %v not equal %v", actual, tc.expected)
 				t.FailNow()

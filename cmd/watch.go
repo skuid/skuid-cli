@@ -14,6 +14,7 @@ import (
 	"github.com/skuid/skuid-cli/pkg"
 	"github.com/skuid/skuid-cli/pkg/flags"
 	"github.com/skuid/skuid-cli/pkg/logging"
+	"github.com/skuid/skuid-cli/pkg/util"
 )
 
 var watchCmd = &cobra.Command{
@@ -64,24 +65,20 @@ func Watch(cmd *cobra.Command, _ []string) (err error) {
 	var targetDir string
 	if targetDir, err = cmd.Flags().GetString(flags.Directory.Name); err != nil {
 		return
-	} else if targetDir == "" {
-		targetDir = "."
 	}
 
-	if !filepath.IsAbs(targetDir) {
-		if targetDir, err = filepath.Abs(targetDir); err != nil {
-			return
-		}
+	if targetDir, err = util.SanitizePath(targetDir); err != nil {
+		return
 	}
+
+	fields["targetDirectory"] = targetDir
+	logging.WithFields(fields).Debug("Starting Watch")
 
 	// Create our watcher
 	w := watcher.New()
 
 	// Only handle one file change per event cycle.
 	w.SetMaxEvents(1)
-
-	fields["targetDir"] = targetDir
-	logging.WithFields(fields).Debug("Starting Watch")
 
 	go func() {
 		for {
