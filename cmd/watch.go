@@ -92,15 +92,14 @@ func Watch(cmd *cobra.Command, _ []string) (err error) {
 				if relativeFilePath, err = filepath.Rel(targetDir, event.Path); err != nil {
 					return
 				}
-				metadataType := filepath.Dir(relativeFilePath)
-				fileName := filepath.Base(relativeFilePath)
+				metadataType, relativeEntityPath := pkg.GetEntityDetails(relativeFilePath)
 				var changedEntity string
 				if metadataType == "componentpacks" {
-					changedEntity = relativeFilePath
+					changedEntity = filepath.Join(metadataType, relativeEntityPath)
 				} else if metadataType == "site" {
 					changedEntity = "site"
 				} else {
-					changedEntity = filepath.Join(metadataType, strings.Split(fileName, ".")[0])
+					changedEntity = filepath.Join(metadataType, strings.Split(relativeEntityPath, ".")[0])
 				}
 				logging.WithFields(fields).Debug("Detected change to metadata type: " + changedEntity)
 				go func() {

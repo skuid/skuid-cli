@@ -67,14 +67,7 @@ func (from NlxMetadata) GetFieldValueByName(target string) (names []string, err 
 // FilterItem returns true if the path meets the filter criteria, otherwise it returns false
 func (from NlxMetadata) FilterItem(item string) (keep bool) {
 	cleanRelativeFilePath := util.FromWindowsPath(item)
-	directory := filepath.Dir(cleanRelativeFilePath)
-	baseName := filepath.Base(cleanRelativeFilePath)
-
-	// Find the lowest level folder
-	dirSplit := strings.Split(directory, string(filepath.Separator))
-	metadataType, subFolders := dirSplit[0], dirSplit[1:]
-	filePathArray := append(subFolders, baseName)
-	filePath := strings.Join(filePathArray, string(filepath.Separator))
+	metadataType, filePath := GetEntityDetails(cleanRelativeFilePath)
 
 	validMetadataNames, err := from.GetFieldValueByName(metadataType)
 	if len(validMetadataNames) == 0 {
@@ -133,4 +126,17 @@ func GetMetadataTypeDirNames() (types []string) {
 	}
 
 	return types
+}
+
+// returns the metadatatype and filepath relative to metadata directory
+func GetEntityDetails(entityPath string) (metadataType string, relativeEntityPath string) {
+	directory := filepath.Dir(entityPath)
+	baseName := filepath.Base(entityPath)
+
+	// Find the lowest level folder
+	dirSplit := strings.Split(directory, string(filepath.Separator))
+	metadataType, subFolders := dirSplit[0], dirSplit[1:]
+	filePathArray := append(subFolders, baseName)
+	relativeEntityPath = strings.Join(filePathArray, string(filepath.Separator))
+	return
 }
