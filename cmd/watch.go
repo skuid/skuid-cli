@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/radovskyb/watcher"
@@ -75,14 +76,27 @@ func Watch(cmd *cobra.Command, _ []string) (err error) {
 	// Create our watcher
 	w := watcher.New()
 
-	// Only handle one file change per event cycle.
+	// TODO: Limiting the events could result in file changes being missed.  Unclear why the original
+	// code had limit of 1 event for cycle, possibly for perf reasons and/or intentionally only
+	// supporting single "file" changes (as opposed to a set of files changing simultaneously with
+	// a directory move operation for example).  For now, given the original code had a limit of
+	// one (1) event per cycle and its not a common use case to modify multiple files simultaneously,
+	// sticking with the limit.  However, if/when Skuid officially documents what is supported
+	// functionality & behavior for watch across all possible situations, the limit can be removed/
+	// adjusted and thorough testing of handling multiple events performed prior to finalizing.
 	w.SetMaxEvents(1)
+
+	// ignore watcher.Remove & watcher.Chmod
+	w.FilterOps(watcher.Create, watcher.Write, watcher.Rename, watcher.Move)
+
+	// setup event filter (e.g., ignore directory operations)
+	w.AddFilterHook(filterEvents)
 
 	go func() {
 		for {
 			select {
 			case event := <-w.Event:
-				logging.WithFields(fields).Debug("Detected change to file: " + event.Path)
+				logging.WithFields(fields).Debugf("Detected %v operation to file: %v", event.Op, event.Path)
 				go func() {
 					if err := pkg.DeployModifiedFiles(auth, targetDir, event.Path); err != nil {
 						w.Error <- err
@@ -115,4 +129,13 @@ func Watch(cmd *cobra.Command, _ []string) (err error) {
 	}
 
 	return
+}
+
+func filterEvents(fileInfo os.FileInfo, fullPath string) error {
+	// ignore any operations on directories
+	if fileInfo.IsDir() {
+		return watcher.ErrSkip
+	}
+
+	return nil
 }
