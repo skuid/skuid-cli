@@ -13,12 +13,13 @@ import (
 
 	"github.com/gookit/color"
 	"github.com/skuid/skuid-cli/pkg/logging"
+	"github.com/skuid/skuid-cli/pkg/util"
 	"golang.org/x/sync/errgroup"
 )
 
 // Archive compresses a file/directory to a writer
 func Archive(inFilePath string, filter *NlxMetadata) (result []byte, err error) {
-	return ArchiveWithFilterFunc(inFilePath, func(relativePath string) bool {
+	result, _, err = ArchiveWithFilterFunc(inFilePath, func(relativePath string) bool {
 		if filter != nil {
 			keep := filter.FilterItem(relativePath)
 			if !keep {
@@ -27,12 +28,17 @@ func Archive(inFilePath string, filter *NlxMetadata) (result []byte, err error) 
 		}
 		return true
 	})
+	return
 }
 
-// ArchivePartial compresses all files in a file/directory matching a relative prefix to a writer
-func ArchivePartial(inFilePath string, basePrefix string) ([]byte, error) {
+// ArchiveFiles compresses all files in a directory that are present in the slices files to a writer returning the number of files written
+func ArchiveFiles(inFilePath string, files []string) ([]byte, int, error) {
 	return ArchiveWithFilterFunc(inFilePath, func(relativePath string) bool {
-		return strings.HasPrefix(relativePath, basePrefix)
+		// NOTE - As of golang v1.21, slices package includes a Contains method (slices.Contains(files, relativePath))
+		// however in order to support >= v1.20, unable to use it.
+		// TODO: If/When skuid-cli states an official minimum supported go version and if/when that version
+		// is >= v1.21, the slices Contains can be called directly instead of using custom util StringSliceContainsKey
+		return util.StringSliceContainsKey(files, relativePath)
 	})
 }
 
@@ -41,15 +47,15 @@ type archiveSuccess struct {
 	FilePath string
 }
 
-func ArchiveWithFilterFunc(inFilePath string, filterKeep func(string) bool) (result []byte, err error) {
+func ArchiveWithFilterFunc(inFilePath string, filterKeep func(string) bool) (result []byte, fileCount int, err error) {
 	inFileStat, err := os.Stat(inFilePath)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	if !inFileStat.IsDir() {
 		msg := fmt.Sprintf("Requested folder %s is not a directory", inFilePath)
 		logging.Get().Warnf(msg)
-		return nil, errors.New(msg)
+		return nil, 0, errors.New(msg)
 	}
 
 	buffer := new(bytes.Buffer)
@@ -117,6 +123,7 @@ func ArchiveWithFilterFunc(inFilePath string, filterKeep func(string) bool) (res
 		}
 	}()
 
+	fileCount = 0
 	for success := range ch {
 		var zipFileWriter io.Writer
 		logging.Get().Tracef("Finished Processing %v", color.Green.Sprint(success.FilePath))
@@ -130,6 +137,7 @@ func ArchiveWithFilterFunc(inFilePath string, filterKeep func(string) bool) (res
 			logging.Get().Errorf("Error writing %v: %v", success.FilePath, err)
 			return
 		}
+		fileCount++
 	}
 
 	_ = zipWriter.Close()

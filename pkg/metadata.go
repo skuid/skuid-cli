@@ -34,19 +34,8 @@ func GetFieldValueByNameError(target string) error {
 }
 
 func (from NlxMetadata) GetFieldValueByName(target string) (names []string, err error) {
-	mType := reflect.TypeOf(NlxMetadata{})
-
-	var name string
-	fieldCount := mType.NumField()
-	for i := 0; i < fieldCount; i++ {
-		field := mType.Field(i)
-		if field.Tag.Get("json") == target {
-			name = field.Name
-			break
-		}
-	}
-
-	if name == "" {
+	name, mdtok := GetMetadataTypeNameByDirName(target)
+	if !mdtok {
 		err = GetFieldValueByNameError(target)
 		return
 	}
@@ -139,4 +128,18 @@ func GetEntityDetails(entityPath string) (metadataType string, relativeEntityPat
 	filePathArray := append(subFolders, baseName)
 	relativeEntityPath = strings.Join(filePathArray, string(filepath.Separator))
 	return
+}
+
+func GetMetadataTypeNameByDirName(name string) (metadataType string, ok bool) {
+	mType := reflect.TypeOf(NlxMetadata{})
+
+	fieldCount := mType.NumField()
+	for i := 0; i < fieldCount; i++ {
+		field := mType.Field(i)
+		if field.Tag.Get("json") == name {
+			return field.Name, true
+		}
+	}
+
+	return "", false
 }

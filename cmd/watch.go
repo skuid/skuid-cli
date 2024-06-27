@@ -2,8 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/radovskyb/watcher"
@@ -84,23 +82,9 @@ func Watch(cmd *cobra.Command, _ []string) (err error) {
 		for {
 			select {
 			case event := <-w.Event:
-				logging.WithFields(fields).Debug("Event Detected")
-				var relativeFilePath string
-				if relativeFilePath, err = filepath.Rel(targetDir, event.Path); err != nil {
-					return
-				}
-				metadataType, relativeEntityPath := pkg.GetEntityDetails(relativeFilePath)
-				var changedEntity string
-				if metadataType == "componentpacks" {
-					changedEntity = filepath.Join(metadataType, relativeEntityPath)
-				} else if metadataType == "site" {
-					changedEntity = "site"
-				} else {
-					changedEntity = filepath.Join(metadataType, strings.Split(relativeEntityPath, ".")[0])
-				}
-				logging.WithFields(fields).Debug("Detected change to metadata type: " + changedEntity)
+				logging.WithFields(fields).Debug("Detected change to file: " + event.Path)
 				go func() {
-					if err := pkg.DeployModifiedFiles(auth, targetDir, changedEntity); err != nil {
+					if err := pkg.DeployModifiedFiles(auth, targetDir, event.Path); err != nil {
 						w.Error <- err
 					}
 				}()

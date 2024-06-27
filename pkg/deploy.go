@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/gookit/color"
@@ -92,9 +94,56 @@ func GetDeployPlan(auth *Authorization, deploymentPlan []byte, filter *NlxPlanFi
 	return
 }
 
-func DeployModifiedFiles(auth *Authorization, targetDir, modifiedFile string) (err error) {
-	planBody, err := ArchivePartial(targetDir, modifiedFile)
+func DeployModifiedFiles(auth *Authorization, targetDir string, modifiedFile string) (err error) {
+	var relativeFilePath string
+	if relativeFilePath, err = filepath.Rel(targetDir, modifiedFile); err != nil {
+		return
+	}
+	metadataType, _ := GetEntityDetails(relativeFilePath)
+	if _, mdtok := GetMetadataTypeNameByDirName(metadataType); !mdtok {
+		logging.Get().Warnf("Unexpected metadata type [%v] detected, skipping deployment of modified file: %v", metadataType, modifiedFile)
+		return
+	}
+
+	var filesToDeploy []string
+	if metadataType == "site" {
+		if strings.HasSuffix(relativeFilePath, ".skuid.json") {
+			filesToDeploy = append(filesToDeploy, relativeFilePath, strings.TrimSuffix(relativeFilePath, ".skuid.json"))
+		} else if !strings.HasSuffix(relativeFilePath, ".json") {
+			filesToDeploy = append(filesToDeploy, relativeFilePath, relativeFilePath+".skuid.json")
+		} else {
+			filesToDeploy = append(filesToDeploy, relativeFilePath)
+		}
+	} else if metadataType == "pages" {
+		var pagePathNoExt string
+		if strings.HasSuffix(relativeFilePath, ".xml") {
+			pagePathNoExt = strings.TrimSuffix(relativeFilePath, ".xml")
+		} else if strings.HasSuffix(relativeFilePath, ".json") {
+			pagePathNoExt = strings.TrimSuffix(relativeFilePath, ".json")
+		} else {
+			logging.Get().Warnf("Unexpected [%v] file detected, skipping deployment of modified file: %v", metadataType, modifiedFile)
+			return
+		}
+		filesToDeploy = append(filesToDeploy, pagePathNoExt+".xml", pagePathNoExt+".json")
+	} else if metadataType == "files" {
+		if strings.HasSuffix(relativeFilePath, ".skuid.json") {
+			filesToDeploy = append(filesToDeploy, relativeFilePath, strings.TrimSuffix(relativeFilePath, ".skuid.json"))
+		} else {
+			filesToDeploy = append(filesToDeploy, relativeFilePath, relativeFilePath+".skuid.json")
+		}
+	} else {
+		if !strings.HasSuffix(relativeFilePath, ".json") {
+			logging.Get().Warnf("Unexpected [%v] file detected, skipping deployment of modified file: %v", metadataType, modifiedFile)
+			return
+		}
+		filesToDeploy = append(filesToDeploy, relativeFilePath)
+	}
+	planBody, fileCount, err := ArchiveFiles(targetDir, filesToDeploy)
 	if err != nil {
+		return
+	}
+	if fileCount != len(filesToDeploy) {
+		logging.Get().Warnf("Unable to locate all expected files, found %d, expected %d, skipping deployment of modified file: %v (expected files: %v)", fileCount, len(filesToDeploy), modifiedFile, filesToDeploy)
 		return
 	}
 
