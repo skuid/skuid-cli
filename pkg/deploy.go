@@ -95,6 +95,15 @@ func GetDeployPlan(auth *Authorization, deploymentPlan []byte, filter *NlxPlanFi
 }
 
 func DeployModifiedFiles(auth *Authorization, targetDir string, modifiedFile string) (err error) {
+	if !filepath.IsAbs(targetDir) {
+		err = fmt.Errorf("targetDir must be an absolute path")
+		return
+	}
+	if !filepath.IsAbs(modifiedFile) {
+		err = fmt.Errorf("modifiedFile must be an absolute path")
+		return
+	}
+
 	var relativeFilePath string
 	if relativeFilePath, err = filepath.Rel(targetDir, modifiedFile); err != nil {
 		return
@@ -176,6 +185,11 @@ func DeployModifiedFiles(auth *Authorization, targetDir string, modifiedFile str
 // 5. If metadata and data was deployed, send a request to pliny to sync its datasources' external_ids with warden datasource
 // ids, in case they changed during the deploy
 func ExecuteDeployPlan(auth *Authorization, plans NlxDynamicPlanMap, targetDir string) (duration time.Duration, planResults []NlxDeploymentResult, err error) {
+	if !filepath.IsAbs(targetDir) {
+		err = fmt.Errorf("targetDir must be an absolute path")
+		return
+	}
+
 	start := time.Now()
 	defer func() { duration = time.Since(start) }()
 	logging.Get().Trace("Executing Deploy Plan")

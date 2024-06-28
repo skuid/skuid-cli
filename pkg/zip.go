@@ -48,6 +48,11 @@ type archiveSuccess struct {
 }
 
 func ArchiveWithFilterFunc(inFilePath string, filterKeep func(string) bool) (result []byte, fileCount int, err error) {
+	if !filepath.IsAbs(inFilePath) {
+		err = fmt.Errorf("inFilePath must be an absolute path")
+		return
+	}
+
 	inFileStat, err := os.Stat(inFilePath)
 	if err != nil {
 		return nil, 0, err

@@ -261,14 +261,17 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 	logging.WithFields(fields).Infof("Target Directory is %v", color.Cyan.Sprint(directory))
 
 	// TODO: put this behind a boolean command flag to avoid this process
-	pkg.ClearDirectories(directory)
+	if err = pkg.ClearDirectories(directory); err != nil {
+		logging.Get().Errorf("Unable to clear directory: %v", directory)
+		return
+	}
 
 	fields["writeStart"] = time.Now()
 
 	for _, v := range results {
-		if err = util.WriteResultsToDisk(
+		if err = pkg.WriteResultsToDisk(
 			directory,
-			util.WritePayload{
+			pkg.WritePayload{
 				PlanName: v.PlanName,
 				PlanData: v.Data,
 			},
