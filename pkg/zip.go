@@ -43,7 +43,11 @@ func ArchiveFiles(inFilePath string, files []string) ([]byte, int, error) {
 }
 
 func ArchiveMetadata(inFilePath string, excludedMetadataDirs []string) (result []byte, err error) {
+	hasExcludedDirs := len(excludedMetadataDirs) > 0
 	result, _, err = ArchiveWithFilterFunc(inFilePath, func(relativePath string) bool {
+		if !hasExcludedDirs {
+			return true
+		}
 		// NOTE - As of golang v1.21, slices package includes a Contains method (slices.Contains(files, relativePath))
 		// however in order to support >= v1.20, unable to use it.
 		// TODO: If/When skuid-cli states an official minimum supported go version and if/when that version
