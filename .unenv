@@ -1,12 +1,13 @@
-unset PLINY_SUBDOMAIN
-unset PLINY_USER
-unset PLINY_PASSWORD
+unset PLINY_HOST
 unset SKUID_PW
 unset SKUID_UN
 unset SKUID_HOST
-unset SKUID_LOGGING
 unset SKUID_VERBOSE
-unset SKUID_LOGGING_FOLDER
 unset SKUID_FILE_LOGGING
 unset SKUID_LOGGING_DIRECTORY
 unset SKUID_DEFAULT_FOLDER
+unset SKUID_FIELD_LOGGING
+unset SKUID_IGNORE_SKUIDDB
+unset SKUID_RETRIEVE_SINCE_DATE
+# TODO: This can be removed once https://github.com/skuid/skuid-cli/issues/150 is resolved
+unset SKUID_SKIP_DATASOURCES
