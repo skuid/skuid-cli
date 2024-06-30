@@ -47,4 +47,11 @@ var (
 		Usage:       "Force deployment by ignoring skuid db errors",
 		EnvVarNames: []string{constants.ENV_SKUID_IGNORE_SKUIDDB},
 	}
+
+	// TODO: This can be removed once https://github.com/skuid/skuid-cli/issues/150 is resolved
+	SkipDataSources = &Flag[bool]{
+		Name:        "skip-datasources",
+		Usage:       "Skip all DataSources",
+		EnvVarNames: []string{constants.ENV_SKUID_SKIP_DATASOURCES},
+	}
 )

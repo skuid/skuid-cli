@@ -20,6 +20,8 @@ const (
 	ENV_SKUID_FIELD_LOGGING    = "SKUID_FIELD_LOGGING"
 	ENV_SKUID_IGNORE_SKUIDDB   = "SKUID_IGNORE_SKUIDDB"
 	ENV_SKUID_RETRIEVE_SINCE   = "SKUID_RETRIEVE_SINCE_DATE"
+	// TODO: This can be removed once https://github.com/skuid/skuid-cli/issues/150 is resolved
+	ENV_SKUID_SKIP_DATASOURCES = "SKUID_SKIP_DATASOURCES"
 )
 
 const (

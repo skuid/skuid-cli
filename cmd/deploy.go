@@ -26,10 +26,14 @@ var deployCmd = &cobra.Command{
 func init() {
 	flags.AddFlags(deployCmd, flags.NLXLoginFlags...)
 	flags.AddFlags(deployCmd, flags.Directory, flags.AppName)
-	flags.AddFlags(deployCmd, flags.IgnoreSkuidDb)
+	// TODO: SkipDataSources can be removed once https://github.com/skuid/skuid-cli/issues/150 is resolved
+	flags.AddFlags(deployCmd, flags.IgnoreSkuidDb, flags.SkipDataSources)
 	// pages flag does not work as expected so commenting out
 	// TODO: Remove completely or fix issues depending on https://github.com/skuid/skuid-cli/issues/147 & https://github.com/skuid/skuid-cli/issues/148
 	//flags.AddFlags(deployCmd, flags.Pages)
+
+	// do not allow ignoring skuid db errors when skipping datasources or vice-versa as errors can't occur if we're skipping all data sources
+	flags.MarkFlagsMutuallyExclusive(deployCmd, [][]string{{flags.IgnoreSkuidDb.Name, flags.SkipDataSources.Name}})
 	AppCmd = append(AppCmd, deployCmd)
 }
 
@@ -109,6 +113,23 @@ func Deploy(cmd *cobra.Command, _ []string) (err error) {
 		filter.IgnoreSkuidDb = ignoreSkuidDb
 	}
 
+	// skip datasources
+	// TODO: This can be removed once https://github.com/skuid/skuid-cli/issues/150 is resolved
+	var skipDataSources bool
+	if skipDataSources, err = cmd.Flags().GetBool(flags.SkipDataSources.Name); err != nil {
+		return
+	}
+	fields["skipDataSources"] = skipDataSources
+	var excludedMetadataDirs []string
+	if skipDataSources {
+		logging.WithFields(fields).Info("Skipping deployment of all DataSources")
+		var mdDirName string
+		if mdDirName, err = pkg.GetMetadataTypeDirName("DataSources"); err != nil {
+			return
+		}
+		excludedMetadataDirs = append(excludedMetadataDirs, mdDirName)
+	}
+
 	// get directory argument
 	var targetDirectory string
 	if targetDirectory, err = cmd.Flags().GetString(flags.Directory.Name); err != nil {
@@ -123,7 +144,7 @@ func Deploy(cmd *cobra.Command, _ []string) (err error) {
 	logging.WithFields(fields).Info("Getting Deployment Payload")
 
 	var deploymentPlan []byte
-	if deploymentPlan, err = pkg.Archive(targetDirectory, nil); err != nil {
+	if deploymentPlan, err = pkg.ArchiveMetadata(targetDirectory, excludedMetadataDirs); err != nil {
 		return
 	}
 

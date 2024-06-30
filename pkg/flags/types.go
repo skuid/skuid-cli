@@ -244,3 +244,12 @@ func Add[T any](flag *Flag[T]) func(*cobra.Command) error {
 		}
 	}
 }
+
+// Takes an array of flag groups and marks the flags in each group as mutually exclusive
+// example - The following would make foo & bar mutually exclusive and make abc & xyz mutually exclusive
+// [][]string{{"foo", "bar"}, {"abc", "xyz"}}
+func MarkFlagsMutuallyExclusive(cmd *cobra.Command, flagGroups [][]string) {
+	for _, flagGroup := range flagGroups {
+		cmd.MarkFlagsMutuallyExclusive(flagGroup...)
+	}
+}

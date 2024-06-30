@@ -42,6 +42,18 @@ func ArchiveFiles(inFilePath string, files []string) ([]byte, int, error) {
 	})
 }
 
+func ArchiveMetadata(inFilePath string, excludedMetadataDirs []string) (result []byte, err error) {
+	result, _, err = ArchiveWithFilterFunc(inFilePath, func(relativePath string) bool {
+		// NOTE - As of golang v1.21, slices package includes a Contains method (slices.Contains(files, relativePath))
+		// however in order to support >= v1.20, unable to use it.
+		// TODO: If/When skuid-cli states an official minimum supported go version and if/when that version
+		// is >= v1.21, the slices Contains can be called directly instead of using custom util StringSliceContainsKey
+		metadataType, _ := GetEntityDetails(relativePath)
+		return !util.StringSliceContainsKey(excludedMetadataDirs, metadataType)
+	})
+	return
+}
+
 type archiveSuccess struct {
 	Bytes    []byte
 	FilePath string

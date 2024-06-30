@@ -117,6 +117,17 @@ func GetMetadataTypeDirNames() (types []string) {
 	return types
 }
 
+func GetMetadataTypeDirName(fieldName string) (dirName string, err error) {
+	metadataType := reflect.TypeOf(NlxMetadata{})
+	field, ok := metadataType.FieldByName(fieldName)
+	if !ok {
+		err = errors.Error("invalid metadata field name: %v", fieldName)
+		return
+	}
+	dirName = field.Tag.Get("json")
+	return
+}
+
 // returns the metadatatype and filepath relative to metadata directory
 func GetEntityDetails(entityPath string) (metadataType string, relativeEntityPath string) {
 	directory := filepath.Dir(entityPath)
