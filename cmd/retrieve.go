@@ -112,14 +112,18 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 	}
 
 	// filter by page name
-	var pageNames []string
-	if pageNames, err = cmd.Flags().GetStringArray(flags.Pages.Name); err != nil {
-		return
-	} else if len(pageNames) > 0 {
-		initFilter()
-		fields["pageNames"] = pageNames
-		filter.PageNames = pageNames
-	}
+	// pages flag does not work as expected so commenting out
+	// TODO: Remove completely or fix issues depending on https://github.com/skuid/skuid-cli/issues/147 & https://github.com/skuid/skuid-cli/issues/148
+	/*
+		var pageNames []string
+		if pageNames, err = cmd.Flags().GetStringArray(flags.Pages.Name); err != nil {
+			return
+		} else if len(pageNames) > 0 {
+			initFilter()
+			fields["pageNames"] = pageNames
+			filter.PageNames = pageNames
+		}
+	*/
 
 	var sinceStr string
 	since := time.Now()
@@ -289,7 +293,9 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 func init() {
 	flags.AddFlags(retrieveCmd, flags.NLXLoginFlags...)
 	flags.AddFlags(retrieveCmd, flags.Directory, flags.AppName)
-	flags.AddFlags(retrieveCmd, flags.Pages)
+	// pages flag does not work as expected so commenting out
+	// TODO: Remove completely or fix issues depending on https://github.com/skuid/skuid-cli/issues/147 & https://github.com/skuid/skuid-cli/issues/148
+	//flags.AddFlags(retrieveCmd, flags.Pages)
 	flags.AddFlags(retrieveCmd, flags.Since)
 	AppCmd = append(AppCmd, retrieveCmd)
 }

@@ -27,7 +27,9 @@ func init() {
 	flags.AddFlags(deployCmd, flags.NLXLoginFlags...)
 	flags.AddFlags(deployCmd, flags.Directory, flags.AppName)
 	flags.AddFlags(deployCmd, flags.IgnoreSkuidDb)
-	flags.AddFlags(deployCmd, flags.Pages)
+	// pages flag does not work as expected so commenting out
+	// TODO: Remove completely or fix issues depending on https://github.com/skuid/skuid-cli/issues/147 & https://github.com/skuid/skuid-cli/issues/148
+	//flags.AddFlags(deployCmd, flags.Pages)
 	AppCmd = append(AppCmd, deployCmd)
 }
 
@@ -83,14 +85,18 @@ func Deploy(cmd *cobra.Command, _ []string) (err error) {
 	}
 
 	// filter by page name
-	var pageNames []string
-	if pageNames, err = cmd.Flags().GetStringArray(flags.Pages.Name); err != nil {
-		return
-	} else if len(pageNames) > 0 {
-		initFilter()
-		fields["pages"] = pageNames
-		filter.PageNames = pageNames
-	}
+	// pages flag does not work as expected so commenting out
+	// TODO: Remove completely or fix issues depending on https://github.com/skuid/skuid-cli/issues/147 & https://github.com/skuid/skuid-cli/issues/148
+	/*
+		var pageNames []string
+		if pageNames, err = cmd.Flags().GetStringArray(flags.Pages.Name); err != nil {
+			return
+		} else if len(pageNames) > 0 {
+			initFilter()
+			fields["pages"] = pageNames
+			filter.PageNames = pageNames
+		}
+	*/
 
 	// ignore skuiddb
 	var ignoreSkuidDb bool

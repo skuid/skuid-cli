@@ -37,8 +37,10 @@ func (t JSONTime) MarshalJSON() ([]byte, error) {
 // NlxPlanFilter should be serialized and provided with the
 // request for retrieval
 type NlxPlanFilter struct {
-	AppName       string    `json:"appName,omitempty"`
-	PageNames     []string  `json:"pages,omitempty"`
+	AppName string `json:"appName,omitempty"`
+	// pages flag does not work as expected so commenting out
+	// TODO: Remove completely or fix issues depending on https://github.com/skuid/skuid-cli/issues/147 & https://github.com/skuid/skuid-cli/issues/148
+	//PageNames     []string  `json:"pages,omitempty"`
 	IgnoreSkuidDb bool      `json:"ignoreSkuidDb,omitempty"`
 	Since         time.Time `json:"since,omitempty"`
 }

@@ -26,10 +26,12 @@ const (
 type NlxDynamicPlanMap map[string]NlxPlan
 
 type FilteredRequestBody struct {
-	AppName       string   `json:"appName"`
-	PageNames     []string `json:"pageNames"`
-	PlanBytes     []byte   `json:"plan"`
-	IgnoreSkuidDb bool     `json:"ignoreSkuidDb"`
+	AppName string `json:"appName"`
+	// pages flag does not work as expected so commenting out
+	// TODO: Remove completely or fix issues depending on https://github.com/skuid/skuid-cli/issues/147 & https://github.com/skuid/skuid-cli/issues/148
+	//PageNames     []string `json:"pageNames"`
+	PlanBytes     []byte `json:"plan"`
+	IgnoreSkuidDb bool   `json:"ignoreSkuidDb"`
 }
 
 type PermissionSetResult struct {
@@ -69,7 +71,9 @@ func GetDeployPlan(auth *Authorization, deploymentPlan []byte, filter *NlxPlanFi
 		// instead of just using that as the payload
 		requestBody := FilteredRequestBody{
 			filter.AppName,
-			filter.PageNames,
+			// pages flag does not work as expected so commenting out
+			// TODO: Remove completely or fix issues depending on https://github.com/skuid/skuid-cli/issues/147 & https://github.com/skuid/skuid-cli/issues/148
+			//filter.PageNames,
 			deploymentPlan,
 			filter.IgnoreSkuidDb,
 		}
