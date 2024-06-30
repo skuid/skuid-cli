@@ -18,10 +18,14 @@ var (
 		Global:  true,
 	}
 
-	NoModule = &Flag[bool]{
-		Name:  "no-module",
-		Usage: "Retrieve only those pages that do not have a module",
-	}
+	// Not used anywhere, so commenting out for now
+	// TODO: Remove completely or fix issues depending on https://github.com/skuid/skuid-cli/issues/149
+	/*
+		NoModule = &Flag[bool]{
+			Name:  "no-module",
+			Usage: "Retrieve only those pages that do not have a module",
+		}
+	*/
 
 	FileLogging = &Flag[bool]{
 		Name:        "file-logging",
