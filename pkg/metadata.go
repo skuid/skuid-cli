@@ -154,3 +154,54 @@ func GetMetadataTypeNameByDirName(name string) (metadataType string, ok bool) {
 
 	return "", false
 }
+
+// GetEntityFiles will return all files that are directly associated
+// to the entityPath specified.  For example, if entityPath is `pages/mypage.xml`,
+// the files returned will be `pages/mypage.xml` and its corresponding `pages/mypage.json`.
+// TODO: This code is currently written without full knowledge of Skuids internal file structure
+// and is simply based on observing each metadata type and the files downloaded via the
+// retrieve command.  It should NOT be considered production ready and requires Skuid to
+// review/adjust and/or publish full documentation on each metadata type and its files including
+// naming conventions.
+func GetEntityFiles(entityPath string) ([]string, bool) {
+	metadataType, _ := GetEntityDetails(entityPath)
+	if _, mdtok := GetMetadataTypeNameByDirName(metadataType); !mdtok {
+		logging.Get().Errorf("Unexpected metadata type [%v] detected for file: %v", metadataType, entityPath)
+		return nil, false
+	}
+
+	var entityFiles []string
+	if metadataType == "site" {
+		if strings.HasSuffix(entityPath, ".skuid.json") {
+			entityFiles = append(entityFiles, entityPath, strings.TrimSuffix(entityPath, ".skuid.json"))
+		} else if !strings.HasSuffix(entityPath, ".json") {
+			entityFiles = append(entityFiles, entityPath, entityPath+".skuid.json")
+		} else {
+			entityFiles = append(entityFiles, entityPath)
+		}
+	} else if metadataType == "pages" {
+		var pagePathNoExt string
+		if strings.HasSuffix(entityPath, ".xml") {
+			pagePathNoExt = strings.TrimSuffix(entityPath, ".xml")
+		} else if strings.HasSuffix(entityPath, ".json") {
+			pagePathNoExt = strings.TrimSuffix(entityPath, ".json")
+		} else {
+			logging.Get().Errorf("Unexpected [%v] file detected: %v", metadataType, entityPath)
+			return nil, false
+		}
+		entityFiles = append(entityFiles, pagePathNoExt+".xml", pagePathNoExt+".json")
+	} else if metadataType == "files" {
+		if strings.HasSuffix(entityPath, ".skuid.json") {
+			entityFiles = append(entityFiles, entityPath, strings.TrimSuffix(entityPath, ".skuid.json"))
+		} else {
+			entityFiles = append(entityFiles, entityPath, entityPath+".skuid.json")
+		}
+	} else {
+		if !strings.HasSuffix(entityPath, ".json") {
+			logging.Get().Errorf("Unexpected [%v] file detected: %v", metadataType, entityPath)
+			return nil, false
+		}
+		entityFiles = append(entityFiles, entityPath)
+	}
+	return entityFiles, true
+}
