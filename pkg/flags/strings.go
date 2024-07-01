@@ -30,9 +30,10 @@ var (
 	}
 
 	AppName = &Flag[string]{
-		Name:      "app",
-		Shorthand: "a",
-		Usage:     "Scope the operation to a specific Skuid NLX App (name)",
+		Name:        "app",
+		Shorthand:   "a",
+		EnvVarNames: []string{constants.ENV_SKUID_APP_NAME},
+		Usage:       "Scope the operation to a specific Skuid NLX App (name)",
 	}
 
 	Directory = &Flag[string]{

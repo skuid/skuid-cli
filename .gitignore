@@ -18,4 +18,6 @@ logs
 **/**/*.log
 work/
 .DS_Store
-.vscode/
+.vscode/*
+!.vscode/launch.json
+skuid-site-objects

@@ -9,5 +9,7 @@ unset SKUID_DEFAULT_FOLDER
 unset SKUID_FIELD_LOGGING
 unset SKUID_IGNORE_SKUIDDB
 unset SKUID_RETRIEVE_SINCE_DATE
+unset SKUID_TRACE
+unset SKUID_APP_NAME
 # TODO: This can be removed once https://github.com/skuid/skuid-cli/issues/150 is resolved
 unset SKUID_SKIP_DATASOURCES

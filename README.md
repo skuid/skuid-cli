@@ -20,3 +20,17 @@ To get more information about retrieve flags, use ```go run main.go retrieve --h
 
 To deploy run ```go run main.go deploy --host='site.pliny.webserver' -d /directory -u='user' -p='pass' -v```
 To get more information about deploy flags, use ```go run main.go deploy --help```
+
+
+## Local debugging
+
+There are several configurations created for debug support in [Visual Studio Code](.vscode/launch.json):
+
+1. `Retrieve w/ args` - CLI arguments passed on the command-line
+2. `Retrieve w/ envvars` - Uses [.env](#environment-variables)
+3. `Deploy w/ envvars` - Uses [.env](#environment-variables)
+4. `Watch w/ envvars` - Uses [.env](#environment-variables)
+
+## Environment Variables
+
+See [.env.template](.env.template) for a template to create a `.env` file from.

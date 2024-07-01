@@ -12,10 +12,11 @@ var (
 	}
 
 	Trace = &Flag[bool]{
-		Name:    "trace",
-		Usage:   "Show incredibly verbose logging",
-		Default: false,
-		Global:  true,
+		Name:        "trace",
+		Usage:       "Show incredibly verbose logging",
+		EnvVarNames: []string{constants.ENV_SKUID_TRACE},
+		Default:     false,
+		Global:      true,
 	}
 
 	// Not used anywhere, so commenting out for now

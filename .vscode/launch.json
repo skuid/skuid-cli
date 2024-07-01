@@ -5,7 +5,7 @@
 	"version": "0.2.0",
 	"configurations": [
 		{
-			"name": "Retrieve",
+			"name": "Retrieve w/ args",
 			"type": "go",
 			"request": "launch",
 			"mode": "auto",
@@ -20,6 +20,39 @@
 				"<host>",
 				"-d",
 				"<directory>",
+			]
+		},
+		{
+			"name": "Retrieve w/ envvars",
+			"type": "go",
+			"request": "launch",
+			"mode": "auto",
+			"program": "${workspaceRoot}",
+			"envFile": "${workspaceRoot}/.env",
+			"args": [
+				"retrieve"
+			]
+		},
+		{
+			"name": "Watch w/ envvars",
+			"type": "go",
+			"request": "launch",
+			"mode": "auto",
+			"program": "${workspaceRoot}",
+			"envFile": "${workspaceRoot}/.env",
+			"args": [
+				"watch",
+			]
+		},
+		{
+			"name": "Deploy w/ envvars",
+			"type": "go",
+			"request": "launch",
+			"mode": "auto",
+			"program": "${workspaceRoot}",
+			"envFile": "${workspaceRoot}/.env",
+			"args": [
+				"deploy",
 			]
 		}
 	]
