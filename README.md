@@ -8,9 +8,21 @@ To download binaries for the current stable release, see [this repository's rele
 
 To read documentation for the current stable release, [see the Skuid docs site.](https://docs.skuid.com/nlx/v2/en/skuid/cli/) 
 
+## Go Version
+
+The minimum version of Go supported is identified in this repositories [go.mod](go.mod#L4).
+
+To change the Go version, the following must also be updated:
+
+1. [github workflow](.github/workflows/github-actions-release.yml#L24)
+2. [dockerfile](compose/Dockerfile#L1)
+3. [drone ci](.drone.yml#L20)
+4. [makefile](Makefile#L6)
+
 ## Local testing
 
 To retrieve/deploy using a branch of skuid CLI, run the command in the root of this directory with go run main.go prepended. For example:
+
 ### Retrieve
 
 To retrieve run ```go run main.go retrieve --host='site.pliny.webserver' -d /directory -u='user' -p='pass' -v```
@@ -20,7 +32,6 @@ To get more information about retrieve flags, use ```go run main.go retrieve --h
 
 To deploy run ```go run main.go deploy --host='site.pliny.webserver' -d /directory -u='user' -p='pass' -v```
 To get more information about deploy flags, use ```go run main.go deploy --help```
-
 
 ## Local debugging
 

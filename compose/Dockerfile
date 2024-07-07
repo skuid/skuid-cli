@@ -1,4 +1,4 @@
-FROM golang:1.20-alpine3.16 as build
+FROM golang:1.22.5-alpine as build
 
 # arguments to authenticate with the site we're retrieving from
 ARG HOST
