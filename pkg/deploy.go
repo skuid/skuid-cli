@@ -4,11 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"path/filepath"
 	"time"
 
 	"github.com/gookit/color"
 	"github.com/skuid/skuid-cli/pkg/logging"
+	"github.com/skuid/skuid-cli/pkg/util"
 )
 
 var (
@@ -118,7 +120,7 @@ func DeployModifiedFiles(auth *Authorization, targetDir string, modifiedFile str
 		return
 	}
 
-	planBody, fileCount, err := ArchiveFiles(targetDir, filesToDeploy)
+	planBody, fileCount, err := Archive(os.DirFS(targetDir), util.NewFileUtil(), FileNameArchiveFilter(filesToDeploy))
 	if err != nil {
 		return
 	}
@@ -187,7 +189,7 @@ func ExecuteDeployPlan(auth *Authorization, plans NlxDynamicPlanMap, targetDir s
 		logging.Get().Infof("Deploying %v", color.Magenta.Sprint(plan.Type))
 
 		logging.Get().Tracef("Archiving %v", targetDir)
-		payload, err := Archive(targetDir, &plan.Metadata)
+		payload, _, err := Archive(os.DirFS(targetDir), util.NewFileUtil(), MetadataArchiveFilter(&plan.Metadata))
 		if err != nil {
 			logging.Get().Trace("Error creating deployment ZIP archive")
 			return

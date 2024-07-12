@@ -1,0 +1,15 @@
+with-expecter: True
+dir: "{{ .InterfaceDir }}/mocks"
+mockname: "{{ .InterfaceName }}"
+outpkg: "mocks"
+filename: "{{ .InterfaceName | snakecase }}_mock.go"
+packages:
+  github.com/skuid/skuid-cli/pkg/util:
+    interfaces:
+      FileUtil:
+      ZipWriter:
+      ZipFile:
+      WalkDirFunc:
+  github.com/skuid/skuid-cli/pkg:
+    interfaces:
+      ArchiveFilter:

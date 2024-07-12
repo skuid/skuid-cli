@@ -1,8 +1,11 @@
 package util
 
 import (
+	"archive/zip"
+	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"math/rand"
 	"os"
 	"strings"
@@ -16,6 +19,91 @@ import (
 const (
 	MAX_ATTEMPTS = 2
 )
+
+// ZipFile used for testing
+type ZipFile interface {
+	io.Writer
+}
+
+// WalkDirFunc used for testing
+type WalkDirFunc func(path string, d fs.DirEntry, err error) error
+
+type ZipWriter interface {
+	Create(name string) (io.Writer, error)
+	Close() error
+}
+
+type FileUtil interface {
+	ReadFile(fsys fs.FS, name string) ([]byte, error)
+	WalkDir(fsys fs.FS, root string, fn fs.WalkDirFunc) error
+	NewZipWriter(w io.Writer) ZipWriter
+	DirExists(fsys fs.FS, path string) (bool, error)
+	FileExists(fsys fs.FS, path string) (bool, error)
+	PathExists(fsys fs.FS, path string) (bool, error)
+}
+
+type fileUtil struct{}
+
+func (z *fileUtil) ReadFile(fsys fs.FS, name string) ([]byte, error) {
+	return fs.ReadFile(fsys, name)
+}
+
+func (z *fileUtil) WalkDir(fsys fs.FS, root string, fn fs.WalkDirFunc) error {
+	return fs.WalkDir(fsys, root, fn)
+}
+
+func (z *fileUtil) NewZipWriter(w io.Writer) ZipWriter {
+	return zip.NewWriter(w)
+}
+
+// Determines if the path specified exists and is a directory
+// returns:
+//
+//	true, nil if exists and its a directory
+//	false, nil if does not exist or if exists but its not a directory
+//	false, error if error encountered evaluating - note that the path may exist and it may be a directory or a file
+func (z *fileUtil) DirExists(fsys fs.FS, path string) (bool, error) {
+	exists, fi, err := pathExists(fsys, path)
+	if err == nil {
+		return exists && fi.IsDir(), nil
+	}
+
+	return exists, err
+}
+
+// Determines if the path specified exists and is a file
+// returns:
+//
+//	true, nil if exists and its a file
+//	false, nil if does not exist or if exists but its not a file
+//	false, error if error encountered evaluating - note that the path may exist and it may be a directory or a file
+func (z *fileUtil) FileExists(fsys fs.FS, path string) (bool, error) {
+	exists, fi, err := pathExists(fsys, path)
+	if err == nil {
+		return exists && !fi.IsDir(), nil
+	}
+
+	return exists, err
+}
+
+// Determines if the path specified exists
+// returns:
+//
+//	true, nil if exists
+//	false, nil if does not exist
+//	false, error if error encountered evaluating - note that the path may exist
+func (z *fileUtil) PathExists(fsys fs.FS, path string) (bool, error) {
+	exists, _, err := pathExists(fsys, path)
+	if err == nil {
+		return exists, nil
+	}
+
+	return exists, err
+}
+
+func NewFileUtil() FileUtil {
+	return new(fileUtil)
+}
 
 type FileCreator func(fileReader io.ReadCloser, path string) error
 
@@ -83,4 +171,17 @@ func CopyToFile(fileReader io.ReadCloser, path string) (err error) {
 	logging.Get().Tracef("%v: %v", color.Yellow.Sprint("Copied to File"), path)
 
 	return
+}
+
+func pathExists(fsys fs.FS, path string) (bool, fs.FileInfo, error) {
+	fi, err := fs.Stat(fsys, path)
+	if err == nil {
+		return true, fi, nil
+	}
+
+	if errors.Is(err, os.ErrNotExist) {
+		return false, nil, nil
+	}
+
+	return false, nil, err
 }

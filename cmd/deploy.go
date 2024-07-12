@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"os"
 	"time"
 
 	"github.com/gookit/color"
@@ -144,7 +145,7 @@ func Deploy(cmd *cobra.Command, _ []string) (err error) {
 	logging.WithFields(fields).Info("Getting Deployment Payload")
 
 	var deploymentPlan []byte
-	if deploymentPlan, err = pkg.ArchiveMetadata(targetDirectory, excludedMetadataDirs); err != nil {
+	if deploymentPlan, _, err = pkg.Archive(os.DirFS(targetDirectory), util.NewFileUtil(), pkg.MetadataDirArchiveFilter(excludedMetadataDirs)); err != nil {
 		return
 	}
 
