@@ -162,8 +162,7 @@ func getFiles(ctx context.Context, g *errgroup.Group, fsys fs.FS, fileUtil util.
 
 		var fileWorkers atomic.Int32
 		fileWorkers.Store(int32(len(metadataTypeDirNames)))
-		for i, mddir := range metadataTypeDirNames {
-			workerNum := i
+		for _, mddir := range metadataTypeDirNames {
 			metadataDirName := mddir
 			g.Go(func() error {
 				defer func() {
@@ -172,7 +171,7 @@ func getFiles(ctx context.Context, g *errgroup.Group, fsys fs.FS, fileUtil util.
 						close(archivePaths)
 					}
 				}()
-				return getMetadataFiles(ctx, fsys, fileUtil, metadataDirName, archivePaths, filterArchive, workerNum)
+				return getMetadataFiles(ctx, fsys, fileUtil, metadataDirName, archivePaths, filterArchive)
 			})
 
 		}
@@ -183,7 +182,7 @@ func getFiles(ctx context.Context, g *errgroup.Group, fsys fs.FS, fileUtil util.
 	return archivePaths
 }
 
-func getMetadataFiles(ctx context.Context, fsys fs.FS, fileUtil util.FileUtil, metadataDirName string, archivePaths chan<- string, filterArchive ArchiveFilter, workerNum int) (err error) {
+func getMetadataFiles(ctx context.Context, fsys fs.FS, fileUtil util.FileUtil, metadataDirName string, archivePaths chan<- string, filterArchive ArchiveFilter) (err error) {
 	return fileUtil.WalkDir(fsys, metadataDirName, func(filePath string, dirEntry fs.DirEntry, e error) error {
 		if e != nil {
 			return e
@@ -244,7 +243,6 @@ func readFiles(ctx context.Context, g *errgroup.Group, fsys fs.FS, fileUtil util
 	var itemWorkers atomic.Int32
 	itemWorkers.Store(numItemWorkers)
 	for i := 0; i < numItemWorkers; i++ {
-		workerNum := i
 		g.Go(func() error {
 			defer func() {
 				// Last one out closes shop
@@ -253,7 +251,7 @@ func readFiles(ctx context.Context, g *errgroup.Group, fsys fs.FS, fileUtil util
 				}
 			}()
 
-			return readFile(ctx, fsys, fileUtil, archivePaths, archiveItems, workerNum)
+			return readFile(ctx, fsys, fileUtil, archivePaths, archiveItems)
 		})
 	}
 
@@ -303,7 +301,7 @@ func addFiles(ctx context.Context, g *errgroup.Group, zipWriter util.ZipWriter, 
 	return archivedFiles
 }
 
-func readFile(ctx context.Context, fsys fs.FS, fileUtil util.FileUtil, archivePaths <-chan string, archiveItems chan archiveItem, workerNum int) error {
+func readFile(ctx context.Context, fsys fs.FS, fileUtil util.FileUtil, archivePaths <-chan string, archiveItems chan archiveItem) error {
 	for path := range archivePaths {
 		// exit if cancelled - see note below in select
 		if ctx.Err() != nil {
