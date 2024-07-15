@@ -4,11 +4,9 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 
 	"github.com/skuid/skuid-cli/pkg/constants"
 	"github.com/skuid/skuid-cli/pkg/flags"
-	"github.com/skuid/skuid-cli/pkg/logging"
 )
 
 var (
@@ -17,18 +15,6 @@ var (
 	// Commands to be appended before execute
 	AppCmd = []*cobra.Command{}
 )
-
-func init() {
-	cobra.OnInitialize(func() {
-		viper.SetConfigName(".skuid") // name of config file (without extension)
-		viper.AddConfigPath("$HOME")  // adding home directory as first search path
-
-		// If a config file is found, read it in.
-		if err := viper.ReadInConfig(); err == nil {
-			logging.Get().Debug("Using config file:", viper.ConfigFileUsed())
-		}
-	})
-}
 
 func Execute() error {
 	SkuidCmd = &cobra.Command{
