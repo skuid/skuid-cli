@@ -4,6 +4,8 @@ import (
 	"github.com/skuid/skuid-cli/pkg/constants"
 )
 
+type RedactedString string
+
 var (
 	PlinyHost = &Flag[string]{
 		Name:        "host",
@@ -12,8 +14,7 @@ var (
 		Required:    true,
 	}
 
-	Password = &Flag[string]{
-		argument:    &argPassword,
+	Password = &Flag[RedactedString]{
 		Name:        "password",
 		Shorthand:   "p",
 		Usage:       "Skuid NLX Password",

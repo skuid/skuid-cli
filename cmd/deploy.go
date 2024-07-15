@@ -25,7 +25,8 @@ var deployCmd = &cobra.Command{
 }
 
 func init() {
-	flags.AddFlags(deployCmd, flags.NLXLoginFlags...)
+	flags.AddFlags(deployCmd, flags.PlinyHost, flags.Username)
+	flags.AddFlags(deployCmd, flags.Password)
 	flags.AddFlags(deployCmd, flags.Directory, flags.AppName)
 	// TODO: SkipDataSources can be removed once https://github.com/skuid/skuid-cli/issues/150 is resolved
 	flags.AddFlags(deployCmd, flags.IgnoreSkuidDb, flags.SkipDataSources)
@@ -53,7 +54,7 @@ func Deploy(cmd *cobra.Command, _ []string) (err error) {
 	if err != nil {
 		return
 	}
-	password, err := cmd.Flags().GetString(flags.Password.Name)
+	password, err := flags.GetPassword(cmd.Flags())
 	if err != nil {
 		return
 	}
@@ -62,9 +63,15 @@ func Deploy(cmd *cobra.Command, _ []string) (err error) {
 	fields["username"] = username
 	logging.WithFields(fields).Debug("Gathered credentials")
 
-	// auth
-	var auth *pkg.Authorization
-	if auth, err = pkg.Authorize(host, username, password); err != nil {
+	auth, err := pkg.Authorize(host, username, password)
+	// we don't need it anymore - very inelegant approach but at least it is something for now
+	// Clearing it here instead of in auth package which is the only place its accessed because the tests that exist
+	// for auth rely on package global variables so clearing in there would break those tests as they currently exist.
+	//
+	// TODO: Implement a solution for secure storage of the password while in memory and implement a proper one-time use
+	// approach assuming Skuid supports refresh tokens (see https://github.com/skuid/skuid-cli/issues/172)
+	password.Set("")
+	if err != nil {
 		return
 	}
 

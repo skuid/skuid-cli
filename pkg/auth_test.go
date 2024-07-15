@@ -5,17 +5,19 @@ import (
 	"testing"
 
 	"github.com/gookit/color"
+	"github.com/mmatczuk/anyflag"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/skuid/skuid-cli/pkg"
 	"github.com/skuid/skuid-cli/pkg/constants"
+	"github.com/skuid/skuid-cli/pkg/flags"
 	"github.com/skuid/skuid-cli/pkg/util"
 )
 
 var (
 	authHost = os.Getenv(constants.ENV_SKUID_HOST)
 	authUser = os.Getenv(constants.ENV_SKUID_USERNAME)
-	authPass = os.Getenv(constants.ENV_SKUID_PASSWORD)
+	authPass = anyflag.NewValueWithRedact(flags.RedactedString(os.Getenv(constants.ENV_SKUID_PASSWORD)), new(flags.RedactedString), nil, nil)
 )
 
 // if you have to run it by itself, add some environment variables
@@ -38,10 +40,8 @@ func TestAuthorizationMethods(t *testing.T) {
 		t.FailNow()
 	} else {
 
-		var auth pkg.Authorization
-		if auth, err := pkg.Authorize(authHost, authUser, authPass); err != nil {
-			t.FailNow()
-		} else if err := auth.Refresh(); err != nil {
+		auth, err := pkg.Authorize(authHost, authUser, authPass)
+		if err != nil {
 			t.FailNow()
 		}
 

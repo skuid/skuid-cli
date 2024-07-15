@@ -1,11 +1,13 @@
 package flags
 
 import (
+	"fmt"
 	"os"
 	"strconv"
 	"strings"
 
 	"github.com/gookit/color"
+	"github.com/mmatczuk/anyflag"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
@@ -14,23 +16,16 @@ import (
 	"github.com/skuid/skuid-cli/pkg/logging"
 )
 
-// Flag is a generic flag type that can take a type variable and use a pointer
-// to that type as the thing we're going to add
+// Flag is a generic flag type that can take a type variable
 // just reflecting the external pflags stuff
 type Flag[T any] struct {
-	// we're making argument private because I want you to access flags
-	// through the command pointer that we get from the function
-	argument *T // required
-
-	Name string // required
-	// Aliases    []string // optional
+	Name        string   // required
 	Default     T        // optional, overridden by existing environment variable
 	EnvVarNames []string // optional, overrides default value if exists
 	Usage       string   // required, text shown in usage
 	Required    bool     // flag whether the command requires this flag
 	Shorthand   string   // optional, will change call to allow for shorthand
-
-	Global bool // is this a global/persistent flag?
+	Global      bool     // is this a global/persistent flag?
 }
 
 func CheckRequiredFields[T any](f *Flag[T]) error {
@@ -81,15 +76,26 @@ func environmentVariablePossible(environmentVariableNames []string, usageText st
 	return usageText
 }
 
-// ReadOnly access of value
-// Mostly for grabing the password used
-func (flag Flag[T]) GetValue() T {
-	return *flag.argument
-}
-
-// FOR TESTING PURPOSES ONLY
-func (flag *Flag[T]) Set(t *T) {
-	flag.argument = t
+// flags are command specific so grab the password from the flags for the specific command
+//
+// NOTE - This is a fairly inelgent solution but password is a one-off use case so keeping it simple.  If/When other
+// flags are needed for things like RestrictedString, a more universal approach can be taken.
+//
+// NOTE - The auth package will unredact the password and clear its value immediately after so this is essentially a
+// one-time use password albeit somewhat inelegant approach.
+//
+// TODO: Implement a solution for secure storage of the password while in memory and implement a proper one-time use
+// approach assuming Skuid supports refresh tokens (see https://github.com/skuid/skuid-cli/issues/172)
+func GetPassword(fs *pflag.FlagSet) (*anyflag.Value[RedactedString], error) {
+	v := fs.Lookup(Password.Name)
+	if v == nil {
+		return nil, fmt.Errorf("unable to obtain the value for the password specified (code=1)")
+	}
+	rs, ok := v.Value.(*anyflag.Value[RedactedString])
+	if !ok {
+		return nil, fmt.Errorf("unable to obtain the value for the password specified (code=2)")
+	}
+	return rs, nil
 }
 
 func Add[T any](flag *Flag[T]) func(*cobra.Command) error {
@@ -133,17 +139,34 @@ func Add[T any](flag *Flag[T]) func(*cobra.Command) error {
 				}
 			}
 
-			if flag.argument == nil {
-				if flag.Shorthand != "" {
-					flags.StringP(flag.Name, flag.Shorthand, defaultVar, usageText)
-				} else {
-					flags.String(flag.Name, defaultVar, usageText)
-				}
-			} else if flag.Shorthand != "" {
-				flags.StringVarP(f.argument, flag.Name, flag.Shorthand, defaultVar, usageText)
+			if flag.Shorthand != "" {
+				flags.StringP(flag.Name, flag.Shorthand, defaultVar, usageText)
 			} else {
-				flags.StringVar(f.argument, flag.Name, defaultVar, usageText)
+				flags.String(flag.Name, defaultVar, usageText)
 			}
+
+		case *Flag[RedactedString]:
+			defaultVar := f.Default
+			// override default values and usage text if
+			// there is an environment variable provided
+			if len(flag.EnvVarNames) > 0 {
+				usageText = environmentVariablePossible(flag.EnvVarNames, flag.Usage)
+				for _, envVarName := range flag.EnvVarNames {
+					defaultVar = RedactedString(os.Getenv(envVarName))
+					if defaultVar != "" {
+						// the only time we disable required
+						// is when we have the environment variable name
+						// and we find an environment variable value
+						required = false
+						usageText = environmentVariableFound(envVarName, flag.Usage)
+						break
+					}
+				}
+			}
+
+			p := new(RedactedString)
+			v := anyflag.NewValueWithRedact(defaultVar, p, func(val string) (RedactedString, error) { return RedactedString(val), nil }, func(RedactedString) string { return "***" })
+			flags.VarPF(v, flag.Name, flag.Shorthand, flag.Usage)
 
 		// handle bools
 		case *Flag[bool]:

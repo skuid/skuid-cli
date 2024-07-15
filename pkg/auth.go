@@ -4,39 +4,23 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+
+	"github.com/mmatczuk/anyflag"
+	"github.com/skuid/skuid-cli/pkg/flags"
 )
 
 type Authorization struct {
-	username string // private
-	password string // private
-
 	Host               string
 	AccessToken        string
 	AuthorizationToken string
 }
 
-func (a *Authorization) Refresh() (err error) {
-	access, err := GetAccessToken(a.Host, a.username, a.password)
-	if err != nil {
-		return
-	}
-	a.AccessToken = access
-
-	auth, err := GetAuthorizationToken(a.Host, a.AccessToken)
-	if err != nil {
-		return
-	}
-	a.AuthorizationToken = auth
-
-	return
-}
-
-func GetAccessToken(host, username, password string) (accessToken string, err error) {
+func GetAccessToken(host string, username string, password *anyflag.Value[flags.RedactedString]) (accessToken string, err error) {
 	// prep the body
 	body := []byte(url.Values{
 		"grant_type": []string{"password"},
 		"username":   []string{username},
-		"password":   []string{password},
+		"password":   []string{password.Unredacted().String()},
 	}.Encode())
 
 	type AccessTokenResponse struct {
@@ -83,11 +67,9 @@ func GetAuthorizationToken(host, accessToken string) (authToken string, err erro
 	return
 }
 
-func Authorize(host, username, password string) (info *Authorization, err error) {
+func Authorize(host string, username string, password *anyflag.Value[flags.RedactedString]) (info *Authorization, err error) {
 	info = &Authorization{
-		Host:     host,
-		username: username,
-		password: password,
+		Host: host,
 	}
 
 	if info.AccessToken, err = GetAccessToken(host, username, password); err != nil {

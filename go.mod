@@ -7,6 +7,7 @@ require (
 	github.com/dlclark/regexp2 v1.11.1
 	github.com/gookit/color v1.5.4
 	github.com/joho/godotenv v1.5.1
+	github.com/mmatczuk/anyflag v0.0.0-20240709090339-eb9e24cd1b44
 	github.com/radovskyb/watcher v1.0.7
 	github.com/sirupsen/logrus v1.9.3
 	github.com/skuid/json-patch v4.5.2+incompatible
