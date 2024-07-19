@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"math/rand"
 	"os"
 	"strings"
 	"time"
@@ -114,7 +113,6 @@ type FileReader func(path string) ([]byte, error)
 func CreateTemporaryFile(planName string, data []byte) (name string, err error) {
 	var tmpfile *os.File
 	var n int
-	rand.Seed(time.Now().Unix())
 
 	for attempts := 0; attempts < MAX_ATTEMPTS; attempts++ {
 		if tmpfile, err = os.CreateTemp("", strings.ReplaceAll(planName, " ", "-")); err == nil {
