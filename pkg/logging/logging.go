@@ -17,12 +17,14 @@ const (
 )
 
 var (
-	safe            sync.Mutex
-	loggerSingleton logrus.Ext1FieldLogger
-	fileLogging     bool
-	fieldLogging    bool
-	LineSeparator   = strings.Repeat("-", SEPARATOR_LENGTH)
-	StarSeparator   = strings.Repeat("*", SEPARATOR_LENGTH)
+	safe                 sync.Mutex
+	loggerSingleton      logrus.Ext1FieldLogger
+	fileLogging          bool
+	fileLoggingDirectory string
+	logFile              *os.File
+	fieldLogging         bool
+	LineSeparator        = strings.Repeat("-", SEPARATOR_LENGTH)
+	StarSeparator        = strings.Repeat("*", SEPARATOR_LENGTH)
 
 	fileStringFormat = func() (ret string) {
 		ret = time.RFC3339
@@ -66,6 +68,10 @@ func SetFieldLogging(b bool) {
 	fieldLogging = b
 }
 
+func GetFieldLogging() bool {
+	return fieldLogging
+}
+
 func SetFileLogging(loggingDirectory string) (err error) {
 	var wd string
 	if wd, err = os.Getwd(); err != nil {
@@ -97,14 +103,24 @@ func SetFileLogging(loggingDirectory string) (err error) {
 	if file, err := os.OpenFile(path.Join(dir, logFileName), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666); err != nil {
 		return err
 	} else {
-		l, _ := Get().(*logrus.Logger)
-		l.SetOutput(file)
-		l.SetFormatter(&logrus.TextFormatter{})
-		color.Enable = false
-		fileLogging = true
+		if l, ok := Get().(*logrus.Logger); !ok {
+			panic(fmt.Errorf("unable to obtain logger"))
+		} else {
+			resetFileLogging()
+			l.SetOutput(file)
+			l.SetFormatter(&logrus.TextFormatter{})
+			color.Enable = false
+			logFile = file
+			fileLogging = true
+			fileLoggingDirectory = loggingDirectory
+		}
 	}
 
 	return
+}
+
+func GetFileLogging() (string, bool) {
+	return fileLoggingDirectory, fileLogging
 }
 
 func WithFields(fields logrus.Fields) logrus.Ext1FieldLogger {
@@ -126,6 +142,8 @@ func WithField(field string, value interface{}) logrus.Ext1FieldLogger {
 func Reset() logrus.Ext1FieldLogger {
 	safe.Lock()
 	loggerSingleton = nil
+	resetFileLogging()
+	fieldLogging = false
 	safe.Unlock()
 	return Get()
 }
@@ -147,9 +165,11 @@ func Get() logrus.Ext1FieldLogger {
 		return loggerSingleton
 	}
 
-	loggerSingleton = logrus.StandardLogger()
+	loggerSingleton = logrus.New()
 
 	l, _ := loggerSingleton.(*logrus.Logger)
+
+	l.SetLevel(logrus.InfoLevel)
 
 	// Log as JSON instead of the default ASCII formatter.
 	l.SetFormatter(&logrus.TextFormatter{})
@@ -158,5 +178,19 @@ func Get() logrus.Ext1FieldLogger {
 	// Can be any io.Writer, see below for File example
 	l.SetOutput(os.Stdout)
 
+	// could have been changed by previous call to SetFileLogging
+	color.Enable = true
+
 	return loggerSingleton
+}
+
+func resetFileLogging() {
+	if logFile != nil {
+		if err := logFile.Close(); err != nil {
+			Get().Warnf("unable to close the current log file: %v", err)
+		}
+		logFile = nil
+	}
+	fileLoggingDirectory = ""
+	fileLogging = false
 }
