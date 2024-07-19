@@ -60,9 +60,21 @@ func TestStringSliceContainsAnyKey(t *testing.T) {
 			expected:    true,
 		},
 		{
+			description: "found",
+			array:       []string{"a", "b", "c"},
+			keys:        []string{"z", "b"},
+			expected:    true,
+		},
+		{
 			description: "not found",
 			array:       []string{"a", "b", "c"},
 			keys:        []string{"d"},
+			expected:    false,
+		},
+		{
+			description: "not found",
+			array:       []string{"a", "b", "c"},
+			keys:        []string{"z", "f"},
 			expected:    false,
 		},
 		{
