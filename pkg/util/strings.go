@@ -10,7 +10,11 @@ func StringSliceContainsKey(strings []string, key string) bool {
 // same thing as above except we early exit at any given point going through the
 // strings and keys
 func StringSliceContainsAnyKey(strings []string, keys []string) bool {
-	return slices.ContainsFunc(strings, func(item string) bool {
-		return slices.Contains(keys, item)
+	if len(strings) == 0 || len(keys) == 0 {
+		return false
+	}
+
+	return slices.ContainsFunc(keys, func(key string) bool {
+		return slices.Contains(strings, key)
 	})
 }
