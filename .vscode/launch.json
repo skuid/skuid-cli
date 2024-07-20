@@ -54,6 +54,16 @@
 			"args": [
 				"deploy",
 			]
-		}
+		},
+		{
+			"name": "No Command w/ envvars",
+			"type": "go",
+			"request": "launch",
+			"mode": "auto",
+			"program": "${workspaceRoot}",
+			"envFile": "${workspaceRoot}/.env",
+			"args": [
+			]
+		}		
 	]
 }
