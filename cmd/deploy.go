@@ -8,45 +8,43 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"github.com/skuid/skuid-cli/cmd/common"
 	"github.com/skuid/skuid-cli/pkg"
+	"github.com/skuid/skuid-cli/pkg/cmdutil"
 	"github.com/skuid/skuid-cli/pkg/flags"
 	"github.com/skuid/skuid-cli/pkg/logging"
 	"github.com/skuid/skuid-cli/pkg/util"
 )
 
-var deployCmd = &cobra.Command{
-	SilenceUsage:      true,
-	Use:               "deploy",
-	Short:             "Deploy local Skuid metadata to a Skuid NLX Site",
-	Long:              "Deploy Skuid metadata stored within a local file system directory to a Skuid NLX Site",
-	PersistentPreRunE: common.PrerunValidation,
-	RunE:              Deploy,
+func NewCmdDeploy(factory *cmdutil.Factory) *cobra.Command {
+	deployTemplate := &cmdutil.CmdTemplate{
+		Use:     "deploy",
+		Short:   "Deploy local Skuid metadata to a Skuid NLX Site",
+		Long:    "Deploy Skuid metadata stored within a local file system directory to a Skuid NLX Site",
+		Example: "deploy -u myUser -p myPassword --host my-site.skuidsite.com --dir ./my-site-objects --app myapp",
+		Flags: &cmdutil.CommandFlags{
+			// pages flag does not work as expected so commenting out
+			// TODO: Remove completely or fix issues depending on https://github.com/skuid/skuid-cli/issues/147 & https://github.com/skuid/skuid-cli/issues/148
+			// flags.Pages
+			String:         []*flags.Flag[string]{flags.Host, flags.Username, flags.Dir, flags.App},
+			RedactedString: []*flags.Flag[flags.RedactedString]{flags.Password},
+			// TODO: SkipDataSources can be removed once https://github.com/skuid/skuid-cli/issues/150 is resolved
+			Bool: []*flags.Flag[bool]{flags.IgnoreSkuidDb, flags.SkipDataSources},
+		},
+		// do not allow ignoring skuid db errors when skipping datasources or vice-versa as errors can't occur if we're skipping all data sources
+		MutuallyExclusiveFlags: [][]string{{flags.IgnoreSkuidDb.Name, flags.SkipDataSources.Name}},
+	}
+
+	return deployTemplate.ToCommand(factory, nil, nil, deploy)
 }
 
-func init() {
-	flags.AddFlags(deployCmd, flags.PlinyHost, flags.Username)
-	flags.AddFlags(deployCmd, flags.Password)
-	flags.AddFlags(deployCmd, flags.Directory, flags.AppName)
-	// TODO: SkipDataSources can be removed once https://github.com/skuid/skuid-cli/issues/150 is resolved
-	flags.AddFlags(deployCmd, flags.IgnoreSkuidDb, flags.SkipDataSources)
-	// pages flag does not work as expected so commenting out
-	// TODO: Remove completely or fix issues depending on https://github.com/skuid/skuid-cli/issues/147 & https://github.com/skuid/skuid-cli/issues/148
-	//flags.AddFlags(deployCmd, flags.Pages)
-
-	// do not allow ignoring skuid db errors when skipping datasources or vice-versa as errors can't occur if we're skipping all data sources
-	flags.MarkFlagsMutuallyExclusive(deployCmd, [][]string{{flags.IgnoreSkuidDb.Name, flags.SkipDataSources.Name}})
-	AppCmd = append(AppCmd, deployCmd)
-}
-
-func Deploy(cmd *cobra.Command, _ []string) (err error) {
+func deploy(factory *cmdutil.Factory, cmd *cobra.Command, _ []string) (err error) {
 	fields := make(logrus.Fields)
 	fields["start"] = time.Now()
 	fields["process"] = "deploy"
 	logging.WithFields(fields).Info(color.Green.Sprint("Starting Deploy"))
 
 	// get required authentication arguments
-	host, err := cmd.Flags().GetString(flags.PlinyHost.Name)
+	host, err := cmd.Flags().GetString(flags.Host.Name)
 	if err != nil {
 		return
 	}
@@ -88,7 +86,7 @@ func Deploy(cmd *cobra.Command, _ []string) (err error) {
 
 	// filter by app name
 	var appName string
-	if appName, err = cmd.Flags().GetString(flags.AppName.Name); err != nil {
+	if appName, err = cmd.Flags().GetString(flags.App.Name); err != nil {
 		return
 	} else if appName != "" {
 		initFilter()
@@ -140,7 +138,7 @@ func Deploy(cmd *cobra.Command, _ []string) (err error) {
 
 	// get directory argument
 	var targetDirectory string
-	if targetDirectory, err = cmd.Flags().GetString(flags.Directory.Name); err != nil {
+	if targetDirectory, err = cmd.Flags().GetString(flags.Dir.Name); err != nil {
 		return
 	}
 

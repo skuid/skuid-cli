@@ -5,36 +5,36 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/skuid/skuid-cli/pkg/cmdutil"
 	"github.com/skuid/skuid-cli/pkg/constants"
 	"github.com/skuid/skuid-cli/pkg/flags"
 )
 
-var (
-	// SkuidCmd represents the base command when called without any subcommands
-	SkuidCmd = &cobra.Command{}
-	// Commands to be appended before execute
-	AppCmd = []*cobra.Command{}
-)
+const VERSION_TEMPLATE = "Skuid CLI Version %v"
 
-func Execute() error {
-	SkuidCmd = &cobra.Command{
-		SilenceErrors: true,
-		SilenceUsage:  true,
-		Use:           constants.PROJECT_NAME,
-		Short:         "A CLI for Skuid APIs",
-		Long:          `A command-line interface used to retrieve and deploy Skuid NLX sites.`,
-		CompletionOptions: cobra.CompletionOptions{
-			DisableDefaultCmd: true,
+func NewCmdRoot(factory *cmdutil.Factory) *cobra.Command {
+	rootTemplate := &cmdutil.CmdTemplate{
+		Use:   constants.PROJECT_NAME,
+		Short: "A CLI for Skuid APIs",
+		Long:  `A command-line interface used to retrieve and deploy Skuid NLX sites.`,
+		Flags: &cmdutil.CommandFlags{
+			Bool:   []*flags.Flag[bool]{flags.Verbose, flags.Trace, flags.FileLogging, flags.Diagnostic},
+			String: []*flags.Flag[string]{flags.LogDirectory},
 		},
-		Version: constants.VERSION_NAME,
-	}
-	SkuidCmd.SetVersionTemplate(fmt.Sprintf("Skuid CLI Version %v\n", constants.VERSION_NAME))
-	flags.AddFlags(SkuidCmd, flags.Verbose, flags.Trace, flags.FileLogging, flags.Diagnostic)
-	flags.AddFlags(SkuidCmd, flags.FileLoggingDirectory)
-
-	for _, cmd := range AppCmd {
-		SkuidCmd.AddCommand(cmd)
+		Commands: []*cobra.Command{
+			NewCmdDeploy(factory),
+			NewCmdRetrieve(factory),
+			NewCmdWatch(factory),
+		},
 	}
 
-	return SkuidCmd.Execute()
+	cmd := rootTemplate.ToCommand(factory, nil, nil, nil)
+	cmd.CompletionOptions = cobra.CompletionOptions{
+		DisableDefaultCmd: true,
+	}
+	cmd.SilenceErrors = true
+	cmd.Version = factory.AppVersion
+	cmd.SetVersionTemplate(fmt.Sprintf(VERSION_TEMPLATE+"\n", factory.AppVersion))
+
+	return cmd
 }

@@ -11,8 +11,8 @@ import (
 	"github.com/dlclark/regexp2"
 	"github.com/gookit/color"
 	"github.com/sirupsen/logrus"
-	"github.com/skuid/skuid-cli/cmd/common"
 	"github.com/skuid/skuid-cli/pkg"
+	"github.com/skuid/skuid-cli/pkg/cmdutil"
 	"github.com/skuid/skuid-cli/pkg/constants"
 	"github.com/skuid/skuid-cli/pkg/flags"
 	"github.com/skuid/skuid-cli/pkg/logging"
@@ -20,18 +20,23 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// retrieveCmd represents the retrieve command
-var (
-	retrieveCmd = &cobra.Command{
-		SilenceUsage:      true,
-		Example:           "retrieve -u myUser -p myPassword --host my-site.skuidsite.com --dir ./retrieval --since 4h",
-		Use:               "retrieve",
-		Short:             "Retrieve a Skuid NLX Site",
-		Long:              "Retrieve Skuid metadata from a Skuid NLX Site and output it into a local directory",
-		PersistentPreRunE: common.PrerunValidation,
-		RunE:              Retrieve,
+func NewCmdRetrieve(cd *cmdutil.Factory) *cobra.Command {
+	retrieveTemplate := &cmdutil.CmdTemplate{
+		Use:     "retrieve",
+		Short:   "Retrieve a Skuid NLX Site",
+		Long:    "Retrieve Skuid metadata from a Skuid NLX Site and output it into a local directory",
+		Example: "retrieve -u myUser -p myPassword --host my-site.skuidsite.com --dir ./my-site-objects --app myapp --since 4h",
+		Flags: &cmdutil.CommandFlags{
+			// pages flag does not work as expected so commenting out
+			// TODO: Remove completely or fix issues depending on https://github.com/skuid/skuid-cli/issues/147 & https://github.com/skuid/skuid-cli/issues/148
+			// flags.Pages
+			String:         []*flags.Flag[string]{flags.Host, flags.Username, flags.Dir, flags.App, flags.Since},
+			RedactedString: []*flags.Flag[flags.RedactedString]{flags.Password},
+		},
 	}
-)
+
+	return retrieveTemplate.ToCommand(cd, nil, nil, retrieve)
+}
 
 // stringclean makes sure string contains only letters, digits, or "."
 func stringClean(str string) string {
@@ -53,7 +58,7 @@ func regexp2FindAllMatch(re *regexp2.Regexp, s string) []*regexp2.Match {
 	return matches
 }
 
-func Retrieve(cmd *cobra.Command, _ []string) (err error) {
+func retrieve(factory *cmdutil.Factory, cmd *cobra.Command, _ []string) (err error) {
 	fields := make(logrus.Fields)
 	start := time.Now()
 	fields["process"] = "retrieve"
@@ -61,7 +66,7 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 
 	logging.Get().Info(color.Green.Sprint("Starting Retrieve"))
 	// get required arguments
-	host, err := cmd.Flags().GetString(flags.PlinyHost.Name)
+	host, err := cmd.Flags().GetString(flags.Host.Name)
 	if err != nil {
 		return
 	}
@@ -110,7 +115,7 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 
 	// filter by app name
 	var appName string
-	if appName, err = cmd.Flags().GetString(flags.AppName.Name); err != nil {
+	if appName, err = cmd.Flags().GetString(flags.App.Name); err != nil {
 		return
 	} else if appName != "" {
 		initFilter()
@@ -260,7 +265,7 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 	logging.WithFields(fields).Debugf("Received %v Results", color.Green.Sprint(len(results)))
 
 	var directory string
-	if directory, err = cmd.Flags().GetString(flags.Directory.Name); err != nil {
+	if directory, err = cmd.Flags().GetString(flags.Dir.Name); err != nil {
 		return
 	}
 
@@ -295,15 +300,4 @@ func Retrieve(cmd *cobra.Command, _ []string) (err error) {
 	logging.WithFields(fields).Info(color.Green.Sprint("Finished Retrieve"))
 
 	return
-}
-
-func init() {
-	flags.AddFlags(retrieveCmd, flags.PlinyHost, flags.Username)
-	flags.AddFlags(retrieveCmd, flags.Password)
-	flags.AddFlags(retrieveCmd, flags.Directory, flags.AppName)
-	// pages flag does not work as expected so commenting out
-	// TODO: Remove completely or fix issues depending on https://github.com/skuid/skuid-cli/issues/147 & https://github.com/skuid/skuid-cli/issues/148
-	//flags.AddFlags(retrieveCmd, flags.Pages)
-	flags.AddFlags(retrieveCmd, flags.Since)
-	AppCmd = append(AppCmd, retrieveCmd)
 }

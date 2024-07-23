@@ -16,6 +16,47 @@ const (
 	SEPARATOR_LENGTH = 50
 )
 
+// Wrapping the singleton to support testing - without this, any tests written to test the "Set*" methods
+// would use the global singleton logging package methods which would change the actual logging
+// occuring during the test.  For example, testing SetFileLogging would change logging to go to a file
+// during the test itself.  By abstracting via interface, we can unit test methods that require
+// LogInformer without changing the actual logging occuring during the test.
+// TODO: This should be expanded to expose all logging methods as a long which can be passed down
+// from factory to avoid global singleton for logging.
+// See: https://github.com/skuid/skuid-cli/issues/166
+// And the following related issues:
+// https://github.com/skuid/skuid-cli/issues/169
+// https://github.com/skuid/skuid-cli/issues/174
+// https://github.com/skuid/skuid-cli/issues/175
+// https://github.com/skuid/skuid-cli/issues/176
+// https://github.com/skuid/skuid-cli/issues/180
+// https://github.com/skuid/skuid-cli/issues/181
+type LogInformer interface {
+	SetVerbose()
+	SetTrace()
+	SetDiagnostic()
+	SetFileLogging(loggingDirectory string) (err error)
+}
+
+type LogConfig struct{}
+
+func (l *LogConfig) SetVerbose() {
+	SetVerbose()
+}
+func (l *LogConfig) SetTrace() {
+	SetTrace()
+}
+func (l *LogConfig) SetDiagnostic() {
+	SetDiagnostic()
+}
+func (l *LogConfig) SetFileLogging(loggingDirectory string) (err error) {
+	return SetFileLogging(loggingDirectory)
+}
+
+func NewLogConfig() LogInformer {
+	return &LogConfig{}
+}
+
 var (
 	safe                 sync.Mutex
 	loggerSingleton      logrus.Ext1FieldLogger

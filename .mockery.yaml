@@ -13,3 +13,11 @@ packages:
   github.com/skuid/skuid-cli/pkg:
     interfaces:
       ArchiveFilter:
+  github.com/skuid/skuid-cli/pkg/cmdutil:
+    interfaces:
+      CommandFunc:
+      CommandInformer:
+  github.com/skuid/skuid-cli/pkg/logging:
+    interfaces:
+      LogInformer:
+      

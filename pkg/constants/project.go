@@ -9,4 +9,5 @@ const (
 	PLINY  = "Skuid NLX"
 )
 
+// TODO: This can be eliminated when Factory used to obtain the Version in RequestHelper
 var VERSION_NAME string = "unknown"

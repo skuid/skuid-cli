@@ -4,59 +4,57 @@ import (
 	"github.com/skuid/skuid-cli/pkg/constants"
 )
 
-type RedactedString string
-
 var (
-	PlinyHost = &Flag[string]{
-		Name:        "host",
-		Usage:       `Host URL, e.g. [ https://my.skuidsite.com | my.skuidsite.com ]`,
-		EnvVarNames: []string{constants.ENV_SKUID_HOST, constants.ENV_PLINY_HOST},
-		Required:    true,
+	Host = &Flag[string]{
+		Name:          "host",
+		Usage:         `Host URL, e.g. [ https://my.skuidsite.com | my.skuidsite.com ]`,
+		LegacyEnvVars: []string{constants.ENV_PLINY_HOST},
+		Required:      true,
 	}
 
 	Password = &Flag[RedactedString]{
-		Name:        "password",
-		Shorthand:   "p",
-		Usage:       "Skuid NLX Password",
-		EnvVarNames: []string{constants.ENV_SKUID_PASSWORD},
-		Required:    true,
+		Name:          "password",
+		Shorthand:     "p",
+		Usage:         "Skuid NLX Password",
+		LegacyEnvVars: []string{constants.ENV_SKUID_PW},
+		Required:      true,
 	}
 
 	Username = &Flag[string]{
-		Name:        "username",
-		Shorthand:   "u",
-		EnvVarNames: []string{constants.ENV_SKUID_USERNAME},
-		Required:    true,
-		Usage:       "Skuid NLX Username",
+		Name:          "username",
+		Shorthand:     "u",
+		LegacyEnvVars: []string{constants.ENV_SKUID_UN},
+		Required:      true,
+		Usage:         "Skuid NLX Username",
 	}
 
-	AppName = &Flag[string]{
-		Name:        "app",
-		Shorthand:   "a",
-		EnvVarNames: []string{constants.ENV_SKUID_APP_NAME},
-		Usage:       "Scope the operation to a specific Skuid NLX App (name)",
+	App = &Flag[string]{
+		Name:          "app",
+		Shorthand:     "a",
+		LegacyEnvVars: []string{constants.ENV_SKUID_APP_NAME},
+		Usage:         "Scope the operation to a specific Skuid NLX App Name",
 	}
 
-	Directory = &Flag[string]{
-		Name:        "dir",
-		Shorthand:   "d",
-		Usage:       "Target directory for this operation",
-		EnvVarNames: []string{constants.ENV_SKUID_DEFAULT_FOLDER},
+	Dir = &Flag[string]{
+		Name:          "dir",
+		Shorthand:     "d",
+		Usage:         "Target directory for this operation",
+		LegacyEnvVars: []string{constants.ENV_SKUID_DEFAULT_FOLDER},
 	}
 
-	FileLoggingDirectory = &Flag[string]{
-		Name:        "log-directory",
-		Shorthand:   "l",
-		Usage:       "Target directory for file logging",
-		Default:     ".logs",
-		EnvVarNames: []string{constants.ENV_SKUID_LOGGING_LOCATION},
-		Global:      true,
+	LogDirectory = &Flag[string]{
+		Name:          "log-directory",
+		Shorthand:     "l",
+		Usage:         "Target directory for file logging",
+		Default:       ".logs",
+		LegacyEnvVars: []string{constants.ENV_SKUID_LOGGING_LOCATION},
+		Global:        true,
 	}
 
 	Since = &Flag[string]{
-		Name:        "since",
-		Shorthand:   "s",
-		Usage:       "Timestamp or time span specifying only updated records to retrieve. Suggested timestamp format is: \"yyyy-MM-dd HH:mm AM\" or \"HH:mm AM\". Valid timespans look like various combination of \"1y2M3d8h30m\" or \"3 days\"",
-		EnvVarNames: []string{constants.ENV_SKUID_RETRIEVE_SINCE},
+		Name:          "since",
+		Shorthand:     "s",
+		Usage:         "Timestamp or time span specifying only updated records to retrieve. Suggested timestamp format is: \"yyyy-MM-dd HH:mm AM\" or \"HH:mm AM\". Valid timespans look like various combination of \"1y2M3d8h30m\" or \"3 days\"",
+		LegacyEnvVars: []string{constants.ENV_SKUID_RETRIEVE_SINCE},
 	}
 )

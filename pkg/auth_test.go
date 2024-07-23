@@ -9,15 +9,14 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/skuid/skuid-cli/pkg"
-	"github.com/skuid/skuid-cli/pkg/constants"
 	"github.com/skuid/skuid-cli/pkg/flags"
 	"github.com/skuid/skuid-cli/pkg/util"
 )
 
 var (
-	authHost = os.Getenv(constants.ENV_SKUID_HOST)
-	authUser = os.Getenv(constants.ENV_SKUID_USERNAME)
-	authPass = anyflag.NewValueWithRedact(flags.RedactedString(os.Getenv(constants.ENV_SKUID_PASSWORD)), new(flags.RedactedString), nil, nil)
+	authHost = os.Getenv(flags.Host.EnvVarName())
+	authUser = os.Getenv(flags.Username.EnvVarName())
+	authPass = anyflag.NewValueWithRedact(flags.RedactedString(os.Getenv(flags.Password.EnvVarName())), new(flags.RedactedString), nil, nil)
 )
 
 // if you have to run it by itself, add some environment variables

@@ -9,34 +9,33 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"github.com/skuid/skuid-cli/cmd/common"
 	"github.com/skuid/skuid-cli/pkg"
+	"github.com/skuid/skuid-cli/pkg/cmdutil"
 	"github.com/skuid/skuid-cli/pkg/flags"
 	"github.com/skuid/skuid-cli/pkg/logging"
 	"github.com/skuid/skuid-cli/pkg/util"
 )
 
-var watchCmd = &cobra.Command{
-	SilenceUsage:      true,
-	Use:               "watch",
-	Short:             "Watch for changes to local Skuid metadata, and deploy changes to a Skuid NLX Site",
-	Long:              "Watches for changes to local Skuid metadata on your file system, and automatically deploys the changed files to a Skuid NLX Site",
-	PersistentPreRunE: common.PrerunValidation,
-	RunE:              Watch,
+func NewCmdWatch(factory *cmdutil.Factory) *cobra.Command {
+	watchTemplate := &cmdutil.CmdTemplate{
+		Use:     "watch",
+		Short:   "Watch for changes to local Skuid metadata, and deploy changes to a Skuid NLX Site",
+		Long:    "Watches for changes to local Skuid metadata on your file system, and automatically deploys the changed files to a Skuid NLX Site",
+		Example: "watch -u myUser -p myPassword --host my-site.skuidsite.com --dir ./my-site-objects",
+		Flags: &cmdutil.CommandFlags{
+			String:         []*flags.Flag[string]{flags.Host, flags.Username, flags.Dir},
+			RedactedString: []*flags.Flag[flags.RedactedString]{flags.Password},
+		},
+	}
+
+	return watchTemplate.ToCommand(factory, nil, nil, watch)
 }
 
-func init() {
-	flags.AddFlags(watchCmd, flags.PlinyHost, flags.Username)
-	flags.AddFlags(watchCmd, flags.Password)
-	flags.AddFlags(watchCmd, flags.Directory)
-	AppCmd = append(AppCmd, watchCmd)
-}
-
-func Watch(cmd *cobra.Command, _ []string) (err error) {
+func watch(factory *cmdutil.Factory, cmd *cobra.Command, _ []string) (err error) {
 	fields := make(logrus.Fields)
 	fields["process"] = "watch"
 	// get required arguments
-	host, err := cmd.Flags().GetString(flags.PlinyHost.Name)
+	host, err := cmd.Flags().GetString(flags.Host.Name)
 	if err != nil {
 		return
 	}
@@ -70,7 +69,7 @@ func Watch(cmd *cobra.Command, _ []string) (err error) {
 	logging.WithFields(fields).Debug("Successfully Logged In")
 
 	var targetDir string
-	if targetDir, err = cmd.Flags().GetString(flags.Directory.Name); err != nil {
+	if targetDir, err = cmd.Flags().GetString(flags.Dir.Name); err != nil {
 		return
 	}
 

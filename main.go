@@ -5,11 +5,19 @@ import (
 	"os"
 	"strings"
 
+	"github.com/skuid/skuid-cli/pkg/cmdutil"
 	"github.com/skuid/skuid-cli/pkg/constants"
 
 	"github.com/gookit/color"
 	"github.com/skuid/skuid-cli/cmd"
 	"github.com/skuid/skuid-cli/pkg/logging"
+)
+
+type exitCode int
+
+const (
+	exitOK    exitCode = 0
+	exitError exitCode = 1
 )
 
 // VERSION_NAME has to be here instead of in the constants package
@@ -24,13 +32,16 @@ func init() {
 }
 
 func main() {
-	Run()
+	code := Run()
+	os.Exit(int(code))
 }
 
 // Run is a function so that TestMain can execute it
-func Run() {
-	if err := cmd.Execute(); err != nil {
+func Run() exitCode {
+	if err := cmd.NewCmdRoot(cmdutil.NewFactory(VERSION_NAME)).Execute(); err != nil {
 		logging.Get().Errorf("Error Encountered During Run: %v", color.Red.Sprint(err))
-		os.Exit(1)
+		return exitError
 	}
+
+	return exitOK
 }

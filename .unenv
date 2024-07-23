@@ -1,15 +1,34 @@
+# String
+unset SKUID_HOST
+unset SKUID_USERNAME
+unset SKUID_APP
+unset SKUID_DIR
+unset SKUID_LOG_DIRECTORY
+unset SKUID_SINCE
+
+# Redacted String
+unset SKUID_PASSWORD
+
+# Boolean
+unset SKUID_VERBOSE
+unset SKUID_TRACE
+unset SKUID_FILE_LOGGING
+unset SKUID_DIAGNOSTIC
+unset SKUID_IGNORE_SKUID_DB
+# TODO: This can be removed once https://github.com/skuid/skuid-cli/issues/150 is resolved
+unset SKUID_SKIP_DATA_SOURCES
+
+# Legacy
+
+# Boolean
+unset SKUID_FIELD_LOGGING
+unset SKUID_IGNORE_SKUIDDB
+
+# String
 unset PLINY_HOST
 unset SKUID_PW
 unset SKUID_UN
-unset SKUID_HOST
-unset SKUID_VERBOSE
-unset SKUID_FILE_LOGGING
-unset SKUID_LOGGING_DIRECTORY
-unset SKUID_DEFAULT_FOLDER
-unset SKUID_FIELD_LOGGING
-unset SKUID_IGNORE_SKUIDDB
-unset SKUID_RETRIEVE_SINCE_DATE
-unset SKUID_TRACE
 unset SKUID_APP_NAME
-# TODO: This can be removed once https://github.com/skuid/skuid-cli/issues/150 is resolved
-unset SKUID_SKIP_DATASOURCES
+unset SKUID_DEFAULT_FOLDER
+unset SKUID_LOGGING_DIRECTORY
+unset SKUID_RETRIEVE_SINCE_DATE
