@@ -21,8 +21,6 @@ type FileUtilTestSuite struct {
 }
 
 func (suite *FileUtilTestSuite) TestReadFile() {
-	t := suite.T()
-
 	testCases := []struct {
 		testDescription string
 		giveFS          fs.FS
@@ -49,7 +47,8 @@ func (suite *FileUtilTestSuite) TestReadFile() {
 	}
 
 	for _, tc := range testCases {
-		t.Run(tc.testDescription, func(t *testing.T) {
+		suite.Run(tc.testDescription, func() {
+			t := suite.T()
 			result, err := util.NewFileUtil().ReadFile(tc.giveFS, tc.giveName)
 			if tc.wantError {
 				// intentionally not checking error message
@@ -64,8 +63,6 @@ func (suite *FileUtilTestSuite) TestReadFile() {
 }
 
 func (suite *FileUtilTestSuite) TestWalkDir() {
-	t := suite.T()
-
 	testCases := []struct {
 		testDescription   string
 		giveFiles         testutil.TestFiles
@@ -130,7 +127,8 @@ func (suite *FileUtilTestSuite) TestWalkDir() {
 	}
 
 	for _, tc := range testCases {
-		t.Run(tc.testDescription, func(t *testing.T) {
+		suite.Run(tc.testDescription, func() {
+			t := suite.T()
 			wdf := mocks.NewWalkDirFunc(t)
 			fsys := testutil.CreateFS(tc.giveFiles)
 			for _, path := range tc.wantFiles {
@@ -150,8 +148,6 @@ func (suite *FileUtilTestSuite) TestWalkDir() {
 }
 
 func (suite *FileUtilTestSuite) TestNewZipWriter() {
-	t := suite.T()
-
 	testCases := []struct {
 		testDescription string
 		giveWriter      io.Writer
@@ -163,7 +159,8 @@ func (suite *FileUtilTestSuite) TestNewZipWriter() {
 	}
 
 	for _, tc := range testCases {
-		t.Run(tc.testDescription, func(t *testing.T) {
+		suite.Run(tc.testDescription, func() {
+			t := suite.T()
 			result := util.NewFileUtil().NewZipWriter(tc.giveWriter)
 			assert.NotNil(t, result, "NewZipWriter expected result not nil, got nil")
 		})
@@ -171,8 +168,6 @@ func (suite *FileUtilTestSuite) TestNewZipWriter() {
 }
 
 func (suite *FileUtilTestSuite) TestDirExists() {
-	t := suite.T()
-
 	testCases := []struct {
 		testDescription string
 		giveFS          fs.FS
@@ -233,7 +228,8 @@ func (suite *FileUtilTestSuite) TestDirExists() {
 	}
 
 	for _, tc := range testCases {
-		t.Run(tc.testDescription, func(t *testing.T) {
+		suite.Run(tc.testDescription, func() {
+			t := suite.T()
 			result, err := util.NewFileUtil().DirExists(tc.giveFS, tc.givePath)
 			if tc.wantError {
 				// intentionally not checking error message
@@ -248,8 +244,6 @@ func (suite *FileUtilTestSuite) TestDirExists() {
 }
 
 func (suite *FileUtilTestSuite) TestFileExists() {
-	t := suite.T()
-
 	testCases := []struct {
 		testDescription string
 		giveFS          fs.FS
@@ -310,7 +304,8 @@ func (suite *FileUtilTestSuite) TestFileExists() {
 	}
 
 	for _, tc := range testCases {
-		t.Run(tc.testDescription, func(t *testing.T) {
+		suite.Run(tc.testDescription, func() {
+			t := suite.T()
 			result, err := util.NewFileUtil().FileExists(tc.giveFS, tc.givePath)
 			if tc.wantError {
 				// intentionally not checking error message
@@ -325,8 +320,6 @@ func (suite *FileUtilTestSuite) TestFileExists() {
 }
 
 func (suite *FileUtilTestSuite) TestPathExists() {
-	t := suite.T()
-
 	testCases := []struct {
 		testDescription string
 		giveFS          fs.FS
@@ -387,7 +380,8 @@ func (suite *FileUtilTestSuite) TestPathExists() {
 	}
 
 	for _, tc := range testCases {
-		t.Run(tc.testDescription, func(t *testing.T) {
+		suite.Run(tc.testDescription, func() {
+			t := suite.T()
 			result, err := util.NewFileUtil().PathExists(tc.giveFS, tc.givePath)
 			if tc.wantError {
 				// intentionally not checking error message

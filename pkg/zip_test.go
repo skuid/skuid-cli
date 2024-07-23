@@ -106,7 +106,7 @@ func (suite *ArchiveTestSuite) TestFilterCalledOnValidFilenamesForValidMetadataT
 		filter.EXPECT().Execute(path).Return(true)
 	}
 
-	runArchiveTest(suite.T(), ArchiveTestDetails{
+	runArchiveTest(t, ArchiveTestDetails{
 		giveFS:            fsys,
 		giveFileUtil:      util.NewFileUtil(),
 		giveArchiveFilter: filter.Execute,
@@ -139,7 +139,7 @@ func (suite *ArchiveTestSuite) TestFilterCalledOnInvalidFilenamesForValidMetadat
 	for path := range invalidFiles {
 		filter.EXPECT().Execute(path).Return(true).Once()
 	}
-	runArchiveTest(suite.T(), ArchiveTestDetails{
+	runArchiveTest(t, ArchiveTestDetails{
 		giveFS:            fsys,
 		giveFileUtil:      util.NewFileUtil(),
 		giveArchiveFilter: filter.Execute,
@@ -161,7 +161,7 @@ func (suite *ArchiveTestSuite) TestFilterNotCalledOnFilenamesForInvalidMetadataT
 	fsys := testutil.CreateFS(invalidMetadataTypeFiles)
 	filter := pkgmocks.NewArchiveFilter(t)
 
-	runArchiveTest(suite.T(), ArchiveTestDetails{
+	runArchiveTest(t, ArchiveTestDetails{
 		giveFS:            fsys,
 		giveFileUtil:      util.NewFileUtil(),
 		giveArchiveFilter: filter.Execute,

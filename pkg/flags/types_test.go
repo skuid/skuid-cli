@@ -16,7 +16,6 @@ type FlagTestSuite struct {
 }
 
 func (suite *FlagTestSuite) TestEnvVarName() {
-	t := suite.T()
 	testCases := []struct {
 		testDescription string
 		giveFlag        *flags.Flag[string]
@@ -75,7 +74,8 @@ func (suite *FlagTestSuite) TestEnvVarName() {
 	}
 
 	for _, tc := range testCases {
-		t.Run(tc.testDescription, func(t *testing.T) {
+		suite.Run(tc.testDescription, func() {
+			t := suite.T()
 			actualName := tc.giveFlag.EnvVarName()
 			assert.Equal(t, tc.wantName, actualName)
 		})
@@ -83,7 +83,6 @@ func (suite *FlagTestSuite) TestEnvVarName() {
 }
 
 func (suite *FlagTestSuite) TestLegacyEnvVarNames() {
-	t := suite.T()
 	testCases := []struct {
 		testDescription string
 		giveFlag        *flags.Flag[string]
@@ -112,7 +111,8 @@ func (suite *FlagTestSuite) TestLegacyEnvVarNames() {
 	}
 
 	for _, tc := range testCases {
-		t.Run(tc.testDescription, func(t *testing.T) {
+		suite.Run(tc.testDescription, func() {
+			t := suite.T()
 			actualNames := tc.giveFlag.LegacyEnvVarNames()
 			assert.ElementsMatch(t, tc.wantNames, actualNames)
 		})
@@ -120,7 +120,6 @@ func (suite *FlagTestSuite) TestLegacyEnvVarNames() {
 }
 
 func (suite *FlagTestSuite) TestIsRequired() {
-	t := suite.T()
 	testCases := []struct {
 		testDescription string
 		giveFlag        *flags.Flag[string]
@@ -144,7 +143,8 @@ func (suite *FlagTestSuite) TestIsRequired() {
 	}
 
 	for _, tc := range testCases {
-		t.Run(tc.testDescription, func(t *testing.T) {
+		suite.Run(tc.testDescription, func() {
+			t := suite.T()
 			actualRequired := tc.giveFlag.IsRequired()
 			assert.Equal(t, tc.wantRequired, actualRequired)
 		})
