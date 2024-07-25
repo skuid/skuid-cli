@@ -6,7 +6,6 @@ import (
 	"regexp"
 
 	"github.com/gookit/color"
-	"github.com/mmatczuk/anyflag"
 	"github.com/skuid/skuid-cli/pkg/errors"
 	"github.com/skuid/skuid-cli/pkg/flags"
 	"github.com/skuid/skuid-cli/pkg/logging"
@@ -194,7 +193,7 @@ func addFlag[T flags.FlagType](cmd *cobra.Command, ft FlagTracker, flag *flags.F
 		fs.StringP(f.Name, f.Shorthand, f.Default, usage)
 	case *flags.Flag[flags.RedactedString]:
 		p := new(flags.RedactedString)
-		v := anyflag.NewValueWithRedact(f.Default, p, func(val string) (flags.RedactedString, error) { return flags.RedactedString(val), nil }, func(rs flags.RedactedString) string {
+		v := flags.NewValueWithRedact(f.Default, p, func(val string) (flags.RedactedString, error) { return flags.RedactedString(val), nil }, func(rs flags.RedactedString) string {
 			if rs == "" {
 				return ""
 			} else {

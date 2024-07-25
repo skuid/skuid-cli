@@ -2,6 +2,7 @@ package flags
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 
 	"github.com/mmatczuk/anyflag"
@@ -61,14 +62,43 @@ func (f *Flag[T]) IsRequired() bool {
 //
 // TODO: Implement a solution for secure storage of the password while in memory and implement a proper one-time use
 // approach assuming Skuid supports refresh tokens (see https://github.com/skuid/skuid-cli/issues/172)
-func GetPassword(fs *pflag.FlagSet) (*anyflag.Value[RedactedString], error) {
+func GetPassword(fs *pflag.FlagSet) (*Value[RedactedString], error) {
 	v := fs.Lookup(Password.Name)
 	if v == nil {
 		return nil, fmt.Errorf("unable to obtain the value for the password specified (code=1)")
 	}
-	rs, ok := v.Value.(*anyflag.Value[RedactedString])
+	rs, ok := v.Value.(*Value[RedactedString])
 	if !ok {
 		return nil, fmt.Errorf("unable to obtain the value for the password specified (code=2)")
 	}
 	return rs, nil
+}
+
+// Value[T] is a wrapper for anyflag.Value[T] to address anyflag's issue
+// of correctly resolving the Type() of T
+type Value[T any] struct {
+	*anyflag.Value[T]
+}
+
+func (v *Value[T]) Type() string {
+	return getTypeName(reflect.TypeOf(*new(T)))
+}
+
+func NewValue[T any](val T, p *T, parse func(val string) (T, error)) *Value[T] {
+	return &Value[T]{
+		anyflag.NewValue(val, p, parse),
+	}
+}
+
+func NewValueWithRedact[T any](val T, p *T, parse func(val string) (T, error), redact func(T) string) *Value[T] {
+	return &Value[T]{
+		anyflag.NewValueWithRedact(val, p, parse, redact),
+	}
+}
+
+func getTypeName(t reflect.Type) string {
+	if t.Kind() == reflect.Pointer {
+		t = t.Elem()
+	}
+	return fmt.Sprint(t)
 }

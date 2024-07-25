@@ -8,7 +8,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mmatczuk/anyflag"
 	"github.com/skuid/skuid-cli/pkg/cmdutil"
 	"github.com/skuid/skuid-cli/pkg/flags"
 	"github.com/skuid/skuid-cli/pkg/logging"
@@ -523,7 +522,7 @@ func (suite *CommanderApplyEnvVarsTestSuite) TestRedactedStringConversion() {
 	addFlag := func(fs *pflag.FlagSet, name string) *flags.Flag[flags.RedactedString] {
 		flag := &flags.Flag[flags.RedactedString]{Name: name, Usage: "this is a flag"}
 		p := new(flags.RedactedString)
-		v := anyflag.NewValueWithRedact("", p, func(val string) (flags.RedactedString, error) { return flags.RedactedString(val), nil }, func(rs flags.RedactedString) string {
+		v := flags.NewValueWithRedact("", p, func(val string) (flags.RedactedString, error) { return flags.RedactedString(val), nil }, func(rs flags.RedactedString) string {
 			if rs == "" {
 				return ""
 			} else {
@@ -538,7 +537,7 @@ func (suite *CommanderApplyEnvVarsTestSuite) TestRedactedStringConversion() {
 		if f == nil {
 			return "", fmt.Errorf("flag accessed but not defined: %s", fn)
 		} else {
-			if rs, ok := f.Value.(*anyflag.Value[flags.RedactedString]); !ok {
+			if rs, ok := f.Value.(*flags.Value[flags.RedactedString]); !ok {
 				return "", fmt.Errorf("could not cast to RedactedString: %s", fn)
 			} else {
 				return flags.RedactedString(rs.Unredacted().String()), nil
@@ -919,22 +918,14 @@ func runAddFlagsTests[T flags.FlagType](suite *suite.Suite, testCases []AddFlags
 			// was it added to correct FlagSet on command
 			require.NotNil(t, actualFlag, "Expected lookup to return not nil flag, got nil")
 
-			actualType := func() string {
-				switch actualFlag.Value.(type) {
-				// anyflag returns "" for Type() so we need to explicitly detect it
-				case *anyflag.Value[flags.RedactedString]:
-					return "RedactedString"
-				default:
-					return actualFlag.Value.Type()
-				}
-			}()
+			actualType := actualFlag.Value.Type()
 			expectedType := func() string {
 				switch et := any(tc.giveFlag.Default).(type) {
 				// pflag returns stringSlice and our type is StringSlice
 				case flags.StringSlice:
 					return "stringSlice"
 				default:
-					return reflect.TypeOf(et).Name()
+					return fmt.Sprint(reflect.TypeOf(et))
 				}
 			}()
 			// correct type?

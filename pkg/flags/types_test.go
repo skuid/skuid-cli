@@ -3,7 +3,6 @@ package flags_test
 import (
 	"testing"
 
-	"github.com/mmatczuk/anyflag"
 	"github.com/skuid/skuid-cli/pkg/flags"
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
@@ -168,7 +167,7 @@ func (suite *GetPasswordSuite) TestGetPasswordSuccess() {
 
 	fs := pflag.NewFlagSet("testflags", pflag.ExitOnError)
 	p := new(flags.RedactedString)
-	v := anyflag.NewValueWithRedact(f.Default, p, func(val string) (flags.RedactedString, error) { return flags.RedactedString(val), nil }, func(rs flags.RedactedString) string {
+	v := flags.NewValueWithRedact(f.Default, p, func(val string) (flags.RedactedString, error) { return flags.RedactedString(val), nil }, func(rs flags.RedactedString) string {
 		if rs == "" {
 			return expectedBlankValue
 		} else {

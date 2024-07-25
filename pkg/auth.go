@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/mmatczuk/anyflag"
 	"github.com/skuid/skuid-cli/pkg/flags"
 )
 
@@ -15,7 +14,7 @@ type Authorization struct {
 	AuthorizationToken string
 }
 
-func GetAccessToken(host string, username string, password *anyflag.Value[flags.RedactedString]) (accessToken string, err error) {
+func GetAccessToken(host string, username string, password *flags.Value[flags.RedactedString]) (accessToken string, err error) {
 	// prep the body
 	body := []byte(url.Values{
 		"grant_type": []string{"password"},
@@ -67,7 +66,7 @@ func GetAuthorizationToken(host, accessToken string) (authToken string, err erro
 	return
 }
 
-func Authorize(host string, username string, password *anyflag.Value[flags.RedactedString]) (info *Authorization, err error) {
+func Authorize(host string, username string, password *flags.Value[flags.RedactedString]) (info *Authorization, err error) {
 	info = &Authorization{
 		Host: host,
 	}
