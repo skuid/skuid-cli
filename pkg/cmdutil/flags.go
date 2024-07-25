@@ -30,6 +30,7 @@ type CommandFlags struct {
 	RedactedString []*flags.Flag[flags.RedactedString]
 	Bool           []*flags.Flag[bool]
 	StringSlice    []*flags.Flag[flags.StringSlice]
+	CustomString   []*flags.Flag[flags.CustomString]
 }
 
 type FlagManager struct {

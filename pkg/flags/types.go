@@ -13,9 +13,11 @@ import (
 
 type StringSlice []string
 type RedactedString string
+type CustomString string
+type Parse[T FlagType] func(string) (T, error)
 
 type FlagType interface {
-	int | string | RedactedString | bool | StringSlice
+	int | string | RedactedString | bool | StringSlice | CustomString
 }
 
 type FlagInfo interface {
@@ -35,6 +37,7 @@ type Flag[T FlagType] struct {
 	Required      bool     // flag whether the command requires this flag
 	Shorthand     string   // optional, will change call to allow for shorthand
 	Global        bool     // is this a global/persistent flag?
+	Parse         Parse[T] // optional, parse user-input during pflag.Set() - only supported by CustomString and RedactedString currently
 }
 
 func (f *Flag[T]) EnvVarName() string {

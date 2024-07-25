@@ -1,7 +1,6 @@
 package util_test
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
@@ -104,12 +103,8 @@ func TestStringSliceContainsAnyKey(t *testing.T) {
 func TestGetTimestamp(t *testing.T) {
 	reference := time.Date(2006, 1, 2, 15, 4, 5, 0, time.FixedZone("PST", -8*60*60))
 
-	makeUnixNano := func(t time.Time) string {
-		return fmt.Sprintf("%d.%09d", t.Unix(), int64(t.Nanosecond()))
-	}
-
 	addDuration := func(d time.Duration) string {
-		return makeUnixNano(reference.Add(d))
+		return util.FormatTimestamp(reference.Add(d))
 	}
 
 	testCases := []struct {

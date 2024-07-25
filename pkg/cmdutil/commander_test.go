@@ -95,6 +95,16 @@ func (suite *CommanderAddFlagsTestSuite) TestAddStringSliceFlags() {
 	})
 }
 
+func (suite *CommanderAddFlagsTestSuite) TestAddCustomStringFlags() {
+	testCases := createAddCmdFlagsTests[flags.CustomString]()
+
+	runAddFlagsTests(&suite.Suite, testCases, func(f *flags.Flag[flags.CustomString]) *cmdutil.CommandFlags {
+		return &cmdutil.CommandFlags{
+			CustomString: []*flags.Flag[flags.CustomString]{f},
+		}
+	})
+}
+
 func (suite *CommanderAddFlagsTestSuite) TestAddsAllTypesWithMultipleFlagsEach() {
 	t := suite.T()
 	flags := &cmdutil.CommandFlags{
@@ -103,6 +113,7 @@ func (suite *CommanderAddFlagsTestSuite) TestAddsAllTypesWithMultipleFlagsEach()
 		Bool:           []*flags.Flag[bool]{{Name: "bflag1", Usage: "this is the usage"}, {Name: "bflag2", Usage: "this is the usage"}},
 		RedactedString: []*flags.Flag[flags.RedactedString]{{Name: "rsflag1", Usage: "this is the usage"}, {Name: "rsflag2", Usage: "this is the usage"}},
 		StringSlice:    []*flags.Flag[flags.StringSlice]{{Name: "ssflag1", Usage: "this is the usage"}, {Name: "ssflag2", Usage: "this is the usage"}},
+		CustomString:   []*flags.Flag[flags.CustomString]{{Name: "csflag1", Usage: "this is the usage"}, {Name: "csflag2", Usage: "this is the usage"}},
 	}
 	flagMgr := &cmdutil.FlagManager{}
 	cd := &cmdutil.Commander{
@@ -120,6 +131,7 @@ func (suite *CommanderAddFlagsTestSuite) TestAddsAllTypesWithMultipleFlagsEach()
 	assertFlags(t, flagMgr, cmd, flags.Bool)
 	assertFlags(t, flagMgr, cmd, flags.RedactedString)
 	assertFlags(t, flagMgr, cmd, flags.StringSlice)
+	assertFlags(t, flagMgr, cmd, flags.CustomString)
 }
 
 func (suite *CommanderAddFlagsTestSuite) TestInvalidFlagName() {
@@ -541,6 +553,44 @@ func (suite *CommanderApplyEnvVarsTestSuite) TestRedactedStringConversion() {
 				return "", fmt.Errorf("could not cast to RedactedString: %s", fn)
 			} else {
 				return flags.RedactedString(rs.Unredacted().String()), nil
+			}
+		}
+	}
+	runConversionTest(&suite.Suite, envVarsSuccess, addFlag, false, getValue)
+	runConversionTest(&suite.Suite, envVarsError, addFlag, true, getValue)
+}
+
+func (suite *CommanderApplyEnvVarsTestSuite) TestCustomStringConversion() {
+	envVarsSuccess := map[string]testutil.EnvVar[flags.CustomString]{
+		"SKUID_GOOD_FOO_EMPTY":              {EnvValue: "", Value: ""},
+		"SKUID_GOOD_FOO_NOT_EMPTY":          {EnvValue: "foobar", Value: "FOOBAR"},
+		"SKUID_GOOD_FOO_SPACES":             {EnvValue: "fo o ba r", Value: "FO O BA R"},
+		"SKUID_GOOD_FOO_TABS":               {EnvValue: "fo	oba	r", Value: "FO	OBA	R"},
+		"SKUID_GOOD_FOO_NEWLINE":            {EnvValue: "fooba\nr", Value: "FOOBA\nR"},
+		"SKUID_GOOD_FOO_SPECIAL_CHARACTERS": {EnvValue: "f$o@o\\%s*^()ar", Value: "F$O@O\\%S*^()AR"},
+		"SKUID_GOOD_FOO_NUMBER":             {EnvValue: "12345", Value: "12345"},
+		"SKUID_GOOD_FOO_ZERO":               {EnvValue: "0", Value: "0"},
+		"SKUID_GOOD_FOO_TRUE":               {EnvValue: "true", Value: "TRUE"},
+	}
+	envVarsError := map[string]testutil.EnvVar[flags.CustomString]{}
+	addFlag := func(fs *pflag.FlagSet, name string) *flags.Flag[flags.CustomString] {
+		flag := &flags.Flag[flags.CustomString]{Name: name, Usage: "this is a flag"}
+		p := new(flags.CustomString)
+		v := flags.NewValue("", p, func(val string) (flags.CustomString, error) {
+			return flags.CustomString(strings.ToUpper(val)), nil
+		})
+		fs.VarP(v, flag.Name, flag.Shorthand, flag.Usage)
+		return flag
+	}
+	getValue := func(fs *pflag.FlagSet, fn string) (flags.CustomString, error) {
+		f := fs.Lookup(fn)
+		if f == nil {
+			return "", fmt.Errorf("flag accessed but not defined: %s", fn)
+		} else {
+			if cs, ok := f.Value.(*flags.Value[flags.CustomString]); !ok {
+				return "", fmt.Errorf("could not cast to CustomString: %s", fn)
+			} else {
+				return flags.CustomString(cs.String()), nil
 			}
 		}
 	}

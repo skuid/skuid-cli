@@ -39,7 +39,7 @@ func StringSliceContainsAnyKey(strings []string, keys []string) bool {
 //   - Times: any golang layout except for those that contain timezone abbreviations (e.g., UnixDate).
 func GetTimestamp(value string, reference time.Time, noFuture bool) (string, error) {
 	if value == "" || value == "0" {
-		return "", fmt.Errorf("must provide a valid time or duration: %q", value)
+		return "", fmt.Errorf("value is not a valid time or duration: %q", value)
 	}
 
 	// try duration first for two reasons:
@@ -56,10 +56,14 @@ func GetTimestamp(value string, reference time.Time, noFuture bool) (string, err
 	}
 
 	if noFuture && t.Compare(reference) > 0 {
-		return "", fmt.Errorf("%q cannot resolve to a time in the future: %v", value, t.Format(time.RFC3339))
+		return "", fmt.Errorf("value %q cannot represent a time in the future: %v", value, t.Format(time.RFC3339))
 	}
 
-	return fmt.Sprintf("%d.%09d", t.Unix(), int64(t.Nanosecond())), nil
+	return FormatTimestamp(t), nil
+}
+
+func FormatTimestamp(t time.Time) string {
+	return fmt.Sprintf("%d.%09d", t.Unix(), int64(t.Nanosecond()))
 }
 
 func ParseTimestamp(value string, defaultSeconds int64) (seconds int64, nanoseconds int64, err error) {

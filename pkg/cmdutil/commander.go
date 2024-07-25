@@ -35,6 +35,7 @@ func (c *Commander) AddFlags(cmd *cobra.Command, flags *CommandFlags) {
 	addFlagType(cmd, c.FlagManager, flags.RedactedString)
 	addFlagType(cmd, c.FlagManager, flags.String)
 	addFlagType(cmd, c.FlagManager, flags.StringSlice)
+	addFlagType(cmd, c.FlagManager, flags.CustomString)
 }
 
 func (c *Commander) MarkFlagsMutuallyExclusive(cmd *cobra.Command, flagGroups [][]string) {
@@ -192,8 +193,14 @@ func addFlag[T flags.FlagType](cmd *cobra.Command, ft FlagTracker, flag *flags.F
 	case *flags.Flag[string]:
 		fs.StringP(f.Name, f.Shorthand, f.Default, usage)
 	case *flags.Flag[flags.RedactedString]:
+		var parse flags.Parse[flags.RedactedString]
+		if f.Parse != nil {
+			parse = f.Parse
+		} else {
+			parse = func(val string) (flags.RedactedString, error) { return flags.RedactedString(val), nil }
+		}
 		p := new(flags.RedactedString)
-		v := flags.NewValueWithRedact(f.Default, p, func(val string) (flags.RedactedString, error) { return flags.RedactedString(val), nil }, func(rs flags.RedactedString) string {
+		v := flags.NewValueWithRedact(f.Default, p, parse, func(rs flags.RedactedString) string {
 			if rs == "" {
 				return ""
 			} else {
@@ -207,6 +214,16 @@ func addFlag[T flags.FlagType](cmd *cobra.Command, ft FlagTracker, flag *flags.F
 		fs.StringSliceP(f.Name, f.Shorthand, f.Default, usage)
 	case *flags.Flag[int]:
 		fs.IntP(f.Name, f.Shorthand, f.Default, usage)
+	case *flags.Flag[flags.CustomString]:
+		var parse flags.Parse[flags.CustomString]
+		if f.Parse != nil {
+			parse = f.Parse
+		} else {
+			parse = func(val string) (flags.CustomString, error) { return flags.CustomString(val), nil }
+		}
+		p := new(flags.CustomString)
+		v := flags.NewValue(f.Default, p, parse)
+		fs.VarP(v, flag.Name, flag.Shorthand, usage)
 	default:
 		// should never get here due to type constraints
 		panic(fmt.Errorf("unable to handle type for flag %q", flag.Name))

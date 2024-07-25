@@ -24,34 +24,13 @@ func NewCmdRetrieve(cd *cmdutil.Factory) *cobra.Command {
 			// pages flag does not work as expected so commenting out
 			// TODO: Remove completely or fix issues depending on https://github.com/skuid/skuid-cli/issues/147 & https://github.com/skuid/skuid-cli/issues/148
 			// flags.Pages
-			String:         []*flags.Flag[string]{flags.Host, flags.Username, flags.Dir, flags.App, flags.Since},
+			String:         []*flags.Flag[string]{flags.Host, flags.Username, flags.Dir, flags.App},
 			RedactedString: []*flags.Flag[flags.RedactedString]{flags.Password},
+			CustomString:   []*flags.Flag[flags.CustomString]{flags.Since},
 		},
 	}
 
-	pPreRun := func(factory *cmdutil.Factory, cmd *cobra.Command, args []string) error {
-		if err := checkSetSince(cmd); err != nil {
-			return err
-		}
-
-		return nil
-	}
-	return retrieveTemplate.ToCommand(cd, pPreRun, nil, retrieve)
-}
-
-func checkSetSince(cmd *cobra.Command) error {
-	if since, err := cmd.Flags().GetString(flags.Since.Name); err != nil {
-		return err
-	} else if since != "" {
-		now := time.Now()
-		if ts, err := util.GetTimestamp(since, now, true); err != nil {
-			return err
-		} else {
-			cmd.Flags().Set(flags.Since.Name, ts)
-		}
-	}
-
-	return nil
+	return retrieveTemplate.ToCommand(cd, nil, nil, retrieve)
 }
 
 func retrieve(factory *cmdutil.Factory, cmd *cobra.Command, _ []string) (err error) {
@@ -133,10 +112,12 @@ func retrieve(factory *cmdutil.Factory, cmd *cobra.Command, _ []string) (err err
 		}
 	*/
 
-	var sinceStr string
-	if sinceStr, err = cmd.Flags().GetString(flags.Since.Name); err != nil {
-		return err
-	} else if sinceStr != "" {
+	sinceF := cmd.Flags().Lookup(flags.Since.Name)
+	if sinceF == nil {
+		return fmt.Errorf("flag accessed but not defined: %s", flags.Since.Name)
+	}
+	sinceStr := sinceF.Value.String()
+	if sinceStr != "" {
 		if sec, nano, err := util.ParseTimestamp(sinceStr, 0); err != nil {
 			return err
 		} else {
