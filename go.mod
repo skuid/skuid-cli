@@ -4,8 +4,9 @@ module github.com/skuid/skuid-cli
 go 1.22.5
 
 require (
-	github.com/dlclark/regexp2 v1.11.2
 	github.com/gookit/color v1.5.4
+	github.com/goschtalt/approx v1.0.0
+	github.com/itlightning/dateparse v0.2.0
 	github.com/joho/godotenv v1.5.1
 	github.com/mmatczuk/anyflag v0.0.0-20240709090339-eb9e24cd1b44
 	github.com/radovskyb/watcher v1.0.7
