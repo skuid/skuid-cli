@@ -112,12 +112,10 @@ func retrieve(factory *cmdutil.Factory, cmd *cobra.Command, _ []string) (err err
 		}
 	*/
 
-	sinceF := cmd.Flags().Lookup(flags.Since.Name)
-	if sinceF == nil {
-		return fmt.Errorf("flag accessed but not defined: %s", flags.Since.Name)
-	}
-	sinceStr := sinceF.Value.String()
-	if sinceStr != "" {
+	sinceStr, err := flags.GetCustomString(cmd.Flags(), flags.Since.Name)
+	if err != nil {
+		return
+	} else if sinceStr != "" {
 		if sec, nano, err := util.ParseTimestamp(sinceStr, 0); err != nil {
 			return err
 		} else {
