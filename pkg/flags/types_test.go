@@ -1,6 +1,7 @@
 package flags_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/skuid/skuid-cli/pkg/flags"
@@ -211,4 +212,67 @@ func (suite *GetPasswordSuite) TestGetPasswordErrorWrongType() {
 
 func TestGetPasswordSuite(t *testing.T) {
 	suite.Run(t, new(GetPasswordSuite))
+}
+
+func TestGetCustomString(t *testing.T) {
+	flagName := "myflag"
+	testCases := []struct {
+		testDescription string
+		giveSetup       func(*pflag.FlagSet)
+		wantValue       string
+		wantError       error
+	}{
+		{
+			testDescription: "gets string",
+			giveSetup: func(fs *pflag.FlagSet) {
+				parse := func(val string) (flags.CustomString, error) { return flags.CustomString(val), nil }
+				p := new(flags.CustomString)
+				v := flags.NewValue("default", p, parse)
+				fs.VarP(v, flagName, "", "")
+			},
+			wantValue: "default",
+			wantError: nil,
+		},
+		{
+			testDescription: "does not exist in flagset",
+			giveSetup: func(fs *pflag.FlagSet) {
+			},
+			wantValue: "",
+			wantError: fmt.Errorf("flag accessed but not defined: %s", flagName),
+		},
+		{
+			testDescription: "wrong type string",
+			giveSetup: func(fs *pflag.FlagSet) {
+				fs.String(flagName, "", "")
+			},
+			wantValue: "",
+			wantError: fmt.Errorf("trying to get %T value of flag of type %s", *new(flags.CustomString), "string"),
+		},
+		{
+			testDescription: "wrong type RedactedString",
+			giveSetup: func(fs *pflag.FlagSet) {
+				parse := func(val string) (flags.RedactedString, error) { return flags.RedactedString(val), nil }
+				redact := func(rs flags.RedactedString) string { return "***" }
+				p := new(flags.RedactedString)
+				v := flags.NewValueWithRedact("", p, parse, redact)
+				fs.VarPF(v, flagName, "", "")
+			},
+			wantValue: "",
+			wantError: fmt.Errorf("trying to get %T value of flag of type %s", *new(flags.CustomString), *new(flags.RedactedString)),
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.testDescription, func(t *testing.T) {
+			fs := pflag.NewFlagSet("", pflag.ExitOnError)
+			tc.giveSetup(fs)
+			s, err := flags.GetCustomString(fs, flagName)
+			if tc.wantError != nil {
+				assert.Error(t, err, tc.wantError.Error())
+			} else {
+				require.NoError(t, err)
+			}
+			assert.Equal(t, s, tc.wantValue)
+		})
+	}
 }

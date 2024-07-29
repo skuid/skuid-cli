@@ -24,9 +24,9 @@ func NewCmdRetrieve(cd *cmdutil.Factory) *cobra.Command {
 			// pages flag does not work as expected so commenting out
 			// TODO: Remove completely or fix issues depending on https://github.com/skuid/skuid-cli/issues/147 & https://github.com/skuid/skuid-cli/issues/148
 			// flags.Pages
-			String:         []*flags.Flag[string]{flags.Host, flags.Username, flags.Dir, flags.App},
+			String:         []*flags.Flag[string]{flags.Username, flags.Dir, flags.App},
 			RedactedString: []*flags.Flag[flags.RedactedString]{flags.Password},
-			CustomString:   []*flags.Flag[flags.CustomString]{flags.Since},
+			CustomString:   []*flags.Flag[flags.CustomString]{flags.Since, flags.Host},
 		},
 	}
 
@@ -41,7 +41,7 @@ func retrieve(factory *cmdutil.Factory, cmd *cobra.Command, _ []string) (err err
 
 	logging.Get().Info(color.Green.Sprint("Starting Retrieve"))
 	// get required arguments
-	host, err := cmd.Flags().GetString(flags.Host.Name)
+	host, err := flags.GetCustomString(cmd.Flags(), flags.Host.Name)
 	if err != nil {
 		return
 	}

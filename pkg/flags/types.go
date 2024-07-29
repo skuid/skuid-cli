@@ -77,6 +77,14 @@ func GetPassword(fs *pflag.FlagSet) (*Value[RedactedString], error) {
 	return rs, nil
 }
 
+func GetCustomString(fs *pflag.FlagSet, name string) (string, error) {
+	if cs, err := getFlagValue[CustomString](fs, name); err != nil {
+		return "", err
+	} else {
+		return cs.String(), nil
+	}
+}
+
 // Value[T] is a wrapper for anyflag.Value[T] to address anyflag's issue
 // of correctly resolving the Type() of T
 type Value[T any] struct {
@@ -104,4 +112,16 @@ func getTypeName(t reflect.Type) string {
 		t = t.Elem()
 	}
 	return fmt.Sprint(t)
+}
+
+func getFlagValue[T FlagType](fs *pflag.FlagSet, name string) (*Value[T], error) {
+	f := fs.Lookup(name)
+	if f == nil {
+		return nil, fmt.Errorf("flag accessed but not defined: %s", name)
+	}
+	v, ok := f.Value.(*Value[T])
+	if !ok {
+		return nil, fmt.Errorf("trying to get %T value of flag of type %s", *new(T), f.Value.Type())
+	}
+	return v, nil
 }

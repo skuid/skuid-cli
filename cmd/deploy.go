@@ -25,10 +25,11 @@ func NewCmdDeploy(factory *cmdutil.Factory) *cobra.Command {
 			// pages flag does not work as expected so commenting out
 			// TODO: Remove completely or fix issues depending on https://github.com/skuid/skuid-cli/issues/147 & https://github.com/skuid/skuid-cli/issues/148
 			// flags.Pages
-			String:         []*flags.Flag[string]{flags.Host, flags.Username, flags.Dir, flags.App},
+			String:         []*flags.Flag[string]{flags.Username, flags.Dir, flags.App},
 			RedactedString: []*flags.Flag[flags.RedactedString]{flags.Password},
 			// TODO: SkipDataSources can be removed once https://github.com/skuid/skuid-cli/issues/150 is resolved
-			Bool: []*flags.Flag[bool]{flags.IgnoreSkuidDb, flags.SkipDataSources},
+			Bool:         []*flags.Flag[bool]{flags.IgnoreSkuidDb, flags.SkipDataSources},
+			CustomString: []*flags.Flag[flags.CustomString]{flags.Host},
 		},
 		// do not allow ignoring skuid db errors when skipping datasources or vice-versa as errors can't occur if we're skipping all data sources
 		MutuallyExclusiveFlags: [][]string{{flags.IgnoreSkuidDb.Name, flags.SkipDataSources.Name}},
@@ -44,7 +45,7 @@ func deploy(factory *cmdutil.Factory, cmd *cobra.Command, _ []string) (err error
 	logging.WithFields(fields).Info(color.Green.Sprint("Starting Deploy"))
 
 	// get required authentication arguments
-	host, err := cmd.Flags().GetString(flags.Host.Name)
+	host, err := flags.GetCustomString(cmd.Flags(), flags.Host.Name)
 	if err != nil {
 		return
 	}

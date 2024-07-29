@@ -5,11 +5,12 @@ import (
 )
 
 var (
-	Host = &Flag[string]{
+	Host = &Flag[CustomString]{
 		Name:          "host",
 		Usage:         `Host URL, e.g. [ https://my.skuidsite.com | my.skuidsite.com ]`,
 		LegacyEnvVars: []string{constants.ENV_PLINY_HOST},
 		Required:      true,
+		Parse:         ParseHost,
 	}
 
 	Password = &Flag[RedactedString]{
