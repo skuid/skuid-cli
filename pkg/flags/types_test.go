@@ -390,6 +390,11 @@ func (suite *ValueTestSuite) TestValueType() {
 			giveValue:       &flags.Value[flags.StringSlice]{},
 			wantTypeName:    fmt.Sprint(reflect.TypeOf(*new(flags.StringSlice))),
 		},
+		{
+			testDescription: "pointer",
+			giveValue:       &flags.Value[*string]{},
+			wantTypeName:    fmt.Sprint(reflect.TypeOf(*new(string))),
+		},
 	}
 
 	for _, tc := range testCases {
