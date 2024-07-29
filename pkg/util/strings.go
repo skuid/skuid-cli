@@ -12,6 +12,20 @@ import (
 	"github.com/itlightning/dateparse"
 )
 
+type timeFormat struct {
+	Format   string
+	TimeOnly bool
+}
+
+var additionalTimeFormats = []timeFormat{
+	{time.Layout, false},
+	{time.Kitchen, true},
+	{"15:04", true},
+	{"3:04 PM", true},
+	{"03:04 PM", true},
+	{"03:04PM", true},
+}
+
 // StringSliceContainsKey returns true if a string is contained in a slice
 func StringSliceContainsKey(strings []string, key string) bool {
 	return slices.Contains(strings, key)
@@ -110,10 +124,11 @@ func parseTime(value string, reference time.Time) (time.Time, error) {
 		return t, nil
 	}
 
-	// dateparse does not handle certain golang formats (see TimeOnly above)
-	for _, l := range []string{time.Layout, time.Kitchen} {
-		if t, err := time.ParseInLocation(l, value, reference.Location()); err == nil {
-			if l == time.Kitchen {
+	// dateparse does not handle certain golang formats (see also TimeOnly above)
+	// and some formats that previous code supported
+	for _, tf := range additionalTimeFormats {
+		if t, err := time.ParseInLocation(tf.Format, value, reference.Location()); err == nil {
+			if tf.TimeOnly {
 				// only time was provided so adjust to current date at time specified
 				return forceCurrentDate(t, reference), nil
 			}
