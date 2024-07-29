@@ -44,7 +44,7 @@ func watch(factory *cmdutil.Factory, cmd *cobra.Command, _ []string) (err error)
 	if err != nil {
 		return
 	}
-	password, err := flags.GetPassword(cmd.Flags())
+	password, err := flags.GetRedactedString(cmd.Flags(), flags.Password.Name)
 	if err != nil {
 		return
 	}

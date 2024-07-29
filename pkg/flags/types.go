@@ -55,26 +55,12 @@ func (f *Flag[T]) IsRequired() bool {
 	return f.Required
 }
 
-// flags are command specific so grab the password from the flags for the specific command
-//
-// NOTE - This is a fairly inelgent solution but password is a one-off use case so keeping it simple.  If/When other
-// flags are needed for things like RestrictedString, a more universal approach can be taken.
-//
-// NOTE - The auth package will unredact the password and clear its value immediately after so this is essentially a
-// one-time use password albeit somewhat inelegant approach.
-//
-// TODO: Implement a solution for secure storage of the password while in memory and implement a proper one-time use
-// approach assuming Skuid supports refresh tokens (see https://github.com/skuid/skuid-cli/issues/172)
-func GetPassword(fs *pflag.FlagSet) (*Value[RedactedString], error) {
-	v := fs.Lookup(Password.Name)
-	if v == nil {
-		return nil, fmt.Errorf("unable to obtain the value for the password specified (code=1)")
+func GetRedactedString(fs *pflag.FlagSet, name string) (*Value[RedactedString], error) {
+	if rs, err := getFlagValue[RedactedString](fs, name); err != nil {
+		return nil, err
+	} else {
+		return rs, nil
 	}
-	rs, ok := v.Value.(*Value[RedactedString])
-	if !ok {
-		return nil, fmt.Errorf("unable to obtain the value for the password specified (code=2)")
-	}
-	return rs, nil
 }
 
 func GetCustomString(fs *pflag.FlagSet, name string) (string, error) {

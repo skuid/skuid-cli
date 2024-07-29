@@ -155,63 +155,74 @@ func TestFlagTestSuite(t *testing.T) {
 	suite.Run(t, new(FlagTestSuite))
 }
 
-type GetPasswordSuite struct {
-	suite.Suite
-}
+func TestGetRedactedString(t *testing.T) {
+	flagName := "myflag"
+	testCases := []struct {
+		testDescription string
+		giveSetup       func(*pflag.FlagSet)
+		wantRedacted    string
+		wantUnredacted  string
+		wantError       error
+	}{
+		{
+			testDescription: "gets RedactedString",
+			giveSetup: func(fs *pflag.FlagSet) {
+				parse := func(val string) (flags.RedactedString, error) { return flags.RedactedString(val), nil }
+				redact := func(rs flags.RedactedString) string { return "***" }
+				p := new(flags.RedactedString)
+				v := flags.NewValueWithRedact("foobar", p, parse, redact)
+				fs.VarPF(v, flagName, "", "")
+			},
+			wantRedacted:   "***",
+			wantUnredacted: "foobar",
+			wantError:      nil,
+		},
+		{
+			testDescription: "does not exist in flagset",
+			giveSetup: func(fs *pflag.FlagSet) {
+			},
+			wantRedacted:   "",
+			wantUnredacted: "",
+			wantError:      fmt.Errorf("flag accessed but not defined: %s", flagName),
+		},
+		{
+			testDescription: "wrong type string",
+			giveSetup: func(fs *pflag.FlagSet) {
+				fs.String(flagName, "", "")
+			},
+			wantRedacted:   "",
+			wantUnredacted: "",
+			wantError:      fmt.Errorf("trying to get %T value of flag of type %s", *new(flags.CustomString), "string"),
+		},
+		{
+			testDescription: "wrong type CustomString",
+			giveSetup: func(fs *pflag.FlagSet) {
+				parse := func(val string) (flags.CustomString, error) { return flags.CustomString(val), nil }
+				p := new(flags.CustomString)
+				v := flags.NewValue("default", p, parse)
+				fs.VarP(v, flagName, "", "")
+			},
+			wantRedacted:   "",
+			wantUnredacted: "",
+			wantError:      fmt.Errorf("trying to get %T value of flag of type %s", *new(flags.RedactedString), *new(flags.CustomString)),
+		},
+	}
 
-func (suite *GetPasswordSuite) TestGetPasswordSuccess() {
-	t := suite.T()
-	f := flags.Password
-	expectedRedactedValue := "!!!!"
-	expectedPassword := "foobar"
-	expectedBlankValue := "hellothere"
-
-	fs := pflag.NewFlagSet("testflags", pflag.ExitOnError)
-	p := new(flags.RedactedString)
-	v := flags.NewValueWithRedact(f.Default, p, func(val string) (flags.RedactedString, error) { return flags.RedactedString(val), nil }, func(rs flags.RedactedString) string {
-		if rs == "" {
-			return expectedBlankValue
-		} else {
-			return expectedRedactedValue
-		}
-	})
-	fs.VarPF(v, f.Name, f.Shorthand, f.Usage)
-	actualFlag := fs.Lookup(f.Name)
-	require.NotNil(t, actualFlag)
-	assert.Equal(t, actualFlag.Value.String(), expectedBlankValue)
-
-	fs.Set(f.Name, expectedPassword)
-	assert.Equal(t, expectedRedactedValue, actualFlag.Value.String())
-
-	actualPassword, err := flags.GetPassword(fs)
-	require.NoError(t, err)
-	assert.Equal(t, expectedPassword, actualPassword.Unredacted().String())
-}
-
-func (suite *GetPasswordSuite) TestGetPasswordErrorNotExist() {
-	t := suite.T()
-
-	fs := pflag.NewFlagSet("testflags", pflag.ExitOnError)
-	actualPassword, err := flags.GetPassword(fs)
-	assert.ErrorContains(t, err, "code=1")
-	assert.Nil(t, actualPassword)
-}
-
-func (suite *GetPasswordSuite) TestGetPasswordErrorWrongType() {
-	t := suite.T()
-
-	fs := pflag.NewFlagSet("testflags", pflag.ExitOnError)
-	fs.StringP(flags.Password.Name, flags.Password.Shorthand, "", flags.Password.Usage)
-	passwordFlag := fs.Lookup(flags.Password.Name)
-	require.NotNil(t, passwordFlag)
-
-	actualPassword, err := flags.GetPassword(fs)
-	assert.ErrorContains(t, err, "code=2")
-	assert.Nil(t, actualPassword)
-}
-
-func TestGetPasswordSuite(t *testing.T) {
-	suite.Run(t, new(GetPasswordSuite))
+	for _, tc := range testCases {
+		t.Run(tc.testDescription, func(t *testing.T) {
+			fs := pflag.NewFlagSet("", pflag.ExitOnError)
+			tc.giveSetup(fs)
+			s, err := flags.GetRedactedString(fs, flagName)
+			if tc.wantError != nil {
+				assert.Error(t, err, tc.wantError.Error())
+				assert.Nil(t, s)
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, s.String(), tc.wantRedacted)
+				assert.Equal(t, s.Unredacted().String(), tc.wantUnredacted)
+			}
+		})
+	}
 }
 
 func TestGetCustomString(t *testing.T) {

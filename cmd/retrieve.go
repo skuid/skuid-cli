@@ -49,7 +49,7 @@ func retrieve(factory *cmdutil.Factory, cmd *cobra.Command, _ []string) (err err
 	if err != nil {
 		return
 	}
-	password, err := flags.GetPassword(cmd.Flags())
+	password, err := flags.GetRedactedString(cmd.Flags(), flags.Password.Name)
 	if err != nil {
 		return
 	}

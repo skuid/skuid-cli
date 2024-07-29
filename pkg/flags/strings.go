@@ -13,6 +13,8 @@ var (
 		Parse:         ParseHost,
 	}
 
+	// TODO: Implement a solution for secure storage of the password while in memory and implement a proper one-time use
+	// approach assuming Skuid supports refresh tokens (see https://github.com/skuid/skuid-cli/issues/172)
 	Password = &Flag[RedactedString]{
 		Name:          "password",
 		Shorthand:     "p",
