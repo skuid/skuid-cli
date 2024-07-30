@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/skuid/skuid-cli/pkg/cmdutil"
-	"github.com/skuid/skuid-cli/pkg/cmdutil/mocks"
 	cmdutil_mocks "github.com/skuid/skuid-cli/pkg/cmdutil/mocks"
 	"github.com/skuid/skuid-cli/pkg/flags"
 	logging_mocks "github.com/skuid/skuid-cli/pkg/logging/mocks"
@@ -113,9 +112,9 @@ func (suite *ToCommandTestSuite) TestHooksCalled() {
 
 	mockLogConfig := logging_mocks.NewLogInformer(t)
 	mockCommander := cmdutil_mocks.NewCommandInformer(t)
-	mockPPreRun := mocks.NewCommandFunc(t)
-	mockPreRun := mocks.NewCommandFunc(t)
-	mockRun := mocks.NewCommandFunc(t)
+	mockPPreRun := cmdutil_mocks.NewCommandFunc(t)
+	mockPreRun := cmdutil_mocks.NewCommandFunc(t)
+	mockRun := cmdutil_mocks.NewCommandFunc(t)
 	template := &cmdutil.CmdTemplate{
 		Use: "mycmd",
 	}
@@ -139,13 +138,13 @@ func (suite *ToCommandTestSuite) TestHooksCalled() {
 func (suite *ToCommandTestSuite) TestHookErrors() {
 	testCases := []struct {
 		testDescription string
-		giveSetup       func(pPreRun *mocks.CommandFunc, preRun *mocks.CommandFunc, run *mocks.CommandFunc)
+		giveSetup       func(pPreRun *cmdutil_mocks.CommandFunc, preRun *cmdutil_mocks.CommandFunc, run *cmdutil_mocks.CommandFunc)
 		wantError       error
 		wantRunCalled   int
 	}{
 		{
 			testDescription: "persistent pre run error",
-			giveSetup: func(pPreRun *mocks.CommandFunc, preRun *mocks.CommandFunc, run *mocks.CommandFunc) {
+			giveSetup: func(pPreRun *cmdutil_mocks.CommandFunc, preRun *cmdutil_mocks.CommandFunc, run *cmdutil_mocks.CommandFunc) {
 				pPreRun.EXPECT().Execute(mock.Anything, mock.Anything, mock.Anything).Return(assert.AnError).Once()
 				run.EXPECT().Execute(mock.Anything, mock.Anything, mock.Anything).Return(nil).Maybe()
 			},
@@ -154,7 +153,7 @@ func (suite *ToCommandTestSuite) TestHookErrors() {
 		},
 		{
 			testDescription: "pre run error",
-			giveSetup: func(pPreRun *mocks.CommandFunc, preRun *mocks.CommandFunc, run *mocks.CommandFunc) {
+			giveSetup: func(pPreRun *cmdutil_mocks.CommandFunc, preRun *cmdutil_mocks.CommandFunc, run *cmdutil_mocks.CommandFunc) {
 				pPreRun.EXPECT().Execute(mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
 				preRun.EXPECT().Execute(mock.Anything, mock.Anything, mock.Anything).Return(assert.AnError).Once()
 				run.EXPECT().Execute(mock.Anything, mock.Anything, mock.Anything).Return(nil).Maybe()
@@ -164,7 +163,7 @@ func (suite *ToCommandTestSuite) TestHookErrors() {
 		},
 		{
 			testDescription: "run error",
-			giveSetup: func(pPreRun *mocks.CommandFunc, preRun *mocks.CommandFunc, run *mocks.CommandFunc) {
+			giveSetup: func(pPreRun *cmdutil_mocks.CommandFunc, preRun *cmdutil_mocks.CommandFunc, run *cmdutil_mocks.CommandFunc) {
 				pPreRun.EXPECT().Execute(mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
 				preRun.EXPECT().Execute(mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
 				run.EXPECT().Execute(mock.Anything, mock.Anything, mock.Anything).Return(assert.AnError).Once()
@@ -179,9 +178,9 @@ func (suite *ToCommandTestSuite) TestHookErrors() {
 			t := suite.T()
 			mockLogConfig := logging_mocks.NewLogInformer(t)
 			mockCommander := cmdutil_mocks.NewCommandInformer(t)
-			mockPPreRun := mocks.NewCommandFunc(t)
-			mockPreRun := mocks.NewCommandFunc(t)
-			mockRun := mocks.NewCommandFunc(t)
+			mockPPreRun := cmdutil_mocks.NewCommandFunc(t)
+			mockPreRun := cmdutil_mocks.NewCommandFunc(t)
+			mockRun := cmdutil_mocks.NewCommandFunc(t)
 			template := &cmdutil.CmdTemplate{
 				Use: "mycmd",
 			}
@@ -243,12 +242,12 @@ func (suite *ToCommandTestSuite) TestFlagsNil() {
 func (suite *ToCommandTestSuite) TestFlagsConfigureError() {
 	testCases := []struct {
 		testDescription string
-		giveSetup       func(m *mocks.CommandInformer)
+		giveSetup       func(m *cmdutil_mocks.CommandInformer)
 		wantError       error
 	}{
 		{
 			testDescription: "applyenvvars error",
-			giveSetup: func(m *mocks.CommandInformer) {
+			giveSetup: func(m *cmdutil_mocks.CommandInformer) {
 				m.EXPECT().AddFlags(mock.Anything, mock.Anything).Maybe()
 				m.EXPECT().MarkFlagsMutuallyExclusive(mock.Anything, mock.Anything).Maybe()
 				m.EXPECT().ApplyEnvVars(mock.Anything).Return(assert.AnError).Once()
@@ -257,7 +256,7 @@ func (suite *ToCommandTestSuite) TestFlagsConfigureError() {
 		},
 		{
 			testDescription: "setuplogging error",
-			giveSetup: func(m *mocks.CommandInformer) {
+			giveSetup: func(m *cmdutil_mocks.CommandInformer) {
 				m.EXPECT().AddFlags(mock.Anything, mock.Anything).Maybe()
 				m.EXPECT().MarkFlagsMutuallyExclusive(mock.Anything, mock.Anything).Maybe()
 				m.EXPECT().ApplyEnvVars(mock.Anything).Return(nil).Maybe()
