@@ -57,7 +57,7 @@ var (
 	Since = &Flag[CustomString]{
 		Name:          "since",
 		Shorthand:     "s",
-		Usage:         "Timestamp or time span specifying only updated records to retrieve. Suggested timestamp format is: \"yyyy-MM-dd HH:mm AM\" or \"HH:mm AM\". Valid timespans look like various combination of \"1y2M3d8h30m\" or \"3 days\"",
+		Usage:         "Timestamp or time span specifying only updated records to retrieve. Suggested timestamp format is: \"yyyy-MM-dd HH:mm AM\" or \"HH:mm AM\". Valid time spans look like various combination of \"1y2w3d8h30m\"",
 		LegacyEnvVars: []string{constants.ENV_SKUID_RETRIEVE_SINCE},
 		Parse:         ParseSince,
 	}
