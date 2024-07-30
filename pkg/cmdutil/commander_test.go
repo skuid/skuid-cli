@@ -46,63 +46,100 @@ type CommanderAddFlagsTestSuite struct {
 }
 
 func (suite *CommanderAddFlagsTestSuite) TestAddStringFlags() {
-	testCases := createAddCmdFlagsTests[string]()
-
-	runAddFlagsTests(&suite.Suite, testCases, func(f *flags.Flag[string]) *cmdutil.CommandFlags {
+	testCases := createAddCmdFlagsTests("stringdefault")
+	getValue := func(fs *pflag.FlagSet, fn string) (string, error) {
+		return fs.GetString(fn)
+	}
+	createFlags := func(f *flags.Flag[string]) *cmdutil.CommandFlags {
 		return &cmdutil.CommandFlags{
 			String: []*flags.Flag[string]{f},
 		}
-	})
+	}
+	runAddFlagsTests(&suite.Suite, testCases, createFlags, getValue)
 }
 
 func (suite *CommanderAddFlagsTestSuite) TestAddIntFlags() {
-	testCases := createAddCmdFlagsTests[int]()
-
-	runAddFlagsTests(&suite.Suite, testCases, func(f *flags.Flag[int]) *cmdutil.CommandFlags {
+	testCases := createAddCmdFlagsTests(5)
+	getValue := func(fs *pflag.FlagSet, fn string) (int, error) {
+		return fs.GetInt(fn)
+	}
+	createFlags := func(f *flags.Flag[int]) *cmdutil.CommandFlags {
 		return &cmdutil.CommandFlags{
 			Int: []*flags.Flag[int]{f},
 		}
-	})
+	}
+	runAddFlagsTests(&suite.Suite, testCases, createFlags, getValue)
 }
 
 func (suite *CommanderAddFlagsTestSuite) TestAddBoolFlags() {
-	testCases := createAddCmdFlagsTests[bool]()
-
-	runAddFlagsTests(&suite.Suite, testCases, func(f *flags.Flag[bool]) *cmdutil.CommandFlags {
+	testCases := createAddCmdFlagsTests(true)
+	getValue := func(fs *pflag.FlagSet, fn string) (bool, error) {
+		return fs.GetBool(fn)
+	}
+	createFlags := func(f *flags.Flag[bool]) *cmdutil.CommandFlags {
 		return &cmdutil.CommandFlags{
 			Bool: []*flags.Flag[bool]{f},
 		}
-	})
+	}
+	runAddFlagsTests(&suite.Suite, testCases, createFlags, getValue)
 }
 
 func (suite *CommanderAddFlagsTestSuite) TestAddRedactedStringFlags() {
-	testCases := createAddCmdFlagsTests[flags.RedactedString]()
-
-	runAddFlagsTests(&suite.Suite, testCases, func(f *flags.Flag[flags.RedactedString]) *cmdutil.CommandFlags {
+	testCases := createAddCmdFlagsTests(flags.RedactedString("rsdefault"))
+	getValue := func(fs *pflag.FlagSet, fn string) (flags.RedactedString, error) {
+		if rs, err := flags.GetRedactedString(fs, fn); err != nil {
+			return flags.RedactedString(""), err
+		} else {
+			return flags.RedactedString(rs.Unredacted().String()), nil
+		}
+	}
+	createFlags := func(f *flags.Flag[flags.RedactedString]) *cmdutil.CommandFlags {
 		return &cmdutil.CommandFlags{
 			RedactedString: []*flags.Flag[flags.RedactedString]{f},
 		}
-	})
+	}
+	runAddFlagsTests(&suite.Suite, testCases, createFlags, getValue)
 }
 
 func (suite *CommanderAddFlagsTestSuite) TestAddStringSliceFlags() {
-	testCases := createAddCmdFlagsTests[flags.StringSlice]()
-
-	runAddFlagsTests(&suite.Suite, testCases, func(f *flags.Flag[flags.StringSlice]) *cmdutil.CommandFlags {
+	testCases := createAddCmdFlagsTests(flags.StringSlice{"strslice1", "strslice2"})
+	getValue := func(fs *pflag.FlagSet, fn string) (flags.StringSlice, error) {
+		// unable to use fs.GetStringSlice(fn) because if the value is nil, it will return
+		// an empty slice which won't be the same as the Default.  Using below, we get the
+		// raw value of the slice to ensure we can check for equality in all scenarios.
+		f := fs.Lookup(fn)
+		if f == nil {
+			return nil, fmt.Errorf("unable to find flag %q", fn)
+		}
+		val, ok := f.Value.(pflag.SliceValue)
+		if !ok {
+			return nil, fmt.Errorf("could not assert SliceValue for flag %q", fn)
+		}
+		return val.GetSlice(), nil
+	}
+	createFlags := func(f *flags.Flag[flags.StringSlice]) *cmdutil.CommandFlags {
 		return &cmdutil.CommandFlags{
 			StringSlice: []*flags.Flag[flags.StringSlice]{f},
 		}
-	})
+	}
+	runAddFlagsTests(&suite.Suite, testCases, createFlags, getValue)
 }
 
 func (suite *CommanderAddFlagsTestSuite) TestAddCustomStringFlags() {
-	testCases := createAddCmdFlagsTests[flags.CustomString]()
-
-	runAddFlagsTests(&suite.Suite, testCases, func(f *flags.Flag[flags.CustomString]) *cmdutil.CommandFlags {
+	testCases := createAddCmdFlagsTests(flags.CustomString("csdefault"))
+	getValue := func(fs *pflag.FlagSet, fn string) (flags.CustomString, error) {
+		if cs, err := flags.GetCustomString(fs, fn); err != nil {
+			return flags.CustomString(""), err
+		} else {
+			return flags.CustomString(cs), nil
+		}
+	}
+	createFlags := func(f *flags.Flag[flags.CustomString]) *cmdutil.CommandFlags {
 		return &cmdutil.CommandFlags{
 			CustomString: []*flags.Flag[flags.CustomString]{f},
 		}
-	})
+	}
+	runAddFlagsTests(&suite.Suite, testCases, createFlags, getValue)
 }
 
 func (suite *CommanderAddFlagsTestSuite) TestAddsAllTypesWithMultipleFlagsEach() {
@@ -1036,7 +1073,7 @@ func runConversionTest[T flags.FlagType](suite *suite.Suite, envVars map[string]
 	}
 }
 
-func runAddFlagsTests[T flags.FlagType](suite *suite.Suite, testCases []AddFlagsTestCase[T], createFlags func(*flags.Flag[T]) *cmdutil.CommandFlags) {
+func runAddFlagsTests[T flags.FlagType](suite *suite.Suite, testCases []AddFlagsTestCase[T], createFlags func(*flags.Flag[T]) *cmdutil.CommandFlags, getValue func(*pflag.FlagSet, string) (T, error)) {
 	for _, tc := range testCases {
 		suite.Run(tc.testDescription, func() {
 			t := suite.T()
@@ -1049,12 +1086,13 @@ func runAddFlagsTests[T flags.FlagType](suite *suite.Suite, testCases []AddFlags
 			cmdFlags := createFlags(tc.giveFlag)
 
 			cd.AddFlags(cmd, cmdFlags)
-			var actualFlag *pflag.Flag
+			var flagSet *pflag.FlagSet
 			if tc.giveFlag.Global {
-				actualFlag = cmd.PersistentFlags().Lookup(tc.giveFlag.Name)
+				flagSet = cmd.PersistentFlags()
 			} else {
-				actualFlag = cmd.LocalNonPersistentFlags().Lookup(tc.giveFlag.Name)
+				flagSet = cmd.LocalNonPersistentFlags()
 			}
+			actualFlag := flagSet.Lookup(tc.giveFlag.Name)
 			// was it added to correct FlagSet on command
 			require.NotNil(t, actualFlag, "Expected lookup to return not nil flag, got nil")
 
@@ -1071,18 +1109,16 @@ func runAddFlagsTests[T flags.FlagType](suite *suite.Suite, testCases []AddFlags
 			// correct type?
 			assert.Equal(t, expectedType, actualType)
 
-			err := executeCommand(cmd, []string{}...)
-
-			// if required, since we aren't passing in any args, it should fail
-			if tc.giveFlag.Required {
-				assert.ErrorContains(t, err, "required")
-				assert.ErrorContains(t, err, tc.giveFlag.Name)
-			} else {
-				require.NoError(t, err)
-			}
-
 			// usage updated to include environment variables
 			assert.Contains(t, actualFlag.Usage, tc.giveFlag.EnvVarName())
+
+			// shorthand
+			assert.Equal(t, tc.giveFlag.Shorthand, actualFlag.Shorthand)
+
+			// default value
+			actualValue, err := getValue(flagSet, tc.giveFlag.Name)
+			require.NoError(t, err)
+			assert.Equal(t, tc.giveFlag.Default, actualValue)
 
 			// annotation set
 			_, aok := actualFlag.Annotations[cmdutil.FlagSetBySkuidCliAnnotation]
@@ -1092,27 +1128,36 @@ func runAddFlagsTests[T flags.FlagType](suite *suite.Suite, testCases []AddFlags
 			fi, ok := flagMgr.Find(actualFlag)
 			assert.True(t, ok)
 			assert.NotNil(t, fi)
+
+			// if required, since we aren't passing in any args, it should fail
+			err = executeCommand(cmd, []string{}...)
+			if tc.giveFlag.Required {
+				assert.ErrorContains(t, err, "required")
+				assert.ErrorContains(t, err, tc.giveFlag.Name)
+			} else {
+				require.NoError(t, err)
+			}
 		})
 	}
 }
 
-func createAddCmdFlagsTests[T flags.FlagType]() []AddFlagsTestCase[T] {
+func createAddCmdFlagsTests[T flags.FlagType](defaultValue T) []AddFlagsTestCase[T] {
 	testCases := []AddFlagsTestCase[T]{
 		{
 			testDescription: "required",
-			giveFlag:        &flags.Flag[T]{Name: "testflag", Usage: "this is the usage", Required: true},
+			giveFlag:        &flags.Flag[T]{Name: "testflag", Usage: "this is the usage", Required: true, Shorthand: "v", Default: defaultValue},
 		},
 		{
 			testDescription: "not required",
-			giveFlag:        &flags.Flag[T]{Name: "testflag", Usage: "this is the usage", Required: false},
+			giveFlag:        &flags.Flag[T]{Name: "testflag", Usage: "this is the usage", Required: false, Shorthand: "v", Default: defaultValue},
 		},
 		{
 			testDescription: "required global",
-			giveFlag:        &flags.Flag[T]{Name: "testflag", Usage: "this is the usage", Required: true, Global: true},
+			giveFlag:        &flags.Flag[T]{Name: "testflag", Usage: "this is the usage", Required: true, Global: true, Shorthand: "v", Default: defaultValue},
 		},
 		{
 			testDescription: "not required global",
-			giveFlag:        &flags.Flag[T]{Name: "testflag", Usage: "this is the usage", Required: false, Global: true},
+			giveFlag:        &flags.Flag[T]{Name: "testflag", Usage: "this is the usage", Required: false, Global: true, Shorthand: "v", Default: defaultValue},
 		},
 	}
 	return testCases
