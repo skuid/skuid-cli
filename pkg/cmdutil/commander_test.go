@@ -228,7 +228,97 @@ func (suite *CommanderAddFlagsTestSuite) TestInvalidFlagUsage() {
 			})
 		})
 	}
+}
 
+func (suite *CommanderAddFlagsTestSuite) TestFlagParse() {
+	flagName := "myflag"
+	testCases := []struct {
+		testDescription string
+		giveFlags       func() *cmdutil.CommandFlags
+		wantType        string
+		wantPanic       bool
+	}{
+		{
+			testDescription: "string not supported",
+			giveFlags: func() *cmdutil.CommandFlags {
+				return &cmdutil.CommandFlags{
+					String: []*flags.Flag[string]{{Name: flagName, Usage: "this is the usage", Parse: func(string) (string, error) { return "", nil }}},
+				}
+			},
+			wantType:  fmt.Sprintf("%T", &flags.Flag[string]{}),
+			wantPanic: true,
+		},
+		{
+			testDescription: "bool not supported",
+			giveFlags: func() *cmdutil.CommandFlags {
+				return &cmdutil.CommandFlags{
+					Bool: []*flags.Flag[bool]{{Name: flagName, Usage: "this is the usage", Parse: func(string) (bool, error) { return false, nil }}},
+				}
+			},
+			wantType:  fmt.Sprintf("%T", &flags.Flag[bool]{}),
+			wantPanic: true,
+		},
+		{
+			testDescription: "int not supported",
+			giveFlags: func() *cmdutil.CommandFlags {
+				return &cmdutil.CommandFlags{
+					Int: []*flags.Flag[int]{{Name: flagName, Usage: "this is the usage", Parse: func(string) (int, error) { return 5, nil }}},
+				}
+			},
+			wantType:  fmt.Sprintf("%T", &flags.Flag[int]{}),
+			wantPanic: true,
+		},
+		{
+			testDescription: "StringSlice not supported",
+			giveFlags: func() *cmdutil.CommandFlags {
+				return &cmdutil.CommandFlags{
+					StringSlice: []*flags.Flag[flags.StringSlice]{{Name: flagName, Usage: "this is the usage", Parse: func(string) (flags.StringSlice, error) { return flags.StringSlice{}, nil }}},
+				}
+			},
+			wantType:  fmt.Sprintf("%T", &flags.Flag[flags.StringSlice]{}),
+			wantPanic: true,
+		},
+		{
+			testDescription: "CustomString supported",
+			giveFlags: func() *cmdutil.CommandFlags {
+				return &cmdutil.CommandFlags{
+					CustomString: []*flags.Flag[flags.CustomString]{{Name: flagName, Usage: "this is the usage", Parse: func(string) (flags.CustomString, error) { return flags.CustomString(""), nil }}},
+				}
+			},
+			wantType:  fmt.Sprintf("%T", &flags.Flag[flags.CustomString]{}),
+			wantPanic: false,
+		},
+		{
+			testDescription: "RedactedString supported",
+			giveFlags: func() *cmdutil.CommandFlags {
+				return &cmdutil.CommandFlags{
+					RedactedString: []*flags.Flag[flags.RedactedString]{{Name: flagName, Usage: "this is the usage", Parse: func(string) (flags.RedactedString, error) { return flags.RedactedString(""), nil }}},
+				}
+			},
+			wantType:  fmt.Sprintf("%T", &flags.Flag[flags.RedactedString]{}),
+			wantPanic: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		suite.Run(tc.testDescription, func() {
+			t := suite.T()
+			cd := &cmdutil.Commander{
+				FlagManager: cmdutil.NewFlagManager(),
+			}
+			cmd := &cobra.Command{Use: "mycmd"}
+			if tc.wantPanic {
+				expectedError := fmt.Sprintf("flag type %s does not support Parse for flag name %q", tc.wantType, flagName)
+				assert.PanicsWithError(t, expectedError, func() {
+					cd.AddFlags(cmd, tc.giveFlags())
+				})
+			} else {
+				assert.NotPanics(t, func() {
+					cd.AddFlags(cmd, tc.giveFlags())
+				})
+			}
+		})
+	}
 }
 
 func TestCommanderAddFlagsTestSuite(t *testing.T) {

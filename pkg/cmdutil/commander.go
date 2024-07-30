@@ -177,7 +177,7 @@ func addFlagType[T ~[]*flags.Flag[F], F flags.FlagType](cmd *cobra.Command, ft F
 }
 
 func addFlag[T flags.FlagType](cmd *cobra.Command, ft FlagTracker, flag *flags.Flag[T]) {
-	checkRequiredFields(flag)
+	checkValidFlag(flag)
 
 	var fs *pflag.FlagSet
 	if flag.Global {
@@ -249,8 +249,18 @@ func addFlag[T flags.FlagType](cmd *cobra.Command, ft FlagTracker, flag *flags.F
 	ft.Track(pf, flag)
 }
 
-func checkRequiredFields[T flags.FlagType](f *flags.Flag[T]) {
+func checkValidFlag[T flags.FlagType](f *flags.Flag[T]) {
 	// should never happen in production
 	errors.MustConditionf(flagNameValidator.MatchString(f.Name), "flag name %q is invalid", f.Name)
 	errors.MustConditionf(len(f.Usage) >= 10, "flag usage %q is invalid for flag name %q", f.Usage, f.Name)
+	errors.MustConditionf(f.Parse == nil || supportsParse(f), "flag type %T does not support Parse for flag name %q", f, f.Name)
+}
+
+func supportsParse[T flags.FlagType](f *flags.Flag[T]) bool {
+	switch any(f).(type) {
+	case *flags.Flag[flags.CustomString], *flags.Flag[flags.RedactedString]:
+		return true
+	default:
+		return false
+	}
 }
