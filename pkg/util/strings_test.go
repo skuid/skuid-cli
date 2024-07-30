@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/skuid/skuid-cli/pkg/util"
 )
@@ -101,7 +102,10 @@ func TestStringSliceContainsAnyKey(t *testing.T) {
 }
 
 func TestGetTimestamp(t *testing.T) {
-	reference := time.Date(2006, 1, 2, 15, 4, 5, 0, time.FixedZone("PST", -8*60*60))
+	locName := "America/Los_Angeles"
+	loc, err := time.LoadLocation(locName)
+	require.NoError(t, err, "unable to load timezone location information for %q", locName)
+	reference := time.Date(2006, 1, 2, 15, 4, 5, 0, loc)
 
 	addDuration := func(d time.Duration) string {
 		return util.FormatTimestamp(reference.Add(d))
@@ -161,6 +165,16 @@ func TestGetTimestamp(t *testing.T) {
 		{"3:04 PM", "3:04 PM", false, "1136243040.000000000", false},
 		{"03:04 PM", "03:04 PM", false, "1136243040.000000000", false},
 		{"03:04PM", "03:04PM", false, "1136243040.000000000", false},
+
+		// Times - Golang layouts with timezone abbreviation "known" to the location
+		{"time.UnixDate-PST", "Mon Jan 2 15:04:05 PST 2006", false, "1136243045.000000000", false},
+		{"time.UnixDate-PDT", "Mon Jan 2 15:04:05 PDT 2006", false, "1136239445.000000000", false},
+		{"time.RFC822-PST", "02 Jan 06 15:04 PST", false, "1136243040.000000000", false},
+		{"time.RFC822-PDT", "02 Jan 06 15:04 PDT", false, "1136239440.000000000", false},
+		{"time.RFC850-PST", "Monday, 02-Jan-06 15:04:05 PST", false, "1136243045.000000000", false},
+		{"time.RFC850-PDT", "Monday, 02-Jan-06 15:04:05 PDT", false, "1136239445.000000000", false},
+		{"time.RFC1123-PST", "Mon, 02 Jan 2006 15:04:05 PST", false, "1136243045.000000000", false},
+		{"time.RFC1123-PDT", "Mon, 02 Jan 2006 15:04:05 PDT", false, "1136239445.000000000", false},
 
 		// Durations
 		{"1ns", "1ns", false, addDuration(-1 * time.Nanosecond), false},

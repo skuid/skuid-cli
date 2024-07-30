@@ -97,15 +97,19 @@ func parseTime(value string, reference time.Time) (time.Time, error) {
 	}
 
 	if t, err := dateparse.ParseIn(value, reference.Location()); err == nil {
-		// golang will fabricate a timezone when any non-numeric timezone is specified in the value being parsed and
-		// the timezone name isn't known by the current timezone (e.g., value contains MST but parsing in PST - see
-		// https://pkg.go.dev/time#Parse for details). We are intentionally not supporting any formats that allow
-		// for timezone names, however since we are using "loose" parsing to provide flexibility, dateparse will behave
-		// just like time.Parse/ParseInLocation would for layouts like UnixDate so we'll end up with a fabricated
-		// timezone (a name but zero offset). Given this, if there is a timezone name and the offset is zero, except
-		// for when its UTC which is valid to have zero for offset, we treat it as a parsing error.
-		// NOTE - This situation could be solved for and support for parsing timezone names implemented, however its
-		// strongly discouraged due to amibguioty of abbreviations (they are not unique across the world for a given
+		// Per golang docs (https://pkg.go.dev/time#Parse), when parsing a time with a zone abbreviation, golang
+		// will fabricate a location with the abbreviation and a zero offset when the abbreviation is not defined in the
+		// location (e.g., value contains MST but parsing in America/Los_Angeles which contains PST/PDT).  If the timezone
+		// is known, the value will be parsed accurately and there is no straightforward method for us to detect a tz
+		// abbreviation was used (outside of doing string inspection).  Except for the case where a timezone abbreviation
+		// in the value being parsed is "known" by the location in the reference value (e.g. value contains MST and reference
+		// location contains MST zone), we are intentionally not supporting any formats that allow for timezone names.  However,
+		// since we are using "loose" parsing to provide flexibility, dateparse will behave just like time.Parse/ParseInLocation
+		// would for layouts like UnixDate so we'll end up with a fabricated location (a name but zero offset). Given this,
+		// if there is a timezone name and the offset is zero, except for when its UTC which is valid to have zero for offset,
+		// we treat it as a parsing error.
+		// NOTE - Timezone abbreviations not known to reference location could be solved for and support for parsing implemented,
+		// however its strongly discouraged due to amibguioty of abbreviations (they are not unique across the world for a given
 		// offset).  If this ever needed to be solved for, the timezone abbreviation would need to be looked up in a list
 		// (e.g., a package like go-timezone) along with the current country code to resolve to the correct timezone and
 		// then apply the offset to the time.  Not recommended but possible understanding that it still wouldn't be 100%
