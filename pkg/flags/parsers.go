@@ -15,6 +15,10 @@ var (
 )
 
 func ParseSince(val string) (string, error) {
+	if val == "" {
+		return val, nil
+	}
+
 	return util.GetTimestamp(val, time.Now(), true)
 }
 

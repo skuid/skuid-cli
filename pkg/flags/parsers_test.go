@@ -1,6 +1,7 @@
 package flags_test
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -15,13 +16,14 @@ func TestParseSince(t *testing.T) {
 	testCases := []struct {
 		testDescription string
 		giveValue       string
-		giveNoFuture    bool
 		wantValue       string
 		wantError       bool
 	}{
-		{"valid value", now.Format(time.RFC3339Nano), true, util.FormatTimestamp(now), false},
-		{"invalid value future", "-1d", false, "", true},
-		{"invalid value empty", "", false, "", true},
+		{"valid value", now.Format(time.RFC3339Nano), util.FormatTimestamp(now), false},
+		{"valid value spaces around", fmt.Sprintf("  %v  ", now.Format(time.RFC3339Nano)), util.FormatTimestamp(now), false},
+		{"valid value empty", "", "", false},
+		{"invalid value future", "-1d", "", true},
+		{"invalid value blank", "   ", "", true},
 	}
 
 	for _, tc := range testCases {
