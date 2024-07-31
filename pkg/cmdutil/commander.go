@@ -216,14 +216,15 @@ func addFlag[T flags.FlagType](cmd *cobra.Command, ft FlagTracker, flag *flags.F
 
 	// mark the flag as created by us since Cobra (and any plugin that may be used in future) will/could
 	// create their own flags (e.g., cobra automatically creates a "help" flag)
-	fs.SetAnnotation(flag.Name, FlagSetBySkuidCliAnnotation, []string{"true"})
+	// should never error - only error possible is if flag doesn't exist and we just added it
+	errors.Must(fs.SetAnnotation(flag.Name, FlagSetBySkuidCliAnnotation, []string{"true"}))
 
 	if flag.Required {
 		if flag.Global {
-			// should never happen - only error possible is if flag doesn't exist and we just added it
+			// should never error - only error possible is if flag doesn't exist and we just added it
 			errors.Must(cmd.MarkPersistentFlagRequired(flag.Name))
 		} else {
-			// should never happen - only error possible is if flag doesn't exist and we just added it
+			// should never error - only error possible is if flag doesn't exist and we just added it
 			errors.Must(cmd.MarkFlagRequired(flag.Name))
 		}
 	}
