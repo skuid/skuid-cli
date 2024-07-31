@@ -84,23 +84,6 @@ func (suite *CommanderAddFlagsTestSuite) TestAddBoolFlags() {
 	runAddFlagsTests(&suite.Suite, testCases, createFlags, getValue)
 }
 
-func (suite *CommanderAddFlagsTestSuite) TestAddRedactedStringFlags() {
-	testCases := createAddCmdFlagsTests(flags.RedactedString("rsdefault"))
-	getValue := func(fs *pflag.FlagSet, fn string) (flags.RedactedString, error) {
-		if rs, err := flags.GetRedactedString(fs, fn); err != nil {
-			return flags.RedactedString(""), err
-		} else {
-			return flags.RedactedString(rs.Unredacted().String()), nil
-		}
-	}
-	createFlags := func(f *flags.Flag[flags.RedactedString]) *cmdutil.CommandFlags {
-		return &cmdutil.CommandFlags{
-			RedactedString: []*flags.Flag[flags.RedactedString]{f},
-		}
-	}
-	runAddFlagsTests(&suite.Suite, testCases, createFlags, getValue)
-}
-
 func (suite *CommanderAddFlagsTestSuite) TestAddStringSliceFlags() {
 	testCases := createAddCmdFlagsTests(flags.StringSlice{"strslice1", "strslice2"})
 	getValue := func(fs *pflag.FlagSet, fn string) (flags.StringSlice, error) {
@@ -125,32 +108,13 @@ func (suite *CommanderAddFlagsTestSuite) TestAddStringSliceFlags() {
 	runAddFlagsTests(&suite.Suite, testCases, createFlags, getValue)
 }
 
-func (suite *CommanderAddFlagsTestSuite) TestAddCustomStringFlags() {
-	testCases := createAddCmdFlagsTests(flags.CustomString("csdefault"))
-	getValue := func(fs *pflag.FlagSet, fn string) (flags.CustomString, error) {
-		if cs, err := flags.GetCustomString(fs, fn); err != nil {
-			return flags.CustomString(""), err
-		} else {
-			return flags.CustomString(cs), nil
-		}
-	}
-	createFlags := func(f *flags.Flag[flags.CustomString]) *cmdutil.CommandFlags {
-		return &cmdutil.CommandFlags{
-			CustomString: []*flags.Flag[flags.CustomString]{f},
-		}
-	}
-	runAddFlagsTests(&suite.Suite, testCases, createFlags, getValue)
-}
-
 func (suite *CommanderAddFlagsTestSuite) TestAddsAllTypesWithMultipleFlagsEach() {
 	t := suite.T()
 	flags := &cmdutil.CommandFlags{
-		String:         []*flags.Flag[string]{{Name: "sflag1", Usage: "this is the usage"}, {Name: "sflag2", Usage: "this is the usage"}},
-		Int:            []*flags.Flag[int]{{Name: "iflag1", Usage: "this is the usage"}, {Name: "iflag2", Usage: "this is the usage"}},
-		Bool:           []*flags.Flag[bool]{{Name: "bflag1", Usage: "this is the usage"}, {Name: "bflag2", Usage: "this is the usage"}},
-		RedactedString: []*flags.Flag[flags.RedactedString]{{Name: "rsflag1", Usage: "this is the usage"}, {Name: "rsflag2", Usage: "this is the usage"}},
-		StringSlice:    []*flags.Flag[flags.StringSlice]{{Name: "ssflag1", Usage: "this is the usage"}, {Name: "ssflag2", Usage: "this is the usage"}},
-		CustomString:   []*flags.Flag[flags.CustomString]{{Name: "csflag1", Usage: "this is the usage"}, {Name: "csflag2", Usage: "this is the usage"}},
+		String:      []*flags.Flag[string]{{Name: "sflag1", Usage: "this is the usage"}, {Name: "sflag2", Usage: "this is the usage"}},
+		Int:         []*flags.Flag[int]{{Name: "iflag1", Usage: "this is the usage"}, {Name: "iflag2", Usage: "this is the usage"}},
+		Bool:        []*flags.Flag[bool]{{Name: "bflag1", Usage: "this is the usage"}, {Name: "bflag2", Usage: "this is the usage"}},
+		StringSlice: []*flags.Flag[flags.StringSlice]{{Name: "ssflag1", Usage: "this is the usage"}, {Name: "ssflag2", Usage: "this is the usage"}},
 	}
 	flagMgr := &cmdutil.FlagManager{}
 	cd := &cmdutil.Commander{
@@ -166,9 +130,7 @@ func (suite *CommanderAddFlagsTestSuite) TestAddsAllTypesWithMultipleFlagsEach()
 	assertFlags(t, flagMgr, cmd, flags.String)
 	assertFlags(t, flagMgr, cmd, flags.Int)
 	assertFlags(t, flagMgr, cmd, flags.Bool)
-	assertFlags(t, flagMgr, cmd, flags.RedactedString)
 	assertFlags(t, flagMgr, cmd, flags.StringSlice)
-	assertFlags(t, flagMgr, cmd, flags.CustomString)
 }
 
 func (suite *CommanderAddFlagsTestSuite) TestInvalidFlagName() {
@@ -269,21 +231,30 @@ func (suite *CommanderAddFlagsTestSuite) TestInvalidFlagUsage() {
 
 func (suite *CommanderAddFlagsTestSuite) TestFlagParse() {
 	flagName := "myflag"
+	flagArg := fmt.Sprintf("--%v", flagName)
 	testCases := []struct {
 		testDescription string
 		giveFlags       func() *cmdutil.CommandFlags
+		giveArgs        []string
+		giveGetValue    func(fs *pflag.FlagSet, fn string) (any, error)
 		wantType        string
 		wantPanic       bool
+		wantValue       any
 	}{
 		{
-			testDescription: "string not supported",
+			testDescription: "string supported",
 			giveFlags: func() *cmdutil.CommandFlags {
 				return &cmdutil.CommandFlags{
-					String: []*flags.Flag[string]{{Name: flagName, Usage: "this is the usage", Parse: func(string) (string, error) { return "", nil }}},
+					String: []*flags.Flag[string]{{Name: flagName, Usage: "this is the usage", Parse: func(string) (string, error) { return "abcd", nil }}},
 				}
 			},
+			giveArgs: []string{flagArg, "foobar"},
+			giveGetValue: func(fs *pflag.FlagSet, fn string) (any, error) {
+				return fs.GetString(fn)
+			},
 			wantType:  fmt.Sprintf("%T", &flags.Flag[string]{}),
-			wantPanic: true,
+			wantPanic: false,
+			wantValue: "abcd",
 		},
 		{
 			testDescription: "bool not supported",
@@ -315,26 +286,6 @@ func (suite *CommanderAddFlagsTestSuite) TestFlagParse() {
 			wantType:  fmt.Sprintf("%T", &flags.Flag[flags.StringSlice]{}),
 			wantPanic: true,
 		},
-		{
-			testDescription: "CustomString supported",
-			giveFlags: func() *cmdutil.CommandFlags {
-				return &cmdutil.CommandFlags{
-					CustomString: []*flags.Flag[flags.CustomString]{{Name: flagName, Usage: "this is the usage", Parse: func(string) (flags.CustomString, error) { return flags.CustomString(""), nil }}},
-				}
-			},
-			wantType:  fmt.Sprintf("%T", &flags.Flag[flags.CustomString]{}),
-			wantPanic: false,
-		},
-		{
-			testDescription: "RedactedString supported",
-			giveFlags: func() *cmdutil.CommandFlags {
-				return &cmdutil.CommandFlags{
-					RedactedString: []*flags.Flag[flags.RedactedString]{{Name: flagName, Usage: "this is the usage", Parse: func(string) (flags.RedactedString, error) { return flags.RedactedString(""), nil }}},
-				}
-			},
-			wantType:  fmt.Sprintf("%T", &flags.Flag[flags.RedactedString]{}),
-			wantPanic: false,
-		},
 	}
 
 	for _, tc := range testCases {
@@ -350,9 +301,108 @@ func (suite *CommanderAddFlagsTestSuite) TestFlagParse() {
 					cd.AddFlags(cmd, tc.giveFlags())
 				})
 			} else {
-				assert.NotPanics(t, func() {
+				require.NotPanics(t, func() {
 					cd.AddFlags(cmd, tc.giveFlags())
 				})
+				err := executeCommand(cmd, tc.giveArgs...)
+				require.NoError(t, err)
+				actualValue, err := tc.giveGetValue(cmd.Flags(), flagName)
+				require.NoError(t, err)
+				assert.Equal(t, tc.wantValue, actualValue)
+			}
+		})
+	}
+}
+
+func (suite *CommanderAddFlagsTestSuite) TestFlagRedact() {
+	flagName := "myflag"
+	flagArg := fmt.Sprintf("--%v", flagName)
+	testCases := []struct {
+		testDescription        string
+		giveFlags              func() *cmdutil.CommandFlags
+		giveArgs               []string
+		giveGetUnredactedValue func(fv pflag.Value) (any, bool)
+		wantType               string
+		wantPanic              bool
+		wantRedactedValue      string
+		wantUnredactedValue    any
+	}{
+		{
+			testDescription: "string supported",
+			giveFlags: func() *cmdutil.CommandFlags {
+				return &cmdutil.CommandFlags{
+					String: []*flags.Flag[string]{{Name: flagName, Usage: "this is the usage", Redact: func(string) string { return "!!!!" }}},
+				}
+			},
+			giveArgs: []string{flagArg, "foobar"},
+			giveGetUnredactedValue: func(fv pflag.Value) (any, bool) {
+				if f, ok := fv.(*flags.Value[string]); !ok {
+					return nil, false
+				} else {
+					return f.Unredacted().String(), true
+				}
+			},
+			wantType:            fmt.Sprintf("%T", &flags.Flag[string]{}),
+			wantPanic:           false,
+			wantRedactedValue:   "!!!!",
+			wantUnredactedValue: "foobar",
+		},
+		{
+			testDescription: "bool not supported",
+			giveFlags: func() *cmdutil.CommandFlags {
+				return &cmdutil.CommandFlags{
+					Bool: []*flags.Flag[bool]{{Name: flagName, Usage: "this is the usage", Redact: func(bool) string { return "!!!!" }}},
+				}
+			},
+			wantType:  fmt.Sprintf("%T", &flags.Flag[bool]{}),
+			wantPanic: true,
+		},
+		{
+			testDescription: "int not supported",
+			giveFlags: func() *cmdutil.CommandFlags {
+				return &cmdutil.CommandFlags{
+					Int: []*flags.Flag[int]{{Name: flagName, Usage: "this is the usage", Redact: func(int) string { return "!!!!" }}},
+				}
+			},
+			wantType:  fmt.Sprintf("%T", &flags.Flag[int]{}),
+			wantPanic: true,
+		},
+		{
+			testDescription: "StringSlice not supported",
+			giveFlags: func() *cmdutil.CommandFlags {
+				return &cmdutil.CommandFlags{
+					StringSlice: []*flags.Flag[flags.StringSlice]{{Name: flagName, Usage: "this is the usage", Redact: func(flags.StringSlice) string { return "!!!!" }}},
+				}
+			},
+			wantType:  fmt.Sprintf("%T", &flags.Flag[flags.StringSlice]{}),
+			wantPanic: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		suite.Run(tc.testDescription, func() {
+			t := suite.T()
+			cd := &cmdutil.Commander{
+				FlagManager: cmdutil.NewFlagManager(),
+			}
+			cmd := &cobra.Command{Use: "mycmd"}
+			if tc.wantPanic {
+				expectedError := fmt.Sprintf("flag type %s does not support Redact for flag name %q", tc.wantType, flagName)
+				assert.PanicsWithError(t, expectedError, func() {
+					cd.AddFlags(cmd, tc.giveFlags())
+				})
+			} else {
+				require.NotPanics(t, func() {
+					cd.AddFlags(cmd, tc.giveFlags())
+				})
+				err := executeCommand(cmd, tc.giveArgs...)
+				require.NoError(t, err)
+				actualFlag := cmd.Flags().Lookup(flagName)
+				require.NotNil(t, actualFlag)
+				assert.Equal(t, tc.wantRedactedValue, actualFlag.Value.String())
+				actualUnredactedValue, ok := tc.giveGetUnredactedValue(actualFlag.Value)
+				require.True(t, ok)
+				assert.Equal(t, tc.wantUnredactedValue, actualUnredactedValue)
 			}
 		})
 	}
@@ -640,86 +690,6 @@ func (suite *CommanderApplyEnvVarsTestSuite) TestStringConversion() {
 	}
 	getValue := func(fs *pflag.FlagSet, fn string) (string, error) {
 		return fs.GetString(fn)
-	}
-	runConversionTest(&suite.Suite, envVarsSuccess, addFlag, false, getValue)
-	runConversionTest(&suite.Suite, envVarsError, addFlag, true, getValue)
-}
-
-func (suite *CommanderApplyEnvVarsTestSuite) TestRedactedStringConversion() {
-	envVarsSuccess := map[string]testutil.EnvVar[flags.RedactedString]{
-		"SKUID_GOOD_FOO_EMPTY":              {EnvValue: "", Value: ""},
-		"SKUID_GOOD_FOO_NOT_EMPTY":          {EnvValue: "foobar", Value: "foobar"},
-		"SKUID_GOOD_FOO_SPACES":             {EnvValue: "fo o ba r", Value: "fo o ba r"},
-		"SKUID_GOOD_FOO_TABS":               {EnvValue: "fo	oba	r", Value: "fo	oba	r"},
-		"SKUID_GOOD_FOO_NEWLINE":            {EnvValue: "fooba\nr", Value: "fooba\nr"},
-		"SKUID_GOOD_FOO_SPECIAL_CHARACTERS": {EnvValue: "f$o@o\\%s*^()ar", Value: "f$o@o\\%s*^()ar"},
-		"SKUID_GOOD_FOO_NUMBER":             {EnvValue: "12345", Value: "12345"},
-		"SKUID_GOOD_FOO_ZERO":               {EnvValue: "0", Value: "0"},
-		"SKUID_GOOD_FOO_TRUE":               {EnvValue: "true", Value: "true"},
-	}
-	envVarsError := map[string]testutil.EnvVar[flags.RedactedString]{}
-	addFlag := func(fs *pflag.FlagSet, name string) *flags.Flag[flags.RedactedString] {
-		flag := &flags.Flag[flags.RedactedString]{Name: name, Usage: "this is a flag"}
-		p := new(flags.RedactedString)
-		v := flags.NewValueWithRedact("", p, func(val string) (flags.RedactedString, error) { return flags.RedactedString(val), nil }, func(rs flags.RedactedString) string {
-			if rs == "" {
-				return ""
-			} else {
-				return "***"
-			}
-		})
-		fs.VarP(v, flag.Name, flag.Shorthand, flag.Usage)
-		return flag
-	}
-	getValue := func(fs *pflag.FlagSet, fn string) (flags.RedactedString, error) {
-		f := fs.Lookup(fn)
-		if f == nil {
-			return "", fmt.Errorf("flag accessed but not defined: %s", fn)
-		} else {
-			if rs, ok := f.Value.(*flags.Value[flags.RedactedString]); !ok {
-				return "", fmt.Errorf("could not cast to RedactedString: %s", fn)
-			} else {
-				return flags.RedactedString(rs.Unredacted().String()), nil
-			}
-		}
-	}
-	runConversionTest(&suite.Suite, envVarsSuccess, addFlag, false, getValue)
-	runConversionTest(&suite.Suite, envVarsError, addFlag, true, getValue)
-}
-
-func (suite *CommanderApplyEnvVarsTestSuite) TestCustomStringConversion() {
-	envVarsSuccess := map[string]testutil.EnvVar[flags.CustomString]{
-		"SKUID_GOOD_FOO_EMPTY":              {EnvValue: "", Value: ""},
-		"SKUID_GOOD_FOO_NOT_EMPTY":          {EnvValue: "foobar", Value: "FOOBAR"},
-		"SKUID_GOOD_FOO_SPACES":             {EnvValue: "fo o ba r", Value: "FO O BA R"},
-		"SKUID_GOOD_FOO_TABS":               {EnvValue: "fo	oba	r", Value: "FO	OBA	R"},
-		"SKUID_GOOD_FOO_NEWLINE":            {EnvValue: "fooba\nr", Value: "FOOBA\nR"},
-		"SKUID_GOOD_FOO_SPECIAL_CHARACTERS": {EnvValue: "f$o@o\\%s*^()ar", Value: "F$O@O\\%S*^()AR"},
-		"SKUID_GOOD_FOO_NUMBER":             {EnvValue: "12345", Value: "12345"},
-		"SKUID_GOOD_FOO_ZERO":               {EnvValue: "0", Value: "0"},
-		"SKUID_GOOD_FOO_TRUE":               {EnvValue: "true", Value: "TRUE"},
-	}
-	envVarsError := map[string]testutil.EnvVar[flags.CustomString]{}
-	addFlag := func(fs *pflag.FlagSet, name string) *flags.Flag[flags.CustomString] {
-		flag := &flags.Flag[flags.CustomString]{Name: name, Usage: "this is a flag"}
-		p := new(flags.CustomString)
-		v := flags.NewValue("", p, func(val string) (flags.CustomString, error) {
-			return flags.CustomString(strings.ToUpper(val)), nil
-		})
-		fs.VarP(v, flag.Name, flag.Shorthand, flag.Usage)
-		return flag
-	}
-	getValue := func(fs *pflag.FlagSet, fn string) (flags.CustomString, error) {
-		f := fs.Lookup(fn)
-		if f == nil {
-			return "", fmt.Errorf("flag accessed but not defined: %s", fn)
-		} else {
-			if cs, ok := f.Value.(*flags.Value[flags.CustomString]); !ok {
-				return "", fmt.Errorf("could not cast to CustomString: %s", fn)
-			} else {
-				return flags.CustomString(cs.String()), nil
-			}
-		}
 	}
 	runConversionTest(&suite.Suite, envVarsSuccess, addFlag, false, getValue)
 	runConversionTest(&suite.Suite, envVarsError, addFlag, true, getValue)

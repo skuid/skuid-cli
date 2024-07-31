@@ -12,12 +12,11 @@ import (
 )
 
 type StringSlice []string
-type RedactedString string
-type CustomString string
 type Parse[T FlagType] func(string) (T, error)
+type Redact[T FlagType] func(T) string
 
 type FlagType interface {
-	int | string | RedactedString | bool | StringSlice | CustomString
+	int | string | bool | StringSlice
 }
 
 type FlagInfo interface {
@@ -32,12 +31,13 @@ type Flag[T FlagType] struct {
 	Name  string // required
 	Usage string // required, text shown in usage
 
-	Default       T        // optional
-	LegacyEnvVars []string // optional, additional env var names to check in order of priority
-	Required      bool     // flag whether the command requires this flag
-	Shorthand     string   // optional, will change call to allow for shorthand
-	Global        bool     // is this a global/persistent flag?
-	Parse         Parse[T] // optional, parse user-input during pflag.Set() - only supported by CustomString and RedactedString currently
+	Default       T         // optional
+	LegacyEnvVars []string  // optional, additional env var names to check in order of priority
+	Required      bool      // flag whether the command requires this flag
+	Shorthand     string    // optional, will change call to allow for shorthand
+	Global        bool      // is this a global/persistent flag?
+	Parse         Parse[T]  // optional, parse user-input during pflag.Set() - only supported by string currently
+	Redact        Redact[T] // optional, mask value - only supported by string currently
 }
 
 func (f *Flag[T]) EnvVarName() string {
@@ -55,19 +55,11 @@ func (f *Flag[T]) IsRequired() bool {
 	return f.Required
 }
 
-func GetRedactedString(fs *pflag.FlagSet, name string) (*Value[RedactedString], error) {
-	if rs, err := getFlagValue[RedactedString](fs, name); err != nil {
+func GetFlagValue[T FlagType](fs *pflag.FlagSet, name string) (*Value[T], error) {
+	if rs, err := getFlagValue[T](fs, name); err != nil {
 		return nil, err
 	} else {
 		return rs, nil
-	}
-}
-
-func GetCustomString(fs *pflag.FlagSet, name string) (string, error) {
-	if cs, err := getFlagValue[CustomString](fs, name); err != nil {
-		return "", err
-	} else {
-		return cs.String(), nil
 	}
 }
 

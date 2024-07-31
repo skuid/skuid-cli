@@ -25,12 +25,10 @@ type FlagTrackerFinder interface {
 }
 
 type CommandFlags struct {
-	Int            []*flags.Flag[int]
-	String         []*flags.Flag[string]
-	RedactedString []*flags.Flag[flags.RedactedString]
-	Bool           []*flags.Flag[bool]
-	StringSlice    []*flags.Flag[flags.StringSlice]
-	CustomString   []*flags.Flag[flags.CustomString]
+	Int         []*flags.Flag[int]
+	String      []*flags.Flag[string]
+	Bool        []*flags.Flag[bool]
+	StringSlice []*flags.Flag[flags.StringSlice]
 }
 
 type FlagManager struct {

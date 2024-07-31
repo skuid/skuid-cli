@@ -2,7 +2,6 @@ package flags_test
 
 import (
 	"fmt"
-	"reflect"
 	"strconv"
 	"testing"
 
@@ -157,121 +156,68 @@ func TestFlagTestSuite(t *testing.T) {
 	suite.Run(t, new(FlagTestSuite))
 }
 
-func TestGetRedactedString(t *testing.T) {
+func TestGetFlagValue(t *testing.T) {
 	flagName := "myflag"
 	testCases := []struct {
-		testDescription string
-		giveSetup       func(*pflag.FlagSet)
-		wantRedacted    string
-		wantUnredacted  string
-		wantError       error
-	}{
-		{
-			testDescription: "gets RedactedString",
-			giveSetup: func(fs *pflag.FlagSet) {
-				parse := func(val string) (flags.RedactedString, error) { return flags.RedactedString(val), nil }
-				redact := func(rs flags.RedactedString) string { return "***" }
-				p := new(flags.RedactedString)
-				v := flags.NewValueWithRedact("foobar", p, parse, redact)
-				fs.VarPF(v, flagName, "", "")
-			},
-			wantRedacted:   "***",
-			wantUnredacted: "foobar",
-			wantError:      nil,
-		},
-		{
-			testDescription: "does not exist in flagset",
-			giveSetup: func(fs *pflag.FlagSet) {
-			},
-			wantRedacted:   "",
-			wantUnredacted: "",
-			wantError:      fmt.Errorf("flag accessed but not defined: %s", flagName),
-		},
-		{
-			testDescription: "wrong type string",
-			giveSetup: func(fs *pflag.FlagSet) {
-				fs.String(flagName, "", "")
-			},
-			wantRedacted:   "",
-			wantUnredacted: "",
-			wantError:      fmt.Errorf("trying to get %T value of flag of type %s", *new(flags.CustomString), "string"),
-		},
-		{
-			testDescription: "wrong type CustomString",
-			giveSetup: func(fs *pflag.FlagSet) {
-				parse := func(val string) (flags.CustomString, error) { return flags.CustomString(val), nil }
-				p := new(flags.CustomString)
-				v := flags.NewValue("default", p, parse)
-				fs.VarP(v, flagName, "", "")
-			},
-			wantRedacted:   "",
-			wantUnredacted: "",
-			wantError:      fmt.Errorf("trying to get %T value of flag of type %s", *new(flags.RedactedString), *new(flags.CustomString)),
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.testDescription, func(t *testing.T) {
-			fs := pflag.NewFlagSet("", pflag.ExitOnError)
-			tc.giveSetup(fs)
-			s, err := flags.GetRedactedString(fs, flagName)
-			if tc.wantError != nil {
-				assert.Error(t, err, tc.wantError.Error())
-				assert.Nil(t, s)
-			} else {
-				require.NoError(t, err)
-				assert.Equal(t, s.String(), tc.wantRedacted)
-				assert.Equal(t, s.Unredacted().String(), tc.wantUnredacted)
-			}
-		})
-	}
-}
-
-func TestGetCustomString(t *testing.T) {
-	flagName := "myflag"
-	testCases := []struct {
-		testDescription string
-		giveSetup       func(*pflag.FlagSet)
-		wantValue       string
-		wantError       error
+		testDescription  string
+		giveSetup        func(*pflag.FlagSet)
+		giveGetFlagValue func(*pflag.FlagSet, string) (any, error)
+		wantError        error
 	}{
 		{
 			testDescription: "gets string",
 			giveSetup: func(fs *pflag.FlagSet) {
-				parse := func(val string) (flags.CustomString, error) { return flags.CustomString(val), nil }
-				p := new(flags.CustomString)
+				parse := func(val string) (string, error) { return val, nil }
+				p := new(string)
 				v := flags.NewValue("default", p, parse)
 				fs.VarP(v, flagName, "", "")
 			},
-			wantValue: "default",
+			giveGetFlagValue: func(fs *pflag.FlagSet, fn string) (any, error) {
+				return flags.GetFlagValue[string](fs, fn)
+			},
+			wantError: nil,
+		},
+		{
+			testDescription: "gets int",
+			giveSetup: func(fs *pflag.FlagSet) {
+				parse := func(val string) (int, error) { return 10, nil }
+				p := new(int)
+				v := flags.NewValue(0, p, parse)
+				fs.VarP(v, flagName, "", "")
+			},
+			giveGetFlagValue: func(fs *pflag.FlagSet, fn string) (any, error) {
+				return flags.GetFlagValue[int](fs, fn)
+			},
 			wantError: nil,
 		},
 		{
 			testDescription: "does not exist in flagset",
 			giveSetup: func(fs *pflag.FlagSet) {
 			},
-			wantValue: "",
+			giveGetFlagValue: func(fs *pflag.FlagSet, fn string) (any, error) {
+				return flags.GetFlagValue[string](fs, fn)
+			},
 			wantError: fmt.Errorf("flag accessed but not defined: %s", flagName),
 		},
 		{
-			testDescription: "wrong type string",
+			testDescription: "wrong type bool",
 			giveSetup: func(fs *pflag.FlagSet) {
-				fs.String(flagName, "", "")
+				fs.Bool(flagName, false, "")
 			},
-			wantValue: "",
-			wantError: fmt.Errorf("trying to get %T value of flag of type %s", *new(flags.CustomString), "string"),
+			giveGetFlagValue: func(fs *pflag.FlagSet, fn string) (any, error) {
+				return flags.GetFlagValue[string](fs, fn)
+			},
+			wantError: fmt.Errorf("trying to get %T value of flag of type %s", *new(string), "string"),
 		},
 		{
-			testDescription: "wrong type RedactedString",
+			testDescription: "wrong type stringSlice",
 			giveSetup: func(fs *pflag.FlagSet) {
-				parse := func(val string) (flags.RedactedString, error) { return flags.RedactedString(val), nil }
-				redact := func(rs flags.RedactedString) string { return "***" }
-				p := new(flags.RedactedString)
-				v := flags.NewValueWithRedact("", p, parse, redact)
-				fs.VarPF(v, flagName, "", "")
+				fs.StringSlice(flagName, []string{}, "")
 			},
-			wantValue: "",
-			wantError: fmt.Errorf("trying to get %T value of flag of type %s", *new(flags.CustomString), *new(flags.RedactedString)),
+			giveGetFlagValue: func(fs *pflag.FlagSet, fn string) (any, error) {
+				return flags.GetFlagValue[string](fs, fn)
+			},
+			wantError: fmt.Errorf("trying to get %T value of flag of type %s", *new(string), *new([]string)),
 		},
 	}
 
@@ -279,13 +225,14 @@ func TestGetCustomString(t *testing.T) {
 		t.Run(tc.testDescription, func(t *testing.T) {
 			fs := pflag.NewFlagSet("", pflag.ExitOnError)
 			tc.giveSetup(fs)
-			s, err := flags.GetCustomString(fs, flagName)
+			v, err := tc.giveGetFlagValue(fs, flagName)
 			if tc.wantError != nil {
 				assert.Error(t, err, tc.wantError.Error())
+				assert.Nil(t, v)
 			} else {
 				require.NoError(t, err)
+				assert.NotNil(t, v)
 			}
-			assert.Equal(t, s, tc.wantValue)
 		})
 	}
 }
@@ -376,24 +323,14 @@ func (suite *ValueTestSuite) TestValueType() {
 			wantTypeName:    "bool",
 		},
 		{
-			testDescription: "RedactedString",
-			giveValue:       &flags.Value[flags.RedactedString]{},
-			wantTypeName:    fmt.Sprint(reflect.TypeOf(*new(flags.RedactedString))),
-		},
-		{
-			testDescription: "CustomString",
-			giveValue:       &flags.Value[flags.CustomString]{},
-			wantTypeName:    fmt.Sprint(reflect.TypeOf(*new(flags.CustomString))),
-		},
-		{
 			testDescription: "StringSlice",
 			giveValue:       &flags.Value[flags.StringSlice]{},
-			wantTypeName:    fmt.Sprint(reflect.TypeOf(*new(flags.StringSlice))),
+			wantTypeName:    "flags.StringSlice",
 		},
 		{
 			testDescription: "pointer",
 			giveValue:       &flags.Value[*string]{},
-			wantTypeName:    fmt.Sprint(reflect.TypeOf(*new(string))),
+			wantTypeName:    "string",
 		},
 	}
 

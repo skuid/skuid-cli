@@ -16,12 +16,12 @@ func TestParseSince(t *testing.T) {
 		testDescription string
 		giveValue       string
 		giveNoFuture    bool
-		wantValue       flags.CustomString
+		wantValue       string
 		wantError       bool
 	}{
-		{"valid value", now.Format(time.RFC3339Nano), true, flags.CustomString(util.FormatTimestamp(now)), false},
-		{"invalid value future", "-1d", false, flags.CustomString(""), true},
-		{"invalid value empty", "", false, flags.CustomString(""), true},
+		{"valid value", now.Format(time.RFC3339Nano), true, util.FormatTimestamp(now), false},
+		{"invalid value future", "-1d", false, "", true},
+		{"invalid value empty", "", false, "", true},
 	}
 
 	for _, tc := range testCases {
@@ -204,7 +204,7 @@ func TestParseHost(t *testing.T) {
 			} else {
 				require.NoError(t, err, "Expected ParseHost err to be nil, got not nil")
 			}
-			assert.Equal(t, flags.CustomString(tc.wantHost), actualHost)
+			assert.Equal(t, tc.wantHost, actualHost)
 		})
 	}
 }

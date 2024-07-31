@@ -5,7 +5,7 @@ import (
 )
 
 var (
-	Host = &Flag[CustomString]{
+	Host = &Flag[string]{
 		Name:          "host",
 		Usage:         `Host URL, e.g. [ https://my.skuidsite.com | my.skuidsite.com ]`,
 		LegacyEnvVars: []string{constants.ENV_PLINY_HOST},
@@ -15,12 +15,19 @@ var (
 
 	// TODO: Implement a solution for secure storage of the password while in memory and implement a proper one-time use
 	// approach assuming Skuid supports refresh tokens (see https://github.com/skuid/skuid-cli/issues/172)
-	Password = &Flag[RedactedString]{
+	Password = &Flag[string]{
 		Name:          "password",
 		Shorthand:     "p",
 		Usage:         "Skuid NLX Password",
 		LegacyEnvVars: []string{constants.ENV_SKUID_PW},
 		Required:      true,
+		Redact: func(val string) string {
+			if val == "" {
+				return ""
+			} else {
+				return "***"
+			}
+		},
 	}
 
 	Username = &Flag[string]{
@@ -54,7 +61,7 @@ var (
 		Global:        true,
 	}
 
-	Since = &Flag[CustomString]{
+	Since = &Flag[string]{
 		Name:          "since",
 		Shorthand:     "s",
 		Usage:         "Timestamp or time span specifying only updated records to retrieve. Suggested timestamp format is: \"yyyy-MM-dd HH:mm AM\" or \"HH:mm AM\". Valid time spans look like various combination of \"1y2w3d8h30m\"",

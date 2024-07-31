@@ -14,15 +14,11 @@ var (
 	ErrInvalidHost = errors.New("invalid host specified, must be either a HTTPS base URL (e.g., https://my.skuidsite.com) or a host (e.g., my.skuidsite.com)")
 )
 
-func ParseSince(val string) (CustomString, error) {
-	if ts, err := util.GetTimestamp(val, time.Now(), true); err != nil {
-		return "", err
-	} else {
-		return CustomString(ts), nil
-	}
+func ParseSince(val string) (string, error) {
+	return util.GetTimestamp(val, time.Now(), true)
 }
 
-func ParseHost(rawUrl string) (CustomString, error) {
+func ParseHost(rawUrl string) (string, error) {
 	u, err := url.ParseRequestURI(rawUrl)
 	if err != nil {
 		u, err = url.ParseRequestURI("https://" + rawUrl)
@@ -70,5 +66,5 @@ func ParseHost(rawUrl string) (CustomString, error) {
 		return "", ErrInvalidHost
 	}
 
-	return CustomString(fmt.Sprintf("%v://%v", u.Scheme, u.Host)), nil
+	return fmt.Sprintf("%v://%v", u.Scheme, u.Host), nil
 }

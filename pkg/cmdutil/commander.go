@@ -32,10 +32,8 @@ type Commander struct {
 func (c *Commander) AddFlags(cmd *cobra.Command, flags *CommandFlags) {
 	addFlagType(cmd, c.FlagManager, flags.Bool)
 	addFlagType(cmd, c.FlagManager, flags.Int)
-	addFlagType(cmd, c.FlagManager, flags.RedactedString)
 	addFlagType(cmd, c.FlagManager, flags.String)
 	addFlagType(cmd, c.FlagManager, flags.StringSlice)
-	addFlagType(cmd, c.FlagManager, flags.CustomString)
 }
 
 func (c *Commander) MarkFlagsMutuallyExclusive(cmd *cobra.Command, flagGroups [][]string) {
@@ -191,22 +189,19 @@ func addFlag[T flags.FlagType](cmd *cobra.Command, ft FlagTracker, flag *flags.F
 
 	switch f := any(flag).(type) {
 	case *flags.Flag[string]:
-		fs.StringP(f.Name, f.Shorthand, f.Default, usage)
-	case *flags.Flag[flags.RedactedString]:
-		var parse flags.Parse[flags.RedactedString]
+		var parse flags.Parse[string]
 		if f.Parse != nil {
 			parse = f.Parse
 		} else {
-			parse = func(val string) (flags.RedactedString, error) { return flags.RedactedString(val), nil }
+			parse = func(val string) (string, error) { return val, nil }
 		}
-		p := new(flags.RedactedString)
-		v := flags.NewValueWithRedact(f.Default, p, parse, func(rs flags.RedactedString) string {
-			if rs == "" {
-				return ""
-			} else {
-				return "***"
-			}
-		})
+		p := new(string)
+		var v *flags.Value[string]
+		if f.Redact != nil {
+			v = flags.NewValueWithRedact(f.Default, p, parse, f.Redact)
+		} else {
+			v = flags.NewValue(f.Default, p, parse)
+		}
 		fs.VarP(v, flag.Name, flag.Shorthand, usage)
 	case *flags.Flag[bool]:
 		fs.BoolP(f.Name, f.Shorthand, f.Default, usage)
@@ -214,16 +209,6 @@ func addFlag[T flags.FlagType](cmd *cobra.Command, ft FlagTracker, flag *flags.F
 		fs.StringSliceP(f.Name, f.Shorthand, f.Default, usage)
 	case *flags.Flag[int]:
 		fs.IntP(f.Name, f.Shorthand, f.Default, usage)
-	case *flags.Flag[flags.CustomString]:
-		var parse flags.Parse[flags.CustomString]
-		if f.Parse != nil {
-			parse = f.Parse
-		} else {
-			parse = func(val string) (flags.CustomString, error) { return flags.CustomString(val), nil }
-		}
-		p := new(flags.CustomString)
-		v := flags.NewValue(f.Default, p, parse)
-		fs.VarP(v, flag.Name, flag.Shorthand, usage)
 	default:
 		// should never get here due to type constraints
 		panic(fmt.Errorf("unable to handle type for flag %q", flag.Name))
@@ -254,11 +239,21 @@ func checkValidFlag[T flags.FlagType](f *flags.Flag[T]) {
 	errors.MustConditionf(flagNameValidator.MatchString(f.Name), "flag name %q is invalid", f.Name)
 	errors.MustConditionf(len(f.Usage) >= 10, "flag usage %q is invalid for flag name %q", f.Usage, f.Name)
 	errors.MustConditionf(f.Parse == nil || supportsParse(f), "flag type %T does not support Parse for flag name %q", f, f.Name)
+	errors.MustConditionf(f.Redact == nil || supportsRedact(f), "flag type %T does not support Redact for flag name %q", f, f.Name)
+}
+
+func supportsRedact[T flags.FlagType](f *flags.Flag[T]) bool {
+	switch any(f).(type) {
+	case *flags.Flag[string]:
+		return true
+	default:
+		return false
+	}
 }
 
 func supportsParse[T flags.FlagType](f *flags.Flag[T]) bool {
 	switch any(f).(type) {
-	case *flags.Flag[flags.CustomString], *flags.Flag[flags.RedactedString]:
+	case *flags.Flag[string]:
 		return true
 	default:
 		return false

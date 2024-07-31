@@ -23,9 +23,7 @@ func NewCmdWatch(factory *cmdutil.Factory) *cobra.Command {
 		Long:    "Watches for changes to local Skuid metadata on your file system, and automatically deploys the changed files to a Skuid NLX Site",
 		Example: "watch -u myUser -p myPassword --host my-site.skuidsite.com --dir ./my-site-objects",
 		Flags: &cmdutil.CommandFlags{
-			String:         []*flags.Flag[string]{flags.Username, flags.Dir},
-			RedactedString: []*flags.Flag[flags.RedactedString]{flags.Password},
-			CustomString:   []*flags.Flag[flags.CustomString]{flags.Host},
+			String: []*flags.Flag[string]{flags.Host, flags.Password, flags.Username, flags.Dir},
 		},
 	}
 
@@ -36,7 +34,7 @@ func watch(factory *cmdutil.Factory, cmd *cobra.Command, _ []string) (err error)
 	fields := make(logrus.Fields)
 	fields["process"] = "watch"
 	// get required arguments
-	host, err := flags.GetCustomString(cmd.Flags(), flags.Host.Name)
+	host, err := cmd.Flags().GetString(flags.Host.Name)
 	if err != nil {
 		return
 	}
@@ -44,7 +42,7 @@ func watch(factory *cmdutil.Factory, cmd *cobra.Command, _ []string) (err error)
 	if err != nil {
 		return
 	}
-	password, err := flags.GetRedactedString(cmd.Flags(), flags.Password.Name)
+	password, err := flags.GetFlagValue[string](cmd.Flags(), flags.Password.Name)
 	if err != nil {
 		return
 	}

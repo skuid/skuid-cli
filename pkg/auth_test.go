@@ -15,7 +15,7 @@ import (
 var (
 	authHost = os.Getenv(flags.Host.EnvVarName())
 	authUser = os.Getenv(flags.Username.EnvVarName())
-	authPass = flags.NewValueWithRedact(flags.RedactedString(os.Getenv(flags.Password.EnvVarName())), new(flags.RedactedString), nil, nil)
+	authPass = flags.NewValueWithRedact(os.Getenv(flags.Password.EnvVarName()), new(string), nil, nil)
 )
 
 // if you have to run it by itself, add some environment variables

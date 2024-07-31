@@ -24,9 +24,7 @@ func NewCmdRetrieve(cd *cmdutil.Factory) *cobra.Command {
 			// pages flag does not work as expected so commenting out
 			// TODO: Remove completely or fix issues depending on https://github.com/skuid/skuid-cli/issues/147 & https://github.com/skuid/skuid-cli/issues/148
 			// flags.Pages
-			String:         []*flags.Flag[string]{flags.Username, flags.Dir, flags.App},
-			RedactedString: []*flags.Flag[flags.RedactedString]{flags.Password},
-			CustomString:   []*flags.Flag[flags.CustomString]{flags.Since, flags.Host},
+			String: []*flags.Flag[string]{flags.Host, flags.Password, flags.Username, flags.Dir, flags.App, flags.Since},
 		},
 	}
 
@@ -41,7 +39,7 @@ func retrieve(factory *cmdutil.Factory, cmd *cobra.Command, _ []string) (err err
 
 	logging.Get().Info(color.Green.Sprint("Starting Retrieve"))
 	// get required arguments
-	host, err := flags.GetCustomString(cmd.Flags(), flags.Host.Name)
+	host, err := cmd.Flags().GetString(flags.Host.Name)
 	if err != nil {
 		return
 	}
@@ -49,7 +47,7 @@ func retrieve(factory *cmdutil.Factory, cmd *cobra.Command, _ []string) (err err
 	if err != nil {
 		return
 	}
-	password, err := flags.GetRedactedString(cmd.Flags(), flags.Password.Name)
+	password, err := flags.GetFlagValue[string](cmd.Flags(), flags.Password.Name)
 	if err != nil {
 		return
 	}
@@ -112,7 +110,7 @@ func retrieve(factory *cmdutil.Factory, cmd *cobra.Command, _ []string) (err err
 		}
 	*/
 
-	sinceStr, err := flags.GetCustomString(cmd.Flags(), flags.Since.Name)
+	sinceStr, err := cmd.Flags().GetString(flags.Since.Name)
 	if err != nil {
 		return
 	} else if sinceStr != "" {
