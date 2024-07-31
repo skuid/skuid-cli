@@ -14,6 +14,10 @@ var (
 	ErrInvalidHost = errors.New("invalid host specified, must be either a HTTPS base URL (e.g., https://my.skuidsite.com) or a host (e.g., my.skuidsite.com)")
 )
 
+type ParseStringOptions struct {
+	AllowBlank bool
+}
+
 func ParseSince(val string) (string, error) {
 	if val == "" {
 		return val, nil
@@ -71,4 +75,13 @@ func ParseHost(rawUrl string) (string, error) {
 	}
 
 	return fmt.Sprintf("%v://%v", u.Scheme, u.Host), nil
+}
+
+func ParseString(options ParseStringOptions) func(val string) (string, error) {
+	return func(val string) (string, error) {
+		if !options.AllowBlank && strings.TrimSpace(val) == "" {
+			return "", fmt.Errorf("must contain a non-blank value")
+		}
+		return val, nil
+	}
 }

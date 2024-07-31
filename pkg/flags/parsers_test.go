@@ -210,3 +210,32 @@ func TestParseHost(t *testing.T) {
 		})
 	}
 }
+
+func TestParseString(t *testing.T) {
+	testCases := []struct {
+		testDescription string
+		giveOptions     flags.ParseStringOptions
+		giveValue       string
+		wantError       bool
+		wantValue       string
+	}{
+		{"valid value", flags.ParseStringOptions{AllowBlank: false}, "foobar", false, "foobar"},
+		{"valid value with spaces", flags.ParseStringOptions{AllowBlank: false}, "  a   ", false, "  a   "},
+		{"valid value blank", flags.ParseStringOptions{AllowBlank: true}, "     ", false, "     "},
+		{"valid value empty", flags.ParseStringOptions{AllowBlank: true}, "", false, ""},
+		{"invalid value blank", flags.ParseStringOptions{AllowBlank: false}, "     ", true, ""},
+		{"invalid value empty", flags.ParseStringOptions{AllowBlank: false}, "", true, ""},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.testDescription, func(t *testing.T) {
+			actualValue, err := flags.ParseString(tc.giveOptions)(tc.giveValue)
+			if tc.wantError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+			assert.Equal(t, tc.wantValue, actualValue)
+		})
+	}
+}

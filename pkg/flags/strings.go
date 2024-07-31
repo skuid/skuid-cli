@@ -21,6 +21,7 @@ var (
 		Usage:         "Skuid NLX Password",
 		LegacyEnvVars: []string{constants.ENV_SKUID_PW},
 		Required:      true,
+		Parse:         ParseString(ParseStringOptions{AllowBlank: false}),
 		Redact: func(val string) string {
 			if val == "" {
 				return ""
@@ -36,6 +37,7 @@ var (
 		LegacyEnvVars: []string{constants.ENV_SKUID_UN},
 		Required:      true,
 		Usage:         "Skuid NLX Username",
+		Parse:         ParseString(ParseStringOptions{AllowBlank: false}),
 	}
 
 	App = &Flag[string]{
