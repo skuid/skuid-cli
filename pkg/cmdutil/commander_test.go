@@ -531,8 +531,24 @@ func (suite *CommanderApplyEnvVarsTestSuite) TestUpdatesValue() {
 			wantChanged:       true,
 		},
 		{
-			testDescription:   "empty used when default empty and legacy non-blank when not required",
+			testDescription:   "empty used when required",
+			giveFlags:         []*flags.Flag[string]{{Name: "bar", Usage: "this is a flag", Default: "abcd", Required: true}},
+			giveArgs:          []string{},
+			wantFlags:         map[string]string{"bar": ""},
+			wantErrorContains: nil,
+			wantChanged:       true,
+		},
+		{
+			testDescription:   "empty used when default empty and legacy non-empty when not required",
 			giveFlags:         []*flags.Flag[string]{{Name: "bar", Usage: "this is a flag", Default: "somevalue", LegacyEnvVars: []string{"LEGACY_FOO"}}},
+			giveArgs:          []string{},
+			wantFlags:         map[string]string{"bar": ""},
+			wantErrorContains: nil,
+			wantChanged:       true,
+		},
+		{
+			testDescription:   "empty used when default empty and legacy non-empty when required",
+			giveFlags:         []*flags.Flag[string]{{Name: "bar", Usage: "this is a flag", Default: "somevalue", Required: true, LegacyEnvVars: []string{"LEGACY_FOO"}}},
 			giveArgs:          []string{},
 			wantFlags:         map[string]string{"bar": ""},
 			wantErrorContains: nil,
@@ -543,6 +559,14 @@ func (suite *CommanderApplyEnvVarsTestSuite) TestUpdatesValue() {
 			giveFlags:         []*flags.Flag[string]{{Name: "foo", Usage: "this is a flag", Default: "somevalue", Required: true}},
 			giveArgs:          []string{},
 			wantFlags:         map[string]string{"foo": "hello"},
+			wantErrorContains: nil,
+			wantChanged:       true,
+		},
+		{
+			testDescription:   "no default legacy is empty used when required",
+			giveFlags:         []*flags.Flag[string]{{Name: "legacy", Usage: "this is a flag", Default: "abcd", Required: true, LegacyEnvVars: []string{"SKUID_BAR"}}},
+			giveArgs:          []string{},
+			wantFlags:         map[string]string{"legacy": ""},
 			wantErrorContains: nil,
 			wantChanged:       true,
 		},
@@ -567,30 +591,6 @@ func (suite *CommanderApplyEnvVarsTestSuite) TestDoesNotUpdateValue() {
 			wantChanged:       true,
 		},
 		{
-			testDescription:   "flag required and env empty value",
-			giveFlags:         []*flags.Flag[string]{{Name: "bar", Usage: "this is a flag", Default: "abcd", Required: true}},
-			giveArgs:          []string{},
-			wantFlags:         map[string]string{"bar": "abcd"},
-			wantErrorContains: errors.New("bar"),
-			wantChanged:       false,
-		},
-		{
-			testDescription:   "flag required no default env var legacy is empty",
-			giveFlags:         []*flags.Flag[string]{{Name: "nodefault", Usage: "this is a flag", Default: "abcd", Required: true, LegacyEnvVars: []string{"SKUID_BAR"}}},
-			giveArgs:          []string{},
-			wantFlags:         map[string]string{"nodefault": "abcd"},
-			wantErrorContains: errors.New("nodefault"),
-			wantChanged:       false,
-		},
-		{
-			testDescription:   "flag required and env empty value when legacy has non-empty",
-			giveFlags:         []*flags.Flag[string]{{Name: "bar", Usage: "this is a flag", Default: "somevalue", Required: true, LegacyEnvVars: []string{"LEGACY_FOO"}}},
-			giveArgs:          []string{},
-			wantFlags:         map[string]string{"bar": "somevalue"},
-			wantErrorContains: errors.New("bar"),
-			wantChanged:       false,
-		},
-		{
 			testDescription:   "not in env",
 			giveFlags:         []*flags.Flag[string]{{Name: "abc", Usage: "this is a flag", Default: "somevalue", LegacyEnvVars: []string{"LEGACY_ABC"}}},
 			giveArgs:          []string{},
@@ -600,6 +600,31 @@ func (suite *CommanderApplyEnvVarsTestSuite) TestDoesNotUpdateValue() {
 		},
 	}
 	runApplyEnvVarsTests(&suite.Suite, envVars, testCases)
+}
+
+func (suite *CommanderApplyEnvVarsTestSuite) TestFailsToUpdate() {
+	t := suite.T()
+	envVars := map[string]testutil.EnvVar[string]{
+		"SKUID_FOO": {EnvValue: "hello", Value: "hello"},
+	}
+	testutil.SetupEnv(t, envVars)
+	flagMgr := &cmdutil.FlagManager{}
+	cd := &cmdutil.Commander{
+		FlagManager: flagMgr,
+	}
+	cmd := &cobra.Command{Use: "mycmd"}
+	cmd.RunE = emptyCobraRun
+	cmd.PersistentPreRunE = func(c *cobra.Command, a []string) error {
+		return cd.ApplyEnvVars(cmd)
+	}
+	f := &flags.Flag[bool]{Name: "foo", Usage: "this is a flag", Default: true}
+	cmd.Flags().Bool(f.Name, f.Default, f.Usage)
+	flagMgr.Track(cmd.Flags().Lookup(f.Name), f)
+	cmd.Flags().SetAnnotation(f.Name, cmdutil.FlagSetBySkuidCliAnnotation, []string{"true"})
+
+	err := executeCommand(cmd, []string{}...)
+
+	assert.ErrorContains(t, err, fmt.Sprintf("unable to use value from environment variable %v for flag %q", "SKUID_FOO", f.Name))
 }
 
 func (suite *CommanderApplyEnvVarsTestSuite) TestFlagNotTracked() {

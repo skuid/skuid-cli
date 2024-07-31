@@ -129,17 +129,10 @@ func applyFlagEnvVar(cmd *cobra.Command, pf *pflag.Flag, r flags.FlagInfo) error
 	// WARNING: DO NOT log the envVal as it may contain confidential information
 	// !!!!!
 	if envVarName, envVal, ok := findEnvVar(r); ok {
-		// skip if env empty & flag required
-		if envVal == "" && r.IsRequired() {
-			logging.Get().Debugf("unable to use use environment variable %v because its value is empty and a value is required for: %v", envVarName, pf.Name)
-			return nil
-		}
-
 		// MUST use flagSet.Set to ensure that flag.Changed is updated
 		// calling flag.Value.Set will only set the value
 		if errSet := cmd.Flags().Set(pf.Name, envVal); errSet != nil {
-			msg := fmt.Sprintf("unable to use value from environment variable %v for flag %q: %v", envVarName, pf.Name, errSet)
-			return errors.Error(msg)
+			return fmt.Errorf("unable to use value from environment variable %v for flag %q: %v", envVarName, pf.Name, errSet)
 		}
 
 		// cmd.Flags().Lookup(pf.Name).Value could be used to log the value of the flag at this point
