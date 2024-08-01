@@ -1,7 +1,8 @@
 package constants
 
 const (
-	PROJECT_NAME = "skuid-cli"
+	PROJECT_NAME     = "skuid-cli"
+	VERSION_TEMPLATE = "Skuid CLI Version %v"
 )
 
 const (

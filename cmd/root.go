@@ -10,8 +10,6 @@ import (
 	"github.com/skuid/skuid-cli/pkg/flags"
 )
 
-const VERSION_TEMPLATE = "Skuid CLI Version %v"
-
 func NewCmdRoot(factory *cmdutil.Factory) *cobra.Command {
 	rootTemplate := &cmdutil.CmdTemplate{
 		Use:   constants.PROJECT_NAME,
@@ -34,7 +32,7 @@ func NewCmdRoot(factory *cmdutil.Factory) *cobra.Command {
 	}
 	cmd.SilenceErrors = true
 	cmd.Version = factory.AppVersion
-	cmd.SetVersionTemplate(fmt.Sprintf(VERSION_TEMPLATE+"\n", factory.AppVersion))
+	cmd.SetVersionTemplate(fmt.Sprintf(constants.VERSION_TEMPLATE+"\n", factory.AppVersion))
 
 	return cmd
 }

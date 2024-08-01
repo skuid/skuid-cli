@@ -13,6 +13,12 @@ import (
 	"github.com/spf13/pflag"
 )
 
+type AppliedEnvVar struct {
+	Name       string
+	Deprecated bool
+	Flag       flags.FlagInfo
+}
+
 var flagNameValidator = regexp.MustCompile(`^[a-z0-9_-]{3,}$`)
 
 const FlagSetBySkuidCliAnnotation = "skuidcli_annotation_flag_set_by_skuidcli"
@@ -20,7 +26,7 @@ const FlagSetBySkuidCliAnnotation = "skuidcli_annotation_flag_set_by_skuidcli"
 type CommandInformer interface {
 	AddFlags(cmd *cobra.Command, flags *CommandFlags)
 	MarkFlagsMutuallyExclusive(cmd *cobra.Command, flagGroups [][]string)
-	ApplyEnvVars(cmd *cobra.Command) error
+	ApplyEnvVars(cmd *cobra.Command) ([]*AppliedEnvVar, error)
 	SetupLogging(cmd *cobra.Command, li logging.LogInformer) error
 }
 
@@ -42,24 +48,27 @@ func (c *Commander) MarkFlagsMutuallyExclusive(cmd *cobra.Command, flagGroups []
 	}
 }
 
-func (c *Commander) ApplyEnvVars(cmd *cobra.Command) error {
-	// track the first error - no way to iterate flags without going through them all
+func (c *Commander) ApplyEnvVars(cmd *cobra.Command) ([]*AppliedEnvVar, error) {
+	// tracks all errors via error wrapping - no way to iterate flags without going through them all
 	var err error
+	var appliedVars []*AppliedEnvVar
 	cmd.Flags().VisitAll(func(pf *pflag.Flag) {
 		if _, ok := pf.Annotations[FlagSetBySkuidCliAnnotation]; !ok {
 			return
 		}
 
-		if errApply := applyEnvVar(cmd, c.FlagManager, pf); errApply != nil {
+		if applied, errApply := applyEnvVar(cmd, c.FlagManager, pf); errApply != nil {
 			if err == nil {
 				err = errApply
 			} else {
-				logging.Get().Errorf("unable to use environment variable for flag %q", pf.Name)
+				err = fmt.Errorf("%w; %w", err, errApply)
 			}
+		} else if applied != nil {
+			appliedVars = append(appliedVars, applied)
 		}
 	})
 
-	return err
+	return appliedVars, err
 }
 
 func (c *Commander) SetupLogging(cmd *cobra.Command, li logging.LogInformer) (err error) {
@@ -111,54 +120,53 @@ func NewCommander() CommandInformer {
 	}
 }
 
-func applyEnvVar(cmd *cobra.Command, ff FlagFinder, pf *pflag.Flag) error {
+func applyEnvVar(cmd *cobra.Command, ff FlagFinder, pf *pflag.Flag) (*AppliedEnvVar, error) {
 	if f, ok := ff.Find(pf); !ok {
-		return errors.Error("unable to locate flag information for: %v", pf.Name)
+		return nil, errors.Error("unable to locate flag information for: %v", pf.Name)
 	} else {
 		return applyFlagEnvVar(cmd, pf, f)
 	}
 }
 
-func applyFlagEnvVar(cmd *cobra.Command, pf *pflag.Flag, r flags.FlagInfo) error {
+func applyFlagEnvVar(cmd *cobra.Command, pf *pflag.Flag, r flags.FlagInfo) (*AppliedEnvVar, error) {
 	// only attempt to apply env if user did not provide on command line
 	if pf.Changed {
-		return nil
+		return nil, nil
 	}
 
 	// !!!!!
 	// WARNING: DO NOT log the envVal as it may contain confidential information
 	// !!!!!
-	if envVarName, envVal, ok := findEnvVar(r); ok {
+	if envVarName, envVal, deprecated, ok := findEnvVar(r); ok {
 		// MUST use flagSet.Set to ensure that flag.Changed is updated
 		// calling flag.Value.Set will only set the value
 		if errSet := cmd.Flags().Set(pf.Name, envVal); errSet != nil {
-			return fmt.Errorf("unable to use value from environment variable %v for flag %q: %v", envVarName, pf.Name, errSet)
+			return nil, fmt.Errorf("unable to use value from environment variable %v for flag %q: %v", envVarName, pf.Name, errSet)
 		}
 
 		// cmd.Flags().Lookup(pf.Name).Value could be used to log the value of the flag at this point
 		// because anything confidential will be a Redacted* type and will emit its mask when
 		// converted to string
-		logging.Get().Debugf("Using environment variable %v for flag: %v", envVarName, pf.Name)
+		return &AppliedEnvVar{envVarName, deprecated, r}, nil
 	}
 
-	return nil
+	return nil, nil
 }
 
-func findEnvVar(r flags.FlagInfo) (string, string, bool) {
+func findEnvVar(r flags.FlagInfo) (string, string, bool, bool) {
 	// check if the default environment variable name is set as it takes precendence over legacy
 	defaultEnvName := r.EnvVarName()
 	if envVal, ok := os.LookupEnv(defaultEnvName); ok {
-		return defaultEnvName, envVal, true
+		return defaultEnvName, envVal, false, true
 	}
 
 	for _, envName := range r.LegacyEnvVarNames() {
 		if envVal, ok := os.LookupEnv(envName); ok {
-			logging.Get().Warnf("environment variable %q has been deprecated and will be removed in a future release - please migrate to %q", envName, defaultEnvName)
-			return envName, envVal, true
+			return envName, envVal, true, true
 		}
 	}
 
-	return "", "", false
+	return "", "", false, false
 }
 
 func addFlagType[T ~[]*flags.Flag[F], F flags.FlagType](cmd *cobra.Command, ft FlagTracker, addFlags T) {

@@ -2,6 +2,7 @@ package main
 
 import (
 	_ "embed"
+	"fmt"
 	"os"
 	"strings"
 
@@ -10,7 +11,6 @@ import (
 
 	"github.com/gookit/color"
 	"github.com/skuid/skuid-cli/cmd"
-	"github.com/skuid/skuid-cli/pkg/logging"
 )
 
 type exitCode int
@@ -39,7 +39,8 @@ func main() {
 // Run is a function so that TestMain can execute it
 func Run() exitCode {
 	if err := cmd.NewCmdRoot(cmdutil.NewFactory(VERSION_NAME)).Execute(); err != nil {
-		logging.Get().Errorf("Error Encountered During Run: %v", color.Red.Sprint(err))
+		// logging might not be setup so output directly to stderr
+		fmt.Fprintf(os.Stderr, "Error: %v\n", color.Red.Sprint(err))
 		return exitError
 	}
 

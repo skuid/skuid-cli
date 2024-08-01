@@ -59,21 +59,33 @@ func (_c *CommandInformer_AddFlags_Call) RunAndReturn(run func(*cobra.Command, *
 }
 
 // ApplyEnvVars provides a mock function with given fields: cmd
-func (_m *CommandInformer) ApplyEnvVars(cmd *cobra.Command) error {
+func (_m *CommandInformer) ApplyEnvVars(cmd *cobra.Command) ([]*cmdutil.AppliedEnvVar, error) {
 	ret := _m.Called(cmd)
 
 	if len(ret) == 0 {
 		panic("no return value specified for ApplyEnvVars")
 	}
 
-	var r0 error
-	if rf, ok := ret.Get(0).(func(*cobra.Command) error); ok {
+	var r0 []*cmdutil.AppliedEnvVar
+	var r1 error
+	if rf, ok := ret.Get(0).(func(*cobra.Command) ([]*cmdutil.AppliedEnvVar, error)); ok {
+		return rf(cmd)
+	}
+	if rf, ok := ret.Get(0).(func(*cobra.Command) []*cmdutil.AppliedEnvVar); ok {
 		r0 = rf(cmd)
 	} else {
-		r0 = ret.Error(0)
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*cmdutil.AppliedEnvVar)
+		}
 	}
 
-	return r0
+	if rf, ok := ret.Get(1).(func(*cobra.Command) error); ok {
+		r1 = rf(cmd)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
 }
 
 // CommandInformer_ApplyEnvVars_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ApplyEnvVars'
@@ -94,12 +106,12 @@ func (_c *CommandInformer_ApplyEnvVars_Call) Run(run func(cmd *cobra.Command)) *
 	return _c
 }
 
-func (_c *CommandInformer_ApplyEnvVars_Call) Return(_a0 error) *CommandInformer_ApplyEnvVars_Call {
-	_c.Call.Return(_a0)
+func (_c *CommandInformer_ApplyEnvVars_Call) Return(_a0 []*cmdutil.AppliedEnvVar, _a1 error) *CommandInformer_ApplyEnvVars_Call {
+	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *CommandInformer_ApplyEnvVars_Call) RunAndReturn(run func(*cobra.Command) error) *CommandInformer_ApplyEnvVars_Call {
+func (_c *CommandInformer_ApplyEnvVars_Call) RunAndReturn(run func(*cobra.Command) ([]*cmdutil.AppliedEnvVar, error)) *CommandInformer_ApplyEnvVars_Call {
 	_c.Call.Return(run)
 	return _c
 }

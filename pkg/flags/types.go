@@ -23,6 +23,7 @@ type FlagInfo interface {
 	EnvVarName() string
 	LegacyEnvVarNames() []string
 	IsRequired() bool
+	FlagName() string
 }
 
 // Flag is a generic flag type that can take a type variable
@@ -53,6 +54,10 @@ func (f *Flag[T]) LegacyEnvVarNames() []string {
 
 func (f *Flag[T]) IsRequired() bool {
 	return f.Required
+}
+
+func (f *Flag[T]) FlagName() string {
+	return f.Name
 }
 
 func GetFlagValue[T FlagType](fs *pflag.FlagSet, name string) (*Value[T], error) {

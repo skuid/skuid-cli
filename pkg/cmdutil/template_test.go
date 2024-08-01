@@ -128,6 +128,8 @@ func (suite *ToCommandTestSuite) TestHooksCalled() {
 	// testify checks equality on pointers based on their referenced values, not the actual pointer value
 	factoryMatcher := mock.MatchedBy(testutil.SameMatcher(factory))
 	cmdMatcher := mock.MatchedBy(testutil.SameMatcher(expectedCmd))
+	mockCommander.EXPECT().ApplyEnvVars(mock.Anything).Return(nil, nil).Once()
+	mockCommander.EXPECT().SetupLogging(mock.Anything, mock.Anything).Return(nil).Once()
 	pPreRunCall := mockPPreRun.EXPECT().Execute(factoryMatcher, cmdMatcher, expectedArgs).Return(nil).Once()
 	preRunCall := mockPreRun.EXPECT().Execute(factoryMatcher, cmdMatcher, expectedArgs).Return(nil).Once().NotBefore(pPreRunCall)
 	mockRun.EXPECT().Execute(factoryMatcher, cmdMatcher, expectedArgs).Return(nil).Once().NotBefore(preRunCall)
@@ -178,6 +180,8 @@ func (suite *ToCommandTestSuite) TestHookErrors() {
 			t := suite.T()
 			mockLogConfig := logging_mocks.NewLogInformer(t)
 			mockCommander := cmdutil_mocks.NewCommandInformer(t)
+			mockCommander.EXPECT().ApplyEnvVars(mock.Anything).Return(nil, nil).Once()
+			mockCommander.EXPECT().SetupLogging(mock.Anything, mock.Anything).Return(nil).Once()
 			mockPPreRun := cmdutil_mocks.NewCommandFunc(t)
 			mockPreRun := cmdutil_mocks.NewCommandFunc(t)
 			mockRun := cmdutil_mocks.NewCommandFunc(t)
@@ -219,7 +223,7 @@ func (suite *ToCommandTestSuite) TestFlagsConfigured() {
 	cmdMatcher := mock.AnythingOfType("*cobra.Command")
 	acfCall := mockCommander.EXPECT().AddFlags(cmdMatcher, template.Flags).Once()
 	mfmeCall := mockCommander.EXPECT().MarkFlagsMutuallyExclusive(cmdMatcher, template.MutuallyExclusiveFlags).Once().NotBefore(acfCall)
-	aevCall := mockCommander.EXPECT().ApplyEnvVars(cmdMatcher).Return(nil).Once().NotBefore((mfmeCall))
+	aevCall := mockCommander.EXPECT().ApplyEnvVars(cmdMatcher).Return(nil, nil).Once().NotBefore((mfmeCall))
 	mockCommander.EXPECT().SetupLogging(cmdMatcher, mockLogConfig).Return(nil).Once().NotBefore(aevCall)
 	actualCmd := template.ToCommand(factory, nil, nil, emptyRun)
 	err := executeCommand(actualCmd, []string{}...)
@@ -229,11 +233,16 @@ func (suite *ToCommandTestSuite) TestFlagsConfigured() {
 func (suite *ToCommandTestSuite) TestFlagsNil() {
 	t := suite.T()
 
+	mockCommander := cmdutil_mocks.NewCommandInformer(t)
+	mockCommander.EXPECT().ApplyEnvVars(mock.Anything).Return(nil, nil).Once()
+	mockCommander.EXPECT().SetupLogging(mock.Anything, mock.Anything).Return(nil).Once()
 	template := &cmdutil.CmdTemplate{
 		Use:   "mycmd",
 		Flags: nil,
 	}
-	factory := &cmdutil.Factory{}
+	factory := &cmdutil.Factory{
+		Commander: mockCommander,
+	}
 	actualCmd := template.ToCommand(factory, nil, nil, emptyRun)
 	err := executeCommand(actualCmd, []string{}...)
 	require.NoError(t, err)
@@ -250,7 +259,7 @@ func (suite *ToCommandTestSuite) TestFlagsConfigureError() {
 			giveSetup: func(m *cmdutil_mocks.CommandInformer) {
 				m.EXPECT().AddFlags(mock.Anything, mock.Anything).Maybe()
 				m.EXPECT().MarkFlagsMutuallyExclusive(mock.Anything, mock.Anything).Maybe()
-				m.EXPECT().ApplyEnvVars(mock.Anything).Return(assert.AnError).Once()
+				m.EXPECT().ApplyEnvVars(mock.Anything).Return(nil, assert.AnError).Once()
 			},
 			wantError: assert.AnError,
 		},
@@ -259,7 +268,7 @@ func (suite *ToCommandTestSuite) TestFlagsConfigureError() {
 			giveSetup: func(m *cmdutil_mocks.CommandInformer) {
 				m.EXPECT().AddFlags(mock.Anything, mock.Anything).Maybe()
 				m.EXPECT().MarkFlagsMutuallyExclusive(mock.Anything, mock.Anything).Maybe()
-				m.EXPECT().ApplyEnvVars(mock.Anything).Return(nil).Maybe()
+				m.EXPECT().ApplyEnvVars(mock.Anything).Return(nil, nil).Maybe()
 				m.EXPECT().SetupLogging(mock.Anything, mock.Anything).Return(assert.AnError).Once()
 			},
 			wantError: assert.AnError,

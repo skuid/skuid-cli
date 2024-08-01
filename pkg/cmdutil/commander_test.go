@@ -26,12 +26,14 @@ type AddFlagsTestCase[T flags.FlagType] struct {
 }
 
 type ApplyEnvVarsTestCase struct {
-	testDescription   string
-	giveFlags         []*flags.Flag[string]
-	giveArgs          []string
-	wantFlags         map[string]string
-	wantErrorContains error
-	wantChanged       bool
+	testDescription     string
+	giveFlags           []*flags.Flag[string]
+	giveArgs            []string
+	wantFlags           map[string]string
+	wantErrorContains   error
+	wantChanged         bool
+	wantChangedByEnvVar string
+	wantDeprecated      bool
 }
 
 type SetupLoggingTestCase struct {
@@ -483,92 +485,114 @@ func (suite *CommanderApplyEnvVarsTestSuite) TestUpdatesValue() {
 	}
 	testCases := []ApplyEnvVarsTestCase{
 		{
-			testDescription:   "default env var",
-			giveFlags:         []*flags.Flag[string]{{Name: "foo", Usage: "this is a flag"}},
-			giveArgs:          []string{},
-			wantFlags:         map[string]string{"foo": "hello"},
-			wantErrorContains: nil,
-			wantChanged:       true,
+			testDescription:     "default env var",
+			giveFlags:           []*flags.Flag[string]{{Name: "foo", Usage: "this is a flag"}},
+			giveArgs:            []string{},
+			wantFlags:           map[string]string{"foo": "hello"},
+			wantErrorContains:   nil,
+			wantChanged:         true,
+			wantDeprecated:      false,
+			wantChangedByEnvVar: "SKUID_FOO",
 		},
 		{
-			testDescription:   "legacy env var",
-			giveFlags:         []*flags.Flag[string]{{Name: "legacy", Usage: "this is a flag", LegacyEnvVars: []string{"LEGACY_FOO"}}},
-			giveArgs:          []string{},
-			wantFlags:         map[string]string{"legacy": "goodbye"},
-			wantErrorContains: nil,
-			wantChanged:       true,
+			testDescription:     "legacy env var",
+			giveFlags:           []*flags.Flag[string]{{Name: "legacy", Usage: "this is a flag", LegacyEnvVars: []string{"LEGACY_FOO"}}},
+			giveArgs:            []string{},
+			wantFlags:           map[string]string{"legacy": "goodbye"},
+			wantErrorContains:   nil,
+			wantChanged:         true,
+			wantDeprecated:      true,
+			wantChangedByEnvVar: "LEGACY_FOO",
 		},
 		{
-			testDescription:   "legacy env var multiple options",
-			giveFlags:         []*flags.Flag[string]{{Name: "legacy", Usage: "this is a flag", LegacyEnvVars: []string{"LEGACY_FAKE1", "LEGACY_FAKE2", "LEGACY_FOO"}}},
-			giveArgs:          []string{},
-			wantFlags:         map[string]string{"legacy": "goodbye"},
-			wantErrorContains: nil,
-			wantChanged:       true,
+			testDescription:     "legacy env var multiple options",
+			giveFlags:           []*flags.Flag[string]{{Name: "legacy", Usage: "this is a flag", LegacyEnvVars: []string{"LEGACY_FAKE1", "LEGACY_FAKE2", "LEGACY_FOO"}}},
+			giveArgs:            []string{},
+			wantFlags:           map[string]string{"legacy": "goodbye"},
+			wantErrorContains:   nil,
+			wantChanged:         true,
+			wantDeprecated:      true,
+			wantChangedByEnvVar: "LEGACY_FOO",
 		},
 		{
-			testDescription:   "legacy env var first found in specified order",
-			giveFlags:         []*flags.Flag[string]{{Name: "legacy", Usage: "this is a flag", LegacyEnvVars: []string{"LEGACY_FOO2", "LEGACY_FOO"}}},
-			giveArgs:          []string{},
-			wantFlags:         map[string]string{"legacy": "goodbye2222"},
-			wantErrorContains: nil,
-			wantChanged:       true,
+			testDescription:     "legacy env var first found in specified order",
+			giveFlags:           []*flags.Flag[string]{{Name: "legacy", Usage: "this is a flag", LegacyEnvVars: []string{"LEGACY_FOO2", "LEGACY_FOO"}}},
+			giveArgs:            []string{},
+			wantFlags:           map[string]string{"legacy": "goodbye2222"},
+			wantErrorContains:   nil,
+			wantChanged:         true,
+			wantDeprecated:      true,
+			wantChangedByEnvVar: "LEGACY_FOO2",
 		},
 		{
-			testDescription:   "default env var when has legacy",
-			giveFlags:         []*flags.Flag[string]{{Name: "foo", Usage: "this is a flag", LegacyEnvVars: []string{"LEGACY_FOO"}}},
-			giveArgs:          []string{},
-			wantFlags:         map[string]string{"foo": "hello"},
-			wantErrorContains: nil,
-			wantChanged:       true,
+			testDescription:     "default env var when has legacy",
+			giveFlags:           []*flags.Flag[string]{{Name: "foo", Usage: "this is a flag", LegacyEnvVars: []string{"LEGACY_FOO"}}},
+			giveArgs:            []string{},
+			wantFlags:           map[string]string{"foo": "hello"},
+			wantErrorContains:   nil,
+			wantChanged:         true,
+			wantDeprecated:      false,
+			wantChangedByEnvVar: "SKUID_FOO",
 		},
 		{
-			testDescription:   "empty used when not required",
-			giveFlags:         []*flags.Flag[string]{{Name: "bar", Usage: "this is a flag", Default: "somevalue"}},
-			giveArgs:          []string{},
-			wantFlags:         map[string]string{"bar": ""},
-			wantErrorContains: nil,
-			wantChanged:       true,
+			testDescription:     "empty used when not required",
+			giveFlags:           []*flags.Flag[string]{{Name: "bar", Usage: "this is a flag", Default: "somevalue"}},
+			giveArgs:            []string{},
+			wantFlags:           map[string]string{"bar": ""},
+			wantErrorContains:   nil,
+			wantChanged:         true,
+			wantDeprecated:      false,
+			wantChangedByEnvVar: "SKUID_BAR",
 		},
 		{
-			testDescription:   "empty used when required",
-			giveFlags:         []*flags.Flag[string]{{Name: "bar", Usage: "this is a flag", Default: "abcd", Required: true}},
-			giveArgs:          []string{},
-			wantFlags:         map[string]string{"bar": ""},
-			wantErrorContains: nil,
-			wantChanged:       true,
+			testDescription:     "empty used when required",
+			giveFlags:           []*flags.Flag[string]{{Name: "bar", Usage: "this is a flag", Default: "abcd", Required: true}},
+			giveArgs:            []string{},
+			wantFlags:           map[string]string{"bar": ""},
+			wantErrorContains:   nil,
+			wantChanged:         true,
+			wantDeprecated:      false,
+			wantChangedByEnvVar: "SKUID_BAR",
 		},
 		{
-			testDescription:   "empty used when default empty and legacy non-empty when not required",
-			giveFlags:         []*flags.Flag[string]{{Name: "bar", Usage: "this is a flag", Default: "somevalue", LegacyEnvVars: []string{"LEGACY_FOO"}}},
-			giveArgs:          []string{},
-			wantFlags:         map[string]string{"bar": ""},
-			wantErrorContains: nil,
-			wantChanged:       true,
+			testDescription:     "empty used when default empty and legacy non-empty when not required",
+			giveFlags:           []*flags.Flag[string]{{Name: "bar", Usage: "this is a flag", Default: "somevalue", LegacyEnvVars: []string{"LEGACY_FOO"}}},
+			giveArgs:            []string{},
+			wantFlags:           map[string]string{"bar": ""},
+			wantErrorContains:   nil,
+			wantChanged:         true,
+			wantDeprecated:      false,
+			wantChangedByEnvVar: "SKUID_BAR",
 		},
 		{
-			testDescription:   "empty used when default empty and legacy non-empty when required",
-			giveFlags:         []*flags.Flag[string]{{Name: "bar", Usage: "this is a flag", Default: "somevalue", Required: true, LegacyEnvVars: []string{"LEGACY_FOO"}}},
-			giveArgs:          []string{},
-			wantFlags:         map[string]string{"bar": ""},
-			wantErrorContains: nil,
-			wantChanged:       true,
+			testDescription:     "empty used when default empty and legacy non-empty when required",
+			giveFlags:           []*flags.Flag[string]{{Name: "bar", Usage: "this is a flag", Default: "somevalue", Required: true, LegacyEnvVars: []string{"LEGACY_FOO"}}},
+			giveArgs:            []string{},
+			wantFlags:           map[string]string{"bar": ""},
+			wantErrorContains:   nil,
+			wantChanged:         true,
+			wantDeprecated:      false,
+			wantChangedByEnvVar: "SKUID_BAR",
 		},
 		{
-			testDescription:   "non-empty used when required",
-			giveFlags:         []*flags.Flag[string]{{Name: "foo", Usage: "this is a flag", Default: "somevalue", Required: true}},
-			giveArgs:          []string{},
-			wantFlags:         map[string]string{"foo": "hello"},
-			wantErrorContains: nil,
-			wantChanged:       true,
+			testDescription:     "non-empty used when required",
+			giveFlags:           []*flags.Flag[string]{{Name: "foo", Usage: "this is a flag", Default: "somevalue", Required: true}},
+			giveArgs:            []string{},
+			wantFlags:           map[string]string{"foo": "hello"},
+			wantErrorContains:   nil,
+			wantChanged:         true,
+			wantDeprecated:      false,
+			wantChangedByEnvVar: "SKUID_FOO",
 		},
 		{
-			testDescription:   "no default legacy is empty used when required",
-			giveFlags:         []*flags.Flag[string]{{Name: "legacy", Usage: "this is a flag", Default: "abcd", Required: true, LegacyEnvVars: []string{"SKUID_BAR"}}},
-			giveArgs:          []string{},
-			wantFlags:         map[string]string{"legacy": ""},
-			wantErrorContains: nil,
-			wantChanged:       true,
+			testDescription:     "no default legacy is empty used when required",
+			giveFlags:           []*flags.Flag[string]{{Name: "legacy", Usage: "this is a flag", Default: "abcd", Required: true, LegacyEnvVars: []string{"SKUID_BAR"}}},
+			giveArgs:            []string{},
+			wantFlags:           map[string]string{"legacy": ""},
+			wantErrorContains:   nil,
+			wantChanged:         true,
+			wantDeprecated:      true,
+			wantChangedByEnvVar: "SKUID_BAR",
 		},
 	}
 
@@ -583,20 +607,24 @@ func (suite *CommanderApplyEnvVarsTestSuite) TestDoesNotUpdateValue() {
 	}
 	testCases := []ApplyEnvVarsTestCase{
 		{
-			testDescription:   "passed on command line",
-			giveFlags:         []*flags.Flag[string]{{Name: "foo", Usage: "this is a flag"}},
-			giveArgs:          []string{"--foo", "bar"},
-			wantFlags:         map[string]string{"foo": "bar"},
-			wantErrorContains: nil,
-			wantChanged:       true,
+			testDescription:     "passed on command line",
+			giveFlags:           []*flags.Flag[string]{{Name: "foo", Usage: "this is a flag"}},
+			giveArgs:            []string{"--foo", "bar"},
+			wantFlags:           map[string]string{"foo": "bar"},
+			wantErrorContains:   nil,
+			wantChanged:         true,
+			wantDeprecated:      false,
+			wantChangedByEnvVar: "",
 		},
 		{
-			testDescription:   "not in env",
-			giveFlags:         []*flags.Flag[string]{{Name: "abc", Usage: "this is a flag", Default: "somevalue", LegacyEnvVars: []string{"LEGACY_ABC"}}},
-			giveArgs:          []string{},
-			wantFlags:         map[string]string{"abc": "somevalue"},
-			wantErrorContains: nil,
-			wantChanged:       false,
+			testDescription:     "not in env",
+			giveFlags:           []*flags.Flag[string]{{Name: "abc", Usage: "this is a flag", Default: "somevalue", LegacyEnvVars: []string{"LEGACY_ABC"}}},
+			giveArgs:            []string{},
+			wantFlags:           map[string]string{"abc": "somevalue"},
+			wantErrorContains:   nil,
+			wantChanged:         false,
+			wantDeprecated:      false,
+			wantChangedByEnvVar: "",
 		},
 	}
 	runApplyEnvVarsTests(&suite.Suite, envVars, testCases)
@@ -614,8 +642,11 @@ func (suite *CommanderApplyEnvVarsTestSuite) TestFailsToUpdate() {
 	}
 	cmd := &cobra.Command{Use: "mycmd"}
 	cmd.RunE = emptyCobraRun
+	var appliedEnvVars []*cmdutil.AppliedEnvVar
 	cmd.PersistentPreRunE = func(c *cobra.Command, a []string) error {
-		return cd.ApplyEnvVars(cmd)
+		var err error
+		appliedEnvVars, err = cd.ApplyEnvVars(cmd)
+		return err
 	}
 	f := &flags.Flag[bool]{Name: "foo", Usage: "this is a flag", Default: true}
 	cmd.Flags().Bool(f.Name, f.Default, f.Usage)
@@ -625,6 +656,49 @@ func (suite *CommanderApplyEnvVarsTestSuite) TestFailsToUpdate() {
 	err := executeCommand(cmd, []string{}...)
 
 	assert.ErrorContains(t, err, fmt.Sprintf("unable to use value from environment variable %v for flag %q", "SKUID_FOO", f.Name))
+	assert.Equal(t, len(appliedEnvVars), 0)
+}
+
+func (suite *CommanderApplyEnvVarsTestSuite) TestFailsToUpdateMultipleErrors() {
+	t := suite.T()
+	envVars := map[string]testutil.EnvVar[string]{
+		"SKUID_FOO": {EnvValue: "hello", Value: "hello"},
+		"SKUID_BAR": {EnvValue: "goodbye", Value: "goodbye"},
+	}
+	testutil.SetupEnv(t, envVars)
+	flagMgr := &cmdutil.FlagManager{}
+	cd := &cmdutil.Commander{
+		FlagManager: flagMgr,
+	}
+	cmd := &cobra.Command{Use: "mycmd"}
+	cmd.RunE = emptyCobraRun
+	var appliedEnvVars []*cmdutil.AppliedEnvVar
+	cmd.PersistentPreRunE = func(c *cobra.Command, a []string) error {
+		var err error
+		appliedEnvVars, err = cd.ApplyEnvVars(cmd)
+		return err
+	}
+	fb := &flags.Flag[bool]{Name: "foo", Usage: "this is a flag", Default: true}
+	cmd.Flags().Bool(fb.Name, fb.Default, fb.Usage)
+	flagMgr.Track(cmd.Flags().Lookup(fb.Name), fb)
+	cmd.Flags().SetAnnotation(fb.Name, cmdutil.FlagSetBySkuidCliAnnotation, []string{"true"})
+	fi := &flags.Flag[int]{Name: "bar", Usage: "this is a flag", Default: 500}
+	cmd.Flags().Int(fi.Name, fi.Default, fi.Usage)
+	flagMgr.Track(cmd.Flags().Lookup(fi.Name), fi)
+	cmd.Flags().SetAnnotation(fi.Name, cmdutil.FlagSetBySkuidCliAnnotation, []string{"true"})
+
+	err := executeCommand(cmd, []string{}...)
+
+	assert.ErrorContains(t, err, fb.Name)
+	assert.ErrorContains(t, err, "SKUID_FOO")
+	assert.ErrorContains(t, err, fi.Name)
+	assert.ErrorContains(t, err, "SKUID_BAR")
+	u, ok := err.(interface {
+		Unwrap() []error
+	})
+	require.True(t, ok)
+	assert.Equal(t, 2, len(u.Unwrap()))
+	assert.Equal(t, len(appliedEnvVars), 0)
 }
 
 func (suite *CommanderApplyEnvVarsTestSuite) TestFlagNotTracked() {
@@ -676,8 +750,11 @@ func (suite *CommanderApplyEnvVarsTestSuite) TestFlagNotTracked() {
 			}
 			cmd := &cobra.Command{Use: "mycmd"}
 			cmd.RunE = emptyCobraRun
+			var appliedEnvVars []*cmdutil.AppliedEnvVar
 			cmd.PersistentPreRunE = func(c *cobra.Command, a []string) error {
-				return cd.ApplyEnvVars(cmd)
+				var err error
+				appliedEnvVars, err = cd.ApplyEnvVars(cmd)
+				return err
 			}
 			tc.setupFlags(cmd)
 
@@ -691,6 +768,7 @@ func (suite *CommanderApplyEnvVarsTestSuite) TestFlagNotTracked() {
 			actualFlag := cmd.Flags().Lookup(tc.wantFlag)
 			require.NotNil(t, actualFlag)
 			assert.False(t, actualFlag.Changed)
+			assert.Equal(t, len(appliedEnvVars), 0)
 		})
 	}
 }
@@ -1049,8 +1127,11 @@ func runConversionTest[T flags.FlagType](suite *suite.Suite, envVars map[string]
 			}
 			cmd := &cobra.Command{Use: "mycmd"}
 			cmd.RunE = emptyCobraRun
+			var appliedEnvVars []*cmdutil.AppliedEnvVar
 			cmd.PersistentPreRunE = func(c *cobra.Command, a []string) error {
-				return cd.ApplyEnvVars(cmd)
+				var err error
+				appliedEnvVars, err = cd.ApplyEnvVars(cmd)
+				return err
 			}
 			flag := addFlag(cmd.Flags(), flagName)
 			flagMgr.Track(cmd.Flags().Lookup(flagName), flag)
@@ -1058,11 +1139,17 @@ func runConversionTest[T flags.FlagType](suite *suite.Suite, envVars map[string]
 			err := executeCommand(cmd, []string{}...)
 			if wantError {
 				assert.ErrorContains(t, err, envKey)
+				assert.Equal(t, len(appliedEnvVars), 0)
 			} else {
 				require.NoError(t, err)
 				actualValue, err := getValue(cmd.Flags(), flagName)
 				require.NoError(t, err)
 				assert.Equal(t, envValue.Value, actualValue)
+				require.Equal(t, len(appliedEnvVars), 1)
+				aev := appliedEnvVars[0]
+				assert.Equal(t, envKey, aev.Name)
+				assert.Equal(t, flagName, aev.Flag.FlagName())
+				assert.False(t, false)
 			}
 		})
 	}
@@ -1169,8 +1256,11 @@ func runApplyEnvVarsTests(suite *suite.Suite, envVars map[string]testutil.EnvVar
 			}
 			cmd := &cobra.Command{Use: "mycmd"}
 			cmd.RunE = emptyCobraRun
+			var appliedEnvVars []*cmdutil.AppliedEnvVar
 			cmd.PersistentPreRunE = func(c *cobra.Command, a []string) error {
-				return cd.ApplyEnvVars(cmd)
+				var err error
+				appliedEnvVars, err = cd.ApplyEnvVars(cmd)
+				return err
 			}
 			for _, f := range tc.giveFlags {
 				cmd.Flags().String(f.Name, f.Default, f.Usage)
@@ -1189,6 +1279,7 @@ func runApplyEnvVarsTests(suite *suite.Suite, envVars map[string]testutil.EnvVar
 				require.NoError(t, err)
 			}
 
+			changedCount := 0
 			for k, v := range tc.wantFlags {
 				flag := cmd.Flags().Lookup(k)
 				require.NotNil(t, flag)
@@ -1196,7 +1287,20 @@ func runApplyEnvVarsTests(suite *suite.Suite, envVars map[string]testutil.EnvVar
 				require.NoError(t, err)
 				assert.Equal(t, v, val)
 				assert.Equal(t, flag.Changed, tc.wantChanged)
+				i := slices.IndexFunc(appliedEnvVars, func(a *cmdutil.AppliedEnvVar) bool {
+					return a.Flag.FlagName() == k
+				})
+				if tc.wantChangedByEnvVar != "" {
+					changedCount++
+					require.GreaterOrEqual(t, i, 0)
+					aev := appliedEnvVars[i]
+					assert.Equal(t, tc.wantChangedByEnvVar, aev.Name)
+					assert.Equal(t, tc.wantDeprecated, aev.Deprecated)
+				} else {
+					require.GreaterOrEqual(t, i, -1)
+				}
 			}
+			assert.Equal(t, len(appliedEnvVars), changedCount)
 		})
 	}
 }
