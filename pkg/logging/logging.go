@@ -1,11 +1,12 @@
 package logging
 
 import (
+	"errors"
 	"fmt"
 	"os"
-	"path"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/gookit/color"
@@ -113,51 +114,39 @@ func GetFieldLogging() bool {
 	return fieldLogging
 }
 
-func SetFileLogging(loggingDirectory string) (err error) {
-	var wd string
-	if wd, err = os.Getwd(); err != nil {
-		return
+func SetFileLogging(loggingDirectory string) error {
+	l, ok := Get().(*logrus.Logger)
+	if !ok {
+		return fmt.Errorf("unable to obtain logger")
 	}
 
-	var dir string
-	if strings.Contains(loggingDirectory, wd) {
-		dir = loggingDirectory
-	} else {
-		dir = path.Join(wd, loggingDirectory)
-	}
-
-	if stat, e := os.Stat(dir); e != nil {
-		if err = os.MkdirAll(dir, 0777); err != nil {
-			return err
+	// MkdirAll will do nothing if the directory already exists, create it with specified
+	// permissions if not exist and return error otherwise (e.g., the path points to a file)
+	if err := os.MkdirAll(loggingDirectory, 0777); err != nil {
+		if errors.Is(err, syscall.ENOTDIR) {
+			return fmt.Errorf("must specify a directory for logging directory: %v", loggingDirectory)
 		}
-	} else if !stat.IsDir() {
-		err = fmt.Errorf("directory required at loc: %v", dir)
-		return
-	}
-
-	logFileName := time.Now().Format(fileStringFormat) + ".log"
-
-	if _, err = os.Create(path.Join(dir, logFileName)); err != nil {
-		return
-	}
-
-	if file, err := os.OpenFile(path.Join(dir, logFileName), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666); err != nil {
 		return err
-	} else {
-		if l, ok := Get().(*logrus.Logger); !ok {
-			panic(fmt.Errorf("unable to obtain logger"))
-		} else {
-			resetFileLogging()
-			l.SetOutput(file)
-			l.SetFormatter(&logrus.TextFormatter{})
-			color.Enable = false
-			logFile = file
-			fileLogging = true
-			fileLoggingDirectory = loggingDirectory
-		}
 	}
 
-	return
+	file, err := os.CreateTemp(loggingDirectory, fmt.Sprintf("skuid-cli-%v-*.log", time.Now().Format(fileStringFormat)))
+	if err != nil {
+		return err
+	}
+	// CreateTemp applies 0600
+	if err := os.Chmod(file.Name(), 0666); err != nil {
+		return err
+	}
+
+	resetFileLogging()
+	l.SetOutput(file)
+	l.SetFormatter(&logrus.TextFormatter{})
+	color.Enable = false
+	logFile = file
+	fileLogging = true
+	fileLoggingDirectory = loggingDirectory
+
+	return nil
 }
 
 func GetFileLogging() (string, bool) {
