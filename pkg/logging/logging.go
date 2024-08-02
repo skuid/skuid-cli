@@ -59,14 +59,13 @@ func NewLogConfig() LogInformer {
 }
 
 var (
-	safe                 sync.Mutex
-	loggerSingleton      logrus.Ext1FieldLogger
-	fileLogging          bool
-	fileLoggingDirectory string
-	logFile              *os.File
-	fieldLogging         bool
-	LineSeparator        = strings.Repeat("-", SEPARATOR_LENGTH)
-	StarSeparator        = strings.Repeat("*", SEPARATOR_LENGTH)
+	safe            sync.Mutex
+	loggerSingleton logrus.Ext1FieldLogger
+	fileLogging     bool
+	logFile         *os.File
+	fieldLogging    bool
+	LineSeparator   = strings.Repeat("-", SEPARATOR_LENGTH)
+	StarSeparator   = strings.Repeat("*", SEPARATOR_LENGTH)
 
 	fileStringFormat = func() (ret string) {
 		ret = time.RFC3339
@@ -110,10 +109,6 @@ func SetFieldLogging(b bool) {
 	fieldLogging = b
 }
 
-func GetFieldLogging() bool {
-	return fieldLogging
-}
-
 func SetFileLogging(loggingDirectory string) error {
 	l, ok := Get().(*logrus.Logger)
 	if !ok {
@@ -144,13 +139,8 @@ func SetFileLogging(loggingDirectory string) error {
 	color.Enable = false
 	logFile = file
 	fileLogging = true
-	fileLoggingDirectory = loggingDirectory
 
 	return nil
-}
-
-func GetFileLogging() (string, bool) {
-	return fileLoggingDirectory, fileLogging
 }
 
 func WithFields(fields logrus.Fields) logrus.Ext1FieldLogger {
@@ -166,25 +156,6 @@ func WithField(field string, value interface{}) logrus.Ext1FieldLogger {
 	if fileLogging || Level(loggerSingleton) == logrus.TraceLevel && fieldLogging {
 		return loggerSingleton.WithField(field, value)
 	}
-	return loggerSingleton
-}
-
-func Reset() logrus.Ext1FieldLogger {
-	safe.Lock()
-	loggerSingleton = nil
-	resetFileLogging()
-	fieldLogging = false
-	safe.Unlock()
-	return Get()
-}
-
-func DisableLogging() logrus.Ext1FieldLogger {
-	loggerSingleton = Get()
-	safe.Lock()
-	l, _ := loggerSingleton.(*logrus.Logger)
-	l.Out = nil
-	l.SetLevel(logrus.PanicLevel)
-	safe.Unlock()
 	return loggerSingleton
 }
 
@@ -221,6 +192,5 @@ func resetFileLogging() {
 		}
 		logFile = nil
 	}
-	fileLoggingDirectory = ""
 	fileLogging = false
 }
