@@ -15,6 +15,7 @@ unset SKUID_TRACE
 unset SKUID_FILE_LOGGING
 unset SKUID_DIAGNOSTIC
 unset SKUID_IGNORE_SKUID_DB
+unset SKUID_NO_CONSOLE
 # TODO: This can be removed once https://github.com/skuid/skuid-cli/issues/150 is resolved
 unset SKUID_SKIP_DATA_SOURCES
 

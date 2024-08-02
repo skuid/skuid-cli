@@ -98,12 +98,18 @@ func (c *Commander) SetupLogging(cmd *cobra.Command, li logging.LogInformer) (er
 		return err
 	}
 
+	noConsole, err := cmd.Flags().GetBool(flags.NoConsole.Name)
+	if err != nil {
+		return err
+	}
+
 	return li.Setup(logging.LoggingOptions{
 		Verbose:        verbose,
 		Trace:          trace,
 		Diagnostic:     diagnostic,
 		FileLogging:    fileLoggingEnabled,
 		FileLoggingDir: loggingDirectory,
+		NoConsole:      noConsole,
 	})
 }
 

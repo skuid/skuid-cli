@@ -3,6 +3,7 @@ package logging
 import (
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 	"sync"
@@ -22,6 +23,7 @@ type LoggingOptions struct {
 	Diagnostic     bool
 	FileLogging    bool
 	FileLoggingDir string
+	NoConsole      bool
 }
 
 // Wrapping the singleton to support testing - without this, any tests written to test the "Set*" methods
@@ -160,6 +162,11 @@ func setupLog(options LoggingOptions) error {
 		logLevel = logrus.DebugLevel
 	}
 
+	var output io.Writer = os.Stdout
+	if options.NoConsole {
+		output = io.Discard
+	}
+
 	if options.FileLogging {
 		var err error
 		logFile, err = createLogFile(options.FileLoggingDir)
@@ -171,7 +178,7 @@ func setupLog(options LoggingOptions) error {
 	loggerSingleton = logrus.New()
 	loggerSingleton.SetLevel(logLevel)
 	loggerSingleton.SetFormatter(&logrus.TextFormatter{})
-	loggerSingleton.SetOutput(os.Stdout)
+	loggerSingleton.SetOutput(output)
 	if options.FileLogging {
 		loggerSingleton.AddHook(lfshook.NewHook(logFile, &logrus.TextFormatter{DisableColors: true}))
 	}

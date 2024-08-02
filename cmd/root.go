@@ -16,7 +16,7 @@ func NewCmdRoot(factory *cmdutil.Factory) *cobra.Command {
 		Short: "A CLI for Skuid APIs",
 		Long:  `A command-line interface used to retrieve and deploy Skuid NLX sites.`,
 		Flags: &cmdutil.CommandFlags{
-			Bool:   []*flags.Flag[bool]{flags.Verbose, flags.Trace, flags.FileLogging, flags.Diagnostic},
+			Bool:   []*flags.Flag[bool]{flags.Verbose, flags.Trace, flags.FileLogging, flags.Diagnostic, flags.NoConsole},
 			String: []*flags.Flag[string]{flags.LogDirectory},
 		},
 		Commands: []*cobra.Command{

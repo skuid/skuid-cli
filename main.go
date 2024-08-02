@@ -41,8 +41,10 @@ func Run() exitCode {
 	factory := cmdutil.NewFactory(VERSION_NAME)
 	defer Teardown(factory)
 	if err := cmd.NewCmdRoot(factory).Execute(); err != nil {
-		// logging might not be setup so output directly to stderr
-		fmt.Fprintf(os.Stderr, "Error: %v\n", color.Red.Sprint(err))
+		// logging might not be setup so output directly to stderr and enable colors
+		// which may have been disabled if file logging was enabled
+		color.Enable = true
+		fmt.Fprintf(os.Stderr, "%v %v\n", color.Red.Sprint("X"), err)
 		return exitError
 	}
 

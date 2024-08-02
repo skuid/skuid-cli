@@ -46,6 +46,12 @@ var (
 		LegacyEnvVars: []string{constants.ENV_SKUID_IGNORE_SKUIDDB},
 	}
 
+	NoConsole = &Flag[bool]{
+		Name:   "no-console",
+		Usage:  "Disable console logging",
+		Global: true,
+	}
+
 	// TODO: This can be removed once https://github.com/skuid/skuid-cli/issues/150 is resolved
 	SkipDataSources = &Flag[bool]{
 		Name:  "skip-data-sources",

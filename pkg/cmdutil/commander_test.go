@@ -914,6 +914,7 @@ func (suite *CommanderSetupLoggingTestSuite) TestConfiguredSuccess() {
 		fs.Bool(flags.Trace.Name, flags.Trace.Default, "this is my usage")
 		fs.Bool(flags.FileLogging.Name, flags.FileLogging.Default, "this is my usage")
 		fs.Bool(flags.Diagnostic.Name, flags.Diagnostic.Default, "this is my usage")
+		fs.Bool(flags.NoConsole.Name, flags.NoConsole.Default, "this is my usage")
 		return cmd
 	}
 	testCases := []SetupLoggingTestCase{
@@ -959,6 +960,17 @@ func (suite *CommanderSetupLoggingTestSuite) TestConfiguredSuccess() {
 				return cmd, li
 			},
 			giveArgs:          []string{"--diagnostic"},
+			wantErrorContains: nil,
+		},
+		{
+			testDescription: "is no console",
+			giveSetup: func(t *testing.T) (*cobra.Command, logging.LogInformer) {
+				cmd := createCommand()
+				li := mocks.NewLogInformer(t)
+				li.EXPECT().Setup(logging.LoggingOptions{NoConsole: true, FileLoggingDir: flags.LogDirectory.Default}).Return(nil).Once()
+				return cmd, li
+			},
+			giveArgs:          []string{"--no-console"},
 			wantErrorContains: nil,
 		},
 		{
@@ -1040,6 +1052,9 @@ func (suite *CommanderSetupLoggingTestSuite) TestConfiguredError() {
 		if !slices.Contains(skip, flags.LogDirectory.Name) {
 			fs.String(flags.LogDirectory.Name, flags.LogDirectory.Default, "this is my usage")
 		}
+		if !slices.Contains(skip, flags.NoConsole.Name) {
+			fs.Bool(flags.NoConsole.Name, flags.NoConsole.Default, "this is my usage")
+		}
 		return cmd
 	}
 	testCases := []SetupLoggingTestCase{
@@ -1092,6 +1107,16 @@ func (suite *CommanderSetupLoggingTestSuite) TestConfiguredError() {
 			},
 			giveArgs:          []string{},
 			wantErrorContains: errors.New(flags.LogDirectory.Name),
+		},
+		{
+			testDescription: "noconsole missing",
+			giveSetup: func(t *testing.T) (*cobra.Command, logging.LogInformer) {
+				cmd := createCommand([]string{flags.NoConsole.Name})
+				li := mocks.NewLogInformer(t)
+				return cmd, li
+			},
+			giveArgs:          []string{},
+			wantErrorContains: errors.New(flags.NoConsole.Name),
 		},
 		{
 			testDescription: "init fails",
