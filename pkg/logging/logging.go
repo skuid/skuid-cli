@@ -3,15 +3,26 @@ package logging
 import (
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 	"sync"
 	"syscall"
+	"testing"
 	"time"
 
 	"github.com/gookit/color"
 	"github.com/sirupsen/logrus"
+	clierrors "github.com/skuid/skuid-cli/pkg/errors"
 )
+
+type LoggingOptions struct {
+	Verbose        bool
+	Trace          bool
+	Diagnostic     bool
+	FileLogging    bool
+	FileLoggingDir string
+}
 
 // Wrapping the singleton to support testing - without this, any tests written to test the "Set*" methods
 // would use the global singleton logging package methods which would change the actual logging
@@ -29,25 +40,18 @@ import (
 // https://github.com/skuid/skuid-cli/issues/180
 // https://github.com/skuid/skuid-cli/issues/181
 type LogInformer interface {
-	SetVerbose()
-	SetTrace()
-	SetDiagnostic()
-	SetFileLogging(loggingDirectory string) (err error)
+	Setup(LoggingOptions) error
+	Teardown()
 }
 
 type LogConfig struct{}
 
-func (l *LogConfig) SetVerbose() {
-	SetVerbose()
+func (l *LogConfig) Setup(opts LoggingOptions) error {
+	return Setup(opts)
 }
-func (l *LogConfig) SetTrace() {
-	SetTrace()
-}
-func (l *LogConfig) SetDiagnostic() {
-	SetDiagnostic()
-}
-func (l *LogConfig) SetFileLogging(loggingDirectory string) (err error) {
-	return SetFileLogging(loggingDirectory)
+
+func (l *LogConfig) Teardown() {
+	Teardown()
 }
 
 func NewLogConfig() LogInformer {
@@ -56,10 +60,9 @@ func NewLogConfig() LogInformer {
 
 var (
 	safe             sync.Mutex
-	loggerSingleton  logrus.Ext1FieldLogger
-	fileLogging      bool
-	logFile          *os.File
+	loggerSingleton  *logrus.Logger
 	fieldLogging     bool
+	logFile          *os.File
 	fileStringFormat = func() (ret string) {
 		ret = time.RFC3339
 		ret = strings.ReplaceAll(ret, " ", "")
@@ -68,122 +71,134 @@ var (
 	}()
 )
 
-func Level(logger logrus.Ext1FieldLogger) logrus.Level {
-	if l, ok := (logger).(*logrus.Logger); ok {
-		return l.Level
+func WithFields(fields logrus.Fields) *logrus.Entry {
+	loggerSingleton = Get()
+	if fieldLogging {
+		return loggerSingleton.WithFields(fields)
+	}
+	return logrus.NewEntry(loggerSingleton)
+}
+
+func WithField(field string, value interface{}) *logrus.Entry {
+	loggerSingleton = Get()
+	if fieldLogging {
+		return loggerSingleton.WithField(field, value)
+	}
+	return logrus.NewEntry(loggerSingleton)
+}
+
+func Get() *logrus.Logger {
+	safe.Lock()
+	defer safe.Unlock()
+
+	// We want to enforce that no logging occurs prior to logging being initialized to ensure that all
+	// logs go to a single location during execution (see
+	// https://github.com/skuid/skuid-cli/issues/180 &
+	// https://github.com/techfg/skuid-cli/commit/5a85e16589469829a4b52973aeb7795b3a1a0048#diff-dc4c8db195eb54b1b5300cbe47798f318b8c7444bac9475c7668c65d15a665baR32).
+	// However, due to the use of a global singleton for logging  (see https://github.com/skuid/skuid-cli/issues/174),
+	// while it is safe to assert here during normal execution (because Init will be called in PersistentPreRun
+	// before anything else occurs and any log statements emitted), during testing, Init doesn't get called so
+	// when code attempts to log a message it will panic.  Until the global singleton is eliminated and migrated to an
+	// injected logger (e.g., from Factory and passed down the execution chain - see https://github.com/techfg/skuid-cli/blob/tfgbeta/pkg/cmdutil/factory.go#L14),
+	// there are three options:
+	//    1. If loggerSingleton is null here, call Init with default options - not desired behavior for normal execution
+	//       as we want to enforce that no logging occurs until Init is complete
+	//    2. Add a TestMain to every testing package to call Init with default options - not ideal and a lot of code to
+	//       add maintain that isn't obvious to the casual observer
+	//    3. Detect that we are under test and if logging isn't intialized, initialze with defaults - While not ideal,
+	//       this is effectively what the prior version of this code did, it would just always initialize with defaults
+	//       instead of only during testing.
+	// TODO: This workaround is not ideal and the entire logging package needs to be revisited with proper
+	//       DI throughout the entire codebase.  Until then, this workaround achieves desired outcome
+	//       of maintaining all current tests while enforcing that during normal execution, Init must
+	//       be called prior to any log messages being emitted. Once DI is implemented, the entire logging package
+	//       goes away so this will be eliminated.
+	if testing.Testing() && loggerSingleton == nil {
+		if err := setupLog(LoggingOptions{}); err != nil {
+			panic(err)
+		}
 	} else {
-		return logrus.PanicLevel
-	}
-}
-
-func SetVerbose() logrus.Ext1FieldLogger {
-	loggerSingleton = Get()
-	l, _ := loggerSingleton.(*logrus.Logger)
-	l.SetLevel(logrus.DebugLevel)
-	return loggerSingleton
-}
-
-func SetTrace() logrus.Ext1FieldLogger {
-	loggerSingleton = Get()
-	l, _ := loggerSingleton.(*logrus.Logger)
-	l.SetLevel(logrus.TraceLevel)
-	return loggerSingleton
-}
-
-func SetDiagnostic() logrus.Ext1FieldLogger {
-	loggerSingleton = Get()
-	l, _ := loggerSingleton.(*logrus.Logger)
-	l.SetLevel(logrus.TraceLevel)
-	SetFieldLogging(true)
-	return loggerSingleton
-}
-
-func SetFieldLogging(b bool) {
-	fieldLogging = b
-}
-
-func SetFileLogging(loggingDirectory string) error {
-	l, ok := Get().(*logrus.Logger)
-	if !ok {
-		return fmt.Errorf("unable to obtain logger")
+		// should never occur in production
+		// this enforces that during normal execution, no logging occurs prior to logging being initialized
+		// as we want to ensure that all logs go to a single location and initialization is required to
+		// configure the target location (stdout, file) with the specified logging level.
+		clierrors.MustConditionf(loggerSingleton != nil, "logger not initialized")
 	}
 
+	return loggerSingleton
+}
+
+func Setup(options LoggingOptions) error {
+	safe.Lock()
+	defer safe.Unlock()
+
+	return setupLog(options)
+}
+
+func Teardown() {
+	safe.Lock()
+	defer safe.Unlock()
+
+	if logFile != nil {
+		// intentionally ignoring any error since there is nothing we can do
+		// and we should only be tearing down when we are exiting anyway
+		_ = logFile.Close()
+		logFile = nil
+	}
+	loggerSingleton = nil
+	fieldLogging = false
+}
+
+func setupLog(options LoggingOptions) error {
+	// should never occur in production
+	clierrors.MustConditionf(loggerSingleton == nil, "logger already initialized")
+
+	logLevel := logrus.InfoLevel
+	if options.Diagnostic || options.Trace {
+		logLevel = logrus.TraceLevel
+	} else if options.Verbose {
+		logLevel = logrus.DebugLevel
+	}
+
+	var output io.Writer = os.Stdout
+	var colorEnabled bool = true
+	if options.FileLogging {
+		var err error
+		logFile, err = createLogFile(options.FileLoggingDir)
+		if err != nil {
+			return err
+		}
+		output = logFile
+		colorEnabled = false
+	}
+
+	loggerSingleton = logrus.New()
+	loggerSingleton.SetLevel(logLevel)
+	loggerSingleton.SetFormatter(&logrus.TextFormatter{})
+	loggerSingleton.SetOutput(output)
+	color.Enable = colorEnabled
+	fieldLogging = options.Diagnostic
+	return nil
+}
+
+func createLogFile(loggingDirectory string) (*os.File, error) {
 	// MkdirAll will do nothing if the directory already exists, create it with specified
 	// permissions if not exist and return error otherwise (e.g., the path points to a file)
 	if err := os.MkdirAll(loggingDirectory, 0777); err != nil {
 		if errors.Is(err, syscall.ENOTDIR) {
-			return fmt.Errorf("must specify a directory for logging directory: %v", loggingDirectory)
+			return nil, fmt.Errorf("must specify a directory for logging directory: %v", loggingDirectory)
 		}
-		return err
+		return nil, err
 	}
 
 	file, err := os.CreateTemp(loggingDirectory, fmt.Sprintf("skuid-cli-%v-*.log", time.Now().Format(fileStringFormat)))
 	if err != nil {
-		return err
+		return nil, err
 	}
 	// CreateTemp applies 0600
 	if err := os.Chmod(file.Name(), 0666); err != nil {
-		return err
+		return nil, err
 	}
 
-	resetFileLogging()
-	l.SetOutput(file)
-	l.SetFormatter(&logrus.TextFormatter{})
-	color.Enable = false
-	logFile = file
-	fileLogging = true
-
-	return nil
-}
-
-func WithFields(fields logrus.Fields) logrus.Ext1FieldLogger {
-	loggerSingleton = Get()
-	if fileLogging || Level(loggerSingleton) == logrus.TraceLevel && fieldLogging {
-		return loggerSingleton.WithFields(fields)
-	}
-	return loggerSingleton
-}
-
-func WithField(field string, value interface{}) logrus.Ext1FieldLogger {
-	loggerSingleton = Get()
-	if fileLogging || Level(loggerSingleton) == logrus.TraceLevel && fieldLogging {
-		return loggerSingleton.WithField(field, value)
-	}
-	return loggerSingleton
-}
-
-func Get() logrus.Ext1FieldLogger {
-	safe.Lock()
-	defer safe.Unlock()
-	if loggerSingleton != nil {
-		return loggerSingleton
-	}
-
-	loggerSingleton = logrus.New()
-
-	l, _ := loggerSingleton.(*logrus.Logger)
-
-	l.SetLevel(logrus.InfoLevel)
-
-	// Log as JSON instead of the default ASCII formatter.
-	l.SetFormatter(&logrus.TextFormatter{})
-
-	// Output to stdout instead of the default stderr
-	// Can be any io.Writer, see below for File example
-	l.SetOutput(os.Stdout)
-
-	// could have been changed by previous call to SetFileLogging
-	color.Enable = true
-
-	return loggerSingleton
-}
-
-func resetFileLogging() {
-	if logFile != nil {
-		if err := logFile.Close(); err != nil {
-			Get().Warnf("unable to close the current log file: %v", err)
-		}
-		logFile = nil
-	}
-	fileLogging = false
+	return file, nil
 }

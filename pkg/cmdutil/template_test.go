@@ -257,8 +257,8 @@ func (suite *ToCommandTestSuite) TestFlagsConfigureError() {
 		{
 			testDescription: "applyenvvars error",
 			giveSetup: func(m *cmdutil_mocks.CommandInformer) {
-				m.EXPECT().AddFlags(mock.Anything, mock.Anything).Maybe()
-				m.EXPECT().MarkFlagsMutuallyExclusive(mock.Anything, mock.Anything).Maybe()
+				m.EXPECT().AddFlags(mock.Anything, mock.Anything).Once()
+				m.EXPECT().MarkFlagsMutuallyExclusive(mock.Anything, mock.Anything).Once()
 				m.EXPECT().ApplyEnvVars(mock.Anything).Return(nil, assert.AnError).Once()
 			},
 			wantError: assert.AnError,
@@ -266,9 +266,9 @@ func (suite *ToCommandTestSuite) TestFlagsConfigureError() {
 		{
 			testDescription: "setuplogging error",
 			giveSetup: func(m *cmdutil_mocks.CommandInformer) {
-				m.EXPECT().AddFlags(mock.Anything, mock.Anything).Maybe()
-				m.EXPECT().MarkFlagsMutuallyExclusive(mock.Anything, mock.Anything).Maybe()
-				m.EXPECT().ApplyEnvVars(mock.Anything).Return(nil, nil).Maybe()
+				m.EXPECT().AddFlags(mock.Anything, mock.Anything).Once()
+				m.EXPECT().MarkFlagsMutuallyExclusive(mock.Anything, mock.Anything).Once()
+				m.EXPECT().ApplyEnvVars(mock.Anything).Return(nil, nil).Once()
 				m.EXPECT().SetupLogging(mock.Anything, mock.Anything).Return(assert.AnError).Once()
 			},
 			wantError: assert.AnError,

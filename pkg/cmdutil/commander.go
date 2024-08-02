@@ -28,6 +28,7 @@ type CommandInformer interface {
 	MarkFlagsMutuallyExclusive(cmd *cobra.Command, flagGroups [][]string)
 	ApplyEnvVars(cmd *cobra.Command) ([]*AppliedEnvVar, error)
 	SetupLogging(cmd *cobra.Command, li logging.LogInformer) error
+	TeardownLogging(logging.LogInformer)
 }
 
 type Commander struct {
@@ -97,21 +98,17 @@ func (c *Commander) SetupLogging(cmd *cobra.Command, li logging.LogInformer) (er
 		return err
 	}
 
-	if diagnostic {
-		li.SetDiagnostic()
-	} else if trace {
-		li.SetTrace()
-	} else if verbose {
-		li.SetVerbose()
-	}
+	return li.Setup(logging.LoggingOptions{
+		Verbose:        verbose,
+		Trace:          trace,
+		Diagnostic:     diagnostic,
+		FileLogging:    fileLoggingEnabled,
+		FileLoggingDir: loggingDirectory,
+	})
+}
 
-	if fileLoggingEnabled {
-		if err := li.SetFileLogging(loggingDirectory); err != nil {
-			return err
-		}
-	}
-
-	return nil
+func (c *Commander) TeardownLogging(li logging.LogInformer) {
+	li.Teardown()
 }
 
 func NewCommander() CommandInformer {

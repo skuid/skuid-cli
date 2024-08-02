@@ -38,11 +38,25 @@ func main() {
 
 // Run is a function so that TestMain can execute it
 func Run() exitCode {
-	if err := cmd.NewCmdRoot(cmdutil.NewFactory(VERSION_NAME)).Execute(); err != nil {
+	factory := cmdutil.NewFactory(VERSION_NAME)
+	defer Teardown(factory)
+	if err := cmd.NewCmdRoot(factory).Execute(); err != nil {
 		// logging might not be setup so output directly to stderr
 		fmt.Fprintf(os.Stderr, "Error: %v\n", color.Red.Sprint(err))
 		return exitError
 	}
 
 	return exitOK
+}
+
+func Teardown(factory *cmdutil.Factory) {
+	// We teardown logging (e.g., closing file) here instead of in the template
+	// or within a command for two reasons:
+	//   1. The Cobra *PostRun(E) functions are not called when RunE returns an error
+	//   2. Cobra.OnFinalize is global hook so during tests, registering a finalizer
+	//      will result in it being called every time a cobra command is executing and
+	//      there is no way to "clear/reset" finalizers.  In short, while OnFinalize
+	//      approach would work during normal execution as it would run only once, it
+	//      impacts testability
+	factory.Commander.TeardownLogging(factory.LogConfig)
 }

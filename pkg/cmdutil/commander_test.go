@@ -922,6 +922,7 @@ func (suite *CommanderSetupLoggingTestSuite) TestConfiguredSuccess() {
 			giveSetup: func(t *testing.T) (*cobra.Command, logging.LogInformer) {
 				cmd := createCommand()
 				li := mocks.NewLogInformer(t)
+				li.EXPECT().Setup(logging.LoggingOptions{FileLoggingDir: flags.LogDirectory.Default}).Return(nil).Once()
 				return cmd, li
 			},
 			giveArgs:          []string{},
@@ -932,21 +933,10 @@ func (suite *CommanderSetupLoggingTestSuite) TestConfiguredSuccess() {
 			giveSetup: func(t *testing.T) (*cobra.Command, logging.LogInformer) {
 				cmd := createCommand()
 				li := mocks.NewLogInformer(t)
-				li.EXPECT().SetVerbose().Once()
+				li.EXPECT().Setup(logging.LoggingOptions{Verbose: true, FileLoggingDir: flags.LogDirectory.Default}).Return(nil).Once()
 				return cmd, li
 			},
 			giveArgs:          []string{"--verbose"},
-			wantErrorContains: nil,
-		},
-		{
-			giveSetup: func(t *testing.T) (*cobra.Command, logging.LogInformer) {
-				cmd := createCommand()
-				li := mocks.NewLogInformer(t)
-				li.EXPECT().SetTrace().Once()
-				return cmd, li
-			},
-			testDescription:   "is trace",
-			giveArgs:          []string{"--trace"},
 			wantErrorContains: nil,
 		},
 		{
@@ -954,7 +944,18 @@ func (suite *CommanderSetupLoggingTestSuite) TestConfiguredSuccess() {
 			giveSetup: func(t *testing.T) (*cobra.Command, logging.LogInformer) {
 				cmd := createCommand()
 				li := mocks.NewLogInformer(t)
-				li.EXPECT().SetDiagnostic().Once()
+				li.EXPECT().Setup(logging.LoggingOptions{Trace: true, FileLoggingDir: flags.LogDirectory.Default}).Return(nil).Once()
+				return cmd, li
+			},
+			giveArgs:          []string{"--trace"},
+			wantErrorContains: nil,
+		},
+		{
+			testDescription: "is diagnostic",
+			giveSetup: func(t *testing.T) (*cobra.Command, logging.LogInformer) {
+				cmd := createCommand()
+				li := mocks.NewLogInformer(t)
+				li.EXPECT().Setup(logging.LoggingOptions{Diagnostic: true, FileLoggingDir: flags.LogDirectory.Default}).Return(nil).Once()
 				return cmd, li
 			},
 			giveArgs:          []string{"--diagnostic"},
@@ -965,7 +966,7 @@ func (suite *CommanderSetupLoggingTestSuite) TestConfiguredSuccess() {
 			giveSetup: func(t *testing.T) (*cobra.Command, logging.LogInformer) {
 				cmd := createCommand()
 				li := mocks.NewLogInformer(t)
-				li.EXPECT().SetTrace().Once()
+				li.EXPECT().Setup(logging.LoggingOptions{Verbose: true, Trace: true, FileLoggingDir: flags.LogDirectory.Default}).Return(nil).Once()
 				return cmd, li
 			},
 			giveArgs:          []string{"--verbose", "--trace"},
@@ -976,7 +977,7 @@ func (suite *CommanderSetupLoggingTestSuite) TestConfiguredSuccess() {
 			giveSetup: func(t *testing.T) (*cobra.Command, logging.LogInformer) {
 				cmd := createCommand()
 				li := mocks.NewLogInformer(t)
-				li.EXPECT().SetDiagnostic().Once()
+				li.EXPECT().Setup(logging.LoggingOptions{Verbose: true, Trace: true, Diagnostic: true, FileLoggingDir: flags.LogDirectory.Default}).Return(nil).Once()
 				return cmd, li
 			},
 			giveArgs:          []string{"--verbose", "--trace", "--diagnostic"},
@@ -987,7 +988,7 @@ func (suite *CommanderSetupLoggingTestSuite) TestConfiguredSuccess() {
 			giveSetup: func(t *testing.T) (*cobra.Command, logging.LogInformer) {
 				cmd := createCommand()
 				li := mocks.NewLogInformer(t)
-				li.EXPECT().SetFileLogging(flags.LogDirectory.Default).Return(nil).Once()
+				li.EXPECT().Setup(logging.LoggingOptions{FileLogging: true, FileLoggingDir: flags.LogDirectory.Default}).Return(nil).Once()
 				return cmd, li
 			},
 			giveArgs:          []string{"--file-logging"},
@@ -998,7 +999,7 @@ func (suite *CommanderSetupLoggingTestSuite) TestConfiguredSuccess() {
 			giveSetup: func(t *testing.T) (*cobra.Command, logging.LogInformer) {
 				cmd := createCommand()
 				li := mocks.NewLogInformer(t)
-				li.EXPECT().SetFileLogging("mylogs").Return(nil).Once()
+				li.EXPECT().Setup(logging.LoggingOptions{FileLogging: true, FileLoggingDir: "mylogs"}).Return(nil).Once()
 				return cmd, li
 			},
 			giveArgs:          []string{"--file-logging", "--log-directory=mylogs"},
@@ -1009,7 +1010,7 @@ func (suite *CommanderSetupLoggingTestSuite) TestConfiguredSuccess() {
 			giveSetup: func(t *testing.T) (*cobra.Command, logging.LogInformer) {
 				cmd := createCommand()
 				li := mocks.NewLogInformer(t)
-				li.EXPECT().SetFileLogging("").Return(nil).Once()
+				li.EXPECT().Setup(logging.LoggingOptions{FileLogging: true, FileLoggingDir: ""}).Return(nil).Once()
 				return cmd, li
 			},
 			giveArgs:          []string{"--file-logging", "--log-directory="},
@@ -1093,14 +1094,14 @@ func (suite *CommanderSetupLoggingTestSuite) TestConfiguredError() {
 			wantErrorContains: errors.New(flags.LogDirectory.Name),
 		},
 		{
-			testDescription: "set file logging fails",
+			testDescription: "init fails",
 			giveSetup: func(t *testing.T) (*cobra.Command, logging.LogInformer) {
 				cmd := createCommand(nil)
 				li := mocks.NewLogInformer(t)
-				li.EXPECT().SetFileLogging("mylogs").Return(assert.AnError).Once()
+				li.EXPECT().Setup(logging.LoggingOptions{FileLoggingDir: flags.LogDirectory.Default}).Return(assert.AnError).Once()
 				return cmd, li
 			},
-			giveArgs:          []string{"--file-logging", "--log-directory", "mylogs"},
+			giveArgs:          []string{},
 			wantErrorContains: assert.AnError,
 		},
 	}
@@ -1110,6 +1111,13 @@ func (suite *CommanderSetupLoggingTestSuite) TestConfiguredError() {
 
 func TestCommanderSetupLoggingTestSuite(t *testing.T) {
 	suite.Run(t, new(CommanderSetupLoggingTestSuite))
+}
+
+func TestCommanderTeardownLogging(t *testing.T) {
+	li := mocks.NewLogInformer(t)
+	li.EXPECT().Teardown().Once()
+	cd := &cmdutil.Commander{}
+	cd.TeardownLogging(li)
 }
 
 func runConversionTest[T flags.FlagType](suite *suite.Suite, envVars map[string]testutil.EnvVar[T], addFlag func(*pflag.FlagSet, string) *flags.Flag[T], wantError bool, getValue func(*pflag.FlagSet, string) (T, error)) {
