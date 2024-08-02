@@ -3,7 +3,6 @@ package logging
 import (
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"strings"
 	"sync"
@@ -12,6 +11,7 @@ import (
 	"time"
 
 	"github.com/gookit/color"
+	"github.com/rifflock/lfshook"
 	"github.com/sirupsen/logrus"
 	clierrors "github.com/skuid/skuid-cli/pkg/errors"
 )
@@ -160,23 +160,27 @@ func setupLog(options LoggingOptions) error {
 		logLevel = logrus.DebugLevel
 	}
 
-	var output io.Writer = os.Stdout
-	var colorEnabled bool = true
 	if options.FileLogging {
 		var err error
 		logFile, err = createLogFile(options.FileLoggingDir)
 		if err != nil {
 			return err
 		}
-		output = logFile
-		colorEnabled = false
 	}
 
 	loggerSingleton = logrus.New()
 	loggerSingleton.SetLevel(logLevel)
 	loggerSingleton.SetFormatter(&logrus.TextFormatter{})
-	loggerSingleton.SetOutput(output)
-	color.Enable = colorEnabled
+	loggerSingleton.SetOutput(os.Stdout)
+	if options.FileLogging {
+		loggerSingleton.AddHook(lfshook.NewHook(logFile, &logrus.TextFormatter{DisableColors: true}))
+	}
+	// force disabling colors applied to log messages (not the entire message itself, only the colors that we explicitly applied to the text
+	// inside the message) to avoid ANSI characters in the log file.  We lose colors in console by doing this (we really only want to disable
+	// in the file) but the only alternative is to have a custom formatters that strips the ansi codes during the file log.  The colors applied
+	// to the entire log message itself by logrus will still appear in the terminal and the lfshook will disable the logrus colors going to the
+	// file.  In short, we only lose colors that we applied directly to the text in the message (e.g. color.Green.Sprintf(...)).
+	color.Enable = !options.FileLogging
 	fieldLogging = options.Diagnostic
 	return nil
 }
