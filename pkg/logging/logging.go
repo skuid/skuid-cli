@@ -13,10 +13,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const (
-	SEPARATOR_LENGTH = 50
-)
-
 // Wrapping the singleton to support testing - without this, any tests written to test the "Set*" methods
 // would use the global singleton logging package methods which would change the actual logging
 // occuring during the test.  For example, testing SetFileLogging would change logging to go to a file
@@ -59,14 +55,11 @@ func NewLogConfig() LogInformer {
 }
 
 var (
-	safe            sync.Mutex
-	loggerSingleton logrus.Ext1FieldLogger
-	fileLogging     bool
-	logFile         *os.File
-	fieldLogging    bool
-	LineSeparator   = strings.Repeat("-", SEPARATOR_LENGTH)
-	StarSeparator   = strings.Repeat("*", SEPARATOR_LENGTH)
-
+	safe             sync.Mutex
+	loggerSingleton  logrus.Ext1FieldLogger
+	fileLogging      bool
+	logFile          *os.File
+	fieldLogging     bool
 	fileStringFormat = func() (ret string) {
 		ret = time.RFC3339
 		ret = strings.ReplaceAll(ret, " ", "")
