@@ -1,10 +1,10 @@
 package cmdutil
 
 import (
+	"fmt"
 	"regexp"
 	"strings"
 
-	"github.com/gookit/color"
 	"github.com/skuid/skuid-cli/pkg"
 	"github.com/skuid/skuid-cli/pkg/constants"
 	"github.com/skuid/skuid-cli/pkg/errors"
@@ -107,8 +107,7 @@ func checkValidFlag[T flags.FlagType](f *flags.Flag[T], allowParse bool, allowRe
 }
 
 func usage[T flags.FlagType](flagInfo *flags.Flag[T]) string {
-	envSuffix := color.Gray.Sprintf("Environment variable: %v", EnvVarName(flagInfo.Name))
-	return color.White.Sprintf("%v\n", flagInfo.Usage) + envSuffix
+	return fmt.Sprintf("%v\nEnvironment variable: %v", flagInfo.Usage, EnvVarName(flagInfo.Name))
 }
 
 func getFlagSet[T flags.FlagType](cmd *cobra.Command, flagInfo *flags.Flag[T]) *pflag.FlagSet {
