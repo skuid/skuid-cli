@@ -18,12 +18,16 @@ type ParseStringOptions struct {
 	AllowBlank bool
 }
 
-func ParseSince(val string) (string, error) {
+func ParseSince(val string) (*time.Time, error) {
 	if val == "" {
-		return val, nil
+		return nil, nil
 	}
 
-	return util.GetTimestamp(val, time.Now(), true)
+	t, err := util.GetTime(val, time.Now(), true)
+	if err != nil {
+		return nil, err
+	}
+	return &t, err
 }
 
 func ParseHost(rawUrl string) (string, error) {

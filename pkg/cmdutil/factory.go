@@ -13,13 +13,11 @@ type Factory struct {
 	AppVersion string
 	// This can become a full logger (or add a separate Logger) - see comments on logging.LogInformer interface
 	LogConfig logging.LogInformer
-	Commander CommandInformer
 }
 
 func NewFactory(appVersion string) *Factory {
 	return &Factory{
 		AppVersion: appVersion,
 		LogConfig:  logging.NewLogConfig(),
-		Commander:  NewCommander(),
 	}
 }

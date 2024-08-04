@@ -21,7 +21,7 @@ func (_m *LogInformer) EXPECT() *LogInformer_Expecter {
 }
 
 // Setup provides a mock function with given fields: _a0
-func (_m *LogInformer) Setup(_a0 logging.LoggingOptions) error {
+func (_m *LogInformer) Setup(_a0 *logging.LoggingOptions) error {
 	ret := _m.Called(_a0)
 
 	if len(ret) == 0 {
@@ -29,7 +29,7 @@ func (_m *LogInformer) Setup(_a0 logging.LoggingOptions) error {
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(logging.LoggingOptions) error); ok {
+	if rf, ok := ret.Get(0).(func(*logging.LoggingOptions) error); ok {
 		r0 = rf(_a0)
 	} else {
 		r0 = ret.Error(0)
@@ -44,14 +44,14 @@ type LogInformer_Setup_Call struct {
 }
 
 // Setup is a helper method to define mock.On call
-//   - _a0 logging.LoggingOptions
+//   - _a0 *logging.LoggingOptions
 func (_e *LogInformer_Expecter) Setup(_a0 interface{}) *LogInformer_Setup_Call {
 	return &LogInformer_Setup_Call{Call: _e.mock.On("Setup", _a0)}
 }
 
-func (_c *LogInformer_Setup_Call) Run(run func(_a0 logging.LoggingOptions)) *LogInformer_Setup_Call {
+func (_c *LogInformer_Setup_Call) Run(run func(_a0 *logging.LoggingOptions)) *LogInformer_Setup_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(logging.LoggingOptions))
+		run(args[0].(*logging.LoggingOptions))
 	})
 	return _c
 }
@@ -61,7 +61,7 @@ func (_c *LogInformer_Setup_Call) Return(_a0 error) *LogInformer_Setup_Call {
 	return _c
 }
 
-func (_c *LogInformer_Setup_Call) RunAndReturn(run func(logging.LoggingOptions) error) *LogInformer_Setup_Call {
+func (_c *LogInformer_Setup_Call) RunAndReturn(run func(*logging.LoggingOptions) error) *LogInformer_Setup_Call {
 	_c.Call.Return(run)
 	return _c
 }

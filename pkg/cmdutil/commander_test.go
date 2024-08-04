@@ -1,17 +1,15 @@
 package cmdutil_test
 
 import (
-	"errors"
 	"fmt"
 	"reflect"
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/skuid/skuid-cli/pkg/cmdutil"
 	"github.com/skuid/skuid-cli/pkg/flags"
-	"github.com/skuid/skuid-cli/pkg/logging"
-	"github.com/skuid/skuid-cli/pkg/logging/mocks"
 	"github.com/skuid/skuid-cli/pkg/testutil"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -19,11 +17,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
-
-type AddFlagsTestCase[T flags.FlagType] struct {
-	testDescription string
-	giveFlag        *flags.Flag[T]
-}
 
 type ApplyEnvVarsTestCase struct {
 	testDescription     string
@@ -36,447 +29,11 @@ type ApplyEnvVarsTestCase struct {
 	wantDeprecated      bool
 }
 
-type SetupLoggingTestCase struct {
-	testDescription   string
-	giveSetup         func(*testing.T) (*cobra.Command, logging.LogInformer)
-	giveArgs          []string
-	wantErrorContains error
-}
-
-type CommanderAddFlagsTestSuite struct {
+type ApplyEnvVarsTestSuite struct {
 	suite.Suite
 }
 
-func (suite *CommanderAddFlagsTestSuite) TestAddStringFlags() {
-	testCases := createAddCmdFlagsTests("stringdefault")
-	getValue := func(fs *pflag.FlagSet, fn string) (string, error) {
-		return fs.GetString(fn)
-	}
-	createFlags := func(f *flags.Flag[string]) *cmdutil.CommandFlags {
-		return &cmdutil.CommandFlags{
-			String: []*flags.Flag[string]{f},
-		}
-	}
-	runAddFlagsTests(&suite.Suite, testCases, createFlags, getValue)
-}
-
-func (suite *CommanderAddFlagsTestSuite) TestAddIntFlags() {
-	testCases := createAddCmdFlagsTests(5)
-	getValue := func(fs *pflag.FlagSet, fn string) (int, error) {
-		return fs.GetInt(fn)
-	}
-	createFlags := func(f *flags.Flag[int]) *cmdutil.CommandFlags {
-		return &cmdutil.CommandFlags{
-			Int: []*flags.Flag[int]{f},
-		}
-	}
-	runAddFlagsTests(&suite.Suite, testCases, createFlags, getValue)
-}
-
-func (suite *CommanderAddFlagsTestSuite) TestAddBoolFlags() {
-	testCases := createAddCmdFlagsTests(true)
-	getValue := func(fs *pflag.FlagSet, fn string) (bool, error) {
-		return fs.GetBool(fn)
-	}
-	createFlags := func(f *flags.Flag[bool]) *cmdutil.CommandFlags {
-		return &cmdutil.CommandFlags{
-			Bool: []*flags.Flag[bool]{f},
-		}
-	}
-	runAddFlagsTests(&suite.Suite, testCases, createFlags, getValue)
-}
-
-func (suite *CommanderAddFlagsTestSuite) TestAddStringSliceFlags() {
-	testCases := createAddCmdFlagsTests(flags.StringSlice{"strslice1", "strslice2"})
-	getValue := func(fs *pflag.FlagSet, fn string) (flags.StringSlice, error) {
-		// unable to use fs.GetStringSlice(fn) because if the value is nil, it will return
-		// an empty slice which won't be the same as the Default.  Using below, we get the
-		// raw value of the slice to ensure we can check for equality in all scenarios.
-		f := fs.Lookup(fn)
-		if f == nil {
-			return nil, fmt.Errorf("unable to find flag %q", fn)
-		}
-		val, ok := f.Value.(pflag.SliceValue)
-		if !ok {
-			return nil, fmt.Errorf("could not assert SliceValue for flag %q", fn)
-		}
-		return val.GetSlice(), nil
-	}
-	createFlags := func(f *flags.Flag[flags.StringSlice]) *cmdutil.CommandFlags {
-		return &cmdutil.CommandFlags{
-			StringSlice: []*flags.Flag[flags.StringSlice]{f},
-		}
-	}
-	runAddFlagsTests(&suite.Suite, testCases, createFlags, getValue)
-}
-
-func (suite *CommanderAddFlagsTestSuite) TestAddsAllTypesWithMultipleFlagsEach() {
-	t := suite.T()
-	flags := &cmdutil.CommandFlags{
-		String:      []*flags.Flag[string]{{Name: "sflag1", Usage: "this is the usage"}, {Name: "sflag2", Usage: "this is the usage"}},
-		Int:         []*flags.Flag[int]{{Name: "iflag1", Usage: "this is the usage"}, {Name: "iflag2", Usage: "this is the usage"}},
-		Bool:        []*flags.Flag[bool]{{Name: "bflag1", Usage: "this is the usage"}, {Name: "bflag2", Usage: "this is the usage"}},
-		StringSlice: []*flags.Flag[flags.StringSlice]{{Name: "ssflag1", Usage: "this is the usage"}, {Name: "ssflag2", Usage: "this is the usage"}},
-	}
-	flagMgr := &cmdutil.FlagManager{}
-	cd := &cmdutil.Commander{
-		FlagManager: flagMgr,
-	}
-	cmd := &cobra.Command{Use: "mycmd"}
-	cmd.RunE = emptyCobraRun
-
-	cd.AddFlags(cmd, flags)
-	err := executeCommand(cmd, []string{}...)
-
-	require.NoError(t, err)
-	assertFlags(t, flagMgr, cmd, flags.String)
-	assertFlags(t, flagMgr, cmd, flags.Int)
-	assertFlags(t, flagMgr, cmd, flags.Bool)
-	assertFlags(t, flagMgr, cmd, flags.StringSlice)
-}
-
-func (suite *CommanderAddFlagsTestSuite) TestInvalidFlagName() {
-	testCases := []struct {
-		testDescription string
-		giveFlags       *cmdutil.CommandFlags
-	}{
-		{
-			testDescription: "no name",
-			giveFlags: &cmdutil.CommandFlags{
-				String: []*flags.Flag[string]{{}},
-			},
-		},
-		{
-			testDescription: "empty name",
-			giveFlags: &cmdutil.CommandFlags{
-				String: []*flags.Flag[string]{{Name: ""}},
-			},
-		},
-		{
-			testDescription: "name contains space",
-			giveFlags: &cmdutil.CommandFlags{
-				String: []*flags.Flag[string]{{Name: "foo bar"}},
-			},
-		},
-		{
-			testDescription: "contains special char",
-			giveFlags: &cmdutil.CommandFlags{
-				String: []*flags.Flag[string]{{Name: "foo$bar"}},
-			},
-		},
-		{
-			testDescription: "contains upper case",
-			giveFlags: &cmdutil.CommandFlags{
-				String: []*flags.Flag[string]{{Name: "fooBar"}},
-			},
-		},
-		{
-			testDescription: "min length",
-			giveFlags: &cmdutil.CommandFlags{
-				String: []*flags.Flag[string]{{Name: "fo"}},
-			},
-		},
-	}
-
-	for _, tc := range testCases {
-		suite.Run(tc.testDescription, func() {
-			t := suite.T()
-			cd := &cmdutil.Commander{}
-			cmd := &cobra.Command{Use: "mycmd"}
-			expectedError := fmt.Sprintf("flag name %q is invalid", tc.giveFlags.String[0].Name)
-
-			assert.PanicsWithError(t, expectedError, func() {
-				cd.AddFlags(cmd, tc.giveFlags)
-			})
-		})
-	}
-}
-
-func (suite *CommanderAddFlagsTestSuite) TestInvalidFlagUsage() {
-	testCases := []struct {
-		testDescription string
-		giveFlags       *cmdutil.CommandFlags
-	}{
-		{
-			testDescription: "no usage",
-			giveFlags: &cmdutil.CommandFlags{
-				String: []*flags.Flag[string]{{Name: "foobar", Usage: ""}},
-			},
-		},
-		{
-			testDescription: "empty usage",
-			giveFlags: &cmdutil.CommandFlags{
-				String: []*flags.Flag[string]{{Name: "foobar", Usage: ""}},
-			},
-		},
-		{
-			testDescription: "min length",
-			giveFlags: &cmdutil.CommandFlags{
-				String: []*flags.Flag[string]{{Name: "foobar", Usage: "012345678"}},
-			},
-		},
-	}
-
-	for _, tc := range testCases {
-		suite.Run(tc.testDescription, func() {
-			t := suite.T()
-			cd := &cmdutil.Commander{}
-			cmd := &cobra.Command{Use: "mycmd"}
-			expectedError := fmt.Sprintf("flag usage %q is invalid for flag name %q", tc.giveFlags.String[0].Usage, tc.giveFlags.String[0].Name)
-
-			assert.PanicsWithError(t, expectedError, func() {
-				cd.AddFlags(cmd, tc.giveFlags)
-			})
-		})
-	}
-}
-
-func (suite *CommanderAddFlagsTestSuite) TestFlagParse() {
-	flagName := "myflag"
-	flagArg := fmt.Sprintf("--%v", flagName)
-	testCases := []struct {
-		testDescription string
-		giveFlags       func() *cmdutil.CommandFlags
-		giveArgs        []string
-		giveGetValue    func(fs *pflag.FlagSet, fn string) (any, error)
-		wantType        string
-		wantPanic       bool
-		wantValue       any
-	}{
-		{
-			testDescription: "string supported",
-			giveFlags: func() *cmdutil.CommandFlags {
-				return &cmdutil.CommandFlags{
-					String: []*flags.Flag[string]{{Name: flagName, Usage: "this is the usage", Parse: func(string) (string, error) { return "abcd", nil }}},
-				}
-			},
-			giveArgs: []string{flagArg, "foobar"},
-			giveGetValue: func(fs *pflag.FlagSet, fn string) (any, error) {
-				return fs.GetString(fn)
-			},
-			wantType:  fmt.Sprintf("%T", &flags.Flag[string]{}),
-			wantPanic: false,
-			wantValue: "abcd",
-		},
-		{
-			testDescription: "bool not supported",
-			giveFlags: func() *cmdutil.CommandFlags {
-				return &cmdutil.CommandFlags{
-					Bool: []*flags.Flag[bool]{{Name: flagName, Usage: "this is the usage", Parse: func(string) (bool, error) { return false, nil }}},
-				}
-			},
-			wantType:  fmt.Sprintf("%T", &flags.Flag[bool]{}),
-			wantPanic: true,
-		},
-		{
-			testDescription: "int not supported",
-			giveFlags: func() *cmdutil.CommandFlags {
-				return &cmdutil.CommandFlags{
-					Int: []*flags.Flag[int]{{Name: flagName, Usage: "this is the usage", Parse: func(string) (int, error) { return 5, nil }}},
-				}
-			},
-			wantType:  fmt.Sprintf("%T", &flags.Flag[int]{}),
-			wantPanic: true,
-		},
-		{
-			testDescription: "StringSlice not supported",
-			giveFlags: func() *cmdutil.CommandFlags {
-				return &cmdutil.CommandFlags{
-					StringSlice: []*flags.Flag[flags.StringSlice]{{Name: flagName, Usage: "this is the usage", Parse: func(string) (flags.StringSlice, error) { return flags.StringSlice{}, nil }}},
-				}
-			},
-			wantType:  fmt.Sprintf("%T", &flags.Flag[flags.StringSlice]{}),
-			wantPanic: true,
-		},
-	}
-
-	for _, tc := range testCases {
-		suite.Run(tc.testDescription, func() {
-			t := suite.T()
-			cd := &cmdutil.Commander{
-				FlagManager: cmdutil.NewFlagManager(),
-			}
-			cmd := &cobra.Command{Use: "mycmd"}
-			if tc.wantPanic {
-				expectedError := fmt.Sprintf("flag type %s does not support Parse for flag name %q", tc.wantType, flagName)
-				assert.PanicsWithError(t, expectedError, func() {
-					cd.AddFlags(cmd, tc.giveFlags())
-				})
-			} else {
-				require.NotPanics(t, func() {
-					cd.AddFlags(cmd, tc.giveFlags())
-				})
-				err := executeCommand(cmd, tc.giveArgs...)
-				require.NoError(t, err)
-				actualValue, err := tc.giveGetValue(cmd.Flags(), flagName)
-				require.NoError(t, err)
-				assert.Equal(t, tc.wantValue, actualValue)
-			}
-		})
-	}
-}
-
-func (suite *CommanderAddFlagsTestSuite) TestFlagRedact() {
-	flagName := "myflag"
-	flagArg := fmt.Sprintf("--%v", flagName)
-	testCases := []struct {
-		testDescription        string
-		giveFlags              func() *cmdutil.CommandFlags
-		giveArgs               []string
-		giveGetUnredactedValue func(fv pflag.Value) (any, bool)
-		wantType               string
-		wantPanic              bool
-		wantRedactedValue      string
-		wantUnredactedValue    any
-	}{
-		{
-			testDescription: "string supported",
-			giveFlags: func() *cmdutil.CommandFlags {
-				return &cmdutil.CommandFlags{
-					String: []*flags.Flag[string]{{Name: flagName, Usage: "this is the usage", Redact: func(string) string { return "!!!!" }}},
-				}
-			},
-			giveArgs: []string{flagArg, "foobar"},
-			giveGetUnredactedValue: func(fv pflag.Value) (any, bool) {
-				if f, ok := fv.(*flags.Value[string]); !ok {
-					return nil, false
-				} else {
-					return f.Unredacted().String(), true
-				}
-			},
-			wantType:            fmt.Sprintf("%T", &flags.Flag[string]{}),
-			wantPanic:           false,
-			wantRedactedValue:   "!!!!",
-			wantUnredactedValue: "foobar",
-		},
-		{
-			testDescription: "bool not supported",
-			giveFlags: func() *cmdutil.CommandFlags {
-				return &cmdutil.CommandFlags{
-					Bool: []*flags.Flag[bool]{{Name: flagName, Usage: "this is the usage", Redact: func(bool) string { return "!!!!" }}},
-				}
-			},
-			wantType:  fmt.Sprintf("%T", &flags.Flag[bool]{}),
-			wantPanic: true,
-		},
-		{
-			testDescription: "int not supported",
-			giveFlags: func() *cmdutil.CommandFlags {
-				return &cmdutil.CommandFlags{
-					Int: []*flags.Flag[int]{{Name: flagName, Usage: "this is the usage", Redact: func(int) string { return "!!!!" }}},
-				}
-			},
-			wantType:  fmt.Sprintf("%T", &flags.Flag[int]{}),
-			wantPanic: true,
-		},
-		{
-			testDescription: "StringSlice not supported",
-			giveFlags: func() *cmdutil.CommandFlags {
-				return &cmdutil.CommandFlags{
-					StringSlice: []*flags.Flag[flags.StringSlice]{{Name: flagName, Usage: "this is the usage", Redact: func(flags.StringSlice) string { return "!!!!" }}},
-				}
-			},
-			wantType:  fmt.Sprintf("%T", &flags.Flag[flags.StringSlice]{}),
-			wantPanic: true,
-		},
-	}
-
-	for _, tc := range testCases {
-		suite.Run(tc.testDescription, func() {
-			t := suite.T()
-			cd := &cmdutil.Commander{
-				FlagManager: cmdutil.NewFlagManager(),
-			}
-			cmd := &cobra.Command{Use: "mycmd"}
-			if tc.wantPanic {
-				expectedError := fmt.Sprintf("flag type %s does not support Redact for flag name %q", tc.wantType, flagName)
-				assert.PanicsWithError(t, expectedError, func() {
-					cd.AddFlags(cmd, tc.giveFlags())
-				})
-			} else {
-				require.NotPanics(t, func() {
-					cd.AddFlags(cmd, tc.giveFlags())
-				})
-				err := executeCommand(cmd, tc.giveArgs...)
-				require.NoError(t, err)
-				actualFlag := cmd.Flags().Lookup(flagName)
-				require.NotNil(t, actualFlag)
-				assert.Equal(t, tc.wantRedactedValue, actualFlag.Value.String())
-				actualUnredactedValue, ok := tc.giveGetUnredactedValue(actualFlag.Value)
-				require.True(t, ok)
-				assert.Equal(t, tc.wantUnredactedValue, actualUnredactedValue)
-			}
-		})
-	}
-}
-
-func TestCommanderAddFlagsTestSuite(t *testing.T) {
-	suite.Run(t, new(CommanderAddFlagsTestSuite))
-}
-
-type CommanderMarkFlagsMutuallyExclusiveTestSuite struct {
-	suite.Suite
-}
-
-func (suite *CommanderMarkFlagsMutuallyExclusiveTestSuite) TestFlagsMarked() {
-	createCommand := func() *cobra.Command {
-		cmd := &cobra.Command{}
-		flags := cmd.Flags()
-		flags.String("myflags1", "", "this is my usage")
-		flags.String("myflags2", "", "this is my usage")
-		flags.Bool("myflagb", false, "this is my usage")
-		return cmd
-	}
-	testCases := []struct {
-		testDescription       string
-		giveMutuallyExclusive [][]string
-		giveArgs              []string
-		wantError             []string
-	}{
-		{
-			testDescription:       "args violate rule",
-			giveMutuallyExclusive: [][]string{{"myflags1", "myflagb"}},
-			giveArgs:              []string{"--myflags1=foo", "--myflagb"},
-			wantError:             []string{"myflags1", "myflagb"},
-		},
-		{
-			testDescription:       "args do not violate rule",
-			giveMutuallyExclusive: [][]string{{"myflags1", "myflagb"}},
-			giveArgs:              []string{"--myflags2=foo", "--myflagb"},
-			wantError:             nil,
-		},
-	}
-
-	for _, tc := range testCases {
-		suite.Run(tc.testDescription, func() {
-			t := suite.T()
-			cd := &cmdutil.Commander{}
-			cmd := createCommand()
-			cmd.RunE = emptyCobraRun
-
-			cd.MarkFlagsMutuallyExclusive(cmd, tc.giveMutuallyExclusive)
-			err := executeCommand(cmd, tc.giveArgs...)
-
-			if tc.wantError != nil {
-				for _, me := range tc.wantError {
-					assert.ErrorContains(t, err, me)
-				}
-			} else {
-				assert.Nil(t, err)
-			}
-		})
-	}
-}
-
-func TestCommanderMarkFlagsMutuallyExclusiveTestSuite(t *testing.T) {
-	suite.Run(t, new(CommanderMarkFlagsMutuallyExclusiveTestSuite))
-}
-
-type CommanderApplyEnvVarsTestSuite struct {
-	suite.Suite
-}
-
-func (suite *CommanderApplyEnvVarsTestSuite) TestUpdatesValue() {
+func (suite *ApplyEnvVarsTestSuite) TestUpdatesValue() {
 	envVars := map[string]testutil.EnvVar[string]{
 		"SKUID_FOO":   {EnvValue: "hello", Value: "hello"},
 		"LEGACY_FOO":  {EnvValue: "goodbye", Value: "goodbye"},
@@ -599,7 +156,7 @@ func (suite *CommanderApplyEnvVarsTestSuite) TestUpdatesValue() {
 	runApplyEnvVarsTests(&suite.Suite, envVars, testCases)
 }
 
-func (suite *CommanderApplyEnvVarsTestSuite) TestDoesNotUpdateValue() {
+func (suite *ApplyEnvVarsTestSuite) TestDoesNotUpdateValue() {
 	envVars := map[string]testutil.EnvVar[string]{
 		"SKUID_FOO":  {EnvValue: "hello", Value: "hello"},
 		"LEGACY_FOO": {EnvValue: "goodbye", Value: "goodbye"},
@@ -630,64 +187,56 @@ func (suite *CommanderApplyEnvVarsTestSuite) TestDoesNotUpdateValue() {
 	runApplyEnvVarsTests(&suite.Suite, envVars, testCases)
 }
 
-func (suite *CommanderApplyEnvVarsTestSuite) TestFailsToUpdate() {
+func (suite *ApplyEnvVarsTestSuite) TestFailsToUpdate() {
 	t := suite.T()
 	envVars := map[string]testutil.EnvVar[string]{
 		"SKUID_FOO": {EnvValue: "hello", Value: "hello"},
 	}
 	testutil.SetupEnv(t, envVars)
-	flagMgr := &cmdutil.FlagManager{}
-	cd := &cmdutil.Commander{
-		FlagManager: flagMgr,
-	}
 	cmd := &cobra.Command{Use: "mycmd"}
-	cmd.RunE = emptyCobraRun
+	cmd.RunE = testutil.EmptyCobraRun
 	var appliedEnvVars []*cmdutil.AppliedEnvVar
 	cmd.PersistentPreRunE = func(c *cobra.Command, a []string) error {
 		var err error
-		appliedEnvVars, err = cd.ApplyEnvVars(cmd)
+		appliedEnvVars, err = cmdutil.ApplyEnvVars(cmd)
 		return err
 	}
 	f := &flags.Flag[bool]{Name: "foo", Usage: "this is a flag", Default: true}
 	cmd.Flags().Bool(f.Name, f.Default, f.Usage)
-	flagMgr.Track(cmd.Flags().Lookup(f.Name), f)
 	cmd.Flags().SetAnnotation(f.Name, cmdutil.FlagSetBySkuidCliAnnotation, []string{"true"})
+	cmd.Flags().SetAnnotation(f.Name, cmdutil.LegacyEnvVarsAnnotation, f.LegacyEnvVars)
 
-	err := executeCommand(cmd, []string{}...)
+	err := testutil.ExecuteCommand(cmd, []string{}...)
 
 	assert.ErrorContains(t, err, fmt.Sprintf("unable to use value from environment variable %v for flag %q", "SKUID_FOO", f.Name))
 	assert.Equal(t, len(appliedEnvVars), 0)
 }
 
-func (suite *CommanderApplyEnvVarsTestSuite) TestFailsToUpdateMultipleErrors() {
+func (suite *ApplyEnvVarsTestSuite) TestFailsToUpdateMultipleErrors() {
 	t := suite.T()
 	envVars := map[string]testutil.EnvVar[string]{
 		"SKUID_FOO": {EnvValue: "hello", Value: "hello"},
 		"SKUID_BAR": {EnvValue: "goodbye", Value: "goodbye"},
 	}
 	testutil.SetupEnv(t, envVars)
-	flagMgr := &cmdutil.FlagManager{}
-	cd := &cmdutil.Commander{
-		FlagManager: flagMgr,
-	}
 	cmd := &cobra.Command{Use: "mycmd"}
-	cmd.RunE = emptyCobraRun
+	cmd.RunE = testutil.EmptyCobraRun
 	var appliedEnvVars []*cmdutil.AppliedEnvVar
 	cmd.PersistentPreRunE = func(c *cobra.Command, a []string) error {
 		var err error
-		appliedEnvVars, err = cd.ApplyEnvVars(cmd)
+		appliedEnvVars, err = cmdutil.ApplyEnvVars(cmd)
 		return err
 	}
 	fb := &flags.Flag[bool]{Name: "foo", Usage: "this is a flag", Default: true}
 	cmd.Flags().Bool(fb.Name, fb.Default, fb.Usage)
-	flagMgr.Track(cmd.Flags().Lookup(fb.Name), fb)
 	cmd.Flags().SetAnnotation(fb.Name, cmdutil.FlagSetBySkuidCliAnnotation, []string{"true"})
+	cmd.Flags().SetAnnotation(fb.Name, cmdutil.LegacyEnvVarsAnnotation, fb.LegacyEnvVars)
 	fi := &flags.Flag[int]{Name: "bar", Usage: "this is a flag", Default: 500}
 	cmd.Flags().Int(fi.Name, fi.Default, fi.Usage)
-	flagMgr.Track(cmd.Flags().Lookup(fi.Name), fi)
 	cmd.Flags().SetAnnotation(fi.Name, cmdutil.FlagSetBySkuidCliAnnotation, []string{"true"})
+	cmd.Flags().SetAnnotation(fb.Name, cmdutil.LegacyEnvVarsAnnotation, fi.LegacyEnvVars)
 
-	err := executeCommand(cmd, []string{}...)
+	err := testutil.ExecuteCommand(cmd, []string{}...)
 
 	assert.ErrorContains(t, err, fb.Name)
 	assert.ErrorContains(t, err, "SKUID_FOO")
@@ -701,7 +250,7 @@ func (suite *CommanderApplyEnvVarsTestSuite) TestFailsToUpdateMultipleErrors() {
 	assert.Equal(t, len(appliedEnvVars), 0)
 }
 
-func (suite *CommanderApplyEnvVarsTestSuite) TestFlagNotTracked() {
+func (suite *ApplyEnvVarsTestSuite) TestFlagNotSkuidCliFlag() {
 	envVars := map[string]testutil.EnvVar[bool]{
 		"SKUID_HELP":   {EnvValue: "true", Value: true},
 		"HELP":         {EnvValue: "true", Value: true},
@@ -730,35 +279,23 @@ func (suite *CommanderApplyEnvVarsTestSuite) TestFlagNotTracked() {
 			wantFlag:          "foobar",
 			wantErrorContains: nil,
 		},
-		{
-			testDescription: "skuid cli flag not tracked",
-			setupFlags: func(cmd *cobra.Command) {
-				cmd.Flags().Bool("skuidcliflag", false, "this is the usage")
-				cmd.Flags().SetAnnotation("skuidcliflag", cmdutil.FlagSetBySkuidCliAnnotation, []string{"true"})
-			},
-			wantFlag:          "skuidcliflag",
-			wantErrorContains: errors.New("skuidcliflag"),
-		},
 	}
 
 	for _, tc := range testCases {
 		suite.Run(tc.testDescription, func() {
 			t := suite.T()
 			testutil.SetupEnv(t, envVars)
-			cd := &cmdutil.Commander{
-				FlagManager: &cmdutil.FlagManager{},
-			}
 			cmd := &cobra.Command{Use: "mycmd"}
-			cmd.RunE = emptyCobraRun
+			cmd.RunE = testutil.EmptyCobraRun
 			var appliedEnvVars []*cmdutil.AppliedEnvVar
 			cmd.PersistentPreRunE = func(c *cobra.Command, a []string) error {
 				var err error
-				appliedEnvVars, err = cd.ApplyEnvVars(cmd)
+				appliedEnvVars, err = cmdutil.ApplyEnvVars(cmd)
 				return err
 			}
 			tc.setupFlags(cmd)
 
-			err := executeCommand(cmd, []string{}...)
+			err := testutil.ExecuteCommand(cmd, []string{}...)
 
 			if tc.wantErrorContains != nil {
 				assert.ErrorContains(t, err, tc.wantErrorContains.Error())
@@ -773,7 +310,7 @@ func (suite *CommanderApplyEnvVarsTestSuite) TestFlagNotTracked() {
 	}
 }
 
-func (suite *CommanderApplyEnvVarsTestSuite) TestStringConversion() {
+func (suite *ApplyEnvVarsTestSuite) TestStringConversion() {
 	envVarsSuccess := map[string]testutil.EnvVar[string]{
 		"SKUID_GOOD_FOO_EMPTY":              {EnvValue: "", Value: ""},
 		"SKUID_GOOD_FOO_NOT_EMPTY":          {EnvValue: "foobar", Value: "foobar"},
@@ -786,20 +323,17 @@ func (suite *CommanderApplyEnvVarsTestSuite) TestStringConversion() {
 		"SKUID_GOOD_FOO_TRUE":               {EnvValue: "true", Value: "true"},
 	}
 	envVarsError := map[string]testutil.EnvVar[string]{}
-	addFlag := func(fs *pflag.FlagSet, name string) *flags.Flag[string] {
+	addFlag := func(fs *pflag.FlagSet, name string, p *string) *flags.Flag[string] {
 		flag := &flags.Flag[string]{Name: name, Usage: "this is a flag"}
-		fs.String(flag.Name, flag.Default, flag.Usage)
+		fs.StringVar(p, flag.Name, flag.Default, flag.Usage)
 		return flag
 	}
-	getValue := func(fs *pflag.FlagSet, fn string) (string, error) {
-		return fs.GetString(fn)
-	}
-	runConversionTest(&suite.Suite, envVarsSuccess, addFlag, false, getValue)
-	runConversionTest(&suite.Suite, envVarsError, addFlag, true, getValue)
+	runConversionTest(&suite.Suite, envVarsSuccess, addFlag, false)
+	runConversionTest(&suite.Suite, envVarsError, addFlag, true)
 }
 
-func (suite *CommanderApplyEnvVarsTestSuite) TestStringSliceConversion() {
-	envVarsSuccess := map[string]testutil.EnvVar[flags.StringSlice]{
+func (suite *ApplyEnvVarsTestSuite) TestStringSliceConversion() {
+	envVarsSuccess := map[string]testutil.EnvVar[[]string]{
 		"SKUID_GOOD_FOO_EMPTY":               {EnvValue: "", Value: []string{}},
 		"SKUID_GOOD_FOO_SINGLE_VALUE":        {EnvValue: "foobar", Value: []string{"foobar"}},
 		"SKUID_GOOD_FOO_TRAILING_COMMA":      {EnvValue: "foobar,", Value: []string{"foobar", ""}},
@@ -811,20 +345,17 @@ func (suite *CommanderApplyEnvVarsTestSuite) TestStringSliceConversion() {
 		"SKUID_GOOD_FOO_WHITESPACE_IN_VALUE": {EnvValue: "foo	bar, a	b	,he	llo	", Value: []string{"foo	bar", " a	b	", "he	llo	"}},
 		"SKUID_GOOD_FOO_SPACE_AROUND":        {EnvValue: "  fo ob ar  ,  h e l lo   ", Value: []string{"  fo ob ar  ", "  h e l lo   "}},
 	}
-	envVarsError := map[string]testutil.EnvVar[flags.StringSlice]{}
-	addFlag := func(fs *pflag.FlagSet, name string) *flags.Flag[flags.StringSlice] {
-		flag := &flags.Flag[flags.StringSlice]{Name: name, Usage: "this is a flag"}
-		fs.StringSlice(flag.Name, flag.Default, flag.Usage)
+	envVarsError := map[string]testutil.EnvVar[[]string]{}
+	addFlag := func(fs *pflag.FlagSet, name string, p *[]string) *flags.Flag[[]string] {
+		flag := &flags.Flag[[]string]{Name: name, Usage: "this is a flag"}
+		fs.StringSliceVar(p, flag.Name, flag.Default, flag.Usage)
 		return flag
 	}
-	getValue := func(fs *pflag.FlagSet, fn string) (flags.StringSlice, error) {
-		return fs.GetStringSlice(fn)
-	}
-	runConversionTest(&suite.Suite, envVarsSuccess, addFlag, false, getValue)
-	runConversionTest(&suite.Suite, envVarsError, addFlag, true, getValue)
+	runConversionTest(&suite.Suite, envVarsSuccess, addFlag, false)
+	runConversionTest(&suite.Suite, envVarsError, addFlag, true)
 }
 
-func (suite *CommanderApplyEnvVarsTestSuite) TestBoolConversion() {
+func (suite *ApplyEnvVarsTestSuite) TestBoolConversion() {
 	envVarsSuccess := map[string]testutil.EnvVar[bool]{
 		"SKUID_GOOD_FOO_TRUE_LOWER":  {EnvValue: "true", Value: true},
 		"SKUID_GOOD_FOO_TRUE_UPPER":  {EnvValue: "TRUE", Value: true},
@@ -846,19 +377,16 @@ func (suite *CommanderApplyEnvVarsTestSuite) TestBoolConversion() {
 		"SKUID_BAD_FOO_NON_ZERO_OR_ONE": {EnvValue: "5", Value: false},
 		"SKUID_BAD_FOO_NON_NUMERIC":     {EnvValue: "asdfasdf", Value: false},
 	}
-	addFlag := func(fs *pflag.FlagSet, name string) *flags.Flag[bool] {
+	addFlag := func(fs *pflag.FlagSet, name string, p *bool) *flags.Flag[bool] {
 		flag := &flags.Flag[bool]{Name: name, Usage: "this is a flag"}
-		fs.Bool(flag.Name, flag.Default, flag.Usage)
+		fs.BoolVar(p, flag.Name, flag.Default, flag.Usage)
 		return flag
 	}
-	getValue := func(fs *pflag.FlagSet, fn string) (bool, error) {
-		return fs.GetBool(fn)
-	}
-	runConversionTest(&suite.Suite, envVarsSuccess, addFlag, false, getValue)
-	runConversionTest(&suite.Suite, envVarsError, addFlag, true, getValue)
+	runConversionTest(&suite.Suite, envVarsSuccess, addFlag, false)
+	runConversionTest(&suite.Suite, envVarsError, addFlag, true)
 }
 
-func (suite *CommanderApplyEnvVarsTestSuite) TestIntConversion() {
+func (suite *ApplyEnvVarsTestSuite) TestIntConversion() {
 	envVarsSuccess := map[string]testutil.EnvVar[int]{
 		"SKUID_GOOD_FOO_ZERO":               {EnvValue: "0", Value: 0},
 		"SKUID_GOOD_FOO_ZERO_POS":           {EnvValue: "+0", Value: 0},
@@ -885,397 +413,40 @@ func (suite *CommanderApplyEnvVarsTestSuite) TestIntConversion() {
 		"SKUID_BAD_FOO_DOUBLE_UNDERSCORE": {EnvValue: "123__45", Value: 0},
 		"SKUID_BAD_FOO_INVALID_BASE":      {EnvValue: "0i12345", Value: 0},
 	}
-	addFlag := func(fs *pflag.FlagSet, name string) *flags.Flag[int] {
+	addFlag := func(fs *pflag.FlagSet, name string, p *int) *flags.Flag[int] {
 		flag := &flags.Flag[int]{Name: name, Usage: "this is a flag"}
-		fs.Int(flag.Name, flag.Default, flag.Usage)
+		fs.IntVar(p, flag.Name, flag.Default, flag.Usage)
 		return flag
 	}
-	getValue := func(fs *pflag.FlagSet, fn string) (int, error) {
-		return fs.GetInt(fn)
+	runConversionTest(&suite.Suite, envVarsSuccess, addFlag, false)
+	runConversionTest(&suite.Suite, envVarsError, addFlag, true)
+}
+
+func (suite *ApplyEnvVarsTestSuite) TestPtrTimeConversion() {
+	d := time.Date(2026, 1, 1, 0, 0, 0, 0, time.Local)
+	layout := time.RFC3339Nano
+	envVarsSuccess := map[string]testutil.EnvVar[*time.Time]{
+		"SKUID_GOOD_FOO_DATE_TIME": {EnvValue: d.Format(layout), Value: &d},
 	}
-	runConversionTest(&suite.Suite, envVarsSuccess, addFlag, false, getValue)
-	runConversionTest(&suite.Suite, envVarsError, addFlag, true, getValue)
-}
-
-func TestCommanderApplyEnvVarsTestSuite(t *testing.T) {
-	suite.Run(t, new(CommanderApplyEnvVarsTestSuite))
-}
-
-type CommanderSetupLoggingTestSuite struct {
-	suite.Suite
-}
-
-func (suite *CommanderSetupLoggingTestSuite) TestConfiguredSuccess() {
-	createCommand := func() *cobra.Command {
-		cmd := &cobra.Command{}
-		fs := cmd.PersistentFlags()
-		fs.String(flags.LogDirectory.Name, flags.LogDirectory.Default, "this is my usage")
-		fs.Bool(flags.Verbose.Name, flags.Verbose.Default, "this is my usage")
-		fs.Bool(flags.Trace.Name, flags.Trace.Default, "this is my usage")
-		fs.Bool(flags.FileLogging.Name, flags.FileLogging.Default, "this is my usage")
-		fs.Bool(flags.Diagnostic.Name, flags.Diagnostic.Default, "this is my usage")
-		fs.Bool(flags.NoConsole.Name, flags.NoConsole.Default, "this is my usage")
-		return cmd
+	envVarsError := map[string]testutil.EnvVar[*time.Time]{
+		"SKUID_BAD_FOO_EMPTY":  {EnvValue: "", Value: nil},
+		"SKUID_BAD_FOO_FORMAT": {EnvValue: "2026_01_01", Value: nil},
 	}
-	testCases := []SetupLoggingTestCase{
-		{
-			testDescription: "defaults to info",
-			giveSetup: func(t *testing.T) (*cobra.Command, logging.LogInformer) {
-				cmd := createCommand()
-				li := mocks.NewLogInformer(t)
-				li.EXPECT().Setup(logging.LoggingOptions{FileLoggingDir: flags.LogDirectory.Default}).Return(nil).Once()
-				return cmd, li
-			},
-			giveArgs:          []string{},
-			wantErrorContains: nil,
-		},
-		{
-			testDescription: "is verbose",
-			giveSetup: func(t *testing.T) (*cobra.Command, logging.LogInformer) {
-				cmd := createCommand()
-				li := mocks.NewLogInformer(t)
-				li.EXPECT().Setup(logging.LoggingOptions{Verbose: true, FileLoggingDir: flags.LogDirectory.Default}).Return(nil).Once()
-				return cmd, li
-			},
-			giveArgs:          []string{"--verbose"},
-			wantErrorContains: nil,
-		},
-		{
-			testDescription: "is trace",
-			giveSetup: func(t *testing.T) (*cobra.Command, logging.LogInformer) {
-				cmd := createCommand()
-				li := mocks.NewLogInformer(t)
-				li.EXPECT().Setup(logging.LoggingOptions{Trace: true, FileLoggingDir: flags.LogDirectory.Default}).Return(nil).Once()
-				return cmd, li
-			},
-			giveArgs:          []string{"--trace"},
-			wantErrorContains: nil,
-		},
-		{
-			testDescription: "is diagnostic",
-			giveSetup: func(t *testing.T) (*cobra.Command, logging.LogInformer) {
-				cmd := createCommand()
-				li := mocks.NewLogInformer(t)
-				li.EXPECT().Setup(logging.LoggingOptions{Diagnostic: true, FileLoggingDir: flags.LogDirectory.Default}).Return(nil).Once()
-				return cmd, li
-			},
-			giveArgs:          []string{"--diagnostic"},
-			wantErrorContains: nil,
-		},
-		{
-			testDescription: "is no console",
-			giveSetup: func(t *testing.T) (*cobra.Command, logging.LogInformer) {
-				cmd := createCommand()
-				li := mocks.NewLogInformer(t)
-				li.EXPECT().Setup(logging.LoggingOptions{NoConsole: true, FileLoggingDir: flags.LogDirectory.Default}).Return(nil).Once()
-				return cmd, li
-			},
-			giveArgs:          []string{"--no-console"},
-			wantErrorContains: nil,
-		},
-		{
-			testDescription: "verbose & trace",
-			giveSetup: func(t *testing.T) (*cobra.Command, logging.LogInformer) {
-				cmd := createCommand()
-				li := mocks.NewLogInformer(t)
-				li.EXPECT().Setup(logging.LoggingOptions{Verbose: true, Trace: true, FileLoggingDir: flags.LogDirectory.Default}).Return(nil).Once()
-				return cmd, li
-			},
-			giveArgs:          []string{"--verbose", "--trace"},
-			wantErrorContains: nil,
-		},
-		{
-			testDescription: "all level flags",
-			giveSetup: func(t *testing.T) (*cobra.Command, logging.LogInformer) {
-				cmd := createCommand()
-				li := mocks.NewLogInformer(t)
-				li.EXPECT().Setup(logging.LoggingOptions{Verbose: true, Trace: true, Diagnostic: true, FileLoggingDir: flags.LogDirectory.Default}).Return(nil).Once()
-				return cmd, li
-			},
-			giveArgs:          []string{"--verbose", "--trace", "--diagnostic"},
-			wantErrorContains: nil,
-		},
-		{
-			testDescription: "file logging default dir",
-			giveSetup: func(t *testing.T) (*cobra.Command, logging.LogInformer) {
-				cmd := createCommand()
-				li := mocks.NewLogInformer(t)
-				li.EXPECT().Setup(logging.LoggingOptions{FileLogging: true, FileLoggingDir: flags.LogDirectory.Default}).Return(nil).Once()
-				return cmd, li
-			},
-			giveArgs:          []string{"--file-logging"},
-			wantErrorContains: nil,
-		},
-		{
-			testDescription: "file logging override dir with non-empty",
-			giveSetup: func(t *testing.T) (*cobra.Command, logging.LogInformer) {
-				cmd := createCommand()
-				li := mocks.NewLogInformer(t)
-				li.EXPECT().Setup(logging.LoggingOptions{FileLogging: true, FileLoggingDir: "mylogs"}).Return(nil).Once()
-				return cmd, li
-			},
-			giveArgs:          []string{"--file-logging", "--log-directory=mylogs"},
-			wantErrorContains: nil,
-		},
-		{
-			testDescription: "file logging override dir empty",
-			giveSetup: func(t *testing.T) (*cobra.Command, logging.LogInformer) {
-				cmd := createCommand()
-				li := mocks.NewLogInformer(t)
-				li.EXPECT().Setup(logging.LoggingOptions{FileLogging: true, FileLoggingDir: ""}).Return(nil).Once()
-				return cmd, li
-			},
-			giveArgs:          []string{"--file-logging", "--log-directory="},
-			wantErrorContains: nil,
-		},
-	}
-
-	runSetupLoggingTests(&suite.Suite, testCases)
-}
-
-func (suite *CommanderSetupLoggingTestSuite) TestConfiguredError() {
-	createCommand := func(skip []string) *cobra.Command {
-		cmd := &cobra.Command{}
-		fs := cmd.PersistentFlags()
-		if !slices.Contains(skip, flags.Verbose.Name) {
-			fs.Bool(flags.Verbose.Name, flags.Verbose.Default, "this is my usage")
-		}
-		if !slices.Contains(skip, flags.Trace.Name) {
-			fs.Bool(flags.Trace.Name, flags.Trace.Default, "this is my usage")
-		}
-		if !slices.Contains(skip, flags.Diagnostic.Name) {
-			fs.Bool(flags.Diagnostic.Name, flags.Diagnostic.Default, "this is my usage")
-		}
-		if !slices.Contains(skip, flags.FileLogging.Name) {
-			fs.Bool(flags.FileLogging.Name, flags.FileLogging.Default, "this is my usage")
-		}
-		if !slices.Contains(skip, flags.LogDirectory.Name) {
-			fs.String(flags.LogDirectory.Name, flags.LogDirectory.Default, "this is my usage")
-		}
-		if !slices.Contains(skip, flags.NoConsole.Name) {
-			fs.Bool(flags.NoConsole.Name, flags.NoConsole.Default, "this is my usage")
-		}
-		return cmd
-	}
-	testCases := []SetupLoggingTestCase{
-		{
-			testDescription: "verbose missing",
-			giveSetup: func(t *testing.T) (*cobra.Command, logging.LogInformer) {
-				cmd := createCommand([]string{flags.Verbose.Name})
-				li := mocks.NewLogInformer(t)
-				return cmd, li
-			},
-			giveArgs:          []string{},
-			wantErrorContains: errors.New(flags.Verbose.Name),
-		},
-		{
-			testDescription: "trace missing",
-			giveSetup: func(t *testing.T) (*cobra.Command, logging.LogInformer) {
-				cmd := createCommand([]string{flags.Trace.Name})
-				li := mocks.NewLogInformer(t)
-				return cmd, li
-			},
-			giveArgs:          []string{},
-			wantErrorContains: errors.New(flags.Trace.Name),
-		},
-		{
-			testDescription: "diagnostic missing",
-			giveSetup: func(t *testing.T) (*cobra.Command, logging.LogInformer) {
-				cmd := createCommand([]string{flags.Diagnostic.Name})
-				li := mocks.NewLogInformer(t)
-				return cmd, li
-			},
-			giveArgs:          []string{},
-			wantErrorContains: errors.New(flags.Diagnostic.Name),
-		},
-		{
-			testDescription: "filelogging missing",
-			giveSetup: func(t *testing.T) (*cobra.Command, logging.LogInformer) {
-				cmd := createCommand([]string{flags.FileLogging.Name})
-				li := mocks.NewLogInformer(t)
-				return cmd, li
-			},
-			giveArgs:          []string{},
-			wantErrorContains: errors.New(flags.FileLogging.Name),
-		},
-		{
-			testDescription: "logdirectory missing",
-			giveSetup: func(t *testing.T) (*cobra.Command, logging.LogInformer) {
-				cmd := createCommand([]string{flags.LogDirectory.Name})
-				li := mocks.NewLogInformer(t)
-				return cmd, li
-			},
-			giveArgs:          []string{},
-			wantErrorContains: errors.New(flags.LogDirectory.Name),
-		},
-		{
-			testDescription: "noconsole missing",
-			giveSetup: func(t *testing.T) (*cobra.Command, logging.LogInformer) {
-				cmd := createCommand([]string{flags.NoConsole.Name})
-				li := mocks.NewLogInformer(t)
-				return cmd, li
-			},
-			giveArgs:          []string{},
-			wantErrorContains: errors.New(flags.NoConsole.Name),
-		},
-		{
-			testDescription: "init fails",
-			giveSetup: func(t *testing.T) (*cobra.Command, logging.LogInformer) {
-				cmd := createCommand(nil)
-				li := mocks.NewLogInformer(t)
-				li.EXPECT().Setup(logging.LoggingOptions{FileLoggingDir: flags.LogDirectory.Default}).Return(assert.AnError).Once()
-				return cmd, li
-			},
-			giveArgs:          []string{},
-			wantErrorContains: assert.AnError,
-		},
-	}
-
-	runSetupLoggingTests(&suite.Suite, testCases)
-}
-
-func TestCommanderSetupLoggingTestSuite(t *testing.T) {
-	suite.Run(t, new(CommanderSetupLoggingTestSuite))
-}
-
-func TestCommanderTeardownLogging(t *testing.T) {
-	li := mocks.NewLogInformer(t)
-	li.EXPECT().Teardown().Once()
-	cd := &cmdutil.Commander{}
-	cd.TeardownLogging(li)
-}
-
-func runConversionTest[T flags.FlagType](suite *suite.Suite, envVars map[string]testutil.EnvVar[T], addFlag func(*pflag.FlagSet, string) *flags.Flag[T], wantError bool, getValue func(*pflag.FlagSet, string) (T, error)) {
-	for envKey, envValue := range envVars {
-		flagName := strings.TrimPrefix(envKey, "SKUID_")
-		flagName = strings.ReplaceAll(flagName, "_", "-")
-		flagName = strings.ToLower(flagName)
-		testDescription := fmt.Sprintf("convert %v %v", reflect.TypeOf(envValue.Value), envKey)
-		suite.Run(testDescription, func() {
-			t := suite.T()
-			testutil.SetupEnv(t, envVars)
-			flagMgr := &cmdutil.FlagManager{}
-			cd := &cmdutil.Commander{
-				FlagManager: flagMgr,
-			}
-			cmd := &cobra.Command{Use: "mycmd"}
-			cmd.RunE = emptyCobraRun
-			var appliedEnvVars []*cmdutil.AppliedEnvVar
-			cmd.PersistentPreRunE = func(c *cobra.Command, a []string) error {
-				var err error
-				appliedEnvVars, err = cd.ApplyEnvVars(cmd)
-				return err
-			}
-			flag := addFlag(cmd.Flags(), flagName)
-			flagMgr.Track(cmd.Flags().Lookup(flagName), flag)
-			cmd.Flags().SetAnnotation(flag.Name, cmdutil.FlagSetBySkuidCliAnnotation, []string{"true"})
-			err := executeCommand(cmd, []string{}...)
-			if wantError {
-				assert.ErrorContains(t, err, envKey)
-				assert.Equal(t, len(appliedEnvVars), 0)
-			} else {
-				require.NoError(t, err)
-				actualValue, err := getValue(cmd.Flags(), flagName)
-				require.NoError(t, err)
-				assert.Equal(t, envValue.Value, actualValue)
-				require.Equal(t, len(appliedEnvVars), 1)
-				aev := appliedEnvVars[0]
-				assert.Equal(t, envKey, aev.Name)
-				assert.Equal(t, flagName, aev.Flag.FlagName())
-				assert.False(t, false)
-			}
+	addFlag := func(fs *pflag.FlagSet, name string, p **time.Time) *flags.Flag[*time.Time] {
+		flag := &flags.Flag[*time.Time]{Name: name, Usage: "this is a flag"}
+		v := flags.NewValue(flag.Default, p, func(val string) (*time.Time, error) {
+			t, err := time.ParseInLocation(layout, val, time.Local)
+			return &t, err
 		})
+		fs.Var(v, flag.Name, flag.Usage)
+		return flag
 	}
+	runConversionTest(&suite.Suite, envVarsSuccess, addFlag, false)
+	runConversionTest(&suite.Suite, envVarsError, addFlag, true)
 }
 
-func runAddFlagsTests[T flags.FlagType](suite *suite.Suite, testCases []AddFlagsTestCase[T], createFlags func(*flags.Flag[T]) *cmdutil.CommandFlags, getValue func(*pflag.FlagSet, string) (T, error)) {
-	for _, tc := range testCases {
-		suite.Run(tc.testDescription, func() {
-			t := suite.T()
-			flagMgr := cmdutil.NewFlagManager()
-			cd := &cmdutil.Commander{
-				FlagManager: flagMgr,
-			}
-			cmd := &cobra.Command{Use: "mycmd"}
-			cmd.RunE = emptyCobraRun
-			cmdFlags := createFlags(tc.giveFlag)
-
-			cd.AddFlags(cmd, cmdFlags)
-			var flagSet *pflag.FlagSet
-			if tc.giveFlag.Global {
-				flagSet = cmd.PersistentFlags()
-			} else {
-				flagSet = cmd.LocalNonPersistentFlags()
-			}
-			actualFlag := flagSet.Lookup(tc.giveFlag.Name)
-			// was it added to correct FlagSet on command
-			require.NotNil(t, actualFlag, "Expected lookup to return not nil flag, got nil")
-
-			actualType := actualFlag.Value.Type()
-			expectedType := func() string {
-				switch et := any(tc.giveFlag.Default).(type) {
-				// pflag returns stringSlice and our type is StringSlice
-				case flags.StringSlice:
-					return "stringSlice"
-				default:
-					return fmt.Sprint(reflect.TypeOf(et))
-				}
-			}()
-			// correct type?
-			assert.Equal(t, expectedType, actualType)
-
-			// usage updated to include environment variables
-			assert.Contains(t, actualFlag.Usage, tc.giveFlag.EnvVarName())
-
-			// shorthand
-			assert.Equal(t, tc.giveFlag.Shorthand, actualFlag.Shorthand)
-
-			// default value
-			actualValue, err := getValue(flagSet, tc.giveFlag.Name)
-			require.NoError(t, err)
-			assert.Equal(t, tc.giveFlag.Default, actualValue)
-
-			// annotation set
-			_, aok := actualFlag.Annotations[cmdutil.FlagSetBySkuidCliAnnotation]
-			assert.True(t, aok)
-
-			// make sure its tracked so we can applyenvvars later
-			fi, ok := flagMgr.Find(actualFlag)
-			assert.True(t, ok)
-			assert.NotNil(t, fi)
-
-			// if required, since we aren't passing in any args, it should fail
-			err = executeCommand(cmd, []string{}...)
-			if tc.giveFlag.Required {
-				assert.ErrorContains(t, err, "required")
-				assert.ErrorContains(t, err, tc.giveFlag.Name)
-			} else {
-				require.NoError(t, err)
-			}
-		})
-	}
-}
-
-func createAddCmdFlagsTests[T flags.FlagType](defaultValue T) []AddFlagsTestCase[T] {
-	testCases := []AddFlagsTestCase[T]{
-		{
-			testDescription: "required",
-			giveFlag:        &flags.Flag[T]{Name: "testflag", Usage: "this is the usage", Required: true, Shorthand: "v", Default: defaultValue},
-		},
-		{
-			testDescription: "not required",
-			giveFlag:        &flags.Flag[T]{Name: "testflag", Usage: "this is the usage", Required: false, Shorthand: "v", Default: defaultValue},
-		},
-		{
-			testDescription: "required global",
-			giveFlag:        &flags.Flag[T]{Name: "testflag", Usage: "this is the usage", Required: true, Global: true, Shorthand: "v", Default: defaultValue},
-		},
-		{
-			testDescription: "not required global",
-			giveFlag:        &flags.Flag[T]{Name: "testflag", Usage: "this is the usage", Required: false, Global: true, Shorthand: "v", Default: defaultValue},
-		},
-	}
-	return testCases
+func TestApplyEnvVarsTestSuite(t *testing.T) {
+	suite.Run(t, new(ApplyEnvVarsTestSuite))
 }
 
 func runApplyEnvVarsTests(suite *suite.Suite, envVars map[string]testutil.EnvVar[string], testCases []ApplyEnvVarsTestCase) {
@@ -1283,28 +454,24 @@ func runApplyEnvVarsTests(suite *suite.Suite, envVars map[string]testutil.EnvVar
 		suite.Run(tc.testDescription, func() {
 			t := suite.T()
 			testutil.SetupEnv(t, envVars)
-			flagMgr := &cmdutil.FlagManager{}
-			cd := &cmdutil.Commander{
-				FlagManager: flagMgr,
-			}
 			cmd := &cobra.Command{Use: "mycmd"}
-			cmd.RunE = emptyCobraRun
+			cmd.RunE = testutil.EmptyCobraRun
 			var appliedEnvVars []*cmdutil.AppliedEnvVar
 			cmd.PersistentPreRunE = func(c *cobra.Command, a []string) error {
 				var err error
-				appliedEnvVars, err = cd.ApplyEnvVars(cmd)
+				appliedEnvVars, err = cmdutil.ApplyEnvVars(cmd)
 				return err
 			}
 			for _, f := range tc.giveFlags {
 				cmd.Flags().String(f.Name, f.Default, f.Usage)
-				flagMgr.Track(cmd.Flags().Lookup(f.Name), f)
 				cmd.Flags().SetAnnotation(f.Name, cmdutil.FlagSetBySkuidCliAnnotation, []string{"true"})
+				cmd.Flags().SetAnnotation(f.Name, cmdutil.LegacyEnvVarsAnnotation, f.LegacyEnvVars)
 				if f.Required {
 					cmd.MarkFlagRequired(f.Name)
 				}
 			}
 
-			err := executeCommand(cmd, tc.giveArgs...)
+			err := testutil.ExecuteCommand(cmd, tc.giveArgs...)
 
 			if tc.wantErrorContains != nil {
 				assert.ErrorContains(t, err, tc.wantErrorContains.Error())
@@ -1321,7 +488,7 @@ func runApplyEnvVarsTests(suite *suite.Suite, envVars map[string]testutil.EnvVar
 				assert.Equal(t, v, val)
 				assert.Equal(t, flag.Changed, tc.wantChanged)
 				i := slices.IndexFunc(appliedEnvVars, func(a *cmdutil.AppliedEnvVar) bool {
-					return a.Flag.FlagName() == k
+					return a.Flag.Name == k
 				})
 				if tc.wantChangedByEnvVar != "" {
 					changedCount++
@@ -1338,46 +505,41 @@ func runApplyEnvVarsTests(suite *suite.Suite, envVars map[string]testutil.EnvVar
 	}
 }
 
-func runSetupLoggingTests(suite *suite.Suite, testCases []SetupLoggingTestCase) {
-	for _, tc := range testCases {
-		suite.Run(tc.testDescription, func() {
+func runConversionTest[T flags.FlagType](suite *suite.Suite, envVars map[string]testutil.EnvVar[T], addFlag func(*pflag.FlagSet, string, *T) *flags.Flag[T], wantError bool) {
+	for envKey, envValue := range envVars {
+		flagName := strings.TrimPrefix(envKey, "SKUID_")
+		flagName = strings.ReplaceAll(flagName, "_", "-")
+		flagName = strings.ToLower(flagName)
+		testDescription := fmt.Sprintf("convert %v %v", reflect.TypeOf(envValue.Value), envKey)
+		suite.Run(testDescription, func() {
 			t := suite.T()
-			cd := &cmdutil.Commander{}
-			cmd, logCfg := tc.giveSetup(t)
-			cmd.RunE = emptyCobraRun
+			testutil.SetupEnv(t, envVars)
+			cmd := &cobra.Command{Use: "mycmd"}
+			cmd.RunE = testutil.EmptyCobraRun
+			var appliedEnvVars []*cmdutil.AppliedEnvVar
 			cmd.PersistentPreRunE = func(c *cobra.Command, a []string) error {
-				return cd.SetupLogging(cmd, logCfg)
+				var err error
+				appliedEnvVars, err = cmdutil.ApplyEnvVars(cmd)
+				return err
 			}
-
-			err := executeCommand(cmd, tc.giveArgs...)
-
-			if tc.wantErrorContains != nil {
-				require.ErrorContains(t, err, tc.wantErrorContains.Error())
+			p := new(T)
+			flag := addFlag(cmd.Flags(), flagName, p)
+			cmd.Flags().SetAnnotation(flag.Name, cmdutil.FlagSetBySkuidCliAnnotation, []string{"true"})
+			cmd.Flags().SetAnnotation(flag.Name, cmdutil.LegacyEnvVarsAnnotation, flag.LegacyEnvVars)
+			err := testutil.ExecuteCommand(cmd, []string{}...)
+			if wantError {
+				assert.ErrorContains(t, err, envKey)
+				assert.Equal(t, len(appliedEnvVars), 0)
 			} else {
 				require.NoError(t, err)
+				require.NoError(t, err)
+				assert.Equal(t, envValue.Value, *p)
+				require.Equal(t, len(appliedEnvVars), 1)
+				aev := appliedEnvVars[0]
+				assert.Equal(t, envKey, aev.Name)
+				assert.Equal(t, flagName, aev.Flag.Name)
+				assert.False(t, false)
 			}
 		})
 	}
-}
-
-func assertFlags[T flags.FlagType](t *testing.T, flagMgr cmdutil.FlagTrackerFinder, cmd *cobra.Command, flags []*flags.Flag[T]) {
-	for _, flag := range flags {
-		assertFlag(t, flagMgr, cmd, flag)
-	}
-}
-
-func assertFlag[T flags.FlagType](t *testing.T, flagMgr cmdutil.FlagTrackerFinder, cmd *cobra.Command, flag *flags.Flag[T]) {
-	var actualFlag *pflag.Flag
-	if flag.Global {
-		actualFlag = cmd.PersistentFlags().Lookup(flag.Name)
-	} else {
-		actualFlag = cmd.LocalNonPersistentFlags().Lookup(flag.Name)
-	}
-	require.NotNil(t, actualFlag, "Expected lookup to return not nil flag, got nil")
-	assert.Contains(t, actualFlag.Usage, flag.EnvVarName())
-	_, aok := actualFlag.Annotations[cmdutil.FlagSetBySkuidCliAnnotation]
-	assert.True(t, aok)
-	fi, ok := flagMgr.Find(actualFlag)
-	assert.True(t, ok)
-	assert.NotNil(t, fi)
 }

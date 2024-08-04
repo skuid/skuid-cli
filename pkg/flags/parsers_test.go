@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/skuid/skuid-cli/pkg/flags"
-	"github.com/skuid/skuid-cli/pkg/util"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -16,14 +15,14 @@ func TestParseSince(t *testing.T) {
 	testCases := []struct {
 		testDescription string
 		giveValue       string
-		wantValue       string
+		wantValue       *time.Time
 		wantError       bool
 	}{
-		{"valid value", now.Format(time.RFC3339Nano), util.FormatTimestamp(now), false},
-		{"valid value spaces around", fmt.Sprintf("  %v  ", now.Format(time.RFC3339Nano)), util.FormatTimestamp(now), false},
-		{"valid value empty", "", "", false},
-		{"invalid value future", "-1d", "", true},
-		{"invalid value blank", "   ", "", true},
+		{"valid value", now.Format(time.RFC3339Nano), &now, false},
+		{"valid value spaces around", fmt.Sprintf("  %v  ", now.Format(time.RFC3339Nano)), &now, false},
+		{"valid value empty", "", nil, false},
+		{"invalid value future", "-1d", nil, true},
+		{"invalid value blank", "   ", nil, true},
 	}
 
 	for _, tc := range testCases {
@@ -34,7 +33,12 @@ func TestParseSince(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 			}
-			assert.Equal(t, tc.wantValue, actualValue)
+			if tc.wantValue == nil {
+				assert.Nil(t, actualValue)
+			} else {
+				require.NotNil(t, actualValue)
+				assert.True(t, tc.wantValue.Equal(*actualValue))
+			}
 		})
 	}
 }

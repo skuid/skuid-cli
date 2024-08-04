@@ -20,7 +20,6 @@ func (suite *NewFactoryTestSuite) TestNewFactory() {
 	assert.NotNil(t, f)
 	assert.Equal(t, appVersion, f.AppVersion)
 	assert.NotNil(t, f.LogConfig)
-	assert.NotNil(t, f.Commander)
 }
 
 func TestNewFactoryTestSuite(t *testing.T) {

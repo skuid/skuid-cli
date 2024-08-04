@@ -2,10 +2,7 @@ package util
 
 import (
 	"fmt"
-	"math"
 	"slices"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/goschtalt/approx"
@@ -43,17 +40,15 @@ func StringSliceContainsAnyKey(strings []string, keys []string) bool {
 	})
 }
 
-// GetTimestamp tries to parse given string as a golang duration,
-// then as a time. If successful, it returns a Unix timestamp
-// as string otherwise returns empty string with an error.
-// In case of duration input, the returned timestamp is computed
+// GetTime tries to parse given string as a golang duration, then as a time and returns
+// the time that it represents. In case of duration input, the returned timestamp is computed
 // as the given reference time minus the amount of the duration.
 // Formats Supported - see tests for examples:
 //   - Durations: year, week and day in addition to standard golang durations.
 //   - Times: any golang layout except for those that contain timezone abbreviations (e.g., UnixDate).
-func GetTimestamp(value string, reference time.Time, noFuture bool) (string, error) {
+func GetTime(value string, reference time.Time, noFuture bool) (time.Time, error) {
 	if value == "" || value == "0" {
-		return "", fmt.Errorf("value is not a valid time or duration: %q", value)
+		return time.Time{}, fmt.Errorf("value is not a valid time or duration: %q", value)
 	}
 
 	// try duration first for two reasons:
@@ -65,26 +60,15 @@ func GetTimestamp(value string, reference time.Time, noFuture bool) (string, err
 	} else {
 		t, err = parseTime(value, reference)
 		if err != nil {
-			return "", err
+			return time.Time{}, err
 		}
 	}
 
 	if noFuture && t.Compare(reference) > 0 {
-		return "", fmt.Errorf("value %q cannot represent a time in the future: %v", value, t.Format(time.RFC3339))
+		return time.Time{}, fmt.Errorf("value %q cannot represent a time in the future: %v", value, t.Format(time.RFC3339))
 	}
 
-	return FormatTimestamp(t), nil
-}
-
-func FormatTimestamp(t time.Time) string {
-	return fmt.Sprintf("%d.%09d", t.Unix(), int64(t.Nanosecond()))
-}
-
-func ParseTimestamp(value string, defaultSeconds int64) (seconds int64, nanoseconds int64, err error) {
-	if value == "" {
-		return defaultSeconds, 0, nil
-	}
-	return parseTimestamp(value)
+	return t, nil
 }
 
 func parseTime(value string, reference time.Time) (time.Time, error) {
@@ -146,23 +130,4 @@ func parseTime(value string, reference time.Time) (time.Time, error) {
 func forceCurrentDate(t time.Time, reference time.Time) time.Time {
 	return time.Date(reference.Year(), reference.Month(), reference.Day(), t.Hour(), t.Minute(),
 		t.Second(), t.Nanosecond(), reference.Location())
-
-}
-
-func parseTimestamp(value string) (sec int64, nsec int64, err error) {
-	s, n, ok := strings.Cut(value, ".")
-	sec, err = strconv.ParseInt(s, 10, 64)
-	if err != nil {
-		return sec, 0, err
-	}
-	if !ok {
-		return sec, 0, nil
-	}
-	nsec, err = strconv.ParseInt(n, 10, 64)
-	if err != nil {
-		return sec, nsec, err
-	}
-	// should already be in nanoseconds but just in case convert n to nanoseconds
-	nsec = int64(float64(nsec) * math.Pow(float64(10), float64(9-len(n))))
-	return sec, nsec, nil
 }

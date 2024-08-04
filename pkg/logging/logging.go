@@ -42,13 +42,13 @@ type LoggingOptions struct {
 // https://github.com/skuid/skuid-cli/issues/180
 // https://github.com/skuid/skuid-cli/issues/181
 type LogInformer interface {
-	Setup(LoggingOptions) error
+	Setup(*LoggingOptions) error
 	Teardown()
 }
 
 type LogConfig struct{}
 
-func (l *LogConfig) Setup(opts LoggingOptions) error {
+func (l *LogConfig) Setup(opts *LoggingOptions) error {
 	return Setup(opts)
 }
 
@@ -116,7 +116,7 @@ func Get() *logrus.Logger {
 	//       be called prior to any log messages being emitted. Once DI is implemented, the entire logging package
 	//       goes away so this will be eliminated.
 	if testing.Testing() && loggerSingleton == nil {
-		if err := setupLog(LoggingOptions{}); err != nil {
+		if err := setupLog(&LoggingOptions{}); err != nil {
 			panic(err)
 		}
 	} else {
@@ -130,7 +130,7 @@ func Get() *logrus.Logger {
 	return loggerSingleton
 }
 
-func Setup(options LoggingOptions) error {
+func Setup(options *LoggingOptions) error {
 	safe.Lock()
 	defer safe.Unlock()
 
@@ -151,7 +151,7 @@ func Teardown() {
 	fieldLogging = false
 }
 
-func setupLog(options LoggingOptions) error {
+func setupLog(options *LoggingOptions) error {
 	// should never occur in production
 	clierrors.MustConditionf(loggerSingleton == nil, "logger already initialized")
 

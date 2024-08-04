@@ -13,7 +13,7 @@ import (
 func TestGetDeployPlan(t *testing.T) {
 	util.SkipIntegrationTest(t)
 
-	auth, err := pkg.Authorize(authHost, authUser, authPass)
+	auth, err := pkg.Authorize(authOptions)
 	if err != nil {
 		t.Log(err)
 		t.FailNow()
@@ -51,7 +51,7 @@ func TestGetDeployPlan(t *testing.T) {
 
 func BenchmarkDeploymentPlan(b *testing.B) {
 	util.SkipBenchmark(b)
-	auth, _ := pkg.Authorize(authHost, authUser, authPass)
+	auth, _ := pkg.Authorize(authOptions)
 	wd, _ := os.Getwd()
 	fp := filepath.Join(wd, ".", ".", "_deploy")
 	deploymentPlan, _, _ := pkg.Archive(os.DirFS(fp), util.NewFileUtil(), nil)

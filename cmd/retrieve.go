@@ -14,56 +14,59 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func NewCmdRetrieve(cd *cmdutil.Factory) *cobra.Command {
-	retrieveTemplate := &cmdutil.CmdTemplate{
+type retrieveCommander struct {
+	factory  *cmdutil.Factory
+	authOpts pkg.AuthorizeOptions
+	dir      string
+	app      string
+	since    *time.Time
+}
+
+func (c *retrieveCommander) GetCommand() *cobra.Command {
+	template := &cmdutil.CmdTemplate{
 		Use:     "retrieve",
 		Short:   "Retrieve a Skuid NLX Site",
 		Long:    "Retrieve Skuid metadata from a Skuid NLX Site and output it into a local directory",
 		Example: "retrieve -u myUser -p myPassword --host my-site.skuidsite.com --dir ./my-site-objects --app myapp --since 4h",
-		Flags: &cmdutil.CommandFlags{
-			// pages flag does not work as expected so commenting out
-			// TODO: Remove completely or fix issues depending on https://github.com/skuid/skuid-cli/issues/147 & https://github.com/skuid/skuid-cli/issues/148
-			// flags.Pages
-			String: []*flags.Flag[string]{flags.Host, flags.Password, flags.Username, flags.Dir, flags.App, flags.Since},
-		},
 	}
+	cmd := template.ToCommand(c.retrieve)
 
-	return retrieveTemplate.ToCommand(cd, nil, nil, retrieve)
+	cmdutil.AddAuthFlags(cmd, &c.authOpts)
+	cmdutil.AddStringFlag(cmd, &c.dir, flags.Dir)
+	cmdutil.AddStringFlag(cmd, &c.app, flags.App)
+	cmdutil.AddValueFlag(cmd, &c.since, flags.Since)
+	// TODO: Pages does not work as expected - remove completely or fix issues depending on https://github.com/skuid/skuid-cli/issues/147 & https://github.com/skuid/skuid-cli/issues/148
+	//cmdutil.StringSliceFlag(cmd, &c.pages, flags.Pages)
+
+	return cmd
 }
 
-func retrieve(factory *cmdutil.Factory, cmd *cobra.Command, _ []string) (err error) {
+func NewCmdRetrieve(factory *cmdutil.Factory) *cobra.Command {
+	commander := new(retrieveCommander)
+	commander.factory = factory
+	return commander.GetCommand()
+}
+
+func (c *retrieveCommander) retrieve(cmd *cobra.Command, _ []string) (err error) {
 	fields := make(logrus.Fields)
 	start := time.Now()
 	fields["process"] = "retrieve"
 	fields["start"] = start
+	logging.WithFields(fields).Info(color.Green.Sprint("Starting Retrieve"))
 
-	logging.Get().Info(color.Green.Sprint("Starting Retrieve"))
-	// get required arguments
-	host, err := cmd.Flags().GetString(flags.Host.Name)
-	if err != nil {
-		return
-	}
-	username, err := cmd.Flags().GetString(flags.Username.Name)
-	if err != nil {
-		return
-	}
-	password, err := flags.GetFlagValue[string](cmd.Flags(), flags.Password.Name)
-	if err != nil {
-		return
-	}
-
-	fields["host"] = host
-	fields["username"] = username
+	fields["host"] = c.authOpts.Host
+	fields["username"] = c.authOpts.Username
 	logging.WithFields(fields).Debug("Credentials gathered")
 
-	auth, err := pkg.Authorize(host, username, password)
+	auth, err := pkg.Authorize(&c.authOpts)
 	// we don't need it anymore - very inelegant approach but at least it is something for now
 	// Clearing it here instead of in auth package which is the only place its accessed because the tests that exist
 	// for auth rely on package global variables so clearing in there would break those tests as they currently exist.
 	//
 	// TODO: Implement a solution for secure storage of the password while in memory and implement a proper one-time use
 	// approach assuming Skuid supports refresh tokens (see https://github.com/skuid/skuid-cli/issues/172)
-	password.Set("")
+	// intentionally ignoring error since there is nothing we can do and we should fail entirely as a result
+	_ = c.authOpts.Password.Set("")
 	if err != nil {
 		return
 	}
@@ -73,57 +76,29 @@ func retrieve(factory *cmdutil.Factory, cmd *cobra.Command, _ []string) (err err
 
 	// we want the filter nil because it will be discarded without
 	// initialization
-	var filter *pkg.NlxPlanFilter = nil
-
-	// initialize the filter dynamically based on
-	// optional filter arguments. This lets us
-	// expand the pattern down the road as more things
-	// are required to be build
-	initFilter := func() {
-		logging.WithFields(fields).Debug("Using filter")
-		if filter == nil {
-			filter = &pkg.NlxPlanFilter{}
-		}
-	}
+	var filter *pkg.NlxPlanFilter = &pkg.NlxPlanFilter{}
 
 	// filter by app name
-	var appName string
-	if appName, err = cmd.Flags().GetString(flags.App.Name); err != nil {
-		return
-	} else if appName != "" {
-		initFilter()
-		fields["appName"] = appName
-		filter.AppName = appName
+	if c.app != "" {
+		fields["appName"] = c.app
+		filter.AppName = c.app
 	}
 
 	// filter by page name
-	// pages flag does not work as expected so commenting out
-	// TODO: Remove completely or fix issues depending on https://github.com/skuid/skuid-cli/issues/147 & https://github.com/skuid/skuid-cli/issues/148
+	// TODO: pages flag does not work as expected - remove completely or fix issues depending on https://github.com/skuid/skuid-cli/issues/147 & https://github.com/skuid/skuid-cli/issues/148
 	/*
-		var pageNames []string
-		if pageNames, err = cmd.Flags().GetStringArray(flags.Pages.Name); err != nil {
-			return
-		} else if len(pageNames) > 0 {
-			initFilter()
-			fields["pageNames"] = pageNames
-			filter.PageNames = pageNames
+		if len(c.pages) > 0 {
+			fields["pages"] = c.pages
+			filter.PageNames = c.pages
 		}
 	*/
 
-	sinceStr, err := cmd.Flags().GetString(flags.Since.Name)
-	if err != nil {
-		return
-	} else if sinceStr != "" {
-		if sec, nano, err := util.ParseTimestamp(sinceStr, 0); err != nil {
-			return err
-		} else {
-			initFilter()
-			localSince := time.Unix(sec, nano)
-			filter.Since = localSince.UTC()
-			sinceStr = filter.Since.Format(time.RFC3339)
-			fields["sinceUTC"] = sinceStr
-			logging.WithFields(fields).Info(fmt.Sprintf("retrieving metadata records updated since: %s", localSince.Format(time.RFC3339)))
-		}
+	var sinceStr string
+	if c.since != nil {
+		filter.Since = c.since.UTC()
+		sinceStr = filter.Since.Format(time.RFC3339)
+		fields["sinceUTC"] = sinceStr
+		logging.WithFields(fields).Info(fmt.Sprintf("retrieving metadata records updated since: %s", c.since.Format(time.RFC3339)))
 	}
 
 	logging.WithFields(fields).Info("Getting Retrieve Plan")
@@ -158,21 +133,17 @@ func retrieve(factory *cmdutil.Factory, cmd *cobra.Command, _ []string) (err err
 
 	logging.WithFields(fields).Debugf("Received %v Results", color.Green.Sprint(len(results)))
 
-	var directory string
-	if directory, err = cmd.Flags().GetString(flags.Dir.Name); err != nil {
+	var targetDirectory string
+	if targetDirectory, err = util.SanitizePath(c.dir); err != nil {
 		return
 	}
 
-	if directory, err = util.SanitizePath(directory); err != nil {
-		return
-	}
-
-	fields["targetDirectory"] = directory
-	logging.WithFields(fields).Infof("Target Directory is %v", color.Cyan.Sprint(directory))
+	fields["targetDirectory"] = targetDirectory
+	logging.WithFields(fields).Infof("Target Directory is %v", color.Cyan.Sprint(targetDirectory))
 
 	// TODO: put this behind a boolean command flag to avoid this process
-	if err = pkg.ClearDirectories(directory); err != nil {
-		logging.Get().Errorf("Unable to clear directory: %v", directory)
+	if err = pkg.ClearDirectories(targetDirectory); err != nil {
+		logging.Get().Errorf("Unable to clear directory: %v", targetDirectory)
 		return
 	}
 
@@ -180,7 +151,7 @@ func retrieve(factory *cmdutil.Factory, cmd *cobra.Command, _ []string) (err err
 
 	for _, v := range results {
 		if err = pkg.WriteResultsToDisk(
-			directory,
+			targetDirectory,
 			pkg.WritePayload{
 				PlanName: v.PlanName,
 				PlanData: v.Data,
@@ -190,7 +161,7 @@ func retrieve(factory *cmdutil.Factory, cmd *cobra.Command, _ []string) (err err
 		}
 	}
 
-	logging.Get().Infof("Finished Writing to %v", color.Cyan.Sprint(directory))
+	logging.Get().Infof("Finished Writing to %v", color.Cyan.Sprint(targetDirectory))
 	logging.WithFields(fields).Info(color.Green.Sprint("Finished Retrieve"))
 
 	return

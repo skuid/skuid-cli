@@ -8,14 +8,17 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/skuid/skuid-cli/pkg"
+	"github.com/skuid/skuid-cli/pkg/cmdutil"
 	"github.com/skuid/skuid-cli/pkg/flags"
 	"github.com/skuid/skuid-cli/pkg/util"
 )
 
 var (
-	authHost = os.Getenv(flags.Host.EnvVarName())
-	authUser = os.Getenv(flags.Username.EnvVarName())
-	authPass = flags.NewValueWithRedact(os.Getenv(flags.Password.EnvVarName()), new(string), nil, nil)
+	authOptions = &pkg.AuthorizeOptions{
+		os.Getenv(cmdutil.EnvVarName(flags.Host.Name)),
+		os.Getenv(cmdutil.EnvVarName(flags.Username.Name)),
+		flags.NewValueWithRedact(os.Getenv(cmdutil.EnvVarName(flags.Password.Name)), new(string), nil, nil),
+	}
 )
 
 // if you have to run it by itself, add some environment variables
@@ -26,19 +29,17 @@ func TestAuthorizationMethods(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if accessToken, err := pkg.GetAccessToken(
-		authHost, authUser, authPass,
-	); err != nil {
+	if accessToken, err := pkg.GetAccessToken(authOptions); err != nil {
 		color.Red.Println(err)
 		t.FailNow()
 	} else if authorizationToken, err := pkg.GetAuthorizationToken(
-		authHost, accessToken,
+		authOptions.Host, accessToken,
 	); err != nil {
 		color.Red.Println(err)
 		t.FailNow()
 	} else {
 
-		auth, err := pkg.Authorize(authHost, authUser, authPass)
+		auth, err := pkg.Authorize(authOptions)
 		if err != nil {
 			t.FailNow()
 		}

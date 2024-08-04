@@ -1,52 +1,119 @@
 package cmdutil
 
 import (
+	"regexp"
+	"strings"
+
+	"github.com/gookit/color"
+	"github.com/skuid/skuid-cli/pkg"
+	"github.com/skuid/skuid-cli/pkg/constants"
+	"github.com/skuid/skuid-cli/pkg/errors"
 	"github.com/skuid/skuid-cli/pkg/flags"
+	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
 
-// environment variables are flag specific so we track each flag created
-// and then lookup its corresponding environment variable.  For example, if a new command
-// was added (e.g., dosomething) which had a flag of --dir, it should not map to the legacy
-// SKUID_DEFAULT_FOLDER environment variable since it never supported it.
-type flagMap map[*pflag.Flag]flags.FlagInfo
+const (
+	FlagSetBySkuidCliAnnotation = "skuidcli_annotation_flag_set_by_skuidcli"
+	LegacyEnvVarsAnnotation     = "skuidcli_annotation_legacy_env_vars"
+)
 
-type FlagTracker interface {
-	Track(f *pflag.Flag, r flags.FlagInfo)
+var flagNameValidator = regexp.MustCompile(`^[a-z0-9_-]{3,}$`)
+
+func AddStringFlag(cmd *cobra.Command, valPtr *string, flagInfo *flags.Flag[string]) {
+	checkValidFlag(flagInfo, false, false)
+	*valPtr = flagInfo.Default
+	fs := getFlagSet(cmd, flagInfo)
+	fs.StringVarP(valPtr, flagInfo.Name, flagInfo.Shorthand, *valPtr, usage(flagInfo))
+	register(fs, flagInfo)
 }
 
-type FlagFinder interface {
-	Find(pf *pflag.Flag) (flags.FlagInfo, bool)
+func AddBoolFlag(cmd *cobra.Command, valPtr *bool, flagInfo *flags.Flag[bool]) {
+	checkValidFlag(flagInfo, false, false)
+	*valPtr = flagInfo.Default
+	fs := getFlagSet(cmd, flagInfo)
+	fs.BoolVarP(valPtr, flagInfo.Name, flagInfo.Shorthand, *valPtr, usage(flagInfo))
+	register(fs, flagInfo)
 }
 
-type FlagTrackerFinder interface {
-	FlagTracker
-	FlagFinder
+func AddIntFlag(cmd *cobra.Command, valPtr *int, flagInfo *flags.Flag[int]) {
+	checkValidFlag(flagInfo, false, false)
+	*valPtr = flagInfo.Default
+	fs := getFlagSet(cmd, flagInfo)
+	fs.IntVarP(valPtr, flagInfo.Name, flagInfo.Shorthand, *valPtr, usage(flagInfo))
+	register(fs, flagInfo)
 }
 
-type CommandFlags struct {
-	Int         []*flags.Flag[int]
-	String      []*flags.Flag[string]
-	Bool        []*flags.Flag[bool]
-	StringSlice []*flags.Flag[flags.StringSlice]
+func AddStringSliceFlag(cmd *cobra.Command, valPtr *[]string, flagInfo *flags.Flag[[]string]) {
+	checkValidFlag(flagInfo, false, false)
+	*valPtr = flagInfo.Default
+	fs := getFlagSet(cmd, flagInfo)
+	fs.StringSliceVarP(valPtr, flagInfo.Name, flagInfo.Shorthand, *valPtr, usage(flagInfo))
+	register(fs, flagInfo)
 }
 
-type FlagManager struct {
-	flags flagMap
+func AddValueFlag[T flags.FlagType](cmd *cobra.Command, valPtr *T, flagInfo *flags.Flag[T]) {
+	checkValidFlag(flagInfo, true, false)
+	fs := getFlagSet(cmd, flagInfo)
+	v := flags.NewValue(flagInfo.Default, valPtr, flagInfo.Parse)
+	fs.VarP(v, flagInfo.Name, flagInfo.Shorthand, usage(flagInfo))
+	register(fs, flagInfo)
 }
 
-func (fm *FlagManager) Track(f *pflag.Flag, r flags.FlagInfo) {
-	if fm.flags == nil {
-		fm.flags = make(flagMap)
+func AddValueWithRedactFlag[T flags.FlagType](cmd *cobra.Command, valPtr *T, flagInfo *flags.Flag[T]) *flags.Value[T] {
+	checkValidFlag(flagInfo, true, true)
+	fs := getFlagSet(cmd, flagInfo)
+	v := flags.NewValueWithRedact(flagInfo.Default, valPtr, flagInfo.Parse, flagInfo.Redact)
+	fs.VarP(v, flagInfo.Name, flagInfo.Shorthand, usage(flagInfo))
+	register(fs, flagInfo)
+	return v
+}
+
+func AddAuthFlags(cmd *cobra.Command, opts *pkg.AuthorizeOptions) {
+	AddValueFlag(cmd, &opts.Host, flags.Host)
+	AddValueFlag(cmd, &opts.Username, flags.Username)
+	p := new(string)
+	opts.Password = AddValueWithRedactFlag(cmd, p, flags.Password)
+}
+
+func EnvVarName(name string) string {
+	envVarName := strings.ToUpper(name)
+	envVarName = strings.ReplaceAll(envVarName, "-", "_")
+	envVarName = constants.ENV_PREFIX + "_" + envVarName
+	return envVarName
+}
+
+func register[T flags.FlagType](fs *pflag.FlagSet, flagInfo *flags.Flag[T]) {
+	setAnnotations(fs, flagInfo)
+	if flagInfo.Required {
+		cobra.MarkFlagRequired(fs, flagInfo.Name)
 	}
-	fm.flags[f] = r
 }
 
-func (fm *FlagManager) Find(pf *pflag.Flag) (flags.FlagInfo, bool) {
-	f, ok := fm.flags[pf]
-	return f, ok
+func setAnnotations[T flags.FlagType](fs *pflag.FlagSet, flagInfo *flags.Flag[T]) {
+	// mark the flag as created by us since Cobra (and any plugin that may be used in future) will/could
+	// create their own flags (e.g., cobra automatically creates a "help" flag)
+	// should never error - only error possible is if flag doesn't exist and we just added it
+	errors.Must(fs.SetAnnotation(flagInfo.Name, FlagSetBySkuidCliAnnotation, []string{"true"}))
+	errors.Must(fs.SetAnnotation(flagInfo.Name, LegacyEnvVarsAnnotation, flagInfo.LegacyEnvVars))
 }
 
-func NewFlagManager() *FlagManager {
-	return &FlagManager{}
+func checkValidFlag[T flags.FlagType](f *flags.Flag[T], allowParse bool, allowRedact bool) {
+	// should never happen in production
+	errors.MustConditionf(flagNameValidator.MatchString(f.Name), "flag name %q is invalid", f.Name)
+	errors.MustConditionf(len(f.Usage) >= 10, "flag usage %q is invalid for flag name %q", f.Usage, f.Name)
+	errors.MustConditionf(f.Parse == nil || allowParse, "flag type %T does not support Parse for flag name %q", f, f.Name)
+	errors.MustConditionf(f.Redact == nil || allowRedact, "flag type %T does not support Redact for flag name %q", f, f.Name)
+}
+
+func usage[T flags.FlagType](flagInfo *flags.Flag[T]) string {
+	envSuffix := color.Gray.Sprintf("Environment variable: %v", EnvVarName(flagInfo.Name))
+	return color.White.Sprintf("%v\n", flagInfo.Usage) + envSuffix
+}
+
+func getFlagSet[T flags.FlagType](cmd *cobra.Command, flagInfo *flags.Flag[T]) *pflag.FlagSet {
+	if flagInfo.Global {
+		return cmd.PersistentFlags()
+	}
+	return cmd.Flags()
 }

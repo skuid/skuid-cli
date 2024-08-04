@@ -13,7 +13,7 @@ import (
 func TestRetrievePlan(t *testing.T) {
 	util.SkipIntegrationTest(t)
 
-	auth, err := pkg.Authorize(authHost, authUser, authPass)
+	auth, err := pkg.Authorize(authOptions)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -40,7 +40,7 @@ func TestRetrievePlan(t *testing.T) {
 
 func TestExecuteRetrieval(t *testing.T) {
 	util.SkipIntegrationTest(t)
-	auth, err := pkg.Authorize(authHost, authUser, authPass)
+	auth, err := pkg.Authorize(authOptions)
 	if err != nil {
 		t.Fatal(err)
 	}

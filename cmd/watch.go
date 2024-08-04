@@ -5,6 +5,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/gookit/color"
 	"github.com/radovskyb/watcher"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -16,67 +17,65 @@ import (
 	"github.com/skuid/skuid-cli/pkg/util"
 )
 
-func NewCmdWatch(factory *cmdutil.Factory) *cobra.Command {
-	watchTemplate := &cmdutil.CmdTemplate{
+type watchCommander struct {
+	factory  *cmdutil.Factory
+	authOpts pkg.AuthorizeOptions
+	dir      string
+}
+
+func (c *watchCommander) GetCommand() *cobra.Command {
+	template := &cmdutil.CmdTemplate{
 		Use:     "watch",
 		Short:   "Watch for changes to local Skuid metadata, and deploy changes to a Skuid NLX Site",
 		Long:    "Watches for changes to local Skuid metadata on your file system, and automatically deploys the changed files to a Skuid NLX Site",
 		Example: "watch -u myUser -p myPassword --host my-site.skuidsite.com --dir ./my-site-objects",
-		Flags: &cmdutil.CommandFlags{
-			String: []*flags.Flag[string]{flags.Host, flags.Password, flags.Username, flags.Dir},
-		},
 	}
+	cmd := template.ToCommand(c.watch)
 
-	return watchTemplate.ToCommand(factory, nil, nil, watch)
+	cmdutil.AddAuthFlags(cmd, &c.authOpts)
+	cmdutil.AddStringFlag(cmd, &c.dir, flags.Dir)
+
+	return cmd
 }
 
-func watch(factory *cmdutil.Factory, cmd *cobra.Command, _ []string) (err error) {
+func NewCmdWatch(factory *cmdutil.Factory) *cobra.Command {
+	commander := new(watchCommander)
+	commander.factory = factory
+	return commander.GetCommand()
+}
+
+func (c *watchCommander) watch(cmd *cobra.Command, _ []string) (err error) {
 	fields := make(logrus.Fields)
+	fields["start"] = time.Now()
 	fields["process"] = "watch"
-	// get required arguments
-	host, err := cmd.Flags().GetString(flags.Host.Name)
-	if err != nil {
-		return
-	}
-	username, err := cmd.Flags().GetString(flags.Username.Name)
-	if err != nil {
-		return
-	}
-	password, err := flags.GetFlagValue[string](cmd.Flags(), flags.Password.Name)
-	if err != nil {
-		return
-	}
+	logging.WithFields(fields).Info(color.Green.Sprint("Starting Watch"))
 
-	fields["host"] = host
-	fields["username"] = username
-
+	fields["host"] = c.authOpts.Host
+	fields["username"] = c.authOpts.Username
 	logging.WithFields(fields).Debug("Gathered Credentials")
 
-	auth, err := pkg.Authorize(host, username, password)
+	auth, err := pkg.Authorize(&c.authOpts)
 	// we don't need it anymore - very inelegant approach but at least it is something for now
 	// Clearing it here instead of in auth package which is the only place its accessed because the tests that exist
 	// for auth rely on package global variables so clearing in there would break those tests as they currently exist.
 	//
 	// TODO: Implement a solution for secure storage of the password while in memory and implement a proper one-time use
 	// approach assuming Skuid supports refresh tokens (see https://github.com/skuid/skuid-cli/issues/172)
-	password.Set("")
+	// intentionally ignoring error since there is nothing we can do and we should fail entirely as a result
+	_ = c.authOpts.Password.Set("")
 	if err != nil {
 		return
 	}
 
 	fields["authorized"] = true
-	logging.WithFields(fields).Debug("Successfully Logged In")
+	logging.WithFields(fields).Info("Authentication Successful")
 
-	var targetDir string
-	if targetDir, err = cmd.Flags().GetString(flags.Dir.Name); err != nil {
+	var targetDirectory string
+	if targetDirectory, err = util.SanitizePath(c.dir); err != nil {
 		return
 	}
 
-	if targetDir, err = util.SanitizePath(targetDir); err != nil {
-		return
-	}
-
-	fields["targetDirectory"] = targetDir
+	fields["targetDirectory"] = targetDirectory
 	logging.WithFields(fields).Debug("Starting Watch")
 
 	// Create our watcher
@@ -104,7 +103,7 @@ func watch(factory *cmdutil.Factory, cmd *cobra.Command, _ []string) (err error)
 			case event := <-w.Event:
 				logging.WithFields(fields).Debugf("Detected %v operation to file: %v", event.Op, event.Path)
 				go func() {
-					if err := pkg.DeployModifiedFiles(auth, targetDir, event.Path); err != nil {
+					if err := pkg.DeployModifiedFiles(auth, targetDirectory, event.Path); err != nil {
 						w.Error <- err
 					}
 				}()
@@ -117,7 +116,7 @@ func watch(factory *cmdutil.Factory, cmd *cobra.Command, _ []string) (err error)
 	}()
 
 	// Watch targetDir recursively for changes.
-	if err = w.AddRecursive(targetDir); err != nil {
+	if err = w.AddRecursive(targetDirectory); err != nil {
 		return
 	}
 

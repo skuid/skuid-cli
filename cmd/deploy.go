@@ -15,59 +15,63 @@ import (
 	"github.com/skuid/skuid-cli/pkg/util"
 )
 
-func NewCmdDeploy(factory *cmdutil.Factory) *cobra.Command {
-	deployTemplate := &cmdutil.CmdTemplate{
+type deployCommander struct {
+	factory         *cmdutil.Factory
+	authOpts        pkg.AuthorizeOptions
+	dir             string
+	app             string
+	ignoreSkuidDb   bool
+	skipDataSources bool
+}
+
+func (c *deployCommander) GetCommand() *cobra.Command {
+	template := cmdutil.CmdTemplate{
 		Use:     "deploy",
 		Short:   "Deploy local Skuid metadata to a Skuid NLX Site",
 		Long:    "Deploy Skuid metadata stored within a local file system directory to a Skuid NLX Site",
 		Example: "deploy -u myUser -p myPassword --host my-site.skuidsite.com --dir ./my-site-objects --app myapp",
-		Flags: &cmdutil.CommandFlags{
-			// pages flag does not work as expected so commenting out
-			// TODO: Remove completely or fix issues depending on https://github.com/skuid/skuid-cli/issues/147 & https://github.com/skuid/skuid-cli/issues/148
-			// flags.Pages
-			String: []*flags.Flag[string]{flags.Host, flags.Password, flags.Username, flags.Dir, flags.App},
-			// TODO: SkipDataSources can be removed once https://github.com/skuid/skuid-cli/issues/150 is resolved
-			Bool: []*flags.Flag[bool]{flags.IgnoreSkuidDb, flags.SkipDataSources},
-		},
-		// do not allow ignoring skuid db errors when skipping datasources or vice-versa as errors can't occur if we're skipping all data sources
-		MutuallyExclusiveFlags: [][]string{{flags.IgnoreSkuidDb.Name, flags.SkipDataSources.Name}},
 	}
+	cmd := template.ToCommand(c.deploy)
 
-	return deployTemplate.ToCommand(factory, nil, nil, deploy)
+	cmdutil.AddAuthFlags(cmd, &c.authOpts)
+	cmdutil.AddStringFlag(cmd, &c.dir, flags.Dir)
+	cmdutil.AddStringFlag(cmd, &c.app, flags.App)
+	cmdutil.AddBoolFlag(cmd, &c.ignoreSkuidDb, flags.IgnoreSkuidDb)
+	// TODO: SkipDataSources can be removed once https://github.com/skuid/skuid-cli/issues/150 is resolved
+	cmdutil.AddBoolFlag(cmd, &c.skipDataSources, flags.SkipDataSources)
+	// TODO: Pages does not work as expected - remove completely or fix issues depending on https://github.com/skuid/skuid-cli/issues/147 & https://github.com/skuid/skuid-cli/issues/148
+	//cmdutil.StringSliceFlag(cmd, &c.pages, flags.Pages)
+
+	cmd.MarkFlagsMutuallyExclusive(flags.IgnoreSkuidDb.Name, flags.SkipDataSources.Name)
+
+	return cmd
 }
 
-func deploy(factory *cmdutil.Factory, cmd *cobra.Command, _ []string) (err error) {
+func NewCmdDeploy(factory *cmdutil.Factory) *cobra.Command {
+	commander := new(deployCommander)
+	commander.factory = factory
+	return commander.GetCommand()
+}
+
+func (c *deployCommander) deploy(cmd *cobra.Command, _ []string) (err error) {
 	fields := make(logrus.Fields)
 	fields["start"] = time.Now()
 	fields["process"] = "deploy"
 	logging.WithFields(fields).Info(color.Green.Sprint("Starting Deploy"))
 
-	// get required authentication arguments
-	host, err := cmd.Flags().GetString(flags.Host.Name)
-	if err != nil {
-		return
-	}
-	username, err := cmd.Flags().GetString(flags.Username.Name)
-	if err != nil {
-		return
-	}
-	password, err := flags.GetFlagValue[string](cmd.Flags(), flags.Password.Name)
-	if err != nil {
-		return
-	}
-
-	fields["host"] = host
-	fields["username"] = username
+	fields["host"] = c.authOpts.Host
+	fields["username"] = c.authOpts.Username
 	logging.WithFields(fields).Debug("Gathered credentials")
 
-	auth, err := pkg.Authorize(host, username, password)
+	auth, err := pkg.Authorize(&c.authOpts)
 	// we don't need it anymore - very inelegant approach but at least it is something for now
 	// Clearing it here instead of in auth package which is the only place its accessed because the tests that exist
 	// for auth rely on package global variables so clearing in there would break those tests as they currently exist.
 	//
 	// TODO: Implement a solution for secure storage of the password while in memory and implement a proper one-time use
 	// approach assuming Skuid supports refresh tokens (see https://github.com/skuid/skuid-cli/issues/172)
-	password.Set("")
+	// intentionally ignoring error since there is nothing we can do and we should fail entirely as a result
+	_ = c.authOpts.Password.Set("")
 	if err != nil {
 		return
 	}
@@ -75,58 +79,32 @@ func deploy(factory *cmdutil.Factory, cmd *cobra.Command, _ []string) (err error
 	fields["authorized"] = true
 	logging.WithFields(fields).Info("Authentication Successful")
 
-	// only create the filter struct if it hasn't been created yet
-	var filter *pkg.NlxPlanFilter = nil
-	initFilter := func() {
-		if filter == nil {
-			filter = &pkg.NlxPlanFilter{}
-		}
-	}
+	var filter *pkg.NlxPlanFilter = &pkg.NlxPlanFilter{}
 
 	// filter by app name
-	var appName string
-	if appName, err = cmd.Flags().GetString(flags.App.Name); err != nil {
-		return
-	} else if appName != "" {
-		initFilter()
-		fields["appName"] = appName
-		filter.AppName = appName
+	if c.app != "" {
+		fields["appName"] = c.app
+		filter.AppName = c.app
 	}
 
 	// filter by page name
-	// pages flag does not work as expected so commenting out
-	// TODO: Remove completely or fix issues depending on https://github.com/skuid/skuid-cli/issues/147 & https://github.com/skuid/skuid-cli/issues/148
+	// TODO: pages flag does not work as expected - remove completely or fix issues depending on https://github.com/skuid/skuid-cli/issues/147 & https://github.com/skuid/skuid-cli/issues/148
 	/*
-		var pageNames []string
-		if pageNames, err = cmd.Flags().GetStringArray(flags.Pages.Name); err != nil {
-			return
-		} else if len(pageNames) > 0 {
-			initFilter()
-			fields["pages"] = pageNames
-			filter.PageNames = pageNames
+		if len(c.pages) > 0 {
+			fields["pages"] = c.pages
+			filter.PageNames = c.pages
 		}
 	*/
 
 	// ignore skuiddb
-	var ignoreSkuidDb bool
-
-	if ignoreSkuidDb, err = cmd.Flags().GetBool(flags.IgnoreSkuidDb.Name); err != nil {
-		return
-	} else {
-		initFilter()
-		fields["ignoreSkuidDb"] = ignoreSkuidDb
-		filter.IgnoreSkuidDb = ignoreSkuidDb
-	}
+	fields["ignoreSkuidDb"] = c.ignoreSkuidDb
+	filter.IgnoreSkuidDb = c.ignoreSkuidDb
 
 	// skip datasources
 	// TODO: This can be removed once https://github.com/skuid/skuid-cli/issues/150 is resolved
-	var skipDataSources bool
-	if skipDataSources, err = cmd.Flags().GetBool(flags.SkipDataSources.Name); err != nil {
-		return
-	}
-	fields["skipDataSources"] = skipDataSources
+	fields["skipDataSources"] = c.skipDataSources
 	var excludedMetadataDirs []string
-	if skipDataSources {
+	if c.skipDataSources {
 		logging.WithFields(fields).Info("Skipping deployment of all DataSources")
 		var mdDirName string
 		if mdDirName, err = pkg.GetMetadataTypeDirName("DataSources"); err != nil {
@@ -137,11 +115,7 @@ func deploy(factory *cmdutil.Factory, cmd *cobra.Command, _ []string) (err error
 
 	// get directory argument
 	var targetDirectory string
-	if targetDirectory, err = cmd.Flags().GetString(flags.Dir.Name); err != nil {
-		return
-	}
-
-	if targetDirectory, err = util.SanitizePath(targetDirectory); err != nil {
+	if targetDirectory, err = util.SanitizePath(c.dir); err != nil {
 		return
 	}
 

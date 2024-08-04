@@ -14,12 +14,18 @@ type Authorization struct {
 	AuthorizationToken string
 }
 
-func GetAccessToken(host string, username string, password *flags.Value[string]) (accessToken string, err error) {
+type AuthorizeOptions struct {
+	Host     string
+	Username string
+	Password *flags.Value[string]
+}
+
+func GetAccessToken(opts *AuthorizeOptions) (accessToken string, err error) {
 	// prep the body
 	body := []byte(url.Values{
 		"grant_type": []string{"password"},
-		"username":   []string{username},
-		"password":   []string{password.Unredacted().String()},
+		"username":   []string{opts.Username},
+		"password":   []string{opts.Password.Unredacted().String()},
 	}.Encode())
 
 	type AccessTokenResponse struct {
@@ -29,7 +35,7 @@ func GetAccessToken(host string, username string, password *flags.Value[string])
 
 	var resp AccessTokenResponse
 	if resp, err = JsonBodyRequest[AccessTokenResponse](
-		host+"/auth/oauth/token",
+		opts.Host+"/auth/oauth/token",
 		http.MethodPost,
 		body,
 		map[string]string{
@@ -66,16 +72,16 @@ func GetAuthorizationToken(host, accessToken string) (authToken string, err erro
 	return
 }
 
-func Authorize(host string, username string, password *flags.Value[string]) (info *Authorization, err error) {
+func Authorize(opts *AuthorizeOptions) (info *Authorization, err error) {
 	info = &Authorization{
-		Host: host,
+		Host: opts.Host,
 	}
 
-	if info.AccessToken, err = GetAccessToken(host, username, password); err != nil {
+	if info.AccessToken, err = GetAccessToken(opts); err != nil {
 		return
 	}
 
-	info.AuthorizationToken, err = GetAuthorizationToken(host, info.AccessToken)
+	info.AuthorizationToken, err = GetAuthorizationToken(info.Host, info.AccessToken)
 
 	return
 }

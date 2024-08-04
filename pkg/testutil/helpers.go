@@ -1,7 +1,10 @@
 package testutil
 
 import (
+	"bytes"
 	"testing"
+
+	"github.com/spf13/cobra"
 )
 
 type EnvVar[T any] struct {
@@ -21,4 +24,15 @@ func SameMatcher(a any) func(fn any) bool {
 	return func(fn any) bool {
 		return a == fn
 	}
+}
+
+func EmptyCobraRun(*cobra.Command, []string) error { return nil }
+
+func ExecuteCommand(root *cobra.Command, args ...string) (err error) {
+	buf := new(bytes.Buffer)
+	root.SetOut(buf)
+	root.SetErr(buf)
+	root.SetArgs(args)
+
+	return root.Execute()
 }
