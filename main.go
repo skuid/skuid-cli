@@ -44,7 +44,8 @@ func Run() exitCode {
 		// logging might not be setup so output directly to stderr and enable colors
 		// which may have been disabled if file logging was enabled
 		color.Enable = true
-		fmt.Fprintf(os.Stderr, "%v %v\n", color.Red.Sprint("X"), err)
+		// intentionally ignoring return values
+		_, _ = fmt.Fprintf(os.Stderr, "%v %v\n", color.Red.Sprint("X"), err)
 		return exitError
 	}
 
