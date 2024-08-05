@@ -155,14 +155,16 @@ func GetMetadataTypeNameByDirName(name string) (metadataType string, ok bool) {
 	return "", false
 }
 
-// GetEntityFiles will return all files that are directly associated
-// to the entityPath specified.  For example, if entityPath is `pages/mypage.xml`,
-// the files returned will be `pages/mypage.xml` and its corresponding `pages/mypage.json`.
-// TODO: This code is currently written without full knowledge of Skuids internal file structure
+// TODO: Skuid Review Required - see resolves issues list in https://github.com/skuid/skuid-cli/pull/137
+// TODO: GetEntityFiles is currently written without full knowledge of Skuids internal file structure
 // and is simply based on observing each metadata type and the files downloaded via the
 // retrieve command.  It should NOT be considered production ready and requires Skuid to
 // review/adjust and/or publish full documentation on each metadata type and its files including
 // naming conventions.
+
+// GetEntityFiles will return all files that are directly associated
+// to the entityPath specified.  For example, if entityPath is `pages/mypage.xml`,
+// the files returned will be `pages/mypage.xml` and its corresponding `pages/mypage.json`.
 func GetEntityFiles(entityPath string) ([]string, bool) {
 	metadataType, _ := GetEntityDetails(entityPath)
 	if _, mdtok := GetMetadataTypeNameByDirName(metadataType); !mdtok {

@@ -128,8 +128,11 @@ func UnzipArchive(sourceFileLocation, targetLocation string, fileCreator util.Fi
 			return
 		}
 
-		// TODO: Does this need to be here, can there be a Dir in an archive and if there is one, why do we
-		// return and not process the remainder of the archive?
+		// TODO: Skuid Review Required - See https://github.com/skuid/skuid-cli/issues/145
+		// This code existed in 0.67.0 but I don't think it's a valid scenario as archives cannot have directories.  Does this need to be here,
+		// can there be a Dir in an archive and if there is one, why do we return and not process the remainder of the archive?  Leaving this
+		// code for now since I don't fully understand it and don't think it will ever get hit since archives cannot contain directories (at
+		// least from what I am aware of).
 		if file.FileInfo().IsDir() {
 			logging.Get().Tracef("Creating Directory: %v", color.Blue.Sprint(file.Name))
 			return directoryCreator(filePath, file.Mode())
