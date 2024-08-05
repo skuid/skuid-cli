@@ -46,8 +46,8 @@ var (
 		LegacyEnvVars: []string{constants.ENV_SKUID_IGNORE_SKUIDDB},
 	}
 
-	NoConsole = &Flag[bool]{
-		Name:   "no-console",
+	NoConsoleLogging = &Flag[bool]{
+		Name:   "no-console-logging",
 		Usage:  "Disable console logging",
 		Global: true,
 	}

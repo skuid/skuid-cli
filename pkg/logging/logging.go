@@ -18,12 +18,12 @@ import (
 )
 
 type LoggingOptions struct {
-	Verbose        bool
-	Trace          bool
-	Diagnostic     bool
-	FileLogging    bool
-	FileLoggingDir string
-	NoConsole      bool
+	Verbose          bool
+	Trace            bool
+	Diagnostic       bool
+	FileLogging      bool
+	FileLoggingDir   string
+	NoConsoleLogging bool
 }
 
 // Wrapping the singleton to support testing - without this, any tests written to test the "Set*" methods
@@ -163,7 +163,7 @@ func setupLog(options *LoggingOptions) error {
 	}
 
 	var output io.Writer = os.Stdout
-	if options.NoConsole {
+	if options.NoConsoleLogging {
 		output = io.Discard
 	}
 

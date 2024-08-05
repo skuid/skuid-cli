@@ -36,7 +36,7 @@ func (c *rootCommander) GetCommand() *cobra.Command {
 	cmdutil.AddBoolFlag(cmd, &c.loggingOpts.Trace, flags.Trace)
 	cmdutil.AddBoolFlag(cmd, &c.loggingOpts.Diagnostic, flags.Diagnostic)
 	cmdutil.AddBoolFlag(cmd, &c.loggingOpts.FileLogging, flags.FileLogging)
-	cmdutil.AddBoolFlag(cmd, &c.loggingOpts.NoConsole, flags.NoConsole)
+	cmdutil.AddBoolFlag(cmd, &c.loggingOpts.NoConsoleLogging, flags.NoConsoleLogging)
 	cmdutil.AddStringFlag(cmd, &c.loggingOpts.FileLoggingDir, flags.LogDirectory)
 
 	cmd.AddCommand(NewCmdDeploy(c.factory))

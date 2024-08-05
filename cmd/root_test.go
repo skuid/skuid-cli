@@ -22,20 +22,20 @@ func TestNewCmdRoot(t *testing.T) {
 
 func TestSetupSuccess(t *testing.T) {
 	loggingOptions := &logging.LoggingOptions{
-		Verbose:        true,
-		Trace:          true,
-		Diagnostic:     true,
-		FileLogging:    true,
-		FileLoggingDir: "mylogs",
-		NoConsole:      true,
+		Verbose:          true,
+		Trace:            true,
+		Diagnostic:       true,
+		FileLogging:      true,
+		FileLoggingDir:   "mylogs",
+		NoConsoleLogging: true,
 	}
 	envVars := map[string]testutil.EnvVar[string]{
-		cmdutil.EnvVarName(flags.Verbose.Name):      {EnvValue: "1", Value: "1"},
-		cmdutil.EnvVarName(flags.Trace.Name):        {EnvValue: "1", Value: "1"},
-		cmdutil.EnvVarName(flags.Diagnostic.Name):   {EnvValue: "1", Value: "1"},
-		cmdutil.EnvVarName(flags.FileLogging.Name):  {EnvValue: "1", Value: "1"},
-		cmdutil.EnvVarName(flags.LogDirectory.Name): {EnvValue: "mylogs", Value: "mylogs"},
-		cmdutil.EnvVarName(flags.NoConsole.Name):    {EnvValue: "1", Value: "1"},
+		cmdutil.EnvVarName(flags.Verbose.Name):          {EnvValue: "1", Value: "1"},
+		cmdutil.EnvVarName(flags.Trace.Name):            {EnvValue: "1", Value: "1"},
+		cmdutil.EnvVarName(flags.Diagnostic.Name):       {EnvValue: "1", Value: "1"},
+		cmdutil.EnvVarName(flags.FileLogging.Name):      {EnvValue: "1", Value: "1"},
+		cmdutil.EnvVarName(flags.LogDirectory.Name):     {EnvValue: "mylogs", Value: "mylogs"},
+		cmdutil.EnvVarName(flags.NoConsoleLogging.Name): {EnvValue: "1", Value: "1"},
 	}
 	testutil.SetupEnv(t, envVars)
 	mockLI := mocks.NewLogInformer(t)
