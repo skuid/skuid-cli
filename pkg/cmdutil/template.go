@@ -17,7 +17,7 @@ type CmdTemplate struct {
 func (ct *CmdTemplate) ToCommand(run CobraRunE) *cobra.Command {
 	ct.checkValidTemplate(run)
 
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		SilenceUsage: true,
 		Use:          ct.Use,
 		Short:        ct.Short,
@@ -25,6 +25,14 @@ func (ct *CmdTemplate) ToCommand(run CobraRunE) *cobra.Command {
 		Example:      ct.Example,
 		RunE:         run,
 	}
+
+	// cobra's default help command starts with lower-case usage text but our
+	// flags start with uppercase so ensure consistent format for the flag
+	// help is available on every command
+	// we don't use cmdutil helpers because we don't want it registered
+	// since its technically not our flag
+	cmd.Flags().Bool("help", false, "Show help for "+cmd.Name())
+	return cmd
 }
 
 func (ct *CmdTemplate) checkValidTemplate(run CobraRunE) {

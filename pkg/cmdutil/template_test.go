@@ -54,6 +54,7 @@ func (suite *ToCommandTestSuite) TestSetsDefaults() {
 			assert.Equal(t, tc.wantLong, actualCmd.Long)
 			assert.Equal(t, tc.wantExample, actualCmd.Example)
 			assert.Equal(t, tc.giveRun == nil, actualCmd.RunE == nil)
+			assert.NotNil(t, actualCmd.Flags().Lookup("help"))
 		})
 	}
 }

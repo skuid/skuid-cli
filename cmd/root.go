@@ -43,6 +43,13 @@ func (c *rootCommander) GetCommand() *cobra.Command {
 	cmd.AddCommand(NewCmdRetrieve(c.factory))
 	cmd.AddCommand(NewCmdWatch(c.factory))
 
+	// cobra's default version command starts with lower-case usage text but our
+	// flags start with uppercase so ensure consistent format for the flag
+	// version is only available on root command
+	// we don't use cmdutil helpers because we don't want it registered
+	// since its technically not our flag
+	cmd.Flags().Bool("version", false, "Show version for "+cmd.Name())
+
 	return cmd
 }
 
