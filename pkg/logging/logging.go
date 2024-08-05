@@ -18,9 +18,8 @@ import (
 )
 
 type LoggingOptions struct {
-	Verbose          bool
-	Trace            bool
-	Diagnostic       bool
+	Level            logrus.Level
+	Debug            bool
 	FileLogging      bool
 	FileLoggingDir   string
 	NoConsoleLogging bool
@@ -63,7 +62,7 @@ func NewLogConfig() LogInformer {
 var (
 	safe             sync.Mutex
 	loggerSingleton  *logrus.Logger
-	fieldLogging     bool
+	debug            bool
 	logFile          *os.File
 	fileStringFormat = func() (ret string) {
 		ret = time.RFC3339
@@ -75,7 +74,7 @@ var (
 
 func WithFields(fields logrus.Fields) *logrus.Entry {
 	loggerSingleton = Get()
-	if fieldLogging {
+	if debug {
 		return loggerSingleton.WithFields(fields)
 	}
 	return logrus.NewEntry(loggerSingleton)
@@ -83,7 +82,7 @@ func WithFields(fields logrus.Fields) *logrus.Entry {
 
 func WithField(field string, value interface{}) *logrus.Entry {
 	loggerSingleton = Get()
-	if fieldLogging {
+	if debug {
 		return loggerSingleton.WithField(field, value)
 	}
 	return logrus.NewEntry(loggerSingleton)
@@ -148,19 +147,12 @@ func Teardown() {
 		logFile = nil
 	}
 	loggerSingleton = nil
-	fieldLogging = false
+	debug = false
 }
 
 func setupLog(options *LoggingOptions) error {
 	// should never occur in production
 	clierrors.MustConditionf(loggerSingleton == nil, "logger already initialized")
-
-	logLevel := logrus.InfoLevel
-	if options.Diagnostic || options.Trace {
-		logLevel = logrus.TraceLevel
-	} else if options.Verbose {
-		logLevel = logrus.DebugLevel
-	}
 
 	var output io.Writer = os.Stdout
 	if options.NoConsoleLogging {
@@ -176,7 +168,7 @@ func setupLog(options *LoggingOptions) error {
 	}
 
 	loggerSingleton = logrus.New()
-	loggerSingleton.SetLevel(logLevel)
+	loggerSingleton.SetLevel(options.Level)
 	loggerSingleton.SetFormatter(&logrus.TextFormatter{})
 	loggerSingleton.SetOutput(output)
 	if options.FileLogging {
@@ -188,7 +180,7 @@ func setupLog(options *LoggingOptions) error {
 	// to the entire log message itself by logrus will still appear in the terminal and the lfshook will disable the logrus colors going to the
 	// file.  In short, we only lose colors that we applied directly to the text in the message (e.g. color.Green.Sprintf(...)).
 	color.Enable = !options.FileLogging
-	fieldLogging = options.Diagnostic
+	debug = options.Debug
 	return nil
 }
 

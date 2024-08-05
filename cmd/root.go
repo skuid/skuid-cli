@@ -3,17 +3,26 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
 	"github.com/skuid/skuid-cli/pkg/cmdutil"
 	"github.com/skuid/skuid-cli/pkg/constants"
+	"github.com/skuid/skuid-cli/pkg/errors"
 	"github.com/skuid/skuid-cli/pkg/flags"
 	"github.com/skuid/skuid-cli/pkg/logging"
 )
 
+type legacyLoggingOptions struct {
+	logging.LoggingOptions
+	Trace      bool
+	Diagnostic bool
+	Verbose    bool
+}
+
 type rootCommander struct {
 	factory     *cmdutil.Factory
-	loggingOpts logging.LoggingOptions
+	loggingOpts legacyLoggingOptions
 }
 
 func (c *rootCommander) GetCommand() *cobra.Command {
@@ -32,9 +41,17 @@ func (c *rootCommander) GetCommand() *cobra.Command {
 	cmd.SetVersionTemplate(fmt.Sprintf(constants.VERSION_TEMPLATE+"\n", c.factory.AppVersion))
 	cmd.PersistentPreRunE = c.setup
 
+	cmdutil.AddValueFlag(cmd, &c.loggingOpts.Level, flags.LogLevel)
+	cmdutil.AddBoolFlag(cmd, &c.loggingOpts.Debug, flags.Debug)
 	cmdutil.AddBoolFlag(cmd, &c.loggingOpts.Verbose, flags.Verbose)
+	// should never error - only error possible is if flag doesn't exist or usageMessage empty
+	errors.Must(cmd.PersistentFlags().MarkDeprecated(flags.Verbose.Name, fmt.Sprintf("it will be removed in a future release, please migrate to --%v", flags.LogLevel.Name)))
 	cmdutil.AddBoolFlag(cmd, &c.loggingOpts.Trace, flags.Trace)
+	// should never error - only error possible is if flag doesn't exist or usageMessage empty
+	errors.Must(cmd.PersistentFlags().MarkDeprecated(flags.Trace.Name, fmt.Sprintf("it will be removed in a future release, please migrate to --%v", flags.LogLevel.Name)))
 	cmdutil.AddBoolFlag(cmd, &c.loggingOpts.Diagnostic, flags.Diagnostic)
+	// should never error - only error possible is if flag doesn't exist or usageMessage empty
+	errors.Must(cmd.PersistentFlags().MarkDeprecated(flags.Diagnostic.Name, fmt.Sprintf("it will be removed in a future release, please migrate to --%v", flags.LogLevel.Name)))
 	cmdutil.AddBoolFlag(cmd, &c.loggingOpts.FileLogging, flags.FileLogging)
 	cmdutil.AddBoolFlag(cmd, &c.loggingOpts.NoConsoleLogging, flags.NoConsoleLogging)
 	cmdutil.AddStringFlag(cmd, &c.loggingOpts.FileLoggingDir, flags.LogDirectory)
@@ -49,6 +66,15 @@ func (c *rootCommander) GetCommand() *cobra.Command {
 	// we don't use cmdutil helpers because we don't want it registered
 	// since its technically not our flag
 	cmd.Flags().Bool("version", false, "Show version for "+cmd.Name())
+
+	// can't specify verbose/trace/diagnostic which have been deprecated
+	// when using log-level and/or debug which replaces them all
+	cmd.MarkFlagsMutuallyExclusive(flags.LogLevel.Name, flags.Verbose.Name)
+	cmd.MarkFlagsMutuallyExclusive(flags.LogLevel.Name, flags.Trace.Name)
+	cmd.MarkFlagsMutuallyExclusive(flags.LogLevel.Name, flags.Diagnostic.Name)
+	cmd.MarkFlagsMutuallyExclusive(flags.Debug.Name, flags.Verbose.Name)
+	cmd.MarkFlagsMutuallyExclusive(flags.Debug.Name, flags.Trace.Name)
+	cmd.MarkFlagsMutuallyExclusive(flags.Debug.Name, flags.Diagnostic.Name)
 
 	return cmd
 }
@@ -67,7 +93,9 @@ func (c *rootCommander) setup(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	if err := c.factory.LogConfig.Setup(&c.loggingOpts); err != nil {
+	// get effective logging options to account for deprecated flags
+	effectiveLoggingOptions := c.getLoggingOptions(cmd)
+	if err := c.factory.LogConfig.Setup(&effectiveLoggingOptions); err != nil {
 		return err
 	}
 
@@ -75,10 +103,31 @@ func (c *rootCommander) setup(cmd *cobra.Command, args []string) error {
 
 	for _, v := range appliedEnvVars {
 		if v.Deprecated {
-			logging.Get().Warnf("environment variable %q has been deprecated and will be removed in a future release - please migrate to %q", v.Name, cmdutil.EnvVarName(v.Flag.Name))
+			logging.Get().Warnf("environment variable %q has been deprecated and will be removed in a future release, please migrate to %q", v.Name, cmdutil.EnvVarName(v.Flag.Name))
 		}
-		logging.Get().Debugf("Using environment variable %v for flag: %v", v.Name, v.Flag.Name)
+		logging.Get().Debugf("Using environment variable %v for flag --%v", v.Name, v.Flag.Name)
 	}
 
 	return nil
+}
+
+func (c *rootCommander) getLoggingOptions(cmd *cobra.Command) logging.LoggingOptions {
+	fs := cmd.Flags()
+
+	// if log-level and/or debug has been set, we ignore any deprecated flags
+	if !fs.Changed(flags.LogLevel.Name) && !fs.Changed(flags.Debug.Name) {
+		// map legacy flags to their equivalent level & debug values
+		if fs.Changed(flags.Diagnostic.Name) {
+			c.loggingOpts.Level = logrus.TraceLevel
+			c.loggingOpts.Debug = true
+		} else if fs.Changed(flags.Trace.Name) {
+			c.loggingOpts.Level = logrus.TraceLevel
+			c.loggingOpts.Debug = false
+		} else if fs.Changed(flags.Verbose.Name) {
+			c.loggingOpts.Level = logrus.DebugLevel
+			c.loggingOpts.Debug = false
+		}
+	}
+
+	return c.loggingOpts.LoggingOptions
 }

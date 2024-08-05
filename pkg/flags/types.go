@@ -6,13 +6,14 @@ import (
 	"time"
 
 	"github.com/mmatczuk/anyflag"
+	"github.com/sirupsen/logrus"
 )
 
 type Parse[T FlagType] func(string) (T, error)
 type Redact[T FlagType] func(T) string
 
 type FlagType interface {
-	int | string | bool | []string | *time.Time
+	int | string | bool | []string | *time.Time | logrus.Level
 }
 
 // Flag is a generic flag type that can take a type variable

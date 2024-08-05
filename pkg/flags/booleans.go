@@ -17,6 +17,12 @@ var (
 		Global:  true,
 	}
 
+	Debug = &Flag[bool]{
+		Name:   "debug",
+		Usage:  "Show additional information in log messages",
+		Global: true,
+	}
+
 	// Not used anywhere, so commenting out for now
 	// TODO: Remove completely or fix issues depending on https://github.com/skuid/skuid-cli/issues/149
 	/*
