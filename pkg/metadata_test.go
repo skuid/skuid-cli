@@ -97,6 +97,7 @@ func TestGetMetadataByString(t *testing.T) {
 		Pages:              []string{"pages"},
 		PermissionSets:     []string{"permissionsets"},
 		SitePermissionSets: []string{"sitepermissionsets"},
+		SessionVariables:   []string{"sessionvariables"},
 		Site:               []string{"site"},
 		Themes:             []string{"themes"},
 	}
@@ -105,7 +106,7 @@ func TestGetMetadataByString(t *testing.T) {
 		description string
 		given       string
 		expected    []string
-		expectedErr *error
+		expectedErr error
 	}{
 		{
 			description: "apps",
@@ -163,6 +164,11 @@ func TestGetMetadataByString(t *testing.T) {
 			expected:    metadata.SitePermissionSets,
 		},
 		{
+			description: "sessionvariables",
+			given:       "sessionvariables",
+			expected:    metadata.SessionVariables,
+		},
+		{
 			description: "site",
 			given:       "site",
 			expected:    metadata.Site,
@@ -175,18 +181,18 @@ func TestGetMetadataByString(t *testing.T) {
 		{
 			description: "bad",
 			given:       "bad",
-			expectedErr: &badErr,
+			expectedErr: badErr,
 		},
 	} {
 		t.Run(tc.description, func(t *testing.T) {
-			for _, thing := range []string{} {
-				x, err := metadata.GetFieldValueByName(thing)
-				assert.Equal(t, []string{thing}, x)
-				if err != nil {
-					if tc.expectedErr != nil {
-						assert.Equal(t, *tc.expectedErr, err)
-					}
-				}
+			x, err := metadata.GetFieldValueByName(tc.given)
+			if tc.expectedErr != nil {
+				var expectedNames []string
+				assert.EqualError(t, err, tc.expectedErr.Error())
+				assert.Equal(t, expectedNames, x)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, []string{tc.given}, x)
 			}
 		})
 	}
