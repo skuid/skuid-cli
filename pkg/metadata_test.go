@@ -192,7 +192,7 @@ func TestGetMetadataByString(t *testing.T) {
 				assert.Equal(t, expectedNames, x)
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, []string{tc.given}, x)
+				assert.Equal(t, tc.expected, x)
 			}
 		})
 	}
