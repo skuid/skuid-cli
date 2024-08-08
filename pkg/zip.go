@@ -10,6 +10,7 @@ import (
 	"sync/atomic"
 
 	"github.com/skuid/skuid-cli/pkg/logging"
+	"github.com/skuid/skuid-cli/pkg/metadata"
 	"github.com/skuid/skuid-cli/pkg/util"
 	"golang.org/x/exp/slices"
 	"golang.org/x/sync/errgroup"
@@ -47,11 +48,11 @@ import (
 */
 
 // true if relativePath meets criteria, false otherwise
-type ArchiveFilter func(MetadataEntityFile) bool
+type ArchiveFilter func(metadata.MetadataEntityFile) bool
 
 type archiveFile struct {
 	Bytes      []byte
-	EntityFile MetadataEntityFile
+	EntityFile metadata.MetadataEntityFile
 }
 
 var (
@@ -60,24 +61,24 @@ var (
 
 // filters files not in NlxMetadata
 // TODO: Skuid Review Required - See comment above ArchiveFilter type in this file
-func MetadataArchiveFilter(filter *NlxMetadata) ArchiveFilter {
-	return func(item MetadataEntityFile) bool {
+func MetadataArchiveFilter(filter *metadata.NlxMetadata) ArchiveFilter {
+	return func(item metadata.MetadataEntityFile) bool {
 		return filter != nil && filter.FilterItem(item)
 	}
 }
 
 // filters files not in list of files
-func MetadataEntityArchiveFilter(entities []MetadataEntity) ArchiveFilter {
-	return func(item MetadataEntityFile) bool {
+func MetadataEntityArchiveFilter(entities []metadata.MetadataEntity) ArchiveFilter {
+	return func(item metadata.MetadataEntityFile) bool {
 		return slices.Contains(entities, item.Entity)
 	}
 }
 
 // filters files whose metadata type is in excludedMetadataDirs
 // TODO: Skuid Review Required - See comment above ArchiveFilter type
-func MetadataTypeArchiveFilter(excludedMetadataTypes []MetadataType) ArchiveFilter {
+func MetadataTypeArchiveFilter(excludedMetadataTypes []metadata.MetadataType) ArchiveFilter {
 	hasExcludedDirs := len(excludedMetadataTypes) > 0
-	return func(item MetadataEntityFile) bool {
+	return func(item metadata.MetadataEntityFile) bool {
 		if !hasExcludedDirs {
 			return true
 		}
@@ -119,13 +120,13 @@ func Archive(fsys fs.FS, fileUtil util.FileUtil, filterArchive ArchiveFilter) ([
 	}
 }
 
-func getFiles(ctx context.Context, g *errgroup.Group, fsys fs.FS, fileUtil util.FileUtil, filterArchive ArchiveFilter) <-chan MetadataEntityFile {
-	entityFiles := make(chan MetadataEntityFile)
+func getFiles(ctx context.Context, g *errgroup.Group, fsys fs.FS, fileUtil util.FileUtil, filterArchive ArchiveFilter) <-chan metadata.MetadataEntityFile {
+	entityFiles := make(chan metadata.MetadataEntityFile)
 
 	g.Go(func() error {
 		var fileWorkers atomic.Int32
-		fileWorkers.Store(int32(MetadataTypes.Len()))
-		for _, mdt := range MetadataTypes.Members() {
+		fileWorkers.Store(int32(metadata.MetadataTypes.Len()))
+		for _, mdt := range metadata.MetadataTypes.Members() {
 			metadataType := mdt
 			g.Go(func() error {
 				defer func() {
@@ -151,7 +152,7 @@ func getFiles(ctx context.Context, g *errgroup.Group, fsys fs.FS, fileUtil util.
 	return entityFiles
 }
 
-func getMetadataEntityFiles(ctx context.Context, fsys fs.FS, fileUtil util.FileUtil, metadataDirName string, entityFiles chan<- MetadataEntityFile, filterArchive ArchiveFilter) error {
+func getMetadataEntityFiles(ctx context.Context, fsys fs.FS, fileUtil util.FileUtil, metadataDirName string, entityFiles chan<- metadata.MetadataEntityFile, filterArchive ArchiveFilter) error {
 	return fileUtil.WalkDir(fsys, metadataDirName, func(filePath string, dirEntry fs.DirEntry, e error) error {
 		if e != nil {
 			return e
@@ -167,7 +168,7 @@ func getMetadataEntityFiles(ctx context.Context, fsys fs.FS, fileUtil util.FileU
 		}
 
 		// create item
-		entityFile, err := NewMetadataEntityFile(filePath)
+		entityFile, err := metadata.NewMetadataEntityFile(filePath)
 		if err != nil {
 			return err
 		}
@@ -189,7 +190,7 @@ func getMetadataEntityFiles(ctx context.Context, fsys fs.FS, fileUtil util.FileU
 	})
 }
 
-func readFiles(ctx context.Context, g *errgroup.Group, fsys fs.FS, fileUtil util.FileUtil, entityFiles <-chan MetadataEntityFile) <-chan archiveFile {
+func readFiles(ctx context.Context, g *errgroup.Group, fsys fs.FS, fileUtil util.FileUtil, entityFiles <-chan metadata.MetadataEntityFile) <-chan archiveFile {
 	filesToArchive := make(chan archiveFile)
 
 	/*
@@ -275,7 +276,7 @@ func addFiles(ctx context.Context, g *errgroup.Group, zipWriter util.ZipWriter, 
 	return archivedFiles
 }
 
-func readFile(ctx context.Context, fsys fs.FS, fileUtil util.FileUtil, entityFiles <-chan MetadataEntityFile, filesToArchive chan archiveFile) error {
+func readFile(ctx context.Context, fsys fs.FS, fileUtil util.FileUtil, entityFiles <-chan metadata.MetadataEntityFile, filesToArchive chan archiveFile) error {
 	for entityFile := range entityFiles {
 		// exit if cancelled - see note below in select
 		if ctx.Err() != nil {

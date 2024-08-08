@@ -12,6 +12,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/skuid/skuid-cli/pkg/logging"
+	"github.com/skuid/skuid-cli/pkg/metadata"
 	"github.com/skuid/skuid-cli/pkg/util"
 )
 
@@ -117,7 +118,7 @@ func UnzipArchive(sourceFileLocation, targetLocation string, fileCreator util.Fi
 
 		logging.Get().Tracef("Extracting from Zip: %v", color.Blue.Sprint(archivePath))
 
-		entityFile, entityFileErr := NewMetadataEntityFile(archivePath)
+		entityFile, entityFileErr := metadata.NewMetadataEntityFile(archivePath)
 		if entityFileErr != nil {
 			// Skuid Review Required - This code is unmodified from a behavior perspective but it raises questions around leaving the local file system in an
 			// unexpected state.  The server gave us a file and we can't interpret it so something more than logging and continuing seems the more prudent approach.

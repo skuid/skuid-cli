@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
+
+	"github.com/skuid/skuid-cli/pkg/metadata"
 )
 
 // NlxPlanPayload is the result of getting the plan from the pliny
@@ -20,7 +22,7 @@ type NlxPlan struct {
 	Port              string                `json:"port"`
 	Endpoint          string                `json:"url"`
 	Type              string                `json:"type"`
-	Metadata          NlxMetadata           `json:"metadata"`
+	Metadata          metadata.NlxMetadata  `json:"metadata"`
 	Since             string                `json:"since"`
 	AppSpecific       bool                  `json:"appSpecific"`
 	Warnings          []string              `json:"warnings"`
@@ -47,14 +49,14 @@ type NlxPlanFilter struct {
 
 // NewRetrievalRequestBody marshals the NlxMetadata into json and returns
 // the body. This is the payload expected for the Retrieval Request
-func NewRetrievalRequestBody(metadata NlxMetadata, since string, appSpecific bool) (body []byte) {
+func NewRetrievalRequestBody(md metadata.NlxMetadata, since string, appSpecific bool) (body []byte) {
 	// there should be no issue marshalling this thing.
 	body, _ = json.Marshal(struct {
-		Metadata    NlxMetadata `json:"metadata"`
-		Since       string      `json:"since"`
-		AppSpecific bool        `json:"appSpecific"`
+		Metadata    metadata.NlxMetadata `json:"metadata"`
+		Since       string               `json:"since"`
+		AppSpecific bool                 `json:"appSpecific"`
 	}{
-		Metadata:    metadata,
+		Metadata:    md,
 		Since:       since,
 		AppSpecific: appSpecific,
 	})

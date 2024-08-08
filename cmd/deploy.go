@@ -13,6 +13,7 @@ import (
 	"github.com/skuid/skuid-cli/pkg/cmdutil"
 	"github.com/skuid/skuid-cli/pkg/flags"
 	"github.com/skuid/skuid-cli/pkg/logging"
+	"github.com/skuid/skuid-cli/pkg/metadata"
 	"github.com/skuid/skuid-cli/pkg/util"
 )
 
@@ -104,10 +105,10 @@ func (c *deployCommander) deploy(cmd *cobra.Command, _ []string) (err error) {
 	// skip datasources
 	// TODO: This can be removed once https://github.com/skuid/skuid-cli/issues/150 is resolved
 	fields["skipDataSources"] = c.skipDataSources
-	var excludedMetadataDirs []pkg.MetadataType
+	var excludedMetadataDirs []metadata.MetadataType
 	if c.skipDataSources {
 		logging.WithFields(fields).Info("Skipping deployment of all DataSources")
-		excludedMetadataDirs = append(excludedMetadataDirs, pkg.MetadataTypeDataSources)
+		excludedMetadataDirs = append(excludedMetadataDirs, metadata.MetadataTypeDataSources)
 	}
 
 	// get directory argument

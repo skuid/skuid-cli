@@ -3,7 +3,7 @@
 package mocks
 
 import (
-	pkg "github.com/skuid/skuid-cli/pkg"
+	metadata "github.com/skuid/skuid-cli/pkg/metadata"
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -21,7 +21,7 @@ func (_m *ArchiveFilter) EXPECT() *ArchiveFilter_Expecter {
 }
 
 // Execute provides a mock function with given fields: _a0
-func (_m *ArchiveFilter) Execute(_a0 pkg.MetadataEntityFile) bool {
+func (_m *ArchiveFilter) Execute(_a0 metadata.MetadataEntityFile) bool {
 	ret := _m.Called(_a0)
 
 	if len(ret) == 0 {
@@ -29,7 +29,7 @@ func (_m *ArchiveFilter) Execute(_a0 pkg.MetadataEntityFile) bool {
 	}
 
 	var r0 bool
-	if rf, ok := ret.Get(0).(func(pkg.MetadataEntityFile) bool); ok {
+	if rf, ok := ret.Get(0).(func(metadata.MetadataEntityFile) bool); ok {
 		r0 = rf(_a0)
 	} else {
 		r0 = ret.Get(0).(bool)
@@ -44,14 +44,14 @@ type ArchiveFilter_Execute_Call struct {
 }
 
 // Execute is a helper method to define mock.On call
-//   - _a0 pkg.MetadataEntityFile
+//   - _a0 metadata.MetadataEntityFile
 func (_e *ArchiveFilter_Expecter) Execute(_a0 interface{}) *ArchiveFilter_Execute_Call {
 	return &ArchiveFilter_Execute_Call{Call: _e.mock.On("Execute", _a0)}
 }
 
-func (_c *ArchiveFilter_Execute_Call) Run(run func(_a0 pkg.MetadataEntityFile)) *ArchiveFilter_Execute_Call {
+func (_c *ArchiveFilter_Execute_Call) Run(run func(_a0 metadata.MetadataEntityFile)) *ArchiveFilter_Execute_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(pkg.MetadataEntityFile))
+		run(args[0].(metadata.MetadataEntityFile))
 	})
 	return _c
 }
@@ -61,7 +61,7 @@ func (_c *ArchiveFilter_Execute_Call) Return(_a0 bool) *ArchiveFilter_Execute_Ca
 	return _c
 }
 
-func (_c *ArchiveFilter_Execute_Call) RunAndReturn(run func(pkg.MetadataEntityFile) bool) *ArchiveFilter_Execute_Call {
+func (_c *ArchiveFilter_Execute_Call) RunAndReturn(run func(metadata.MetadataEntityFile) bool) *ArchiveFilter_Execute_Call {
 	_c.Call.Return(run)
 	return _c
 }

@@ -11,6 +11,7 @@ import (
 
 	"github.com/orsinium-labs/enum"
 	"github.com/skuid/skuid-cli/pkg"
+	"github.com/skuid/skuid-cli/pkg/metadata"
 	pkgmocks "github.com/skuid/skuid-cli/pkg/mocks"
 	"github.com/skuid/skuid-cli/pkg/util"
 	"github.com/skuid/skuid-cli/pkg/util/testutil"
@@ -92,7 +93,7 @@ func (suite *ArchiveTestSuite) TestFilterCalledOnValidFilenamesForValidMetadataT
 	fsys := testutil.CreateFS(validMetadataTypeFiles)
 	filter := pkgmocks.NewArchiveFilter(t)
 	for path := range validMetadataTypeFiles {
-		item, err := pkg.NewMetadataEntityFile(path)
+		item, err := metadata.NewMetadataEntityFile(path)
 		require.NoError(t, err)
 		filter.EXPECT().Execute(*item).Return(true)
 	}
@@ -174,7 +175,7 @@ func (suite *ArchiveTestSuite) TestArchiveFilterEliminatesAllFiles() {
 	runArchiveTest(t, ArchiveTestDetails{
 		giveFS:            testutil.CreateFS(validMetadataTypeFiles),
 		giveFileUtil:      util.NewFileUtil(),
-		giveArchiveFilter: func(item pkg.MetadataEntityFile) bool { return false },
+		giveArchiveFilter: func(item metadata.MetadataEntityFile) bool { return false },
 		wantError:         pkg.ErrArchiveNoFiles,
 		wantResult:        nil,
 	})
@@ -378,7 +379,7 @@ func TestMetadataArchiveFilter(t *testing.T) {
 	validFileNames := createValidMetadataTypeFilesNamesFixture()
 	testCases := []struct {
 		testDescription string
-		giveNlxMetadata *pkg.NlxMetadata
+		giveNlxMetadata *metadata.NlxMetadata
 		giveItems       []string
 		wantResult      bool
 	}{
@@ -390,13 +391,13 @@ func TestMetadataArchiveFilter(t *testing.T) {
 		},
 		{
 			testDescription: "does not contain when metadata empty",
-			giveNlxMetadata: &pkg.NlxMetadata{},
+			giveNlxMetadata: &metadata.NlxMetadata{},
 			giveItems:       validFileNames,
 			wantResult:      false,
 		},
 		{
 			testDescription: "contains when item by filename in metadata",
-			giveNlxMetadata: &pkg.NlxMetadata{
+			giveNlxMetadata: &metadata.NlxMetadata{
 				Pages: []string{"my_page"},
 				Files: []string{"my_file.txt"},
 			},
@@ -405,7 +406,7 @@ func TestMetadataArchiveFilter(t *testing.T) {
 		},
 		{
 			testDescription: "does not contain when item by filename not in metadata",
-			giveNlxMetadata: &pkg.NlxMetadata{
+			giveNlxMetadata: &metadata.NlxMetadata{
 				Pages: []string{"my_page"},
 				Files: []string{"my_file.txt"},
 			},
@@ -458,9 +459,9 @@ func TestMetadataEntityFileArchiveFilter(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.testDescription, func(t *testing.T) {
-			var entities []pkg.MetadataEntity
+			var entities []metadata.MetadataEntity
 			for _, f := range tc.giveFiles {
-				item, err := pkg.NewMetadataEntityFile(f)
+				item, err := metadata.NewMetadataEntityFile(f)
 				require.NoError(t, err)
 				entities = append(entities, item.Entity)
 			}
@@ -506,9 +507,9 @@ func TestMetadataTypeArchiveFilter(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.testDescription, func(t *testing.T) {
-			var metadataTypes []pkg.MetadataType
+			var metadataTypes []metadata.MetadataType
 			for _, d := range tc.giveDirs {
-				mdt := enum.Parse(pkg.MetadataTypes, pkg.MetadataTypeValue(d))
+				mdt := enum.Parse(metadata.MetadataTypes, metadata.MetadataTypeValue(d))
 				require.NotNil(t, mdt)
 				metadataTypes = append(metadataTypes, *mdt)
 			}
@@ -540,7 +541,7 @@ func runArchiveTest(t *testing.T, atd ArchiveTestDetails) ([]byte, int, error) {
 
 func runArchiveFilterTest(t *testing.T, filter pkg.ArchiveFilter, items []string, expected bool) {
 	for _, item := range items {
-		metadataItem, err := pkg.NewMetadataEntityFile(item)
+		metadataItem, err := metadata.NewMetadataEntityFile(item)
 		require.NoError(t, err)
 		assert.Equal(t, expected, filter(*metadataItem))
 	}

@@ -8,6 +8,7 @@ import (
 	"github.com/gookit/color"
 
 	"github.com/skuid/skuid-cli/pkg/logging"
+	"github.com/skuid/skuid-cli/pkg/metadata"
 )
 
 func ClearDirectories(targetDir string) (err error) {
@@ -16,7 +17,7 @@ func ClearDirectories(targetDir string) (err error) {
 		return
 	}
 
-	for _, member := range MetadataTypes.Members() {
+	for _, member := range metadata.MetadataTypes.Members() {
 		dirPath := filepath.Join(targetDir, member.DirName())
 		logging.Get().Debugf("%v: %v", color.Yellow.Sprint("Removing"), dirPath)
 		if err = os.RemoveAll(dirPath); err != nil {

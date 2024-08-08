@@ -10,6 +10,7 @@ import (
 
 	"github.com/gookit/color"
 	"github.com/skuid/skuid-cli/pkg/logging"
+	"github.com/skuid/skuid-cli/pkg/metadata"
 	"github.com/skuid/skuid-cli/pkg/util"
 )
 
@@ -114,12 +115,12 @@ func DeployModifiedFiles(auth *Authorization, targetDir string, modifiedFile str
 		return
 	}
 
-	entity, err := NewMetadataEntityFile(relativeFilePath)
+	entity, err := metadata.NewMetadataEntityFile(relativeFilePath)
 	if err != nil {
 		return
 	}
 
-	planBody, _, err := Archive(os.DirFS(targetDir), util.NewFileUtil(), MetadataEntityArchiveFilter([]MetadataEntity{entity.Entity}))
+	planBody, _, err := Archive(os.DirFS(targetDir), util.NewFileUtil(), MetadataEntityArchiveFilter([]metadata.MetadataEntity{entity.Entity}))
 	if err != nil {
 		return
 	}
