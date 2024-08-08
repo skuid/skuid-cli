@@ -7,7 +7,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/gookit/color"
 	"github.com/sirupsen/logrus"
@@ -107,6 +106,9 @@ func UnzipArchive(sourceFileLocation, targetLocation string, fileCreator util.Fi
 
 	for _, file := range reader.File {
 		archivePath := filepath.FromSlash(file.Name)
+
+		// Skuid Review Required - This code is unmodified but it seems very odd.  Why would we ever have a file in the archive twice?  What are the valid
+		// scenarios where this could happen?
 		// Check to see if we've already written to this file in this retrieve
 		_, fileAlreadyWritten := pathMap[archivePath]
 		if !fileAlreadyWritten {
@@ -115,16 +117,22 @@ func UnzipArchive(sourceFileLocation, targetLocation string, fileCreator util.Fi
 
 		logging.Get().Tracef("Extracting from Zip: %v", color.Blue.Sprint(archivePath))
 
-		metadataType, _ := GetEntityDetails(archivePath)
-		if _, mdtok := GetMetadataTypeNameByDirName(metadataType); !mdtok {
-			logging.Get().Warnf("Unexpected metadata type %v for file %v in archive %v, skipping...", metadataType, archivePath, sourceFileLocation)
+		entityFile, entityFileErr := NewMetadataEntityFile(archivePath)
+		if entityFileErr != nil {
+			// Skuid Review Required - This code is unmodified from a behavior perspective but it raises questions around leaving the local file system in an
+			// unexpected state.  The server gave us a file and we can't interpret it so something more than logging and continuing seems the more prudent approach.
+			// TODO: We need to do something more than just "skip" and log an error - not sure what can be done but we received an invalid file
+			// here and it warrants more than just "ok, thanks but no thanks, moving on".  Possibly the approach to unzipping changes where the payload
+			// is inspected prior to any local file changes (e.g, don't even delete the existing dirs until payload is validated) and only if valid, are local
+			// file changes made
+			logging.Get().Warnf("unable to write file to disk, could not resolve metadata information for %q in archive %q: %v", archivePath, sourceFileLocation, entityFileErr)
 			continue
 		}
 
-		filePath := filepath.Join(targetLocation, archivePath)
+		filePath := filepath.Join(targetLocation, entityFile.Path)
 		fileDir := filepath.Dir(filePath)
 		if err = directoryCreator(fileDir, 0755); err != nil {
-			logging.Get().Warnf("Unable to create %v directory for file %v in archive %v: ", fileDir, archivePath, sourceFileLocation)
+			logging.Get().Warnf("Unable to create %v directory for file %v in archive %v: ", fileDir, entityFile.Path, sourceFileLocation)
 			return
 		}
 
@@ -144,9 +152,13 @@ func UnzipArchive(sourceFileLocation, targetLocation string, fileCreator util.Fi
 			return
 		}
 
+		// Skuid Review Required - This code is unmodified other than changing the way the metadata type is detected but it seems very odd.  Per the question above
+		// on why we would ever have the same file in the archive twice, why do we exclude Files metadata type entirely?  Files can be anything including Json
+		// but each file has a .skuid.json file associated so why are we skipping those if we are handling other "metadata json files" here (e.g., pages/my_page.json,
+		// favicon/my_icon.ico.skuid.json)?
 		// Sanitize all metadata .json files that aren't included as files on the site itself
-		if !strings.Contains(archivePath, "files/") {
-			if filepath.Ext(archivePath) == ".json" {
+		if entityFile.Entity.Type != MetadataTypeFiles {
+			if filepath.Ext(entityFile.Path) == ".json" {
 				if fileReader, err = SanitizeZip(fileReader); err != nil {
 					logging.Get().Warnf("Error Sanitizing Zip: %v", err)
 					return

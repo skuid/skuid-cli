@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/gookit/color"
@@ -103,19 +104,15 @@ func (c *deployCommander) deploy(cmd *cobra.Command, _ []string) (err error) {
 	// skip datasources
 	// TODO: This can be removed once https://github.com/skuid/skuid-cli/issues/150 is resolved
 	fields["skipDataSources"] = c.skipDataSources
-	var excludedMetadataDirs []string
+	var excludedMetadataDirs []pkg.MetadataType
 	if c.skipDataSources {
 		logging.WithFields(fields).Info("Skipping deployment of all DataSources")
-		var mdDirName string
-		if mdDirName, err = pkg.GetMetadataTypeDirName("DataSources"); err != nil {
-			return
-		}
-		excludedMetadataDirs = append(excludedMetadataDirs, mdDirName)
+		excludedMetadataDirs = append(excludedMetadataDirs, pkg.MetadataTypeDataSources)
 	}
 
 	// get directory argument
 	var targetDirectory string
-	if targetDirectory, err = util.SanitizePath(c.dir); err != nil {
+	if targetDirectory, err = filepath.Abs(c.dir); err != nil {
 		return
 	}
 
@@ -123,7 +120,7 @@ func (c *deployCommander) deploy(cmd *cobra.Command, _ []string) (err error) {
 	logging.WithFields(fields).Info("Getting Deployment Payload")
 
 	var deploymentPlan []byte
-	if deploymentPlan, _, err = pkg.Archive(os.DirFS(targetDirectory), util.NewFileUtil(), pkg.MetadataDirArchiveFilter(excludedMetadataDirs)); err != nil {
+	if deploymentPlan, _, err = pkg.Archive(os.DirFS(targetDirectory), util.NewFileUtil(), pkg.MetadataTypeArchiveFilter(excludedMetadataDirs)); err != nil {
 		return
 	}
 

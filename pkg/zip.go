@@ -4,12 +4,14 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"io/fs"
 	"sync/atomic"
 
 	"github.com/skuid/skuid-cli/pkg/logging"
 	"github.com/skuid/skuid-cli/pkg/util"
+	"golang.org/x/exp/slices"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -45,43 +47,41 @@ import (
 */
 
 // true if relativePath meets criteria, false otherwise
-type ArchiveFilter func(relativePath string) bool
+type ArchiveFilter func(MetadataEntityFile) bool
 
-type archiveItem struct {
-	Bytes    []byte
-	FilePath string
+type archiveFile struct {
+	Bytes      []byte
+	EntityFile MetadataEntityFile
 }
 
 var (
-	ErrArchiveNoMetadataTypeDirs = errors.New("unable to create archive, no metadata directories found")
-	ErrArchiveNoFiles            = errors.New("unable to create archive, no files were found")
+	ErrArchiveNoFiles = errors.New("unable to create archive, no files were found")
 )
 
 // filters files not in NlxMetadata
 // TODO: Skuid Review Required - See comment above ArchiveFilter type in this file
 func MetadataArchiveFilter(filter *NlxMetadata) ArchiveFilter {
-	return func(relativePath string) bool {
-		return filter != nil && filter.FilterItem(relativePath)
+	return func(item MetadataEntityFile) bool {
+		return filter != nil && filter.FilterItem(item)
 	}
 }
 
 // filters files not in list of files
-func FileNameArchiveFilter(files []string) ArchiveFilter {
-	return func(relativePath string) bool {
-		return util.StringSliceContainsKey(files, relativePath)
+func MetadataEntityArchiveFilter(entities []MetadataEntity) ArchiveFilter {
+	return func(item MetadataEntityFile) bool {
+		return slices.Contains(entities, item.Entity)
 	}
 }
 
 // filters files whose metadata type is in excludedMetadataDirs
 // TODO: Skuid Review Required - See comment above ArchiveFilter type
-func MetadataDirArchiveFilter(excludedMetadataDirs []string) ArchiveFilter {
-	hasExcludedDirs := len(excludedMetadataDirs) > 0
-	return func(relativePath string) bool {
+func MetadataTypeArchiveFilter(excludedMetadataTypes []MetadataType) ArchiveFilter {
+	hasExcludedDirs := len(excludedMetadataTypes) > 0
+	return func(item MetadataEntityFile) bool {
 		if !hasExcludedDirs {
 			return true
 		}
-		metadataType, _ := GetEntityDetails(relativePath)
-		return !util.StringSliceContainsKey(excludedMetadataDirs, metadataType)
+		return !slices.Contains(excludedMetadataTypes, item.Entity.Type)
 	}
 }
 
@@ -90,19 +90,20 @@ func Archive(fsys fs.FS, fileUtil util.FileUtil, filterArchive ArchiveFilter) ([
 	zipWriter := fileUtil.NewZipWriter(buffer)
 	g, ctx := errgroup.WithContext(context.Background())
 
-	filePaths := getFiles(ctx, g, fsys, fileUtil, filterArchive)
-	fileContents := readFiles(ctx, g, fsys, fileUtil, filePaths)
-	archivedFiles := addFiles(ctx, g, zipWriter, fileContents)
+	entityFiles := getFiles(ctx, g, fsys, fileUtil, filterArchive)
+	filesToArchive := readFiles(ctx, g, fsys, fileUtil, entityFiles)
+	archivedFiles := addFiles(ctx, g, zipWriter, filesToArchive)
 
-	var fileCount int
-	for range archivedFiles {
-		fileCount++
+	var filesInArchive []archiveFile
+	for archivedItem := range archivedFiles {
+		filesInArchive = append(filesInArchive, archivedItem)
 	}
 
 	if err := g.Wait(); err != nil {
 		return nil, 0, err
 	}
 
+	fileCount := len(filesInArchive)
 	if fileCount == 0 {
 		return nil, 0, ErrArchiveNoFiles
 	}
@@ -118,63 +119,39 @@ func Archive(fsys fs.FS, fileUtil util.FileUtil, filterArchive ArchiveFilter) ([
 	}
 }
 
-// returns the list of metadata type directory names that exist based on all known metadata type dir names
-func getMetadataTypeDirNamesForArchive(fsys fs.FS, fileUtil util.FileUtil) (dirNames []string, err error) {
-	for _, mddir := range GetMetadataTypeDirNames() {
-		var exists bool
-		exists, err = fileUtil.DirExists(fsys, mddir)
-		if err != nil {
-			logging.Get().Errorf("unable to detect if metadata path is a directory: %v", mddir)
-			return
-		}
-		if !exists {
-			logging.Get().Tracef("metadata directory does not exist, skipping: %v", mddir)
-			continue
-		}
-		dirNames = append(dirNames, mddir)
-	}
-
-	if len(dirNames) == 0 {
-		err = ErrArchiveNoMetadataTypeDirs
-		return
-	}
-
-	return
-}
-
-func getFiles(ctx context.Context, g *errgroup.Group, fsys fs.FS, fileUtil util.FileUtil, filterArchive ArchiveFilter) <-chan string {
-	archivePaths := make(chan string)
+func getFiles(ctx context.Context, g *errgroup.Group, fsys fs.FS, fileUtil util.FileUtil, filterArchive ArchiveFilter) <-chan MetadataEntityFile {
+	entityFiles := make(chan MetadataEntityFile)
 
 	g.Go(func() error {
-		metadataTypeDirNames, err := getMetadataTypeDirNamesForArchive(fsys, fileUtil)
-		if err != nil {
-			close(archivePaths)
-			return err
-		}
-
 		var fileWorkers atomic.Int32
-		fileWorkers.Store(int32(len(metadataTypeDirNames)))
-		for _, mddir := range metadataTypeDirNames {
-			metadataDirName := mddir
+		fileWorkers.Store(int32(MetadataTypes.Len()))
+		for _, mdt := range MetadataTypes.Members() {
+			metadataType := mdt
 			g.Go(func() error {
 				defer func() {
 					// Last one out closes shop
 					if fileWorkers.Add(-1) == 0 {
-						close(archivePaths)
+						close(entityFiles)
 					}
 				}()
-				return getMetadataFiles(ctx, fsys, fileUtil, metadataDirName, archivePaths, filterArchive)
+				metadataDirName := metadataType.DirName()
+				if exists, err := fileUtil.DirExists(fsys, metadataDirName); err != nil {
+					return fmt.Errorf("unable to detect if metadata path %q is a directory: %w", metadataDirName, err)
+				} else if !exists {
+					logging.Get().Tracef("metadata directory does not exist, skipping: %v", metadataDirName)
+					return nil
+				}
+				return getMetadataEntityFiles(ctx, fsys, fileUtil, metadataType.DirName(), entityFiles, filterArchive)
 			})
-
 		}
 
 		return nil
 	})
 
-	return archivePaths
+	return entityFiles
 }
 
-func getMetadataFiles(ctx context.Context, fsys fs.FS, fileUtil util.FileUtil, metadataDirName string, archivePaths chan<- string, filterArchive ArchiveFilter) (err error) {
+func getMetadataEntityFiles(ctx context.Context, fsys fs.FS, fileUtil util.FileUtil, metadataDirName string, entityFiles chan<- MetadataEntityFile, filterArchive ArchiveFilter) error {
 	return fileUtil.WalkDir(fsys, metadataDirName, func(filePath string, dirEntry fs.DirEntry, e error) error {
 		if e != nil {
 			return e
@@ -189,15 +166,21 @@ func getMetadataFiles(ctx context.Context, fsys fs.FS, fileUtil util.FileUtil, m
 			return nil
 		}
 
+		// create item
+		entityFile, err := NewMetadataEntityFile(filePath)
+		if err != nil {
+			return err
+		}
+
 		// TODO: Skuid Review Required - See comment above ArchiveFilter type in this file
-		if filterArchive != nil && !filterArchive(filePath) {
+		if filterArchive != nil && !filterArchive(*entityFile) {
 			return nil
 		}
 
 		// NOTE: select will pseudo-randomly choose a case when both are ready so we could send even though we are cancelled at this point.  See
 		// above ctx.Err() to ensure we don't start any new files once cancel occurred.  See https://go.dev/ref/spec#Select_statements.
 		select {
-		case archivePaths <- filePath:
+		case entityFiles <- *entityFile:
 		case <-ctx.Done():
 			return ctx.Err()
 		}
@@ -206,8 +189,8 @@ func getMetadataFiles(ctx context.Context, fsys fs.FS, fileUtil util.FileUtil, m
 	})
 }
 
-func readFiles(ctx context.Context, g *errgroup.Group, fsys fs.FS, fileUtil util.FileUtil, archivePaths <-chan string) <-chan archiveItem {
-	archiveItems := make(chan archiveItem)
+func readFiles(ctx context.Context, g *errgroup.Group, fsys fs.FS, fileUtil util.FileUtil, entityFiles <-chan MetadataEntityFile) <-chan archiveFile {
+	filesToArchive := make(chan archiveFile)
 
 	/*
 		TODO: Skuid Review Required
@@ -239,20 +222,19 @@ func readFiles(ctx context.Context, g *errgroup.Group, fsys fs.FS, fileUtil util
 			defer func() {
 				// Last one out closes shop
 				if itemWorkers.Add(-1) == 0 {
-					close(archiveItems)
+					close(filesToArchive)
 				}
 			}()
 
-			return readFile(ctx, fsys, fileUtil, archivePaths, archiveItems)
+			return readFile(ctx, fsys, fileUtil, entityFiles, filesToArchive)
 		})
 	}
 
-	return archiveItems
+	return filesToArchive
 }
 
-func addFiles(ctx context.Context, g *errgroup.Group, zipWriter util.ZipWriter, archiveItems <-chan archiveItem) <-chan struct{} {
-	// we do not need the actual filename so use empty struct to optimize perf
-	archivedFiles := make(chan struct{})
+func addFiles(ctx context.Context, g *errgroup.Group, zipWriter util.ZipWriter, filesToArchive <-chan archiveFile) <-chan archiveFile {
+	archivedFiles := make(chan archiveFile)
 
 	// add files to zip - must be single worker as archive/zip package does not appear to be thread-safe (e.g., must
 	// write file contents to io.Writer prior to calling Create again - see https://pkg.go.dev/archive/zip#Writer.Create
@@ -261,7 +243,7 @@ func addFiles(ctx context.Context, g *errgroup.Group, zipWriter util.ZipWriter, 
 			close(archivedFiles)
 		}()
 
-		for item := range archiveItems {
+		for archiveFile := range filesToArchive {
 			// exit if cancelled - see note below in select
 			if ctx.Err() != nil {
 				return ctx.Err()
@@ -269,11 +251,11 @@ func addFiles(ctx context.Context, g *errgroup.Group, zipWriter util.ZipWriter, 
 
 			var zipFileWriter io.Writer
 
-			zipFileWriter, err := zipWriter.Create(item.FilePath)
+			zipFileWriter, err := zipWriter.Create(archiveFile.EntityFile.Path)
 			if err != nil {
 				return err
 			}
-			_, err = zipFileWriter.Write(item.Bytes)
+			_, err = zipFileWriter.Write(archiveFile.Bytes)
 			if err != nil {
 				return err
 			}
@@ -281,7 +263,7 @@ func addFiles(ctx context.Context, g *errgroup.Group, zipWriter util.ZipWriter, 
 			// NOTE: select will pseudo-randomly choose a case when both are ready so we could send even though we are cancelled at this point.  See
 			// above ctx.Err() to ensure we don't start any new files once cancel occurred.  See https://go.dev/ref/spec#Select_statements.
 			select {
-			case archivedFiles <- struct{}{}:
+			case archivedFiles <- archiveFile:
 			case <-ctx.Done():
 				return ctx.Err()
 			}
@@ -293,14 +275,14 @@ func addFiles(ctx context.Context, g *errgroup.Group, zipWriter util.ZipWriter, 
 	return archivedFiles
 }
 
-func readFile(ctx context.Context, fsys fs.FS, fileUtil util.FileUtil, archivePaths <-chan string, archiveItems chan archiveItem) error {
-	for path := range archivePaths {
+func readFile(ctx context.Context, fsys fs.FS, fileUtil util.FileUtil, entityFiles <-chan MetadataEntityFile, filesToArchive chan archiveFile) error {
+	for entityFile := range entityFiles {
 		// exit if cancelled - see note below in select
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}
 
-		fileBytes, err := fileUtil.ReadFile(fsys, path)
+		fileBytes, err := fileUtil.ReadFile(fsys, entityFile.Path)
 		if err != nil {
 			return err
 		}
@@ -308,7 +290,7 @@ func readFile(ctx context.Context, fsys fs.FS, fileUtil util.FileUtil, archivePa
 		// NOTE: select will pseudo-randomly choose a case when both are ready so we could send even though we are cancelled at this point.  See
 		// above ctx.Err() to ensure we don't start any new files once cancel occurred.  See https://go.dev/ref/spec#Select_statements.
 		select {
-		case archiveItems <- archiveItem{fileBytes, path}:
+		case filesToArchive <- archiveFile{fileBytes, entityFile}:
 		case <-ctx.Done():
 			return ctx.Err()
 		}

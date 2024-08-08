@@ -11,9 +11,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/exp/slices"
 
 	"github.com/skuid/skuid-cli/pkg"
-	"github.com/skuid/skuid-cli/pkg/util"
 )
 
 const badJson = "this is not even close to good JSON"
@@ -247,7 +247,7 @@ func TestWriteResultsToDisk(t *testing.T) {
 			}
 
 			var mockDirectoryMaker = func(path string, fileMode os.FileMode) error {
-				if !util.StringSliceContainsKey(directoriesCreated, path) {
+				if !slices.Contains(directoriesCreated, path) {
 					directoriesCreated = append(directoriesCreated, path)
 				}
 				return nil

@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/gookit/color"
@@ -14,7 +15,6 @@ import (
 	"github.com/skuid/skuid-cli/pkg/cmdutil"
 	"github.com/skuid/skuid-cli/pkg/flags"
 	"github.com/skuid/skuid-cli/pkg/logging"
-	"github.com/skuid/skuid-cli/pkg/util"
 )
 
 type watchCommander struct {
@@ -71,7 +71,7 @@ func (c *watchCommander) watch(cmd *cobra.Command, _ []string) (err error) {
 	logging.WithFields(fields).Info("Authentication Successful")
 
 	var targetDirectory string
-	if targetDirectory, err = util.SanitizePath(c.dir); err != nil {
+	if targetDirectory, err = filepath.Abs(c.dir); err != nil {
 		return
 	}
 

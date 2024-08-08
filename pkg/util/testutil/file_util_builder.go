@@ -96,7 +96,7 @@ func (b *FileUtilBuilder) Build(t *testing.T) *utilmocks.FileUtil {
 	if !b.skipDirExists {
 		mockFileUtil.EXPECT().DirExists(mock.Anything, mock.Anything).RunAndReturn(func(fsys fs.FS, path string) (bool, error) {
 			return realFileUtil.DirExists(fsys, path)
-		})
+		}).Maybe()
 	}
 
 	return mockFileUtil

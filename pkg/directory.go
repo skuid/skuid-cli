@@ -16,8 +16,8 @@ func ClearDirectories(targetDir string) (err error) {
 		return
 	}
 
-	for _, dirName := range GetMetadataTypeDirNames() {
-		dirPath := filepath.Join(targetDir, dirName)
+	for _, member := range MetadataTypes.Members() {
+		dirPath := filepath.Join(targetDir, member.DirName())
 		logging.Get().Debugf("%v: %v", color.Yellow.Sprint("Removing"), dirPath)
 		if err = os.RemoveAll(dirPath); err != nil {
 			return

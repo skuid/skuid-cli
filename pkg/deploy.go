@@ -114,18 +114,13 @@ func DeployModifiedFiles(auth *Authorization, targetDir string, modifiedFile str
 		return
 	}
 
-	filesToDeploy, efok := GetEntityFiles(relativeFilePath)
-	if !efok {
-		logging.Get().Warnf("unable to determine required files, skipping deployment of modified file: %v", modifiedFile)
-		return
-	}
-
-	planBody, fileCount, err := Archive(os.DirFS(targetDir), util.NewFileUtil(), FileNameArchiveFilter(filesToDeploy))
+	entity, err := NewMetadataEntityFile(relativeFilePath)
 	if err != nil {
 		return
 	}
-	if fileCount != len(filesToDeploy) {
-		logging.Get().Warnf("Unable to locate all expected files, found %d, expected %d, skipping deployment of modified file: %v (expected files: %v)", fileCount, len(filesToDeploy), modifiedFile, filesToDeploy)
+
+	planBody, _, err := Archive(os.DirFS(targetDir), util.NewFileUtil(), MetadataEntityArchiveFilter([]MetadataEntity{entity.Entity}))
+	if err != nil {
 		return
 	}
 

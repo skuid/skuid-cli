@@ -9,11 +9,11 @@ import (
 	"testing"
 	"testing/fstest"
 
+	"github.com/orsinium-labs/enum"
 	"github.com/skuid/skuid-cli/pkg"
 	pkgmocks "github.com/skuid/skuid-cli/pkg/mocks"
 	"github.com/skuid/skuid-cli/pkg/util"
 	"github.com/skuid/skuid-cli/pkg/util/testutil"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -52,7 +52,7 @@ func (suite *ArchiveTestSuite) TestNoMetadataDirs() {
 		giveFS:            fsysNoDirs,
 		giveFileUtil:      util.NewFileUtil(),
 		giveArchiveFilter: nil,
-		wantError:         pkg.ErrArchiveNoMetadataTypeDirs,
+		wantError:         pkg.ErrArchiveNoFiles,
 		wantResult:        nil,
 	})
 }
@@ -74,26 +74,15 @@ func (suite *ArchiveTestSuite) TestNoMetadataFiles() {
 
 func (suite *ArchiveTestSuite) TestCreatesArchive() {
 	t := suite.T()
-	validFiles := testutil.TestFiles{
-		"apps/my_app.json":                 validJSON,
-		"pages/page1.xml":                  validXML,
-		"pages/page1.json":                 validJSON,
-		"files/file1.js":                   validJS,
-		"files/file1.js.skuid.json":        validJSON,
-		"files/file2.txt":                  validTXT,
-		"files/file2.txt.skuid.json":       validJSON,
-		"site/site.json":                   validJSON,
-		"site/logo/my_logo.png":            validPNG,
-		"site/logo/my_logo.png.skuid_json": validJSON,
-	}
-	fsys := testutil.CreateFS(validFiles)
+	validMetadataTypeFiles := createValidMetadataTypeFilesFixture()
+	fsys := testutil.CreateFS(validMetadataTypeFiles)
 
 	runArchiveTest(t, ArchiveTestDetails{
 		giveFS:            fsys,
 		giveFileUtil:      util.NewFileUtil(),
 		giveArchiveFilter: nil,
 		wantError:         nil,
-		wantResult:        validFiles,
+		wantResult:        validMetadataTypeFiles,
 	})
 }
 
@@ -103,7 +92,9 @@ func (suite *ArchiveTestSuite) TestFilterCalledOnValidFilenamesForValidMetadataT
 	fsys := testutil.CreateFS(validMetadataTypeFiles)
 	filter := pkgmocks.NewArchiveFilter(t)
 	for path := range validMetadataTypeFiles {
-		filter.EXPECT().Execute(path).Return(true)
+		item, err := pkg.NewMetadataEntityFile(path)
+		require.NoError(t, err)
+		filter.EXPECT().Execute(*item).Return(true)
 	}
 
 	runArchiveTest(t, ArchiveTestDetails{
@@ -123,8 +114,7 @@ func (suite *ArchiveTestSuite) TestFilterCalledOnValidFilenamesForValidMetadataT
 }
 
 // TODO: Skuid Review Required - See comment above ArchiveFilter type in pkg/zip.go
-func (suite *ArchiveTestSuite) TestFilterCalledOnInvalidFilenamesForValidMetadataTypes() {
-	t := suite.T()
+func (suite *ArchiveTestSuite) TestFilterNotCalledOnInvalidFilenamesForValidMetadataTypes() {
 	invalidFiles := testutil.TestFiles{
 		"pages/page1":           "",
 		"pages/page1.txt":       "",
@@ -134,25 +124,27 @@ func (suite *ArchiveTestSuite) TestFilterCalledOnInvalidFilenamesForValidMetadat
 		"datasources/my_ds":     "",
 		"datasources/my_ds.png": "",
 	}
-	fsys := testutil.CreateFS(invalidFiles)
-	filter := pkgmocks.NewArchiveFilter(t)
-	for path := range invalidFiles {
-		filter.EXPECT().Execute(path).Return(true).Once()
+	for k, v := range invalidFiles {
+		suite.Run(k, func() {
+			t := suite.T()
+			testFiles := testutil.TestFiles{k: v}
+			fsys := testutil.CreateFS(testFiles)
+			filter := pkgmocks.NewArchiveFilter(t)
+			runArchiveTest(t, ArchiveTestDetails{
+				giveFS:            fsys,
+				giveFileUtil:      util.NewFileUtil(),
+				giveArchiveFilter: filter.Execute,
+				wantError:         fmt.Errorf("%v", k),
+				wantResult:        nil,
+			})
+			// note that since we did not set an expectation for anything other than expected paths, if
+			// Execute is called for something else, the test will FailNow by testify since it doesn't
+			// have an expectation configured for anything but the paths we expect. testify doesn't
+			// have explicit support for a "Times(0)/Never" so we can't add a mock.Anything
+			// expectation so the below is for clarity and just in case testify changes behavior unexpectedly.
+			filter.AssertNumberOfCalls(t, "Execute", 0)
+		})
 	}
-	runArchiveTest(t, ArchiveTestDetails{
-		giveFS:            fsys,
-		giveFileUtil:      util.NewFileUtil(),
-		giveArchiveFilter: filter.Execute,
-		wantError:         nil,
-		wantResult:        invalidFiles,
-	})
-
-	// note that since we did not set an expectation for anything other than expected paths, if
-	// Execute is called for something else, the test will FailNow by testify since it doesn't
-	// have an expectation configured for anything but the paths we expect. testify doesn't
-	// have explicit support for a "Times(0)/Never" so we can't add a mock.Anything
-	// expectation so the below is for clarity and just in case testify changes behavior unexpectedly.
-	filter.AssertNumberOfCalls(t, "Execute", len(invalidFiles))
 }
 
 func (suite *ArchiveTestSuite) TestFilterNotCalledOnFilenamesForInvalidMetadataTypes() {
@@ -165,7 +157,7 @@ func (suite *ArchiveTestSuite) TestFilterNotCalledOnFilenamesForInvalidMetadataT
 		giveFS:            fsys,
 		giveFileUtil:      util.NewFileUtil(),
 		giveArchiveFilter: filter.Execute,
-		wantError:         pkg.ErrArchiveNoMetadataTypeDirs,
+		wantError:         pkg.ErrArchiveNoFiles,
 		wantResult:        nil,
 	})
 
@@ -182,7 +174,7 @@ func (suite *ArchiveTestSuite) TestArchiveFilterEliminatesAllFiles() {
 	runArchiveTest(t, ArchiveTestDetails{
 		giveFS:            testutil.CreateFS(validMetadataTypeFiles),
 		giveFileUtil:      util.NewFileUtil(),
-		giveArchiveFilter: func(path string) bool { return false },
+		giveArchiveFilter: func(item pkg.MetadataEntityFile) bool { return false },
 		wantError:         pkg.ErrArchiveNoFiles,
 		wantResult:        nil,
 	})
@@ -328,7 +320,7 @@ func (suite *ArchiveTestSuite) TestWalkDirNotCalledOnInvalidMetadataTypeDirs() {
 		giveFS:            fsys,
 		giveFileUtil:      mockFileUtil,
 		giveArchiveFilter: nil,
-		wantError:         pkg.ErrArchiveNoMetadataTypeDirs,
+		wantError:         pkg.ErrArchiveNoFiles,
 		wantResult:        nil,
 	})
 
@@ -382,7 +374,8 @@ func TestArchiveTestSuite(t *testing.T) {
 	suite.Run(t, new(ArchiveTestSuite))
 }
 
-func TestMetadataArchiveFilterTestSuite(t *testing.T) {
+func TestMetadataArchiveFilter(t *testing.T) {
+	validFileNames := createValidMetadataTypeFilesNamesFixture()
 	testCases := []struct {
 		testDescription string
 		giveNlxMetadata *pkg.NlxMetadata
@@ -392,13 +385,13 @@ func TestMetadataArchiveFilterTestSuite(t *testing.T) {
 		{
 			testDescription: "does not contain when metadata nil",
 			giveNlxMetadata: nil,
-			giveItems:       []string{"pages/my_page.json", "pages/my_page.xml", "pages/my_page", "files/my_file.txt", "files/my_file.txt.skuid.json", "nometadatatype.json", "nometadatatype.txt", "invalidtype/my_file.json"},
+			giveItems:       validFileNames,
 			wantResult:      false,
 		},
 		{
 			testDescription: "does not contain when metadata empty",
 			giveNlxMetadata: &pkg.NlxMetadata{},
-			giveItems:       []string{"pages/my_page.json", "pages/my_page.xml", "pages/my_page", "files/my_file.txt", "files/my_file.txt.skuid.json", "nometadatatype.json", "nometadatatype.txt", "invalidtype/my_file.json"},
+			giveItems:       validFileNames,
 			wantResult:      false,
 		},
 		{
@@ -411,55 +404,12 @@ func TestMetadataArchiveFilterTestSuite(t *testing.T) {
 			wantResult: true,
 		},
 		{
-			// TODO: Skuid Review Required - See comment above ArchiveFilter type in pkg/zip.go
-			testDescription: "contains when item by name in metadata",
-			giveNlxMetadata: &pkg.NlxMetadata{
-				Apps:        []string{"my_app"},
-				Pages:       []string{"my_page"},
-				DataSources: []string{"my_datasource"},
-			},
-			giveItems:  []string{"apps/my_app", "pages/my_page", "datasources/my_datasource"},
-			wantResult: true,
-		},
-		{
 			testDescription: "does not contain when item by filename not in metadata",
 			giveNlxMetadata: &pkg.NlxMetadata{
 				Pages: []string{"my_page"},
 				Files: []string{"my_file.txt"},
 			},
 			giveItems:  []string{"pages/fake_page.json", "pages/fake_page.xml", "files/fake_file.txt", "files/fake_file.json"},
-			wantResult: false,
-		},
-		{
-			// TODO: Skuid Review Required - See comment above ArchiveFilter type in pkg/zip.go
-			testDescription: "does not contain when item by name not in metadata",
-			giveNlxMetadata: &pkg.NlxMetadata{
-				Apps:        []string{"my_app"},
-				Pages:       []string{"my_page"},
-				DataSources: []string{"my_datasource"},
-			},
-			giveItems:  []string{"apps/fake_app", "pages/fake_page", "datasources/fake_datasource"},
-			wantResult: false,
-		},
-		{
-			testDescription: "does not contain when invalid metadata type",
-			giveNlxMetadata: &pkg.NlxMetadata{
-				Apps:               []string{"nonmetadatatype"},
-				AuthProviders:      []string{"nonmetadatatype"},
-				ComponentPacks:     []string{"nonmetadatatype"},
-				DataServices:       []string{"nonmetadatatype"},
-				DataSources:        []string{"nonmetadatatype"},
-				DesignSystems:      []string{"nonmetadatatype"},
-				Variables:          []string{"nonmetadatatype"},
-				Files:              []string{"nonmetadatatype"},
-				Pages:              []string{"nonmetadatatype"},
-				PermissionSets:     []string{"nonmetadatatype"},
-				SitePermissionSets: []string{"nonmetadatatype"},
-				SessionVariables:   []string{"nonmetadatatype"},
-				Site:               []string{"nonmetadatatype"},
-				Themes:             []string{"nonmetadatatype"},
-			},
-			giveItems:  []string{"nometadatatype.json", "nometadatatype.txt", "invalidtype/nonmetadatatype.json", "invalidtype/invalidfolder/nonmetadatatype.json"},
 			wantResult: false,
 		},
 	}
@@ -472,7 +422,8 @@ func TestMetadataArchiveFilterTestSuite(t *testing.T) {
 	}
 }
 
-func TestFileNameArchiveFilterTestSuite(t *testing.T) {
+func TestMetadataEntityFileArchiveFilter(t *testing.T) {
+	validFileNames := createValidMetadataTypeFilesNamesFixture()
 	testCases := []struct {
 		testDescription string
 		giveFiles       []string
@@ -482,13 +433,13 @@ func TestFileNameArchiveFilterTestSuite(t *testing.T) {
 		{
 			testDescription: "does not contain when files nil",
 			giveFiles:       nil,
-			giveItems:       []string{"pages/my_page.json", "pages/my_page.xml", "pages/my_page", "files/my_file.txt", "files/my_file.txt.skuid.json", "nometadatatype.json", "nometadatatype.txt", "invalidtype/my_file.json"},
+			giveItems:       validFileNames,
 			wantResult:      false,
 		},
 		{
 			testDescription: "does not contain when files empty",
 			giveFiles:       []string{},
-			giveItems:       []string{"pages/my_page.json", "pages/my_page.xml", "pages/my_page", "files/my_file.txt", "files/my_file.txt.skuid.json", "nometadatatype.json", "nometadatatype.txt", "invalidtype/my_file.json"},
+			giveItems:       validFileNames,
 			wantResult:      false,
 		},
 		{
@@ -503,23 +454,24 @@ func TestFileNameArchiveFilterTestSuite(t *testing.T) {
 			giveItems:       []string{"pages/fake_page.json", "pages/fake_page.xml", "files/fake_file.txt", "files/fake_file.json"},
 			wantResult:      false,
 		},
-		{
-			testDescription: "does not contain when invalid metadata type not in files",
-			giveFiles:       []string{"pages/my_page.json", "pages/my_page.xml", "files/my_file.txt", "files/my_file.txt.skuid.json"},
-			giveItems:       []string{"nometadatatype.json", "nometadatatype.txt", "invalidtype/my_file.json"},
-			wantResult:      false,
-		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.testDescription, func(t *testing.T) {
-			filter := pkg.FileNameArchiveFilter(tc.giveFiles)
+			var entities []pkg.MetadataEntity
+			for _, f := range tc.giveFiles {
+				item, err := pkg.NewMetadataEntityFile(f)
+				require.NoError(t, err)
+				entities = append(entities, item.Entity)
+			}
+			filter := pkg.MetadataEntityArchiveFilter(entities)
 			runArchiveFilterTest(t, filter, tc.giveItems, tc.wantResult)
 		})
 	}
 }
 
-func TestMetadataDirArchiveFilterFilterTestSuite(t *testing.T) {
+func TestMetadataTypeArchiveFilter(t *testing.T) {
+	validFileNames := createValidMetadataTypeFilesNamesFixture()
 	testCases := []struct {
 		testDescription string
 		giveDirs        []string
@@ -529,13 +481,13 @@ func TestMetadataDirArchiveFilterFilterTestSuite(t *testing.T) {
 		{
 			testDescription: "contains when dirs nil",
 			giveDirs:        nil,
-			giveItems:       []string{"pages/my_page.json", "pages/my_page.xml", "pages/my_page", "files/my_file.txt", "files/my_file.txt.skuid.json", "nometadatatype.json", "nometadatatype.txt", "invalidtype/my_file.json"},
+			giveItems:       validFileNames,
 			wantResult:      true,
 		},
 		{
 			testDescription: "contains when dirs empty",
 			giveDirs:        []string{},
-			giveItems:       []string{"pages/my_page.json", "pages/my_page.xml", "pages/my_page", "files/my_file.txt", "files/my_file.txt.skuid.json", "nometadatatype.json", "nometadatatype.txt", "invalidtype/my_file.json"},
+			giveItems:       validFileNames,
 			wantResult:      true,
 		},
 		{
@@ -545,44 +497,22 @@ func TestMetadataDirArchiveFilterFilterTestSuite(t *testing.T) {
 			wantResult:      true,
 		},
 		{
-			// TODO: Skuid Review Required - See comment above ArchiveFilter type in pkg/zip.go
-			testDescription: "contains when invalid metadata type item by filename not in dirs",
-			giveDirs:        []string{"apps", "datasources"},
-			giveItems:       []string{"nometadatatype.json", "nometadatatype.txt", "invalidtype/nonmetadatatype.json", "invalidtype/invalidfolder/nonmetadatatype.json"},
-			wantResult:      true,
-		},
-		{
-			// TODO: Skuid Review Required - See comment above ArchiveFilter type in pkg/zip.go
-			testDescription: "contains when valid metadata type item by name not in dirs",
-			giveDirs:        []string{"files", "designsystems"},
-			giveItems:       []string{"apps/my_app", "pages/my_page", "datasources/my_datasource"},
-			wantResult:      true,
-		},
-		{
-			// TODO: Skuid Review Required - See comment above ArchiveFilter type in pkg/zip.go
-			testDescription: "contains when invalid metadata type item by name not in dirs",
-			giveDirs:        []string{"files", "designsystems"},
-			giveItems:       []string{"nometadatatype", "invalidtype/nonmetadatatype", "invalidtype/invalidfolder/nonmetadatatype"},
-			wantResult:      true,
-		},
-		{
 			testDescription: "does not contain when item by filename in dirs",
 			giveDirs:        []string{"pages", "files"},
 			giveItems:       []string{"pages/my_page.json", "pages/my_page.xml", "files/my_file.txt", "files/my_file.txt.skuid.json"},
-			wantResult:      false,
-		},
-		{
-			// TODO: Skuid Review Required - See comment above ArchiveFilter type in pkg/zip.go
-			testDescription: "does not contain when item by name in dirs",
-			giveDirs:        []string{"apps", "datasources", "pages"},
-			giveItems:       []string{"apps/my_app", "pages/my_page", "datasources/my_datasource"},
 			wantResult:      false,
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.testDescription, func(t *testing.T) {
-			filter := pkg.MetadataDirArchiveFilter(tc.giveDirs)
+			var metadataTypes []pkg.MetadataType
+			for _, d := range tc.giveDirs {
+				mdt := enum.Parse(pkg.MetadataTypes, pkg.MetadataTypeValue(d))
+				require.NotNil(t, mdt)
+				metadataTypes = append(metadataTypes, *mdt)
+			}
+			filter := pkg.MetadataTypeArchiveFilter(metadataTypes)
 			runArchiveFilterTest(t, filter, tc.giveItems, tc.wantResult)
 		})
 	}
@@ -592,7 +522,7 @@ func runArchiveTest(t *testing.T, atd ArchiveTestDetails) ([]byte, int, error) {
 	result, actualFileCount, err := pkg.Archive(atd.giveFS, atd.giveFileUtil, atd.giveArchiveFilter)
 
 	if atd.wantError != nil {
-		assert.EqualError(t, err, atd.wantError.Error())
+		assert.ErrorContains(t, err, atd.wantError.Error())
 	} else {
 		require.NoError(t, err, "Expected Archive err to be nil, but got not nil")
 	}
@@ -610,7 +540,9 @@ func runArchiveTest(t *testing.T, atd ArchiveTestDetails) ([]byte, int, error) {
 
 func runArchiveFilterTest(t *testing.T, filter pkg.ArchiveFilter, items []string, expected bool) {
 	for _, item := range items {
-		assert.Equal(t, expected, filter(item))
+		metadataItem, err := pkg.NewMetadataEntityFile(item)
+		require.NoError(t, err)
+		assert.Equal(t, expected, filter(*metadataItem))
 	}
 }
 
@@ -652,8 +584,16 @@ func createValidMetadataTypeFilesFixture() testutil.TestFiles {
 		"files/file2.txt.skuid.json":       validJSON,
 		"site/site.json":                   validJSON,
 		"site/logo/my_logo.png":            validPNG,
-		"site/logo/my_logo.png.skuid_json": validJSON,
+		"site/logo/my_logo.png.skuid.json": validJSON,
 	}
+}
+
+func createValidMetadataTypeFilesNamesFixture() []string {
+	var files []string
+	for fn := range createValidMetadataTypeFilesFixture() {
+		files = append(files, fn)
+	}
+	return files
 }
 
 // files that do not have a valid metadata type
