@@ -74,10 +74,11 @@ type MetadataEntity struct {
 }
 
 type MetadataEntityFile struct {
-	Entity       MetadataEntity // Entity the file is associated to
-	Name         string         // Name of the file (e.g., my_page.xml)
-	Path         string         // Path to the file (e.g., pages/my_page.xml)
-	PathRelative string         // Path to the file relative to the metadata directory (e.g., my_page.xml, logo/my_logo.png)
+	Entity                 MetadataEntity // Entity the file is associated to
+	Name                   string         // Name of the file (e.g., my_page.xml)
+	Path                   string         // Path to the file (e.g., pages/my_page.xml)
+	PathRelative           string         // Path to the file relative to the metadata directory (e.g., my_page.xml, logo/my_logo.png)
+	IsEntityDefinitionFile bool           // true if the file contains the entity definition (e.g., pages/my_page.json, apps/my_app.json, files/my_file.txt.skuid.json), false otherwise
 }
 
 type NlxMetadata struct {
@@ -161,10 +162,15 @@ func NewMetadataEntityFile(entityFilePath string) (*MetadataEntityFile, error) {
 	if err != nil {
 		return nil, err
 	}
-	entityName, entityRelativePath, valid := entityNameFromFilePath(details)
+	entityName, entityRelativePath, isEntityDefinitionFile, valid := entityNameFromFilePath(details)
 	if !valid {
 		return nil, fmt.Errorf("metadata type %q does not support the entity path: %q", details.Type.Name(), entityFilePath)
 	}
+
+	// not really necessary but a santity check for future proofing against code adjustments that don't have full test coverage
+	// recognizing that just because it has a .json extension doesn't mean its a json file :(
+	// should never happen in production
+	errors.MustConditionf(!isEntityDefinitionFile || path.Ext(details.Path) == ".json", "entity definition file does not have .json extension: %q", details.Path)
 
 	item := &MetadataEntityFile{
 		Entity: MetadataEntity{
@@ -173,9 +179,10 @@ func NewMetadataEntityFile(entityFilePath string) (*MetadataEntityFile, error) {
 			Path:         path.Join(details.Type.DirName(), entityRelativePath),
 			PathRelative: entityRelativePath,
 		},
-		Name:         details.Name,
-		Path:         details.Path,
-		PathRelative: details.PathRelative,
+		Name:                   details.Name,
+		Path:                   details.Path,
+		PathRelative:           details.PathRelative,
+		IsEntityDefinitionFile: isEntityDefinitionFile,
 	}
 	return item, nil
 }
@@ -256,11 +263,17 @@ func validateEntityName(details *entityPathDetails) bool {
 // I'm unable to determine where/how those files would exist. In short, this code should be throughly reviewed for accuracy and
 // completeness across all metadata types.
 //
-// returns the entity name and path to the entity relative to the metadata type directory - for example:
-//  1. pages/my_page.xml will return my_page and my_page
-//  2. site/favicon/my_icon.ico will return my_icon.ico and favicon/my_icon.ico
-//  3. componentpacks/mypack/runtime.js will return mypack and mypack
-func entityNameFromFilePath(details *entityPathDetails) (string, string, bool) {
+// if successful in parsing the details, will return the entity name, path to the entity relative to the metadata type directory,
+// true/false if the file contains the metadata definition for the entity and true for valid.  If unsuccessful in parsing the details
+// will return "", "", false, false - for example:
+//  1. pages/my_page.xml will return my_page, my_page, false, true
+//  2. pages/my_page.json will return my_page, my_page, true, true
+//  3. pages/my_page.txt will return "", "", false, false
+//  4. site/favicon/my_icon.ico will return my_icon.ico, favicon/my_icon.ico, false, true
+//  5. site/favicon/my_icon.ico.skuid.json will return my_icon.ico, favicon/my_icon.ico, true, true
+//  6. site/favicon/my_icon.ico.json will return "", "", false, false
+//  7. componentpacks/mypack/runtime.js will return mypack, mypack and false
+func entityNameFromFilePath(details *entityPathDetails) (string, string, bool, bool) {
 	directory := path.Dir(details.PathRelative)
 	fileName := details.Name
 	ext := path.Ext(fileName)
@@ -269,13 +282,13 @@ func entityNameFromFilePath(details *entityPathDetails) (string, string, bool) {
 	switch details.Type {
 	case MetadataTypeFiles:
 		if directory != "." {
-			return "", "", false
+			return "", "", false, false
 		} else if !fileEntityNameValidator.MatchString(fileName) {
-			return "", "", false
+			return "", "", false, false
 		} else if s, found := strings.CutSuffix(fileName, ".skuid.json"); found {
-			return s, s, true
+			return s, s, true, true
 		} else {
-			return fileName, fileName, true
+			return fileName, fileName, false, true
 		}
 	// Skuid Review Required - For favicon & logo, the Web UI indicates that only ico & png/jpg/gif are supported respectively.
 	// How does skuid evaluate validty - by extension and if so, which are valid?  by mime-type and if so, which are valid?
@@ -285,53 +298,53 @@ func entityNameFromFilePath(details *entityPathDetails) (string, string, bool) {
 		case ".":
 			// only allow site.json in site directory root
 			if fileName == "site.json" {
-				return "site", "site", true
+				return "site", "site", true, true
 			} else {
-				return "", "", false
+				return "", "", false, false
 			}
 		case "favicon":
 			if !fileEntityNameValidator.MatchString(fileName) {
-				return "", "", false
+				return "", "", false, false
 			} else if strings.HasSuffix(fileName, ".ico.skuid.json") {
 				entityName := strings.TrimSuffix(fileName, ".skuid.json")
-				return entityName, path.Join(directory, entityName), true
+				return entityName, path.Join(directory, entityName), true, true
 			} else if ext == ".ico" {
-				return fileName, path.Join(directory, fileName), true
+				return fileName, path.Join(directory, fileName), false, true
 			} else {
-				return "", "", false
+				return "", "", false, false
 			}
 		case "logo":
 			if !fileEntityNameValidator.MatchString(fileName) {
-				return "", "", false
+				return "", "", false, false
 			} else if hasSuffix([]string{".png.skuid.json", ".jpg.skuid.json", ".gif.skuid.json"}, fileName) {
 				entityName := strings.TrimSuffix(fileName, ".skuid.json")
-				return entityName, path.Join(directory, entityName), true
+				return entityName, path.Join(directory, entityName), true, true
 			} else if slices.Contains([]string{
 				".png",
 				".jpg",
 				".gif",
 			}, ext) {
-				return fileName, path.Join(directory, fileName), true
+				return fileName, path.Join(directory, fileName), false, true
 			} else {
-				return "", "", false
+				return "", "", false, false
 			}
 		default:
-			return "", "", false
+			return "", "", false, false
 		}
 	case MetadataTypePages:
 		if directory != "." {
-			return "", "", false
+			return "", "", false, false
 		} else if !entityNameValidator.MatchString(fileNameWithoutExtension) {
-			return "", "", false
+			return "", "", false, false
 		} else if ext == ".json" || ext == ".xml" {
-			return fileNameWithoutExtension, fileNameWithoutExtension, true
+			return fileNameWithoutExtension, fileNameWithoutExtension, ext == ".json", true
 		} else {
-			return "", "", false
+			return "", "", false, false
 		}
 	case MetadataTypeComponentPacks:
 		// each component pack should be in its own directory
 		if directory == "" || directory == "." {
-			return "", "", false
+			return "", "", false, false
 		}
 		// Skuid Review Required - The previous logic would match on any file as long as it was in a subdirectory
 		// under componentpacks.  This would include js, css, json, extensionless, txt, jpg, png, etc. as well as any
@@ -340,9 +353,17 @@ func entityNameFromFilePath(details *entityPathDetails) (string, string, bool) {
 		// TODO: Adjust validation and update tests based on answers to above questions
 		dirSplit := strings.Split(directory, "/")
 		if entityNameValidator.MatchString(dirSplit[0]) {
-			return dirSplit[0], dirSplit[0], true
+			// Skuid Review Required - Unclear if there is a "definition file" for Component packs.  From reviewing docs,
+			// there seems to be a skuid_runtime.json & skuid_builders.json but these are user controlled and also
+			// not required to be these names per https://docs.skuid.com/latest/v1/en/skuid/components/component-packs/build/#runtime-definition-manifest
+			// and https://docs.skuid.com/latest/v1/en/skuid/components/component-packs/build/#builder-definition-manifest.
+			// Is there a "definition" file for a component pack that is controlled by Skuid?
+			// TODO: Adjust the "IsEntityDefinitionFile" return value based on answers to above.  For now, given above since it
+			// appears that the "manifests" are the "definition files" and both are user controlled, not marking any files
+			// in component packs as "definition file" for now.
+			return dirSplit[0], dirSplit[0], false, true
 		} else {
-			return "", "", false
+			return "", "", false, false
 		}
 	case MetadataTypeThemes:
 		// Skuid Review Required - Not sure what metadata type supports .inline.css files but the old code referenced it related
@@ -350,25 +371,25 @@ func entityNameFromFilePath(details *entityPathDetails) (string, string, bool) {
 		// TODO: If .inline.css is no longer supported, remove it, else adjust as needed based on current metadata types and scenarios
 		// it is supported in
 		if directory != "." {
-			return "", "", false
+			return "", "", false, false
 		} else if s, found := strings.CutSuffix(fileName, ".inline.css"); found {
-			return s, s, true
+			return s, s, false, true
 		} else if !entityNameValidator.MatchString(fileNameWithoutExtension) {
-			return "", "", false
+			return "", "", false, false
 		} else if ext == ".json" {
-			return fileNameWithoutExtension, fileNameWithoutExtension, true
+			return fileNameWithoutExtension, fileNameWithoutExtension, true, true
 		} else {
-			return "", "", false
+			return "", "", false, false
 		}
 	default:
 		if directory != "." {
-			return "", "", false
+			return "", "", false, false
 		} else if !entityNameValidator.MatchString(fileNameWithoutExtension) {
-			return "", "", false
+			return "", "", false, false
 		} else if ext == ".json" {
-			return fileNameWithoutExtension, fileNameWithoutExtension, true
+			return fileNameWithoutExtension, fileNameWithoutExtension, true, true
 		} else {
-			return "", "", false
+			return "", "", false, false
 		}
 	}
 }

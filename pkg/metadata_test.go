@@ -737,7 +737,7 @@ func TestNewMetadataEntity(t *testing.T) {
 }
 
 func TestNewMetadataEntityFile(t *testing.T) {
-	createFixture := func(mdt pkg.MetadataType, name string, fileName string) *pkg.MetadataEntityFile {
+	createFixture := func(mdt pkg.MetadataType, name string, fileName string, isEntityDefinitionFile bool) *pkg.MetadataEntityFile {
 		return &pkg.MetadataEntityFile{
 			Entity: pkg.MetadataEntity{
 				Type:         mdt,
@@ -745,9 +745,10 @@ func TestNewMetadataEntityFile(t *testing.T) {
 				Path:         path.Join(mdt.DirName(), name),
 				PathRelative: name,
 			},
-			Name:         fileName,
-			Path:         path.Join(mdt.DirName(), fileName),
-			PathRelative: fileName,
+			Name:                   fileName,
+			Path:                   path.Join(mdt.DirName(), fileName),
+			PathRelative:           fileName,
+			IsEntityDefinitionFile: isEntityDefinitionFile,
 		}
 	}
 
@@ -756,12 +757,12 @@ func TestNewMetadataEntityFile(t *testing.T) {
 			{
 				testDescription: fmt.Sprintf("%v valid json extension", mdt.Name()),
 				givePath:        fmt.Sprintf("%v/%v.json", mdt.DirName(), entityName),
-				wantEntityFile:  createFixture(mdt, entityName, entityName+".json"),
+				wantEntityFile:  createFixture(mdt, entityName, entityName+".json", true),
 			},
 			{
 				testDescription: fmt.Sprintf("%v valid . relative", mdt.Name()),
 				givePath:        fmt.Sprintf("./%v/%v.json", mdt.DirName(), entityName),
-				wantEntityFile:  createFixture(mdt, entityName, entityName+".json"),
+				wantEntityFile:  createFixture(mdt, entityName, entityName+".json", true),
 			},
 		}
 	}
@@ -835,7 +836,7 @@ func TestNewMetadataEntityFile(t *testing.T) {
 		{
 			testDescription: "Themes valid .inline.css extension",
 			givePath:        fmt.Sprintf("%v/%v.inline.css", pkg.MetadataTypeThemes.DirName(), VALID_ENTITY_NAME),
-			wantEntityFile:  createFixture(pkg.MetadataTypeThemes, VALID_ENTITY_NAME, VALID_ENTITY_NAME+".inline.css"),
+			wantEntityFile:  createFixture(pkg.MetadataTypeThemes, VALID_ENTITY_NAME, VALID_ENTITY_NAME+".inline.css", false),
 		},
 	}
 
@@ -850,9 +851,10 @@ func TestNewMetadataEntityFile(t *testing.T) {
 					Path:         "componentpacks/subdir",
 					PathRelative: "subdir",
 				},
-				Name:         VALID_ENTITY_NAME + ".json",
-				Path:         fmt.Sprintf("%v/subdir/%v.json", pkg.MetadataTypeComponentPacks.DirName(), VALID_ENTITY_NAME),
-				PathRelative: fmt.Sprintf("subdir/%v.json", VALID_ENTITY_NAME),
+				Name:                   VALID_ENTITY_NAME + ".json",
+				Path:                   fmt.Sprintf("%v/subdir/%v.json", pkg.MetadataTypeComponentPacks.DirName(), VALID_ENTITY_NAME),
+				PathRelative:           fmt.Sprintf("subdir/%v.json", VALID_ENTITY_NAME),
+				IsEntityDefinitionFile: false,
 			},
 		},
 		{
@@ -865,9 +867,10 @@ func TestNewMetadataEntityFile(t *testing.T) {
 					Path:         "componentpacks/subdir",
 					PathRelative: "subdir",
 				},
-				Name:         VALID_ENTITY_NAME + ".js",
-				Path:         fmt.Sprintf("%v/subdir/%v.js", pkg.MetadataTypeComponentPacks.DirName(), VALID_ENTITY_NAME),
-				PathRelative: fmt.Sprintf("subdir/%v.js", VALID_ENTITY_NAME),
+				Name:                   VALID_ENTITY_NAME + ".js",
+				Path:                   fmt.Sprintf("%v/subdir/%v.js", pkg.MetadataTypeComponentPacks.DirName(), VALID_ENTITY_NAME),
+				PathRelative:           fmt.Sprintf("subdir/%v.js", VALID_ENTITY_NAME),
+				IsEntityDefinitionFile: false,
 			},
 		},
 		{
@@ -880,9 +883,10 @@ func TestNewMetadataEntityFile(t *testing.T) {
 					Path:         "componentpacks/subdir",
 					PathRelative: "subdir",
 				},
-				Name:         VALID_ENTITY_NAME + ".css",
-				Path:         fmt.Sprintf("%v/subdir/%v.css", pkg.MetadataTypeComponentPacks.DirName(), VALID_ENTITY_NAME),
-				PathRelative: fmt.Sprintf("subdir/%v.css", VALID_ENTITY_NAME),
+				Name:                   VALID_ENTITY_NAME + ".css",
+				Path:                   fmt.Sprintf("%v/subdir/%v.css", pkg.MetadataTypeComponentPacks.DirName(), VALID_ENTITY_NAME),
+				PathRelative:           fmt.Sprintf("subdir/%v.css", VALID_ENTITY_NAME),
+				IsEntityDefinitionFile: false,
 			},
 		},
 		{
@@ -895,9 +899,10 @@ func TestNewMetadataEntityFile(t *testing.T) {
 					Path:         "componentpacks/subdir",
 					PathRelative: "subdir",
 				},
-				Name:         VALID_ENTITY_NAME,
-				Path:         fmt.Sprintf("%v/subdir/%v", pkg.MetadataTypeComponentPacks.DirName(), VALID_ENTITY_NAME),
-				PathRelative: fmt.Sprintf("subdir/%v", VALID_ENTITY_NAME),
+				Name:                   VALID_ENTITY_NAME,
+				Path:                   fmt.Sprintf("%v/subdir/%v", pkg.MetadataTypeComponentPacks.DirName(), VALID_ENTITY_NAME),
+				PathRelative:           fmt.Sprintf("subdir/%v", VALID_ENTITY_NAME),
+				IsEntityDefinitionFile: false,
 			},
 		},
 		{
@@ -910,9 +915,10 @@ func TestNewMetadataEntityFile(t *testing.T) {
 					Path:         "componentpacks/subdir",
 					PathRelative: "subdir",
 				},
-				Name:         VALID_ENTITY_NAME + ".json",
-				Path:         fmt.Sprintf("%v/subdir/%v.json", pkg.MetadataTypeComponentPacks.DirName(), VALID_ENTITY_NAME),
-				PathRelative: fmt.Sprintf("subdir/%v.json", VALID_ENTITY_NAME),
+				Name:                   VALID_ENTITY_NAME + ".json",
+				Path:                   fmt.Sprintf("%v/subdir/%v.json", pkg.MetadataTypeComponentPacks.DirName(), VALID_ENTITY_NAME),
+				PathRelative:           fmt.Sprintf("subdir/%v.json", VALID_ENTITY_NAME),
+				IsEntityDefinitionFile: false,
 			},
 		},
 		{
@@ -951,7 +957,7 @@ func TestNewMetadataEntityFile(t *testing.T) {
 		{
 			testDescription: fmt.Sprintf("%v valid xml extension", pkg.MetadataTypePages.Name()),
 			givePath:        fmt.Sprintf("%v/%v.xml", pkg.MetadataTypePages.DirName(), VALID_ENTITY_NAME),
-			wantEntityFile:  createFixture(pkg.MetadataTypePages, VALID_ENTITY_NAME, VALID_ENTITY_NAME+".xml"),
+			wantEntityFile:  createFixture(pkg.MetadataTypePages, VALID_ENTITY_NAME, VALID_ENTITY_NAME+".xml", false),
 		},
 	}
 
@@ -979,9 +985,10 @@ func TestNewMetadataEntityFile(t *testing.T) {
 							Path:         path.Join(mdt.DirName(), subdir, entityName),
 							PathRelative: path.Join(subdir, entityName),
 						},
-						Name:         entityName,
-						Path:         path.Join(mdt.DirName(), subdir, entityName),
-						PathRelative: path.Join(subdir, entityName),
+						Name:                   entityName,
+						Path:                   path.Join(mdt.DirName(), subdir, entityName),
+						PathRelative:           path.Join(subdir, entityName),
+						IsEntityDefinitionFile: false,
 					},
 				},
 				{
@@ -994,9 +1001,10 @@ func TestNewMetadataEntityFile(t *testing.T) {
 							Path:         path.Join(mdt.DirName(), subdir, entityName),
 							PathRelative: path.Join(subdir, entityName),
 						},
-						Name:         entityName + ".skuid.json",
-						Path:         path.Join(mdt.DirName(), subdir, entityName+".skuid.json"),
-						PathRelative: path.Join(subdir, entityName+".skuid.json"),
+						Name:                   entityName + ".skuid.json",
+						Path:                   path.Join(mdt.DirName(), subdir, entityName+".skuid.json"),
+						PathRelative:           path.Join(subdir, entityName+".skuid.json"),
+						IsEntityDefinitionFile: true,
 					},
 				},
 				{
@@ -1049,9 +1057,10 @@ func TestNewMetadataEntityFile(t *testing.T) {
 							Path:         path.Join(mdt.DirName(), entityName),
 							PathRelative: entityName,
 						},
-						Name:         entityName,
-						Path:         path.Join(mdt.DirName(), entityName),
-						PathRelative: entityName,
+						Name:                   entityName,
+						Path:                   path.Join(mdt.DirName(), entityName),
+						PathRelative:           entityName,
+						IsEntityDefinitionFile: false,
 					},
 				},
 				{
@@ -1064,9 +1073,10 @@ func TestNewMetadataEntityFile(t *testing.T) {
 							Path:         path.Join(mdt.DirName(), entityName),
 							PathRelative: entityName,
 						},
-						Name:         entityName + ".skuid.json",
-						Path:         path.Join(mdt.DirName(), entityName+".skuid.json"),
-						PathRelative: entityName + ".skuid.json",
+						Name:                   entityName + ".skuid.json",
+						Path:                   path.Join(mdt.DirName(), entityName+".skuid.json"),
+						PathRelative:           entityName + ".skuid.json",
+						IsEntityDefinitionFile: true,
 					},
 				},
 				{

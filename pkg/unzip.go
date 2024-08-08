@@ -152,17 +152,15 @@ func UnzipArchive(sourceFileLocation, targetLocation string, fileCreator util.Fi
 			return
 		}
 
-		// Skuid Review Required - This code is unmodified other than changing the way the metadata type is detected but it seems very odd.  Per the question above
-		// on why we would ever have the same file in the archive twice, why do we exclude Files metadata type entirely?  Files can be anything including Json
-		// but each file has a .skuid.json file associated so why are we skipping those if we are handling other "metadata json files" here (e.g., pages/my_page.json,
-		// favicon/my_icon.ico.skuid.json)?
-		// Sanitize all metadata .json files that aren't included as files on the site itself
-		if entityFile.Entity.Type != MetadataTypeFiles {
-			if filepath.Ext(entityFile.Path) == ".json" {
-				if fileReader, err = SanitizeZip(fileReader); err != nil {
-					logging.Get().Warnf("Error Sanitizing Zip: %v", err)
-					return
-				}
+		// Skuid Review Required - This code has been modified to applying "SanitizeZip" to all entity definition files.  The previous
+		// code did not apply this to all definition files which I believe was/is the intent of what is being done here.  The question
+		// is to confirm what the intent was/is and if the change made is correct to account for the issue described in
+		// https://github.com/skuid/skuid-cli/issues/198?
+		// Sanitize all metadata definition
+		if entityFile.IsEntityDefinitionFile {
+			if fileReader, err = SanitizeZip(fileReader); err != nil {
+				logging.Get().Warnf("Error Sanitizing Zip: %v", err)
+				return
 			}
 		}
 
