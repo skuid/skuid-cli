@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"github.com/skuid/skuid-cli/pkg/util"
 )
 
@@ -87,5 +88,14 @@ func ParseString(options ParseStringOptions) func(val string) (string, error) {
 			return "", fmt.Errorf("must contain a non-blank value")
 		}
 		return val, nil
+	}
+}
+
+func ParseLogLevel(val string) (logrus.Level, error) {
+	// simple wrapper to customize error message, otherwise it will contain the word logrus
+	if l, err := logrus.ParseLevel(strings.TrimSpace(val)); err != nil {
+		return l, fmt.Errorf("not a valid log level: %q", val)
+	} else {
+		return l, nil
 	}
 }

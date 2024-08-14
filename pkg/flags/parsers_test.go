@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"github.com/skuid/skuid-cli/pkg/flags"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -241,5 +242,94 @@ func TestParseString(t *testing.T) {
 			}
 			assert.Equal(t, tc.wantValue, actualValue)
 		})
+	}
+}
+
+func TestParseLogLevel(t *testing.T) {
+	expectError := func(val string) error {
+		return fmt.Errorf("not a valid log level: %q", val)
+	}
+
+	testCases := []struct {
+		testDescription string
+		giveValue       string
+		wantValue       logrus.Level
+		wantError       error
+	}{
+		{
+			testDescription: "empty",
+			giveValue:       "",
+			wantError:       expectError(""),
+		},
+		{
+			testDescription: "blank",
+			giveValue:       "    ",
+			wantError:       expectError("    "),
+		},
+		{
+			testDescription: "foobar",
+			giveValue:       "foobar",
+			wantError:       expectError("foobar"),
+		},
+		{
+			testDescription: "space within",
+			giveValue:       "in fo",
+			wantError:       expectError("in fo"),
+		},
+		{
+			testDescription: "space around",
+			giveValue:       "  info   ",
+			wantValue:       logrus.InfoLevel,
+		},
+		{
+			testDescription: "trace",
+			giveValue:       "trace",
+			wantValue:       logrus.TraceLevel,
+		},
+		{
+			testDescription: "debug",
+			giveValue:       "debug",
+			wantValue:       logrus.DebugLevel,
+		},
+		{
+			testDescription: "info",
+			giveValue:       "info",
+			wantValue:       logrus.InfoLevel,
+		},
+		{
+			testDescription: "warn",
+			giveValue:       "warn",
+			wantValue:       logrus.WarnLevel,
+		},
+		{
+			testDescription: "warning",
+			giveValue:       "warning",
+			wantValue:       logrus.WarnLevel,
+		},
+		{
+			testDescription: "error",
+			giveValue:       "error",
+			wantValue:       logrus.ErrorLevel,
+		},
+		{
+			testDescription: "fatal",
+			giveValue:       "fatal",
+			wantValue:       logrus.FatalLevel,
+		},
+		{
+			testDescription: "panic",
+			giveValue:       "panic",
+			wantValue:       logrus.PanicLevel,
+		},
+	}
+
+	for _, tc := range testCases {
+		actualValue, err := flags.ParseLogLevel(tc.giveValue)
+		if tc.wantError != nil {
+			assert.EqualError(t, err, tc.wantError.Error())
+		} else {
+			require.NoError(t, err)
+			assert.Equal(t, tc.wantValue, actualValue)
+		}
 	}
 }

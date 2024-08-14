@@ -1,7 +1,6 @@
 package flags
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -22,13 +21,6 @@ var (
 		Usage:   "The `level` of logging: {trace|debug|info|warn|error|fatal|panic}",
 		Default: logrus.InfoLevel,
 		Global:  true,
-		Parse: func(val string) (logrus.Level, error) {
-			// simple wrapper to customize error message, otherwise it will contain the word logrus
-			if l, err := logrus.ParseLevel(val); err != nil {
-				return l, fmt.Errorf("not a valid log level: %q", val)
-			} else {
-				return l, nil
-			}
-		},
+		Parse:   ParseLogLevel,
 	}
 )
