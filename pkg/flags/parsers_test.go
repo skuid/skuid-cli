@@ -324,12 +324,14 @@ func TestParseLogLevel(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		actualValue, err := flags.ParseLogLevel(tc.giveValue)
-		if tc.wantError != nil {
-			assert.EqualError(t, err, tc.wantError.Error())
-		} else {
-			require.NoError(t, err)
-			assert.Equal(t, tc.wantValue, actualValue)
-		}
+		t.Run(tc.testDescription, func(t *testing.T) {
+			actualValue, err := flags.ParseLogLevel(tc.giveValue)
+			if tc.wantError != nil {
+				assert.EqualError(t, err, tc.wantError.Error())
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, tc.wantValue, actualValue)
+			}
+		})
 	}
 }
