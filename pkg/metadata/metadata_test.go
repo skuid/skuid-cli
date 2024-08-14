@@ -1182,13 +1182,13 @@ func TestNewMetadataEntityFile(t *testing.T) {
 }
 
 func createPathError(mdt metadata.MetadataType, path string) error {
-	return fmt.Errorf("metadata type %q does not support the entity path: %q", mdt.Name(), path)
+	return fmt.Errorf("metadata type %q does not support the entity path: %q", mdt.Name(), filepath.FromSlash(path))
 }
 
 func createContainMetadataNameError(path string) error {
-	return fmt.Errorf("must contain a metadata type name: %q", path)
+	return fmt.Errorf("must contain a metadata type name: %q", filepath.FromSlash(path))
 }
 
 func createInvalidMetadataNameError(typename string, path string) error {
-	return fmt.Errorf("invalid metadata name %q for entity path: %q", typename, path)
+	return fmt.Errorf("invalid metadata name %q for entity path: %q", typename, filepath.FromSlash(path))
 }
