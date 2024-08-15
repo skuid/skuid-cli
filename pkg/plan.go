@@ -8,6 +8,10 @@ import (
 	"github.com/skuid/skuid-cli/pkg/metadata"
 )
 
+// Skuid Review Required - Is the NlxPlan struct accurate based on current APIs?
+// Any residual portions of it remaining that should be removed based on removal of SFX support?
+// Any items missing that should be here given current API functionality?
+//
 // NlxPlanPayload is the result of getting the plan from the pliny
 // deployment retrieval plan endpoint
 type NlxPlanPayload struct {
@@ -17,6 +21,9 @@ type NlxPlanPayload struct {
 	MetadataService *NlxPlan `json:"skuidMetadataService"`
 }
 
+// Skuid Review Required - Is the NlxPlan struct accurate based on current APIs?
+// Any residual portions of it remaining that should be removed based on removal of SFX support?
+// Any items missing that should be here given current API functionality?
 type NlxPlan struct {
 	Host              string                `json:"host"`
 	Port              string                `json:"port"`
@@ -36,6 +43,10 @@ func (t JSONTime) MarshalJSON() ([]byte, error) {
 	return []byte(tstr), nil
 }
 
+// Skuid Review Required - Is the NlxPlanFilter struct accurate based on current APIs?
+// Any residual portions of it remaining that should be removed based on removal of SFX support?
+// Any items missing that should be here given current API functionality?
+//
 // NlxPlanFilter should be serialized and provided with the
 // request for retrieval
 type NlxPlanFilter struct {
