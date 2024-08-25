@@ -1181,6 +1181,72 @@ func TestNewMetadataEntityFile(t *testing.T) {
 	}
 }
 
+func TestIsMetadataTypePath(t *testing.T) {
+	testCases := []struct {
+		testDescription string
+		givePath        string
+		wantResult      bool
+	}{
+		{
+			testDescription: "valid type with valid entity name",
+			givePath:        "pages/my_page",
+			wantResult:      true,
+		},
+		{
+			testDescription: "valid type with valid file",
+			givePath:        "pages/my_page.xml",
+			wantResult:      true,
+		},
+		{
+			testDescription: "valid type with valid definition file",
+			givePath:        "pages/my_page.json",
+			wantResult:      true,
+		},
+		{
+			testDescription: "valid type with valid nested dir and nested file",
+			givePath:        "site/favicon/my_icon.ico",
+			wantResult:      true,
+		},
+		{
+			testDescription: "valid type with valid nested dir and nested definition file",
+			givePath:        "site/favicon/my_icon.ico.skuid.json",
+			wantResult:      true,
+		},
+		{
+			testDescription: "valid type with invalid file",
+			givePath:        "pages/my_page.txt",
+			wantResult:      true,
+		},
+		{
+			testDescription: "valid type with invalid nested dir",
+			givePath:        "site/foobar/my_file",
+			wantResult:      true,
+		},
+		{
+			testDescription: "valid type without file",
+			givePath:        "pages",
+			wantResult:      false,
+		},
+		{
+			testDescription: "invalid type without file",
+			givePath:        "foobar",
+			wantResult:      false,
+		},
+		{
+			testDescription: "invalid type with file",
+			givePath:        "foobar/my_file",
+			wantResult:      false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.testDescription, func(t *testing.T) {
+			actualResult := metadata.IsMetadataTypePath(tc.givePath)
+			assert.Equal(t, tc.wantResult, actualResult)
+		})
+	}
+}
+
 func createPathError(mdt metadata.MetadataType, path string) error {
 	return fmt.Errorf("metadata type %q does not support the entity path: %q", mdt.Name(), filepath.FromSlash(path))
 }

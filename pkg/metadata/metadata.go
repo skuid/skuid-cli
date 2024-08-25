@@ -187,23 +187,24 @@ func NewMetadataEntityFile(entityFilePath string) (*MetadataEntityFile, error) {
 	return item, nil
 }
 
+// returns true if path is in the form <metadatadirectory>/<any>/** and <metadatadirectory> is a valid metadata type, false otherwise
+// does not validate the that <any>/** is valid, only that the metadata type is valid.  For example, pages/my_page.txt
+// will return true since pages is a known metadata type even though my_page.txt is not a valid pages entity file.
+func IsMetadataTypePath(path string) bool {
+	if _, _, _, err := parseMetadataType(path); err != nil {
+		return false
+	} else {
+		return true
+	}
+}
+
 // parses either a entity name path (e.g., pages/my_page) or an entity file path (e.g., pages/my_page.xml)
-// all paths returned are normalized to `/` separator
+// all paths returned are normalized to entity path format (`/` separator)
 func parseEntityPath(originalEntityPath string) (*entityPathDetails, error) {
-	normalizedEntityPath := filepath.ToSlash(filepath.Clean(originalEntityPath))
-	directory := path.Dir(normalizedEntityPath)
-	if path.IsAbs(directory) || directory == "" || directory == "." {
-		return nil, fmt.Errorf("must contain a metadata type name: %q", originalEntityPath)
+	normalizedEntityPath, metadataType, subFolders, err := parseMetadataType(originalEntityPath)
+	if err != nil {
+		return nil, err
 	}
-
-	// Find the lowest level folder
-	dirSplit := strings.Split(directory, "/")
-	metadataName, subFolders := dirSplit[0], dirSplit[1:]
-	metadataType := enum.Parse(MetadataTypes, MetadataTypeValue(metadataName))
-	if metadataType == nil {
-		return nil, fmt.Errorf("invalid metadata name %q for entity path: %q", metadataName, originalEntityPath)
-	}
-
 	baseName := path.Base(normalizedEntityPath)
 	relativePathSegments := append(subFolders, baseName)
 	relativeEntityPath := path.Join(relativePathSegments...)
@@ -216,6 +217,30 @@ func parseEntityPath(originalEntityPath string) (*entityPathDetails, error) {
 	}
 
 	return details, nil
+}
+
+// parses a path in the form <metadatadirectory>/<any>/** returning the following with all paths
+// normalized to entity path format (`/` separator)
+// string - given path normalized to entity path format or empty string if path invalid
+// *MetadataType - MetadataType detected or nil if path invalid
+// []string - any remaining path folder segments relative to <metadatadirectory> or nil if path invalid
+// error - nil or error containing issue with path if path invalid
+func parseMetadataType(originalEntityPath string) (string, *MetadataType, []string, error) {
+	normalizedEntityPath := filepath.ToSlash(filepath.Clean(originalEntityPath))
+	directory := path.Dir(normalizedEntityPath)
+	if path.IsAbs(directory) || directory == "" || directory == "." {
+		return "", nil, nil, fmt.Errorf("must contain a metadata type name: %q", originalEntityPath)
+	}
+
+	// Find the top/root level folder
+	dirSplit := strings.Split(directory, "/")
+	metadataName, subFolders := dirSplit[0], dirSplit[1:]
+	metadataType := enum.Parse(MetadataTypes, MetadataTypeValue(metadataName))
+	if metadataType == nil {
+		return "", nil, nil, fmt.Errorf("invalid metadata name %q for entity path: %q", metadataName, originalEntityPath)
+	}
+
+	return normalizedEntityPath, metadataType, subFolders, nil
 }
 
 // Skuid Review Required - This code uses concepts in the code at https://github.com/skuid/skuid-cli/blob/master/pkg/metadata.go#L68

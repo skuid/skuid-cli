@@ -15,6 +15,7 @@ import (
 	"github.com/skuid/skuid-cli/pkg/cmdutil"
 	"github.com/skuid/skuid-cli/pkg/flags"
 	"github.com/skuid/skuid-cli/pkg/logging"
+	"github.com/skuid/skuid-cli/pkg/metadata"
 )
 
 type watchCommander struct {
@@ -94,17 +95,17 @@ func (c *watchCommander) watch(cmd *cobra.Command, _ []string) (err error) {
 	// ignore watcher.Remove & watcher.Chmod
 	w.FilterOps(watcher.Create, watcher.Write, watcher.Rename, watcher.Move)
 
-	// setup event filter (e.g., ignore directory operations)
-	w.AddFilterHook(filterEvents)
+	// setup event filter (e.g., ignore directory operations, non-metadata directory file operations)
+	w.AddFilterHook(filterEvents(targetDirectory))
 
 	go func() {
 		for {
 			select {
 			case event := <-w.Event:
-				logging.WithFields(fields).Debugf("Detected %v operation to file: %v", event.Op, event.Path)
+				logging.WithFields(fields).Debugf("Detected %v operation to file: %q", event.Op, event.Path)
 				go func() {
 					if err := pkg.DeployModifiedFiles(auth, targetDirectory, event.Path); err != nil {
-						w.Error <- err
+						logging.Get().Errorf("unable to handle %v operation to file %q: %v", event.Op, event.Path, err)
 					}
 				}()
 			case err := <-w.Error:
@@ -136,11 +137,29 @@ func (c *watchCommander) watch(cmd *cobra.Command, _ []string) (err error) {
 	return
 }
 
-func filterEvents(fileInfo os.FileInfo, fullPath string) error {
-	// ignore any operations on directories
-	if fileInfo.IsDir() {
-		return watcher.ErrSkip
-	}
+func filterEvents(targetDirectory string) watcher.FilterFileHookFunc {
+	return func(fileInfo os.FileInfo, fullPath string) error {
+		// ignore any operations on directories
+		if fileInfo.IsDir() {
+			return watcher.ErrSkip
+		}
 
-	return nil
+		// ignore any operations on files in non-metadata directories - We only want to monitor metadata directories, however
+		// we must configure AddRecursive to monitor the entire target directory instead of separate AddRecursive calls for
+		// each metadata directory because Add/AddRecursive requires that directories exist when called and we need to handle
+		// the situation where a metadata directory is created while watch is running. When evaluating events for filtering,
+		// we only evaluate that the event is coming from a metadata folder, we do not evaluate the validity of the file itself
+		// here, leaving that instead to the processing of the event because we want to notify the user of success or failure
+		// of all events coming from a metaadata folder. For example, if the target directory is skuid-objects and the event is
+		// for skuid-objects/README.md, we filter it since its not in a metadata directory.  However, if the event is for
+		// skuid-objects/pages/README.md, we do not filter it since its in a known metadata directory even though the file itself
+		// is not valid for the metadata type.
+		if relPath, err := filepath.Rel(targetDirectory, fullPath); err != nil {
+			return err
+		} else if !metadata.IsMetadataTypePath(relPath) {
+			return watcher.ErrSkip
+		}
+
+		return nil
+	}
 }
