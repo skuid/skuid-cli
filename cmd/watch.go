@@ -104,7 +104,7 @@ func (c *watchCommander) watch(cmd *cobra.Command, _ []string) (err error) {
 			case event := <-w.Event:
 				logging.WithFields(fields).Debugf("Detected %v operation to file: %q", event.Op, event.Path)
 				go func() {
-					if err := pkg.DeployModifiedFiles(auth, targetDirectory, event.Path); err != nil {
+					if err := handleEvent(auth, targetDirectory, event); err != nil {
 						logging.Get().Errorf("unable to handle %v operation to file %q: %v", event.Op, event.Path, err)
 					}
 				}()
@@ -135,6 +135,20 @@ func (c *watchCommander) watch(cmd *cobra.Command, _ []string) (err error) {
 	}
 
 	return
+}
+
+func handleEvent(auth *pkg.Authorization, targetDirectory string, event watcher.Event) error {
+	relativeFilePath, err := filepath.Rel(targetDirectory, event.Path)
+	if err != nil {
+		return err
+	}
+	entity, err := metadata.NewMetadataEntityFile(relativeFilePath)
+	if err != nil {
+		return err
+	}
+	entitiesToArchive := []metadata.MetadataEntity{entity.Entity}
+	archiveFilter := pkg.MetadataEntityArchiveFilter(entitiesToArchive)
+	return pkg.Deploy(auth, targetDirectory, archiveFilter, entitiesToArchive, nil)
 }
 
 func filterEvents(targetDirectory string) watcher.FilterFileHookFunc {

@@ -2,9 +2,7 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
-	"slices"
 	"time"
 
 	"github.com/gookit/color"
@@ -16,7 +14,6 @@ import (
 	"github.com/skuid/skuid-cli/pkg/flags"
 	"github.com/skuid/skuid-cli/pkg/logging"
 	"github.com/skuid/skuid-cli/pkg/metadata"
-	"github.com/skuid/skuid-cli/pkg/util"
 )
 
 type deployCommander struct {
@@ -65,10 +62,11 @@ func NewCmdDeploy(factory *cmdutil.Factory) *cobra.Command {
 	return commander.GetCommand()
 }
 
-func (c *deployCommander) deploy(cmd *cobra.Command, _ []string) (err error) {
+func (c *deployCommander) deploy(cmd *cobra.Command, _ []string) error {
+	processStart := time.Now()
 	fields := make(logrus.Fields)
-	fields["start"] = time.Now()
-	fields["process"] = "deploy"
+	fields["processStart"] = processStart
+	fields["processName"] = "deploy"
 	logging.WithFields(fields).Info(color.Green.Sprint("Starting Deploy"))
 
 	fields["host"] = c.authOpts.Host
@@ -85,12 +83,33 @@ func (c *deployCommander) deploy(cmd *cobra.Command, _ []string) (err error) {
 	// intentionally ignoring error since there is nothing we can do and we should fail entirely as a result
 	_ = c.authOpts.Password.Set("")
 	if err != nil {
-		return
+		return err
 	}
 
 	fields["authorized"] = true
 	logging.WithFields(fields).Info("Authentication Successful")
 
+	var targetDirectory string
+	if targetDirectory, err = filepath.Abs(c.dir); err != nil {
+		return err
+	}
+	fields["targetDirectory"] = targetDirectory
+
+	planFilter := c.getPlanFilter(fields)
+	archiveFilter, entitiesToArchive := c.getArchiveFilter(fields)
+	if err = pkg.Deploy(auth, targetDirectory, archiveFilter, entitiesToArchive, planFilter); err != nil {
+		return err
+	}
+
+	processFinish := time.Now()
+	fields["processFinish"] = processFinish
+	fields["processDuration"] = processFinish.Sub(processStart)
+	logging.WithFields(fields).Info(color.Green.Sprint("Finished Deploy"))
+
+	return nil
+}
+
+func (c *deployCommander) getPlanFilter(fields logrus.Fields) *pkg.NlxPlanFilter {
 	var filter *pkg.NlxPlanFilter = &pkg.NlxPlanFilter{}
 
 	// filter by app name
@@ -112,56 +131,7 @@ func (c *deployCommander) deploy(cmd *cobra.Command, _ []string) (err error) {
 	fields["ignoreSkuidDb"] = c.ignoreSkuidDb
 	filter.IgnoreSkuidDb = c.ignoreSkuidDb
 
-	archiveFilter, entitiesToArchive := c.getArchiveFilter(fields)
-
-	// get directory argument
-	var targetDirectory string
-	if targetDirectory, err = filepath.Abs(c.dir); err != nil {
-		return
-	}
-
-	fields["targetDirectory"] = targetDirectory
-	logging.WithFields(fields).Info("Getting Deployment Payload")
-
-	var deploymentPlan []byte
-	var archivedEntities []metadata.MetadataEntity
-	if deploymentPlan, _, archivedEntities, err = pkg.Archive(os.DirFS(targetDirectory), util.NewFileUtil(), archiveFilter); err != nil {
-		return
-	} else if err = validateArchive(entitiesToArchive, archivedEntities); err != nil {
-		return
-	}
-
-	fields["deploymentBytes"] = len(deploymentPlan)
-	logging.WithFields(fields).Info("Got Deployment Payload")
-
-	// get the plan
-	logging.WithFields(fields).Info("Getting Deployment Plan")
-	var plans pkg.NlxDynamicPlanMap
-	if _, plans, err = pkg.GetDeployPlan(auth, deploymentPlan, filter); err != nil {
-		logging.Get().Errorf("Unable to prepare deployment: %v", err)
-		return
-	}
-	logging.WithFields(fields).Info("Got Deployment Plan")
-
-	fields["plans"] = len(plans)
-
-	logging.WithFields(fields).Info("Executing Deployment Plan")
-
-	var results []pkg.NlxDeploymentResult
-	if _, results, err = pkg.ExecuteDeployPlan(auth, plans, targetDirectory); err != nil {
-		// Error will be logged via main.go
-		return
-	}
-
-	fields["results"] = len(results)
-
-	for _, result := range results {
-		logging.Get().Tracef("result: %v", result.Url)
-	}
-
-	logging.Get().Info(color.Green.Sprint("Finished Deploy"))
-
-	return
+	return filter
 }
 
 // Resolve the pkg.ArchiveFilter to apply to the deployment
@@ -190,23 +160,4 @@ func (c *deployCommander) getArchiveFilter(fields logrus.Fields) (pkg.ArchiveFil
 	}
 
 	return nil, nil
-}
-
-func validateArchive(expectedEntities []metadata.MetadataEntity, actualEntities []metadata.MetadataEntity) error {
-	if expectedEntities != nil && !metadata.EntitiesMatch(expectedEntities, actualEntities) {
-		var expectedEntityPaths []string
-		var actualEntityPaths []string
-		for _, e := range expectedEntities {
-			expectedEntityPaths = append(expectedEntityPaths, fmt.Sprintf("%q", e.Path))
-		}
-		for _, e := range actualEntities {
-			actualEntityPaths = append(actualEntityPaths, fmt.Sprintf("%q", e.Path))
-		}
-		// display paths in order to improve ability to identify which are missing
-		slices.Sort(expectedEntityPaths)
-		slices.Sort(actualEntityPaths)
-		return fmt.Errorf("one or more specified entities (%v) were not found, found: %v", expectedEntityPaths, actualEntityPaths)
-	}
-
-	return nil
 }

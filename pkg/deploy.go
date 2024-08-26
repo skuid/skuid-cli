@@ -6,9 +6,11 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"slices"
 	"time"
 
 	"github.com/gookit/color"
+	"github.com/sirupsen/logrus"
 	"github.com/skuid/skuid-cli/pkg/logging"
 	"github.com/skuid/skuid-cli/pkg/metadata"
 	"github.com/skuid/skuid-cli/pkg/util"
@@ -54,10 +56,11 @@ type plinyResult struct {
 	PermissionSets permissionSetResults `json:"permissionSets"`
 }
 
+// TODO: This can be made private once improvements are made to address https://github.com/skuid/skuid-cli/issues/166 (e.g., test coverage, dependency injection to enable proper unit tests, etc.)
 func GetDeployPlan(auth *Authorization, deploymentPlan []byte, filter *NlxPlanFilter) (duration time.Duration, results NlxDynamicPlanMap, err error) {
 	logging.Get().Trace("Getting Deploy Plan")
 	start := time.Now()
-	defer func() { logging.Get().Tracef("Prepare deployment took: %v", time.Since(start)) }()
+	defer func() { duration = time.Since(start) }()
 
 	// pliny request, use access token
 	headers := GenerateHeaders(auth.Host, auth.AccessToken)
@@ -100,48 +103,45 @@ func GetDeployPlan(auth *Authorization, deploymentPlan []byte, filter *NlxPlanFi
 	return
 }
 
-func DeployModifiedFiles(auth *Authorization, targetDir string, modifiedFile string) (err error) {
-	if !filepath.IsAbs(targetDir) {
-		err = fmt.Errorf("targetDir must be an absolute path")
-		return
-	}
-	if !filepath.IsAbs(modifiedFile) {
-		err = fmt.Errorf("modifiedFile must be an absolute path")
-		return
+func Deploy(auth *Authorization, targetDirectory string, archiveFilter ArchiveFilter, entitiesToArchive []metadata.MetadataEntity, planFilter *NlxPlanFilter) error {
+	if !filepath.IsAbs(targetDirectory) {
+		return fmt.Errorf("targetDirectory must be an absolute path")
 	}
 
-	var relativeFilePath string
-	if relativeFilePath, err = filepath.Rel(targetDir, modifiedFile); err != nil {
-		return
-	}
-
-	entity, err := metadata.NewMetadataEntityFile(relativeFilePath)
+	logging.Get().Info("Building deployment request")
+	deploymentRequest, archivedFilePaths, archivedEntities, err := Archive(os.DirFS(targetDirectory), util.NewFileUtil(), archiveFilter)
 	if err != nil {
-		return
+		return err
+	} else if err := validateArchive(entitiesToArchive, archivedEntities); err != nil {
+		return err
 	}
+	logging.WithFields(logrus.Fields{
+		"deploymentBytes":     len(deploymentRequest),
+		"deploymentEntities":  len(archivedEntities),
+		"deploymentFilePaths": len(archivedFilePaths),
+	}).Tracef("Built deployment request")
 
-	planBody, _, _, err := Archive(os.DirFS(targetDir), util.NewFileUtil(), MetadataEntityArchiveFilter([]metadata.MetadataEntity{entity.Entity}))
+	logging.Get().Info("Getting deployment plan(s)")
+	duration, plans, err := GetDeployPlan(auth, deploymentRequest, planFilter)
 	if err != nil {
-		return
+		return err
 	}
+	logging.WithFields(logrus.Fields{
+		"plans":    len(plans),
+		"duration": duration,
+	}).Tracef("Received deployment plan(s)")
 
-	logging.Get().Tracef("Getting Deployment Plan for Modified File (%v)", modifiedFile)
-
-	_, plan, err := GetDeployPlan(auth, planBody, nil)
+	logging.Get().Info("Executing deployment plan(s)")
+	duration, results, err := ExecuteDeployPlan(auth, plans, targetDirectory)
 	if err != nil {
-		return
+		return err
 	}
+	logging.WithFields(logrus.Fields{
+		"results":  len(results),
+		"duration": duration,
+	}).Tracef("Executed deployment plan(s)")
 
-	logging.Get().Tracef("Received Deployment Plan for (%v), Deploying", modifiedFile)
-
-	_, _, err = ExecuteDeployPlan(auth, plan, targetDir)
-	if err != nil {
-		return
-	}
-
-	logging.Get().Tracef("Successfully deployed metadata to Skuid Site: %v", modifiedFile)
-
-	return
+	return nil
 }
 
 // ExecuteDeployPlan executes a map of plan items in a deployment plan
@@ -153,15 +153,17 @@ func DeployModifiedFiles(auth *Authorization, targetDir string, modifiedFile str
 // 4. After its deployed take the app permission set ids from the pliny deploy and deploy those permission sets to warden
 // 5. If metadata and data was deployed, send a request to pliny to sync its datasources' external_ids with warden datasource
 // ids, in case they changed during the deploy
+// TODO: This can be made private once improvements are made to address https://github.com/skuid/skuid-cli/issues/166 (e.g., test coverage, dependency injection to enable proper unit tests, etc.)
 func ExecuteDeployPlan(auth *Authorization, plans NlxDynamicPlanMap, targetDir string) (duration time.Duration, planResults []NlxDeploymentResult, err error) {
+	logging.Get().Trace("Executing Deploy Plan")
+
+	start := time.Now()
+	defer func() { duration = time.Since(start) }()
+
 	if !filepath.IsAbs(targetDir) {
 		err = fmt.Errorf("targetDir must be an absolute path")
 		return
 	}
-
-	start := time.Now()
-	defer func() { duration = time.Since(start) }()
-	logging.Get().Trace("Executing Deploy Plan")
 
 	metaPlan, mok := plans[METADATA_PLAN_KEY]
 	dataPlan, dok := plans[DATA_PLAN_KEY]
@@ -306,4 +308,23 @@ func (result NlxDeploymentResult) String() string {
 		result.Url,
 		len(result.Data),
 	)
+}
+
+func validateArchive(expectedEntities []metadata.MetadataEntity, actualEntities []metadata.MetadataEntity) error {
+	if expectedEntities != nil && !metadata.EntitiesMatch(expectedEntities, actualEntities) {
+		var expectedEntityPaths []string
+		var actualEntityPaths []string
+		for _, e := range expectedEntities {
+			expectedEntityPaths = append(expectedEntityPaths, fmt.Sprintf("%q", e.Path))
+		}
+		for _, e := range actualEntities {
+			actualEntityPaths = append(actualEntityPaths, fmt.Sprintf("%q", e.Path))
+		}
+		// display paths in order to improve ability to identify which are missing
+		slices.Sort(expectedEntityPaths)
+		slices.Sort(actualEntityPaths)
+		return fmt.Errorf("one or more specified entities (%v) were not found, found: %v", expectedEntityPaths, actualEntityPaths)
+	}
+
+	return nil
 }
