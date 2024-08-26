@@ -2,6 +2,7 @@ package cmdutil
 
 import (
 	"fmt"
+	"reflect"
 	"regexp"
 	"strings"
 
@@ -20,39 +21,35 @@ const (
 
 var flagNameValidator = regexp.MustCompile(`^[a-z0-9_-]{3,}$`)
 
-func AddStringFlag(cmd *cobra.Command, valPtr *string, flagInfo *flags.Flag[string]) {
+func AddStringFlag(cmd *cobra.Command, valPtr *string, flagInfo *flags.Flag[string, string]) {
 	checkValidFlag(flagInfo, false, false)
-	*valPtr = flagInfo.Default
 	fs := getFlagSet(cmd, flagInfo)
-	fs.StringVarP(valPtr, flagInfo.Name, flagInfo.Shorthand, *valPtr, usage(flagInfo))
+	fs.StringVarP(valPtr, flagInfo.Name, flagInfo.Shorthand, flagInfo.Default, usage(flagInfo))
 	register(fs, flagInfo)
 }
 
-func AddBoolFlag(cmd *cobra.Command, valPtr *bool, flagInfo *flags.Flag[bool]) {
+func AddBoolFlag(cmd *cobra.Command, valPtr *bool, flagInfo *flags.Flag[bool, bool]) {
 	checkValidFlag(flagInfo, false, false)
-	*valPtr = flagInfo.Default
 	fs := getFlagSet(cmd, flagInfo)
-	fs.BoolVarP(valPtr, flagInfo.Name, flagInfo.Shorthand, *valPtr, usage(flagInfo))
+	fs.BoolVarP(valPtr, flagInfo.Name, flagInfo.Shorthand, flagInfo.Default, usage(flagInfo))
 	register(fs, flagInfo)
 }
 
-func AddIntFlag(cmd *cobra.Command, valPtr *int, flagInfo *flags.Flag[int]) {
+func AddIntFlag(cmd *cobra.Command, valPtr *int, flagInfo *flags.Flag[int, int]) {
 	checkValidFlag(flagInfo, false, false)
-	*valPtr = flagInfo.Default
 	fs := getFlagSet(cmd, flagInfo)
-	fs.IntVarP(valPtr, flagInfo.Name, flagInfo.Shorthand, *valPtr, usage(flagInfo))
+	fs.IntVarP(valPtr, flagInfo.Name, flagInfo.Shorthand, flagInfo.Default, usage(flagInfo))
 	register(fs, flagInfo)
 }
 
-func AddStringSliceFlag(cmd *cobra.Command, valPtr *[]string, flagInfo *flags.Flag[[]string]) {
+func AddStringSliceFlag(cmd *cobra.Command, valPtr *[]string, flagInfo *flags.Flag[[]string, string]) {
 	checkValidFlag(flagInfo, false, false)
-	*valPtr = flagInfo.Default
 	fs := getFlagSet(cmd, flagInfo)
-	fs.StringSliceVarP(valPtr, flagInfo.Name, flagInfo.Shorthand, *valPtr, usage(flagInfo))
+	fs.StringSliceVarP(valPtr, flagInfo.Name, flagInfo.Shorthand, flagInfo.Default, usage(flagInfo))
 	register(fs, flagInfo)
 }
 
-func AddValueFlag[T flags.FlagType](cmd *cobra.Command, valPtr *T, flagInfo *flags.Flag[T]) {
+func AddValueFlag[T flags.FlagType](cmd *cobra.Command, valPtr *T, flagInfo *flags.Flag[T, T]) {
 	checkValidFlag(flagInfo, true, false)
 	fs := getFlagSet(cmd, flagInfo)
 	v := flags.NewValue(flagInfo.Default, valPtr, flagInfo.Parse)
@@ -60,7 +57,15 @@ func AddValueFlag[T flags.FlagType](cmd *cobra.Command, valPtr *T, flagInfo *fla
 	register(fs, flagInfo)
 }
 
-func AddValueWithRedactFlag[T flags.FlagType](cmd *cobra.Command, valPtr *T, flagInfo *flags.Flag[T]) *flags.Value[T] {
+func AddSliceValueFlag[T flags.FlagType](cmd *cobra.Command, valPtr *[]T, flagInfo *flags.Flag[[]T, T]) {
+	checkValidFlag(flagInfo, true, false)
+	fs := getFlagSet(cmd, flagInfo)
+	v := flags.NewSliceValue(flagInfo.Default, valPtr, flagInfo.Parse)
+	fs.VarP(v, flagInfo.Name, flagInfo.Shorthand, usage(flagInfo))
+	register(fs, flagInfo)
+}
+
+func AddValueWithRedactFlag[T flags.FlagType](cmd *cobra.Command, valPtr *T, flagInfo *flags.Flag[T, T]) *flags.Value[T] {
 	checkValidFlag(flagInfo, true, true)
 	fs := getFlagSet(cmd, flagInfo)
 	v := flags.NewValueWithRedact(flagInfo.Default, valPtr, flagInfo.Parse, flagInfo.Redact)
@@ -83,14 +88,14 @@ func EnvVarName(name string) string {
 	return envVarName
 }
 
-func register[T flags.FlagType](fs *pflag.FlagSet, flagInfo *flags.Flag[T]) {
+func register[T flags.FlagType | ~[]F, F flags.FlagType](fs *pflag.FlagSet, flagInfo *flags.Flag[T, F]) {
 	setAnnotations(fs, flagInfo)
 	if flagInfo.Required {
 		cobra.MarkFlagRequired(fs, flagInfo.Name)
 	}
 }
 
-func setAnnotations[T flags.FlagType](fs *pflag.FlagSet, flagInfo *flags.Flag[T]) {
+func setAnnotations[T flags.FlagType | ~[]F, F flags.FlagType](fs *pflag.FlagSet, flagInfo *flags.Flag[T, F]) {
 	// mark the flag as created by us since Cobra (and any plugin that may be used in future) will/could
 	// create their own flags (e.g., cobra automatically creates a "help" flag)
 	// should never error - only error possible is if flag doesn't exist and we just added it
@@ -98,19 +103,40 @@ func setAnnotations[T flags.FlagType](fs *pflag.FlagSet, flagInfo *flags.Flag[T]
 	errors.Must(fs.SetAnnotation(flagInfo.Name, LegacyEnvVarsAnnotation, flagInfo.LegacyEnvVars))
 }
 
-func checkValidFlag[T flags.FlagType](f *flags.Flag[T], allowParse bool, allowRedact bool) {
+func checkValidFlag[T flags.FlagType | ~[]F, F flags.FlagType](f *flags.Flag[T, F], allowParse bool, allowRedact bool) {
 	// should never happen in production
 	errors.MustConditionf(flagNameValidator.MatchString(f.Name), "flag name %q is invalid", f.Name)
 	errors.MustConditionf(len(f.Usage) >= 10, "flag usage %q is invalid for flag name %q", f.Usage, f.Name)
-	errors.MustConditionf(f.Parse == nil || allowParse, "flag type %T does not support Parse for flag name %q", f, f.Name)
-	errors.MustConditionf(f.Redact == nil || allowRedact, "flag type %T does not support Redact for flag name %q", f, f.Name)
+	if allowParse {
+		errors.MustConditionf(f.Parse != nil, "flag type %T requires Parse to be defined for flag name %q", f, f.Name)
+	} else {
+		errors.MustConditionf(f.Parse == nil, "flag type %T does not support Parse for flag name %q", f, f.Name)
+	}
+	if allowRedact {
+		errors.MustConditionf(f.Redact != nil, "flag type %T requires Redact to be defined for flag name %q", f, f.Name)
+	} else {
+		errors.MustConditionf(f.Redact == nil, "flag type %T does not support Redact for flag name %q", f, f.Name)
+	}
+	// due to limitations of Go generics, it is possible to define a flags.Flag that has mismatched types
+	// for T & F when T is not a slice.  The below will validate that T & F point to the same type when T
+	// is not a slice.  The AddXXXFlag methods above are constrained to not even allow T & F to ever be different
+	// so technically this isn't really necessary but protecting against any future changes that are made by
+	// including this runtime check.
+	// See details regarding the limitations of Go generics in the comment above definition of flags.Flag struct
+	// in flags package along with details of potential improvements to Go generics that would allow us to enforce
+	// T & F never to be different in the definition of flags.Flag struct itself.
+	tType := reflect.TypeOf(*new(T))
+	if tType.Kind() != reflect.Slice {
+		fType := reflect.TypeOf(*new(F))
+		errors.MustConditionf(tType == fType, "type parameters must be the same type for flag name %q", f.Name)
+	}
 }
 
-func usage[T flags.FlagType](flagInfo *flags.Flag[T]) string {
+func usage[T flags.FlagType | ~[]F, F flags.FlagType](flagInfo *flags.Flag[T, F]) string {
 	return fmt.Sprintf("%v\nEnvironment variable: %v", flagInfo.Usage, EnvVarName(flagInfo.Name))
 }
 
-func getFlagSet[T flags.FlagType](cmd *cobra.Command, flagInfo *flags.Flag[T]) *pflag.FlagSet {
+func getFlagSet[T flags.FlagType | ~[]F, F flags.FlagType](cmd *cobra.Command, flagInfo *flags.Flag[T, F]) *pflag.FlagSet {
 	if flagInfo.Global {
 		return cmd.PersistentFlags()
 	}

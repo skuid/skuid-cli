@@ -28,7 +28,7 @@ func TestGetDeployPlan(t *testing.T) {
 		fp = filepath.Join(wd, "..", "..", "_deploy")
 	}
 
-	deploymentPlan, _, err := pkg.Archive(os.DirFS(fp), util.NewFileUtil(), nil)
+	deploymentPlan, _, _, err := pkg.Archive(os.DirFS(fp), util.NewFileUtil(), nil)
 	if err != nil {
 		t.Log(err)
 		t.FailNow()
@@ -54,7 +54,7 @@ func BenchmarkDeploymentPlan(b *testing.B) {
 	auth, _ := pkg.Authorize(authOptions)
 	wd, _ := os.Getwd()
 	fp := filepath.Join(wd, ".", ".", "_deploy")
-	deploymentPlan, _, _ := pkg.Archive(os.DirFS(fp), util.NewFileUtil(), nil)
+	deploymentPlan, _, _, _ := pkg.Archive(os.DirFS(fp), util.NewFileUtil(), nil)
 	_, plans, _ := pkg.GetDeployPlan(auth, deploymentPlan, nil)
 	b.ResetTimer()
 	b.ReportAllocs()

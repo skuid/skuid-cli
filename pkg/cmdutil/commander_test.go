@@ -20,7 +20,7 @@ import (
 
 type ApplyEnvVarsTestCase struct {
 	testDescription     string
-	giveFlags           []*flags.Flag[string]
+	giveFlags           []*flags.Flag[string, string]
 	giveArgs            []string
 	wantFlags           map[string]string
 	wantErrorContains   error
@@ -43,7 +43,7 @@ func (suite *ApplyEnvVarsTestSuite) TestUpdatesValue() {
 	testCases := []ApplyEnvVarsTestCase{
 		{
 			testDescription:     "default env var",
-			giveFlags:           []*flags.Flag[string]{{Name: "foo", Usage: "this is a flag"}},
+			giveFlags:           []*flags.Flag[string, string]{{Name: "foo", Usage: "this is a flag"}},
 			giveArgs:            []string{},
 			wantFlags:           map[string]string{"foo": "hello"},
 			wantErrorContains:   nil,
@@ -53,7 +53,7 @@ func (suite *ApplyEnvVarsTestSuite) TestUpdatesValue() {
 		},
 		{
 			testDescription:     "legacy env var",
-			giveFlags:           []*flags.Flag[string]{{Name: "legacy", Usage: "this is a flag", LegacyEnvVars: []string{"LEGACY_FOO"}}},
+			giveFlags:           []*flags.Flag[string, string]{{Name: "legacy", Usage: "this is a flag", LegacyEnvVars: []string{"LEGACY_FOO"}}},
 			giveArgs:            []string{},
 			wantFlags:           map[string]string{"legacy": "goodbye"},
 			wantErrorContains:   nil,
@@ -63,7 +63,7 @@ func (suite *ApplyEnvVarsTestSuite) TestUpdatesValue() {
 		},
 		{
 			testDescription:     "legacy env var multiple options",
-			giveFlags:           []*flags.Flag[string]{{Name: "legacy", Usage: "this is a flag", LegacyEnvVars: []string{"LEGACY_FAKE1", "LEGACY_FAKE2", "LEGACY_FOO"}}},
+			giveFlags:           []*flags.Flag[string, string]{{Name: "legacy", Usage: "this is a flag", LegacyEnvVars: []string{"LEGACY_FAKE1", "LEGACY_FAKE2", "LEGACY_FOO"}}},
 			giveArgs:            []string{},
 			wantFlags:           map[string]string{"legacy": "goodbye"},
 			wantErrorContains:   nil,
@@ -73,7 +73,7 @@ func (suite *ApplyEnvVarsTestSuite) TestUpdatesValue() {
 		},
 		{
 			testDescription:     "legacy env var first found in specified order",
-			giveFlags:           []*flags.Flag[string]{{Name: "legacy", Usage: "this is a flag", LegacyEnvVars: []string{"LEGACY_FOO2", "LEGACY_FOO"}}},
+			giveFlags:           []*flags.Flag[string, string]{{Name: "legacy", Usage: "this is a flag", LegacyEnvVars: []string{"LEGACY_FOO2", "LEGACY_FOO"}}},
 			giveArgs:            []string{},
 			wantFlags:           map[string]string{"legacy": "goodbye2222"},
 			wantErrorContains:   nil,
@@ -83,7 +83,7 @@ func (suite *ApplyEnvVarsTestSuite) TestUpdatesValue() {
 		},
 		{
 			testDescription:     "default env var when has legacy",
-			giveFlags:           []*flags.Flag[string]{{Name: "foo", Usage: "this is a flag", LegacyEnvVars: []string{"LEGACY_FOO"}}},
+			giveFlags:           []*flags.Flag[string, string]{{Name: "foo", Usage: "this is a flag", LegacyEnvVars: []string{"LEGACY_FOO"}}},
 			giveArgs:            []string{},
 			wantFlags:           map[string]string{"foo": "hello"},
 			wantErrorContains:   nil,
@@ -93,7 +93,7 @@ func (suite *ApplyEnvVarsTestSuite) TestUpdatesValue() {
 		},
 		{
 			testDescription:     "empty used when not required",
-			giveFlags:           []*flags.Flag[string]{{Name: "bar", Usage: "this is a flag", Default: "somevalue"}},
+			giveFlags:           []*flags.Flag[string, string]{{Name: "bar", Usage: "this is a flag", Default: "somevalue"}},
 			giveArgs:            []string{},
 			wantFlags:           map[string]string{"bar": ""},
 			wantErrorContains:   nil,
@@ -103,7 +103,7 @@ func (suite *ApplyEnvVarsTestSuite) TestUpdatesValue() {
 		},
 		{
 			testDescription:     "empty used when required",
-			giveFlags:           []*flags.Flag[string]{{Name: "bar", Usage: "this is a flag", Default: "abcd", Required: true}},
+			giveFlags:           []*flags.Flag[string, string]{{Name: "bar", Usage: "this is a flag", Default: "abcd", Required: true}},
 			giveArgs:            []string{},
 			wantFlags:           map[string]string{"bar": ""},
 			wantErrorContains:   nil,
@@ -113,7 +113,7 @@ func (suite *ApplyEnvVarsTestSuite) TestUpdatesValue() {
 		},
 		{
 			testDescription:     "empty used when default empty and legacy non-empty when not required",
-			giveFlags:           []*flags.Flag[string]{{Name: "bar", Usage: "this is a flag", Default: "somevalue", LegacyEnvVars: []string{"LEGACY_FOO"}}},
+			giveFlags:           []*flags.Flag[string, string]{{Name: "bar", Usage: "this is a flag", Default: "somevalue", LegacyEnvVars: []string{"LEGACY_FOO"}}},
 			giveArgs:            []string{},
 			wantFlags:           map[string]string{"bar": ""},
 			wantErrorContains:   nil,
@@ -123,7 +123,7 @@ func (suite *ApplyEnvVarsTestSuite) TestUpdatesValue() {
 		},
 		{
 			testDescription:     "empty used when default empty and legacy non-empty when required",
-			giveFlags:           []*flags.Flag[string]{{Name: "bar", Usage: "this is a flag", Default: "somevalue", Required: true, LegacyEnvVars: []string{"LEGACY_FOO"}}},
+			giveFlags:           []*flags.Flag[string, string]{{Name: "bar", Usage: "this is a flag", Default: "somevalue", Required: true, LegacyEnvVars: []string{"LEGACY_FOO"}}},
 			giveArgs:            []string{},
 			wantFlags:           map[string]string{"bar": ""},
 			wantErrorContains:   nil,
@@ -133,7 +133,7 @@ func (suite *ApplyEnvVarsTestSuite) TestUpdatesValue() {
 		},
 		{
 			testDescription:     "non-empty used when required",
-			giveFlags:           []*flags.Flag[string]{{Name: "foo", Usage: "this is a flag", Default: "somevalue", Required: true}},
+			giveFlags:           []*flags.Flag[string, string]{{Name: "foo", Usage: "this is a flag", Default: "somevalue", Required: true}},
 			giveArgs:            []string{},
 			wantFlags:           map[string]string{"foo": "hello"},
 			wantErrorContains:   nil,
@@ -143,7 +143,7 @@ func (suite *ApplyEnvVarsTestSuite) TestUpdatesValue() {
 		},
 		{
 			testDescription:     "no default legacy is empty used when required",
-			giveFlags:           []*flags.Flag[string]{{Name: "legacy", Usage: "this is a flag", Default: "abcd", Required: true, LegacyEnvVars: []string{"SKUID_BAR"}}},
+			giveFlags:           []*flags.Flag[string, string]{{Name: "legacy", Usage: "this is a flag", Default: "abcd", Required: true, LegacyEnvVars: []string{"SKUID_BAR"}}},
 			giveArgs:            []string{},
 			wantFlags:           map[string]string{"legacy": ""},
 			wantErrorContains:   nil,
@@ -165,7 +165,7 @@ func (suite *ApplyEnvVarsTestSuite) TestDoesNotUpdateValue() {
 	testCases := []ApplyEnvVarsTestCase{
 		{
 			testDescription:     "passed on command line",
-			giveFlags:           []*flags.Flag[string]{{Name: "foo", Usage: "this is a flag"}},
+			giveFlags:           []*flags.Flag[string, string]{{Name: "foo", Usage: "this is a flag"}},
 			giveArgs:            []string{"--foo", "bar"},
 			wantFlags:           map[string]string{"foo": "bar"},
 			wantErrorContains:   nil,
@@ -175,7 +175,7 @@ func (suite *ApplyEnvVarsTestSuite) TestDoesNotUpdateValue() {
 		},
 		{
 			testDescription:     "not in env",
-			giveFlags:           []*flags.Flag[string]{{Name: "abc", Usage: "this is a flag", Default: "somevalue", LegacyEnvVars: []string{"LEGACY_ABC"}}},
+			giveFlags:           []*flags.Flag[string, string]{{Name: "abc", Usage: "this is a flag", Default: "somevalue", LegacyEnvVars: []string{"LEGACY_ABC"}}},
 			giveArgs:            []string{},
 			wantFlags:           map[string]string{"abc": "somevalue"},
 			wantErrorContains:   nil,
@@ -201,7 +201,7 @@ func (suite *ApplyEnvVarsTestSuite) TestFailsToUpdate() {
 		appliedEnvVars, err = cmdutil.ApplyEnvVars(cmd)
 		return err
 	}
-	f := &flags.Flag[bool]{Name: "foo", Usage: "this is a flag", Default: true}
+	f := &flags.Flag[bool, bool]{Name: "foo", Usage: "this is a flag", Default: true}
 	cmd.Flags().Bool(f.Name, f.Default, f.Usage)
 	cmd.Flags().SetAnnotation(f.Name, cmdutil.FlagSetBySkuidCliAnnotation, []string{"true"})
 	cmd.Flags().SetAnnotation(f.Name, cmdutil.LegacyEnvVarsAnnotation, f.LegacyEnvVars)
@@ -227,11 +227,11 @@ func (suite *ApplyEnvVarsTestSuite) TestFailsToUpdateMultipleErrors() {
 		appliedEnvVars, err = cmdutil.ApplyEnvVars(cmd)
 		return err
 	}
-	fb := &flags.Flag[bool]{Name: "foo", Usage: "this is a flag", Default: true}
+	fb := &flags.Flag[bool, bool]{Name: "foo", Usage: "this is a flag", Default: true}
 	cmd.Flags().Bool(fb.Name, fb.Default, fb.Usage)
 	cmd.Flags().SetAnnotation(fb.Name, cmdutil.FlagSetBySkuidCliAnnotation, []string{"true"})
 	cmd.Flags().SetAnnotation(fb.Name, cmdutil.LegacyEnvVarsAnnotation, fb.LegacyEnvVars)
-	fi := &flags.Flag[int]{Name: "bar", Usage: "this is a flag", Default: 500}
+	fi := &flags.Flag[int, int]{Name: "bar", Usage: "this is a flag", Default: 500}
 	cmd.Flags().Int(fi.Name, fi.Default, fi.Usage)
 	cmd.Flags().SetAnnotation(fi.Name, cmdutil.FlagSetBySkuidCliAnnotation, []string{"true"})
 	cmd.Flags().SetAnnotation(fb.Name, cmdutil.LegacyEnvVarsAnnotation, fi.LegacyEnvVars)
@@ -323,8 +323,8 @@ func (suite *ApplyEnvVarsTestSuite) TestStringConversion() {
 		"SKUID_GOOD_FOO_TRUE":               {EnvValue: "true", Value: "true"},
 	}
 	envVarsError := map[string]testutil.EnvVar[string]{}
-	addFlag := func(fs *pflag.FlagSet, name string, p *string) *flags.Flag[string] {
-		flag := &flags.Flag[string]{Name: name, Usage: "this is a flag"}
+	addFlag := func(fs *pflag.FlagSet, name string, p *string) *flags.Flag[string, string] {
+		flag := &flags.Flag[string, string]{Name: name, Usage: "this is a flag"}
 		fs.StringVar(p, flag.Name, flag.Default, flag.Usage)
 		return flag
 	}
@@ -346,8 +346,8 @@ func (suite *ApplyEnvVarsTestSuite) TestStringSliceConversion() {
 		"SKUID_GOOD_FOO_SPACE_AROUND":        {EnvValue: "  fo ob ar  ,  h e l lo   ", Value: []string{"  fo ob ar  ", "  h e l lo   "}},
 	}
 	envVarsError := map[string]testutil.EnvVar[[]string]{}
-	addFlag := func(fs *pflag.FlagSet, name string, p *[]string) *flags.Flag[[]string] {
-		flag := &flags.Flag[[]string]{Name: name, Usage: "this is a flag"}
+	addFlag := func(fs *pflag.FlagSet, name string, p *[]string) *flags.Flag[[]string, string] {
+		flag := &flags.Flag[[]string, string]{Name: name, Usage: "this is a flag"}
 		fs.StringSliceVar(p, flag.Name, flag.Default, flag.Usage)
 		return flag
 	}
@@ -377,8 +377,8 @@ func (suite *ApplyEnvVarsTestSuite) TestBoolConversion() {
 		"SKUID_BAD_FOO_NON_ZERO_OR_ONE": {EnvValue: "5", Value: false},
 		"SKUID_BAD_FOO_NON_NUMERIC":     {EnvValue: "asdfasdf", Value: false},
 	}
-	addFlag := func(fs *pflag.FlagSet, name string, p *bool) *flags.Flag[bool] {
-		flag := &flags.Flag[bool]{Name: name, Usage: "this is a flag"}
+	addFlag := func(fs *pflag.FlagSet, name string, p *bool) *flags.Flag[bool, bool] {
+		flag := &flags.Flag[bool, bool]{Name: name, Usage: "this is a flag"}
 		fs.BoolVar(p, flag.Name, flag.Default, flag.Usage)
 		return flag
 	}
@@ -413,8 +413,8 @@ func (suite *ApplyEnvVarsTestSuite) TestIntConversion() {
 		"SKUID_BAD_FOO_DOUBLE_UNDERSCORE": {EnvValue: "123__45", Value: 0},
 		"SKUID_BAD_FOO_INVALID_BASE":      {EnvValue: "0i12345", Value: 0},
 	}
-	addFlag := func(fs *pflag.FlagSet, name string, p *int) *flags.Flag[int] {
-		flag := &flags.Flag[int]{Name: name, Usage: "this is a flag"}
+	addFlag := func(fs *pflag.FlagSet, name string, p *int) *flags.Flag[int, int] {
+		flag := &flags.Flag[int, int]{Name: name, Usage: "this is a flag"}
 		fs.IntVar(p, flag.Name, flag.Default, flag.Usage)
 		return flag
 	}
@@ -432,8 +432,8 @@ func (suite *ApplyEnvVarsTestSuite) TestPtrTimeConversion() {
 		"SKUID_BAD_FOO_EMPTY":  {EnvValue: "", Value: nil},
 		"SKUID_BAD_FOO_FORMAT": {EnvValue: "2026_01_01", Value: nil},
 	}
-	addFlag := func(fs *pflag.FlagSet, name string, p **time.Time) *flags.Flag[*time.Time] {
-		flag := &flags.Flag[*time.Time]{Name: name, Usage: "this is a flag"}
+	addFlag := func(fs *pflag.FlagSet, name string, p **time.Time) *flags.Flag[*time.Time, *time.Time] {
+		flag := &flags.Flag[*time.Time, *time.Time]{Name: name, Usage: "this is a flag"}
 		v := flags.NewValue(flag.Default, p, func(val string) (*time.Time, error) {
 			t, err := time.ParseInLocation(layout, val, time.Local)
 			return &t, err
@@ -505,7 +505,7 @@ func runApplyEnvVarsTests(suite *suite.Suite, envVars map[string]testutil.EnvVar
 	}
 }
 
-func runConversionTest[T flags.FlagType](suite *suite.Suite, envVars map[string]testutil.EnvVar[T], addFlag func(*pflag.FlagSet, string, *T) *flags.Flag[T], wantError bool) {
+func runConversionTest[T flags.FlagType | ~[]F, F flags.FlagType](suite *suite.Suite, envVars map[string]testutil.EnvVar[T], addFlag func(*pflag.FlagSet, string, *T) *flags.Flag[T, F], wantError bool) {
 	for envKey, envValue := range envVars {
 		flagName := strings.TrimPrefix(envKey, "SKUID_")
 		flagName = strings.ReplaceAll(flagName, "_", "-")

@@ -6,10 +6,10 @@ import (
 	"path/filepath"
 	"reflect"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/orsinium-labs/enum"
-	"golang.org/x/exp/slices"
 
 	"github.com/skuid/skuid-cli/pkg/errors"
 	"github.com/skuid/skuid-cli/pkg/logging"
@@ -198,6 +198,37 @@ func IsMetadataTypePath(path string) bool {
 	}
 }
 
+// returns true if two slices are equal ignoring the order of the elements, false otherwise. If there are duplicate elements,
+// the number of appearances of each of them in both lists should match.
+func EntitiesMatch[S ~[]MetadataEntity](s1 S, s2 S) bool {
+	// don't mutate the originals
+	a := slices.Clone(s1)
+	b := slices.Clone(s2)
+
+	// sort and then use built-in compare to keep things simpler rather than manually
+	// checking lengths and iterating both outer an inner since that would require
+	// keeping track of visited items to detect duplicates, etc.  For the situations
+	// where we need to match, the lists should be relatively short, however if perf
+	// becomes an issue, analysis can be performed against both approaches using
+	// identified use cases to determine which approach yields better performance
+	slices.SortFunc(a, sortEntities)
+	slices.SortFunc(b, sortEntities)
+	return slices.Equal(a, b)
+}
+
+// returns the unique metadata entities found in the specified slice
+func UniqueEntities[S ~[]MetadataEntity](s S) []MetadataEntity {
+	// don't mutate the originals
+	a := slices.Clone(s)
+
+	// multiple ways this can be achieved - the below assumes slices are small
+	// and therefore does not optimize for performance.  If perf becomes an issue,
+	// use cases should be evaluated against available methods for identifying unique
+	// values and appropriate approach implemented
+	slices.SortFunc(a, sortEntities)
+	return slices.Compact(a)
+}
+
 // parses either a entity name path (e.g., pages/my_page) or an entity file path (e.g., pages/my_page.xml)
 // all paths returned are normalized to entity path format (`/` separator)
 func parseEntityPath(originalEntityPath string) (*entityPathDetails, error) {
@@ -229,7 +260,7 @@ func parseMetadataType(originalEntityPath string) (string, *MetadataType, []stri
 	normalizedEntityPath := filepath.ToSlash(filepath.Clean(originalEntityPath))
 	directory := path.Dir(normalizedEntityPath)
 	if path.IsAbs(directory) || directory == "" || directory == "." {
-		return "", nil, nil, fmt.Errorf("must contain a metadata type name: %q", originalEntityPath)
+		return "", nil, nil, fmt.Errorf("directory name matching a valid metadata type name must exist in entity path: %q", originalEntityPath)
 	}
 
 	// Find the top/root level folder
@@ -237,7 +268,7 @@ func parseMetadataType(originalEntityPath string) (string, *MetadataType, []stri
 	metadataName, subFolders := dirSplit[0], dirSplit[1:]
 	metadataType := enum.Parse(MetadataTypes, MetadataTypeValue(metadataName))
 	if metadataType == nil {
-		return "", nil, nil, fmt.Errorf("invalid metadata name %q for entity path: %q", metadataName, originalEntityPath)
+		return "", nil, nil, fmt.Errorf("invalid metadata type name %q for entity path: %q", metadataName, originalEntityPath)
 	}
 
 	return normalizedEntityPath, metadataType, subFolders, nil
@@ -426,4 +457,12 @@ func hasSuffix[S []string](s S, v string) bool {
 		}
 	}
 	return false
+}
+
+func sortEntities(a, b MetadataEntity) int {
+	if a.Type != b.Type {
+		return strings.Compare(a.Type.Name(), b.Type.Name())
+	}
+
+	return strings.Compare(a.Path, b.Path)
 }

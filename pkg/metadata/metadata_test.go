@@ -1247,14 +1247,144 @@ func TestIsMetadataTypePath(t *testing.T) {
 	}
 }
 
+func TestEntitiesMatch(t *testing.T) {
+	testCases := []struct {
+		testDescription string
+		giveA           []metadata.MetadataEntity
+		giveB           []metadata.MetadataEntity
+		wantResult      bool
+	}{
+		{
+			testDescription: "both nil",
+			wantResult:      true,
+		},
+		{
+			testDescription: "both empty",
+			giveA:           []metadata.MetadataEntity{},
+			giveB:           []metadata.MetadataEntity{},
+			wantResult:      true,
+		},
+		{
+			testDescription: "equal one entity",
+			giveA:           []metadata.MetadataEntity{createEntity(t, "apps/my_entity")},
+			giveB:           []metadata.MetadataEntity{createEntity(t, "apps/my_entity")},
+			wantResult:      true,
+		},
+		{
+			testDescription: "equal multiple entities same order",
+			giveA:           []metadata.MetadataEntity{createEntity(t, "apps/my_entity"), createEntity(t, "pages/my_entity")},
+			giveB:           []metadata.MetadataEntity{createEntity(t, "apps/my_entity"), createEntity(t, "pages/my_entity")},
+			wantResult:      true,
+		},
+		{
+			testDescription: "equal multiple entities different order",
+			giveA:           []metadata.MetadataEntity{createEntity(t, "apps/my_entity"), createEntity(t, "pages/my_entity")},
+			giveB:           []metadata.MetadataEntity{createEntity(t, "pages/my_entity"), createEntity(t, "apps/my_entity")},
+			wantResult:      true,
+		},
+		{
+			testDescription: "equal multiple entities duplicated",
+			giveA:           []metadata.MetadataEntity{createEntity(t, "apps/my_entity"), createEntity(t, "apps/my_entity")},
+			giveB:           []metadata.MetadataEntity{createEntity(t, "apps/my_entity"), createEntity(t, "apps/my_entity")},
+			wantResult:      true,
+		},
+		{
+			testDescription: "not equal - one nil",
+			giveA:           []metadata.MetadataEntity{createEntity(t, "apps/my_entity")},
+			wantResult:      false,
+		},
+		{
+			testDescription: "not equal - one empty",
+			giveA:           []metadata.MetadataEntity{createEntity(t, "apps/my_entity")},
+			giveB:           []metadata.MetadataEntity{},
+			wantResult:      false,
+		},
+		{
+			testDescription: "not equal - different entity",
+			giveA:           []metadata.MetadataEntity{createEntity(t, "apps/my_entity")},
+			giveB:           []metadata.MetadataEntity{createEntity(t, "apps/my_entity2")},
+			wantResult:      false,
+		},
+		{
+			testDescription: "not equal - different lengths",
+			giveA:           []metadata.MetadataEntity{createEntity(t, "apps/my_entity")},
+			giveB:           []metadata.MetadataEntity{createEntity(t, "apps/my_entity"), createEntity(t, "apps/my_entity2")},
+			wantResult:      false,
+		},
+		{
+			testDescription: "not equal - same length duplicated entity",
+			giveA:           []metadata.MetadataEntity{createEntity(t, "apps/my_entity"), createEntity(t, "apps/my_entity")},
+			giveB:           []metadata.MetadataEntity{createEntity(t, "apps/my_entity"), createEntity(t, "apps/my_entity2")},
+			wantResult:      false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.testDescription, func(t *testing.T) {
+			actualResult := metadata.EntitiesMatch(tc.giveA, tc.giveB)
+			assert.Equal(t, tc.wantResult, actualResult)
+		})
+	}
+}
+
+func TestUniqueEntities(t *testing.T) {
+	testCases := []struct {
+		testDescription string
+		giveValue       []metadata.MetadataEntity
+		wantValue       []metadata.MetadataEntity
+	}{
+		{
+			testDescription: "nil",
+		},
+		{
+			testDescription: "empty",
+			giveValue:       []metadata.MetadataEntity{},
+			wantValue:       []metadata.MetadataEntity{},
+		},
+		{
+			testDescription: "no duplicates - in sorted order",
+			giveValue:       []metadata.MetadataEntity{createEntity(t, "apps/my_entity"), createEntity(t, "pages/my_entity")},
+			wantValue:       []metadata.MetadataEntity{createEntity(t, "apps/my_entity"), createEntity(t, "pages/my_entity")},
+		},
+		{
+			testDescription: "no duplicates - in random order",
+			giveValue:       []metadata.MetadataEntity{createEntity(t, "pages/my_entity"), createEntity(t, "apps/my_entity"), createEntity(t, "datasources/my_entity")},
+			wantValue:       []metadata.MetadataEntity{createEntity(t, "datasources/my_entity"), createEntity(t, "apps/my_entity"), createEntity(t, "pages/my_entity")},
+		},
+		{
+			testDescription: "has duplicates - in sorted order",
+			giveValue:       []metadata.MetadataEntity{createEntity(t, "apps/my_entity"), createEntity(t, "apps/my_entity"), createEntity(t, "pages/my_entity"), createEntity(t, "pages/my_entity"), createEntity(t, "datasources/my_entity"), createEntity(t, "datasources/my_entity")},
+			wantValue:       []metadata.MetadataEntity{createEntity(t, "apps/my_entity"), createEntity(t, "pages/my_entity"), createEntity(t, "datasources/my_entity")},
+		},
+		{
+			testDescription: "has duplicates - in random order",
+			giveValue:       []metadata.MetadataEntity{createEntity(t, "datasources/my_entity"), createEntity(t, "pages/my_entity"), createEntity(t, "apps/my_entity"), createEntity(t, "apps/my_entity"), createEntity(t, "pages/my_entity"), createEntity(t, "datasources/my_entity")},
+			wantValue:       []metadata.MetadataEntity{createEntity(t, "datasources/my_entity"), createEntity(t, "apps/my_entity"), createEntity(t, "pages/my_entity")},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.testDescription, func(t *testing.T) {
+			actualValue := metadata.UniqueEntities(tc.giveValue)
+			assert.ElementsMatch(t, tc.wantValue, actualValue)
+		})
+	}
+}
+
 func createPathError(mdt metadata.MetadataType, path string) error {
 	return fmt.Errorf("metadata type %q does not support the entity path: %q", mdt.Name(), filepath.FromSlash(path))
 }
 
 func createContainMetadataNameError(path string) error {
-	return fmt.Errorf("must contain a metadata type name: %q", filepath.FromSlash(path))
+	return fmt.Errorf("directory name matching a valid metadata type name must exist in entity path: %q", filepath.FromSlash(path))
 }
 
 func createInvalidMetadataNameError(typename string, path string) error {
-	return fmt.Errorf("invalid metadata name %q for entity path: %q", typename, filepath.FromSlash(path))
+	return fmt.Errorf("invalid metadata type name %q for entity path: %q", typename, filepath.FromSlash(path))
+}
+
+func createEntity(t *testing.T, entityPath string) metadata.MetadataEntity {
+	e, err := metadata.NewMetadataEntity(entityPath)
+	require.NoError(t, err)
+	return *e
 }

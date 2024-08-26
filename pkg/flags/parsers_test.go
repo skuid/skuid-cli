@@ -7,6 +7,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/skuid/skuid-cli/pkg/flags"
+	"github.com/skuid/skuid-cli/pkg/metadata"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -332,6 +333,68 @@ func TestParseLogLevel(t *testing.T) {
 				require.NoError(t, err)
 				assert.Equal(t, tc.wantValue, actualValue)
 			}
+		})
+	}
+}
+
+func TestParseMetadataEntity(t *testing.T) {
+	testCases := []struct {
+		testDescription string
+		giveValue       string
+		wantValue       metadata.MetadataEntity
+		wantError       bool
+	}{
+		{
+			testDescription: "empty",
+			giveValue:       "",
+			wantError:       true,
+		},
+		{
+			testDescription: "blank",
+			giveValue:       "      ",
+			wantError:       true,
+		},
+		{
+			testDescription: "invalid format valid metadata type",
+			giveValue:       "pages",
+			wantError:       true,
+		},
+		{
+			testDescription: "invalid format invalid metadata type",
+			giveValue:       "unknownentityformat",
+			wantError:       true,
+		},
+		{
+			testDescription: "invalid metadata type",
+			giveValue:       "unknown/my_entity",
+			wantError:       true,
+		},
+		{
+			testDescription: "invalid entity name for valid metadata type",
+			giveValue:       "pages/my_entity.json",
+			wantError:       true,
+		},
+		{
+			testDescription: "valid entity",
+			giveValue:       "pages/my_entity",
+			wantValue:       metadata.MetadataEntity{Type: metadata.MetadataTypePages, Name: "my_entity", Path: "pages/my_entity", PathRelative: "my_entity"},
+		},
+		{
+			testDescription: "valid nested entity",
+			giveValue:       "site/favicon/my_entity.ico",
+			wantValue:       metadata.MetadataEntity{Type: metadata.MetadataTypeSite, Name: "my_entity.ico", Path: "site/favicon/my_entity.ico", PathRelative: "favicon/my_entity.ico"},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.testDescription, func(t *testing.T) {
+			actualValue, err := flags.ParseMetadataEntity(tc.giveValue)
+			if tc.wantError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+			assert.Equal(t, tc.wantValue, actualValue)
 		})
 	}
 }

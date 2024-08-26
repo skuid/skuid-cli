@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type addFlag[T flags.FlagType] func(*cobra.Command, *T, *flags.Flag[T])
+type addFlag[T flags.FlagType | ~[]F, F flags.FlagType] func(*cobra.Command, *T, *flags.Flag[T, F])
 
 func TestAddStringFlag(t *testing.T) {
 	runAddFlagTests(t, cmdutil.AddStringFlag, "somevalue", "string", false, false)
@@ -36,14 +36,14 @@ func TestAddValueFlag(t *testing.T) {
 }
 
 func TestAddValueWithRedactFlag(t *testing.T) {
-	runAddFlagTests[int](t, func(cmd *cobra.Command, valPtr *int, flagInfo *flags.Flag[int]) {
+	runAddFlagTests(t, func(cmd *cobra.Command, valPtr *int, flagInfo *flags.Flag[int, int]) {
 		cmdutil.AddValueWithRedactFlag(cmd, valPtr, flagInfo)
 	}, 500, "int", true, true)
 }
 
 func TestAddValueWithRedactFlagReturnsValue(t *testing.T) {
 	p := new(string)
-	f := &flags.Flag[string]{Name: "myflag", Usage: "this is the usage", Default: "foo", Redact: func(string) string { return "***" }}
+	f := &flags.Flag[string, string]{Name: "myflag", Usage: "this is the usage", Default: "foo", Parse: func(s string) (string, error) { return s, nil }, Redact: func(string) string { return "***" }}
 	v := cmdutil.AddValueWithRedactFlag(&cobra.Command{Use: "mycmd"}, p, f)
 	assert.NotNil(t, v)
 	assert.Equal(t, "string", v.Type())
@@ -141,136 +141,177 @@ func expectInvalidUsageError(name string, usage string) error {
 	return fmt.Errorf("flag usage %q is invalid for flag name %q", usage, name)
 }
 
-func expectInvalidParseError[T flags.FlagType](name string) error {
-	return fmt.Errorf("flag type %T does not support Parse for flag name %q", new(flags.Flag[T]), name)
+func expectInvalidParseError[T flags.FlagType | ~[]F, F flags.FlagType](name string) error {
+	return fmt.Errorf("flag type %T does not support Parse for flag name %q", new(flags.Flag[T, F]), name)
 }
 
-func expectInvalidRedactError[T flags.FlagType](name string) error {
-	return fmt.Errorf("flag type %T does not support Redact for flag name %q", new(flags.Flag[T]), name)
+func expectMissingParseError[T flags.FlagType | ~[]F, F flags.FlagType](name string) error {
+	return fmt.Errorf("flag type %T requires Parse to be defined for flag name %q", new(flags.Flag[T, F]), name)
 }
 
-func emptyParse[T flags.FlagType](val string) (T, error) {
-	return *new(T), nil
+func expectInvalidRedactError[T flags.FlagType | ~[]F, F flags.FlagType](name string) error {
+	return fmt.Errorf("flag type %T does not support Redact for flag name %q", new(flags.Flag[T, F]), name)
 }
 
-func emptyRedact[T flags.FlagType](val T) string {
+func expectMissingRedactError[T flags.FlagType | ~[]F, F flags.FlagType](name string) error {
+	return fmt.Errorf("flag type %T requires Redact to be defined for flag name %q", new(flags.Flag[T, F]), name)
+}
+
+func emptyParse[F flags.FlagType](val string) (F, error) {
+	return *new(F), nil
+}
+
+func emptyRedact[T flags.FlagType | ~[]F, F flags.FlagType](val T) string {
 	return ""
 }
 
-func runAddFlagTests[T flags.FlagType](t *testing.T, addFlag addFlag[T], defaultValue T, expectedType string, supportsParse bool, supportsRedact bool) {
-	var parseError error
+type AddFlagTest[T flags.FlagType | ~[]F, F flags.FlagType] struct {
+	testDescription string
+	giveFlag        *flags.Flag[T, F]
+	wantPanic       bool
+	wantError       error
+	wantValue       T
+}
+
+func runAddFlagTests[T flags.FlagType | ~[]F, F flags.FlagType](t *testing.T, addFlag addFlag[T, F], defaultValue T, expectedType string, supportsParse bool, supportsRedact bool) {
+	// When parse and/or redact is supported, it is required to be provided, if its not supported, it is not permitted to be provided
+	// construct expectations based on supported status - if its supported, it should panic with error when missing, if not supported, it should panic with error when specified
+	// by default, if its supported, tests will use parseFunc/parseRedact as placeholders so that the test will not panic when supported/required
+	var parseInvalidError error
+	var parseMissingError error
+	var parseFunc flags.Parse[F]
 	if !supportsParse {
-		parseError = expectInvalidParseError[T]("test")
+		parseInvalidError = expectInvalidParseError[T, F]("test")
+	} else {
+		parseMissingError = expectMissingParseError[T, F]("test")
+		parseFunc = emptyParse[F]
 	}
-	var redactError error
+	var redactInvalidError error
+	var redactMissingError error
+	var redactFunc flags.Redact[T, F]
 	if !supportsRedact {
-		redactError = expectInvalidRedactError[T]("test")
+		redactInvalidError = expectInvalidRedactError[T, F]("test")
+	} else {
+		redactMissingError = expectMissingRedactError[T, F]("test")
+		redactFunc = emptyRedact[T, F]
 	}
 
 	testCases := []struct {
 		testDescription string
-		giveFlag        *flags.Flag[T]
+		giveFlag        *flags.Flag[T, F]
 		wantPanic       bool
 		wantError       error
 		wantValue       T
 	}{
 		{
 			testDescription: "name string default",
-			giveFlag:        &flags.Flag[T]{Usage: "this is the usage"},
+			giveFlag:        &flags.Flag[T, F]{Usage: "this is the usage", Parse: parseFunc, Redact: redactFunc},
 			wantPanic:       true,
 			wantError:       expectInvalidFlagNameError(*new(string)),
 		},
 		{
 			testDescription: "name empty",
-			giveFlag:        &flags.Flag[T]{Name: "", Usage: "this is the usage"},
+			giveFlag:        &flags.Flag[T, F]{Name: "", Usage: "this is the usage", Parse: parseFunc, Redact: redactFunc},
 			wantPanic:       true,
 			wantError:       expectInvalidFlagNameError(""),
 		},
 		{
 			testDescription: "name contains space",
-			giveFlag:        &flags.Flag[T]{Name: "foo bar", Usage: "this is the usage"},
+			giveFlag:        &flags.Flag[T, F]{Name: "foo bar", Usage: "this is the usage", Parse: parseFunc, Redact: redactFunc},
 			wantPanic:       true,
 			wantError:       expectInvalidFlagNameError("foo bar"),
 		},
 		{
 			testDescription: "name contains special char",
-			giveFlag:        &flags.Flag[T]{Name: "foo$bar", Usage: "this is the usage"},
+			giveFlag:        &flags.Flag[T, F]{Name: "foo$bar", Usage: "this is the usage", Parse: parseFunc, Redact: redactFunc},
 			wantPanic:       true,
 			wantError:       expectInvalidFlagNameError("foo$bar"),
 		},
 		{
 			testDescription: "name contains upper case",
-			giveFlag:        &flags.Flag[T]{Name: "fooBar", Usage: "this is the usage"},
+			giveFlag:        &flags.Flag[T, F]{Name: "fooBar", Usage: "this is the usage", Parse: parseFunc, Redact: redactFunc},
 			wantPanic:       true,
 			wantError:       expectInvalidFlagNameError("fooBar"),
 		},
 		{
 			testDescription: "name min length",
-			giveFlag:        &flags.Flag[T]{Name: "fo", Usage: "this is the usage"},
+			giveFlag:        &flags.Flag[T, F]{Name: "fo", Usage: "this is the usage", Parse: parseFunc, Redact: redactFunc},
 			wantPanic:       true,
 			wantError:       expectInvalidFlagNameError("fo"),
 		},
 		{
 			testDescription: "usage string default",
-			giveFlag:        &flags.Flag[T]{Name: "test"},
+			giveFlag:        &flags.Flag[T, F]{Name: "test", Parse: parseFunc, Redact: redactFunc},
 			wantPanic:       true,
 			wantError:       expectInvalidUsageError("test", *new(string)),
 		},
 		{
 			testDescription: "usage empty",
-			giveFlag:        &flags.Flag[T]{Name: "test", Usage: ""},
+			giveFlag:        &flags.Flag[T, F]{Name: "test", Usage: "", Parse: parseFunc, Redact: redactFunc},
 			wantPanic:       true,
 			wantError:       expectInvalidUsageError("test", ""),
 		},
 		{
 			testDescription: "usage min length",
-			giveFlag:        &flags.Flag[T]{Name: "test", Usage: "012345678"},
+			giveFlag:        &flags.Flag[T, F]{Name: "test", Usage: "012345678", Parse: parseFunc, Redact: redactFunc},
 			wantPanic:       true,
 			wantError:       expectInvalidUsageError("test", "012345678"),
 		},
 		{
-			testDescription: "parse support",
-			giveFlag:        &flags.Flag[T]{Name: "test", Usage: "this is the usage", Parse: emptyParse[T]},
+			testDescription: "parse support - parse defined",
+			giveFlag:        &flags.Flag[T, F]{Name: "test", Usage: "this is the usage", Parse: emptyParse[F], Redact: redactFunc},
 			wantPanic:       !supportsParse,
-			wantError:       parseError,
+			wantError:       parseInvalidError,
 		},
 		{
-			testDescription: "redact support",
-			giveFlag:        &flags.Flag[T]{Name: "test", Usage: "this is the usage", Redact: emptyRedact[T]},
+			testDescription: "parse support - parse not defined",
+			giveFlag:        &flags.Flag[T, F]{Name: "test", Usage: "this is the usage", Parse: nil, Redact: redactFunc},
+			wantPanic:       supportsParse,
+			wantError:       parseMissingError,
+		},
+		{
+			testDescription: "redact support - redact defined",
+			giveFlag:        &flags.Flag[T, F]{Name: "test", Usage: "this is the usage", Parse: parseFunc, Redact: emptyRedact[T, F]},
 			wantPanic:       !supportsRedact,
-			wantError:       redactError,
+			wantError:       redactInvalidError,
+		},
+		{
+			testDescription: "redact support - redact not defined",
+			giveFlag:        &flags.Flag[T, F]{Name: "test", Usage: "this is the usage", Parse: parseFunc, Redact: nil},
+			wantPanic:       supportsRedact,
+			wantError:       redactMissingError,
 		},
 		{
 			testDescription: "default value",
-			giveFlag:        &flags.Flag[T]{Name: "test", Usage: "this is the usage", Default: defaultValue},
+			giveFlag:        &flags.Flag[T, F]{Name: "test", Usage: "this is the usage", Parse: parseFunc, Redact: redactFunc, Default: defaultValue},
 			wantPanic:       false,
 			wantError:       nil,
 			wantValue:       defaultValue,
 		},
 		{
 			testDescription: "legacy env vars",
-			giveFlag:        &flags.Flag[T]{Name: "test", Usage: "this is the usage", LegacyEnvVars: []string{"FOO", "BAR"}},
+			giveFlag:        &flags.Flag[T, F]{Name: "test", Usage: "this is the usage", Parse: parseFunc, Redact: redactFunc, LegacyEnvVars: []string{"FOO", "BAR"}},
 			wantPanic:       false,
 			wantError:       nil,
 			wantValue:       *new(T),
 		},
 		{
 			testDescription: "shorthand",
-			giveFlag:        &flags.Flag[T]{Name: "test", Usage: "this is the usage", Shorthand: "v"},
+			giveFlag:        &flags.Flag[T, F]{Name: "test", Usage: "this is the usage", Parse: parseFunc, Redact: redactFunc, Shorthand: "v"},
 			wantPanic:       false,
 			wantError:       nil,
 			wantValue:       *new(T),
 		},
 		{
 			testDescription: "required",
-			giveFlag:        &flags.Flag[T]{Name: "test", Usage: "this is the usage", Required: true},
+			giveFlag:        &flags.Flag[T, F]{Name: "test", Usage: "this is the usage", Parse: parseFunc, Redact: redactFunc, Required: true},
 			wantPanic:       false,
 			wantError:       nil,
 			wantValue:       *new(T),
 		},
 		{
 			testDescription: "global",
-			giveFlag:        &flags.Flag[T]{Name: "test", Usage: "this is the usage", Global: true},
+			giveFlag:        &flags.Flag[T, F]{Name: "test", Usage: "this is the usage", Parse: parseFunc, Redact: redactFunc, Global: true},
 			wantPanic:       false,
 			wantError:       nil,
 			wantValue:       *new(T),

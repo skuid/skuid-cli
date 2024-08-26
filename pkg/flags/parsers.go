@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
+	"github.com/skuid/skuid-cli/pkg/metadata"
 	"github.com/skuid/skuid-cli/pkg/util"
 )
 
@@ -97,5 +98,13 @@ func ParseLogLevel(val string) (logrus.Level, error) {
 		return l, fmt.Errorf("not a valid log level: %q", val)
 	} else {
 		return l, nil
+	}
+}
+
+func ParseMetadataEntity(val string) (metadata.MetadataEntity, error) {
+	if e, err := metadata.NewMetadataEntity(strings.TrimSpace(val)); err != nil {
+		return metadata.MetadataEntity{}, err
+	} else {
+		return *e, nil
 	}
 }

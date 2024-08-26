@@ -19,6 +19,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	"golang.org/x/exp/maps"
 )
 
 const validJSON = `{
@@ -35,11 +36,12 @@ const validPNG = `
 `
 
 type ArchiveTestDetails struct {
-	giveFS            fs.FS
-	giveFileUtil      util.FileUtil
-	giveArchiveFilter pkg.ArchiveFilter
-	wantError         error
-	wantResult        testutil.TestFiles
+	giveFS             fs.FS
+	giveFileUtil       util.FileUtil
+	giveArchiveFilter  pkg.ArchiveFilter
+	wantError          error
+	wantResultFiles    testutil.TestFiles
+	wantResultEntities []metadata.MetadataEntity
 }
 
 type ArchiveTestSuite struct {
@@ -50,11 +52,12 @@ func (suite *ArchiveTestSuite) TestNoMetadataDirs() {
 	t := suite.T()
 	fsysNoDirs := &fstest.MapFS{}
 	runArchiveTest(t, ArchiveTestDetails{
-		giveFS:            fsysNoDirs,
-		giveFileUtil:      util.NewFileUtil(),
-		giveArchiveFilter: nil,
-		wantError:         pkg.ErrArchiveNoFiles,
-		wantResult:        nil,
+		giveFS:             fsysNoDirs,
+		giveFileUtil:       util.NewFileUtil(),
+		giveArchiveFilter:  nil,
+		wantError:          pkg.ErrArchiveNoFiles,
+		wantResultFiles:    nil,
+		wantResultEntities: nil,
 	})
 }
 
@@ -65,11 +68,12 @@ func (suite *ArchiveTestSuite) TestNoMetadataFiles() {
 		"files": {Mode: fs.ModeDir},
 	}
 	runArchiveTest(t, ArchiveTestDetails{
-		giveFS:            fsysNoFiles,
-		giveFileUtil:      util.NewFileUtil(),
-		giveArchiveFilter: nil,
-		wantError:         pkg.ErrArchiveNoFiles,
-		wantResult:        nil,
+		giveFS:             fsysNoFiles,
+		giveFileUtil:       util.NewFileUtil(),
+		giveArchiveFilter:  nil,
+		wantError:          pkg.ErrArchiveNoFiles,
+		wantResultFiles:    nil,
+		wantResultEntities: nil,
 	})
 }
 
@@ -79,11 +83,12 @@ func (suite *ArchiveTestSuite) TestCreatesArchive() {
 	fsys := testutil.CreateFS(validMetadataTypeFiles)
 
 	runArchiveTest(t, ArchiveTestDetails{
-		giveFS:            fsys,
-		giveFileUtil:      util.NewFileUtil(),
-		giveArchiveFilter: nil,
-		wantError:         nil,
-		wantResult:        validMetadataTypeFiles,
+		giveFS:             fsys,
+		giveFileUtil:       util.NewFileUtil(),
+		giveArchiveFilter:  nil,
+		wantError:          nil,
+		wantResultFiles:    validMetadataTypeFiles,
+		wantResultEntities: createEntitiesFromFiles(t, validMetadataTypeFiles),
 	})
 }
 
@@ -99,11 +104,12 @@ func (suite *ArchiveTestSuite) TestFilterCalledOnValidFilenamesForValidMetadataT
 	}
 
 	runArchiveTest(t, ArchiveTestDetails{
-		giveFS:            fsys,
-		giveFileUtil:      util.NewFileUtil(),
-		giveArchiveFilter: filter.Execute,
-		wantError:         nil,
-		wantResult:        validMetadataTypeFiles,
+		giveFS:             fsys,
+		giveFileUtil:       util.NewFileUtil(),
+		giveArchiveFilter:  filter.Execute,
+		wantError:          nil,
+		wantResultFiles:    validMetadataTypeFiles,
+		wantResultEntities: createEntitiesFromFiles(t, validMetadataTypeFiles),
 	})
 
 	// note that since we did not set an expectation for anything other than expected paths, if
@@ -132,11 +138,12 @@ func (suite *ArchiveTestSuite) TestFilterNotCalledOnInvalidFilenamesForValidMeta
 			fsys := testutil.CreateFS(testFiles)
 			filter := pkgmocks.NewArchiveFilter(t)
 			runArchiveTest(t, ArchiveTestDetails{
-				giveFS:            fsys,
-				giveFileUtil:      util.NewFileUtil(),
-				giveArchiveFilter: filter.Execute,
-				wantError:         fmt.Errorf("%v", k),
-				wantResult:        nil,
+				giveFS:             fsys,
+				giveFileUtil:       util.NewFileUtil(),
+				giveArchiveFilter:  filter.Execute,
+				wantError:          fmt.Errorf("%v", k),
+				wantResultFiles:    nil,
+				wantResultEntities: nil,
 			})
 			// note that since we did not set an expectation for anything other than expected paths, if
 			// Execute is called for something else, the test will FailNow by testify since it doesn't
@@ -155,11 +162,12 @@ func (suite *ArchiveTestSuite) TestFilterNotCalledOnFilenamesForInvalidMetadataT
 	filter := pkgmocks.NewArchiveFilter(t)
 
 	runArchiveTest(t, ArchiveTestDetails{
-		giveFS:            fsys,
-		giveFileUtil:      util.NewFileUtil(),
-		giveArchiveFilter: filter.Execute,
-		wantError:         pkg.ErrArchiveNoFiles,
-		wantResult:        nil,
+		giveFS:             fsys,
+		giveFileUtil:       util.NewFileUtil(),
+		giveArchiveFilter:  filter.Execute,
+		wantError:          pkg.ErrArchiveNoFiles,
+		wantResultFiles:    nil,
+		wantResultEntities: nil,
 	})
 
 	// note that since we did not set an expectation, if Execute is called, the test will FailNow
@@ -173,11 +181,12 @@ func (suite *ArchiveTestSuite) TestArchiveFilterEliminatesAllFiles() {
 	t := suite.T()
 	validMetadataTypeFiles := createValidMetadataTypeFilesFixture()
 	runArchiveTest(t, ArchiveTestDetails{
-		giveFS:            testutil.CreateFS(validMetadataTypeFiles),
-		giveFileUtil:      util.NewFileUtil(),
-		giveArchiveFilter: func(item metadata.MetadataEntityFile) bool { return false },
-		wantError:         pkg.ErrArchiveNoFiles,
-		wantResult:        nil,
+		giveFS:             testutil.CreateFS(validMetadataTypeFiles),
+		giveFileUtil:       util.NewFileUtil(),
+		giveArchiveFilter:  func(item metadata.MetadataEntityFile) bool { return false },
+		wantError:          pkg.ErrArchiveNoFiles,
+		wantResultFiles:    nil,
+		wantResultEntities: nil,
 	})
 }
 
@@ -191,11 +200,12 @@ func (suite *ArchiveTestSuite) TestZipWriterCreateError() {
 	mockFileUtil := testutil.NewFileUtilBuilder().SetZipWriter(mockZipWriter).Build(t)
 
 	runArchiveTest(t, ArchiveTestDetails{
-		giveFS:            fsys,
-		giveFileUtil:      mockFileUtil,
-		giveArchiveFilter: nil,
-		wantError:         expectedErr,
-		wantResult:        nil,
+		giveFS:             fsys,
+		giveFileUtil:       mockFileUtil,
+		giveArchiveFilter:  nil,
+		wantError:          expectedErr,
+		wantResultFiles:    nil,
+		wantResultEntities: nil,
 	})
 }
 
@@ -209,11 +219,12 @@ func (suite *ArchiveTestSuite) TestZipWriterCloseError() {
 	mockFileUtil := testutil.NewFileUtilBuilder().SetZipWriter(mockZipWriter).Build(t)
 
 	runArchiveTest(t, ArchiveTestDetails{
-		giveFS:            fsys,
-		giveFileUtil:      mockFileUtil,
-		giveArchiveFilter: nil,
-		wantError:         expectedErr,
-		wantResult:        nil,
+		giveFS:             fsys,
+		giveFileUtil:       mockFileUtil,
+		giveArchiveFilter:  nil,
+		wantError:          expectedErr,
+		wantResultFiles:    nil,
+		wantResultEntities: nil,
 	})
 }
 
@@ -226,11 +237,12 @@ func (suite *ArchiveTestSuite) TestReadFileError() {
 	mockFileUtil.EXPECT().ReadFile(fsys, mock.Anything).Return(nil, expectedErr)
 
 	runArchiveTest(t, ArchiveTestDetails{
-		giveFS:            fsys,
-		giveFileUtil:      mockFileUtil,
-		giveArchiveFilter: nil,
-		wantError:         expectedErr,
-		wantResult:        nil,
+		giveFS:             fsys,
+		giveFileUtil:       mockFileUtil,
+		giveArchiveFilter:  nil,
+		wantError:          expectedErr,
+		wantResultFiles:    nil,
+		wantResultEntities: nil,
 	})
 }
 
@@ -243,11 +255,12 @@ func (suite *ArchiveTestSuite) TestWalkDirError() {
 	mockFileUtil.EXPECT().WalkDir(mock.Anything, mock.Anything, mock.Anything).Return(expectedErr)
 
 	runArchiveTest(t, ArchiveTestDetails{
-		giveFS:            fsys,
-		giveFileUtil:      mockFileUtil,
-		giveArchiveFilter: nil,
-		wantError:         expectedErr,
-		wantResult:        nil,
+		giveFS:             fsys,
+		giveFileUtil:       mockFileUtil,
+		giveArchiveFilter:  nil,
+		wantError:          expectedErr,
+		wantResultFiles:    nil,
+		wantResultEntities: nil,
 	})
 }
 
@@ -264,11 +277,12 @@ func (suite *ArchiveTestSuite) TestWalkDirFuncError() {
 	})
 
 	runArchiveTest(t, ArchiveTestDetails{
-		giveFS:            fsys,
-		giveFileUtil:      mockFileUtil,
-		giveArchiveFilter: nil,
-		wantError:         expectedErr,
-		wantResult:        nil,
+		giveFS:             fsys,
+		giveFileUtil:       mockFileUtil,
+		giveArchiveFilter:  nil,
+		wantError:          expectedErr,
+		wantResultFiles:    nil,
+		wantResultEntities: nil,
 	})
 }
 
@@ -286,11 +300,12 @@ func (suite *ArchiveTestSuite) TestWalkDirOnlyMetadataTypeDirsThatExist() {
 	}).Once()
 
 	runArchiveTest(t, ArchiveTestDetails{
-		giveFS:            fsys,
-		giveFileUtil:      mockFileUtil,
-		giveArchiveFilter: nil,
-		wantError:         nil,
-		wantResult:        validMetadataTypeFiles,
+		giveFS:             fsys,
+		giveFileUtil:       mockFileUtil,
+		giveArchiveFilter:  nil,
+		wantError:          nil,
+		wantResultFiles:    validMetadataTypeFiles,
+		wantResultEntities: createEntitiesFromFiles(t, validMetadataTypeFiles),
 	})
 
 	// note that since we did not set an expectation for anything other than expected directories, if
@@ -318,11 +333,12 @@ func (suite *ArchiveTestSuite) TestWalkDirNotCalledOnInvalidMetadataTypeDirs() {
 	mockFileUtil := testutil.NewFileUtilBuilder().WithoutWalkDir().Build(t)
 
 	runArchiveTest(t, ArchiveTestDetails{
-		giveFS:            fsys,
-		giveFileUtil:      mockFileUtil,
-		giveArchiveFilter: nil,
-		wantError:         pkg.ErrArchiveNoFiles,
-		wantResult:        nil,
+		giveFS:             fsys,
+		giveFileUtil:       mockFileUtil,
+		giveArchiveFilter:  nil,
+		wantError:          pkg.ErrArchiveNoFiles,
+		wantResultFiles:    nil,
+		wantResultEntities: nil,
 	})
 
 	// note that since we did not set an expectation, if WalkDir is called, the test will FailNow
@@ -341,11 +357,12 @@ func (suite *ArchiveTestSuite) TestDirExistsError() {
 	mockFileUtil.EXPECT().DirExists(fsys, mock.Anything).Return(false, expectedErr)
 
 	runArchiveTest(t, ArchiveTestDetails{
-		giveFS:            fsys,
-		giveFileUtil:      mockFileUtil,
-		giveArchiveFilter: nil,
-		wantError:         expectedErr,
-		wantResult:        nil,
+		giveFS:             fsys,
+		giveFileUtil:       mockFileUtil,
+		giveArchiveFilter:  nil,
+		wantError:          expectedErr,
+		wantResultFiles:    nil,
+		wantResultEntities: nil,
 	})
 }
 
@@ -363,11 +380,12 @@ func (suite *ArchiveTestSuite) TestWriteToZipError() {
 	mockFileUtil := testutil.NewFileUtilBuilder().SetZipWriter(mockZipWriter).Build(t)
 
 	runArchiveTest(t, ArchiveTestDetails{
-		giveFS:            fsys,
-		giveFileUtil:      mockFileUtil,
-		giveArchiveFilter: nil,
-		wantError:         expectedErr,
-		wantResult:        nil,
+		giveFS:             fsys,
+		giveFileUtil:       mockFileUtil,
+		giveArchiveFilter:  nil,
+		wantError:          expectedErr,
+		wantResultFiles:    nil,
+		wantResultEntities: nil,
 	})
 }
 
@@ -519,8 +537,8 @@ func TestMetadataTypeArchiveFilter(t *testing.T) {
 	}
 }
 
-func runArchiveTest(t *testing.T, atd ArchiveTestDetails) ([]byte, int, error) {
-	result, actualFileCount, err := pkg.Archive(atd.giveFS, atd.giveFileUtil, atd.giveArchiveFilter)
+func runArchiveTest(t *testing.T, atd ArchiveTestDetails) {
+	result, archivedFilePaths, archivedEntities, err := pkg.Archive(atd.giveFS, atd.giveFileUtil, atd.giveArchiveFilter)
 
 	if atd.wantError != nil {
 		assert.ErrorContains(t, err, atd.wantError.Error())
@@ -528,15 +546,13 @@ func runArchiveTest(t *testing.T, atd ArchiveTestDetails) ([]byte, int, error) {
 		require.NoError(t, err, "Expected Archive err to be nil, but got not nil")
 	}
 
-	assert.Equal(t, len(atd.wantResult), actualFileCount)
-	assert.Equal(t, atd.wantResult == nil, result == nil)
+	assert.ElementsMatch(t, maps.Keys(atd.wantResultFiles), archivedFilePaths)
+	assert.ElementsMatch(t, atd.wantResultEntities, archivedEntities)
 
-	if atd.wantResult != nil {
+	if atd.wantResultFiles != nil {
 		actualFiles := readArchive(t, result)
-		assert.Equal(t, atd.wantResult, actualFiles)
+		assert.Equal(t, atd.wantResultFiles, actualFiles)
 	}
-
-	return result, actualFileCount, err
 }
 
 func runArchiveFilterTest(t *testing.T, filter pkg.ArchiveFilter, items []string, expected bool) {
@@ -595,6 +611,19 @@ func createValidMetadataTypeFilesNamesFixture() []string {
 		files = append(files, fn)
 	}
 	return files
+}
+
+func createEntitiesFromFiles(t *testing.T, files testutil.TestFiles) []metadata.MetadataEntity {
+	entities := make(map[metadata.MetadataEntity]metadata.MetadataEntity)
+	for f := range files {
+		entityFile, err := metadata.NewMetadataEntityFile(f)
+		require.NoError(t, err)
+		entity := entityFile.Entity
+		// if duplicated, just overwrite it
+		entities[entity] = entity
+	}
+
+	return maps.Keys(entities)
 }
 
 // files that do not have a valid metadata type

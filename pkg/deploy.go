@@ -120,7 +120,7 @@ func DeployModifiedFiles(auth *Authorization, targetDir string, modifiedFile str
 		return
 	}
 
-	planBody, _, err := Archive(os.DirFS(targetDir), util.NewFileUtil(), MetadataEntityArchiveFilter([]metadata.MetadataEntity{entity.Entity}))
+	planBody, _, _, err := Archive(os.DirFS(targetDir), util.NewFileUtil(), MetadataEntityArchiveFilter([]metadata.MetadataEntity{entity.Entity}))
 	if err != nil {
 		return
 	}
@@ -185,7 +185,7 @@ func ExecuteDeployPlan(auth *Authorization, plans NlxDynamicPlanMap, targetDir s
 		logging.Get().Infof("Deploying %v", color.Magenta.Sprint(plan.Type))
 
 		logging.Get().Tracef("Archiving %v", targetDir)
-		payload, _, err := Archive(os.DirFS(targetDir), util.NewFileUtil(), MetadataArchiveFilter(&plan.Metadata))
+		payload, _, _, err := Archive(os.DirFS(targetDir), util.NewFileUtil(), MetadataArchiveFilter(&plan.Metadata))
 		if err != nil {
 			logging.Get().Trace("Error creating deployment ZIP archive")
 			return

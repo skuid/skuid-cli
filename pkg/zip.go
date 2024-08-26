@@ -12,6 +12,7 @@ import (
 	"github.com/skuid/skuid-cli/pkg/logging"
 	"github.com/skuid/skuid-cli/pkg/metadata"
 	"github.com/skuid/skuid-cli/pkg/util"
+	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
 	"golang.org/x/sync/errgroup"
 )
@@ -86,7 +87,7 @@ func MetadataTypeArchiveFilter(excludedMetadataTypes []metadata.MetadataType) Ar
 	}
 }
 
-func Archive(fsys fs.FS, fileUtil util.FileUtil, filterArchive ArchiveFilter) ([]byte, int, error) {
+func Archive(fsys fs.FS, fileUtil util.FileUtil, filterArchive ArchiveFilter) ([]byte, []string, []metadata.MetadataEntity, error) {
 	buffer := new(bytes.Buffer)
 	zipWriter := fileUtil.NewZipWriter(buffer)
 	g, ctx := errgroup.WithContext(context.Background())
@@ -95,28 +96,30 @@ func Archive(fsys fs.FS, fileUtil util.FileUtil, filterArchive ArchiveFilter) ([
 	filesToArchive := readFiles(ctx, g, fsys, fileUtil, entityFiles)
 	archivedFiles := addFiles(ctx, g, zipWriter, filesToArchive)
 
-	var filesInArchive []archiveFile
-	for archivedItem := range archivedFiles {
-		filesInArchive = append(filesInArchive, archivedItem)
+	var archivedFilePaths []string
+	archivedEntities := make(map[metadata.MetadataEntity][]archiveFile)
+	for archivedFile := range archivedFiles {
+		entity := archivedFile.EntityFile.Entity
+		archivedEntities[entity] = append(archivedEntities[entity], archivedFile)
+		archivedFilePaths = append(archivedFilePaths, archivedFile.EntityFile.Path)
 	}
 
 	if err := g.Wait(); err != nil {
-		return nil, 0, err
+		return nil, nil, nil, err
 	}
 
-	fileCount := len(filesInArchive)
-	if fileCount == 0 {
-		return nil, 0, ErrArchiveNoFiles
+	if len(archivedEntities) == 0 {
+		return nil, nil, nil, ErrArchiveNoFiles
 	}
 
 	if err := zipWriter.Close(); err != nil {
-		return nil, 0, err
+		return nil, nil, nil, err
 	}
 
 	if result, err := io.ReadAll(buffer); err != nil {
-		return nil, 0, err
+		return nil, nil, nil, err
 	} else {
-		return result, fileCount, nil
+		return result, archivedFilePaths, maps.Keys(archivedEntities), nil
 	}
 }
 

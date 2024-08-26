@@ -1,8 +1,10 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"time"
 
 	"github.com/gookit/color"
@@ -24,6 +26,7 @@ type deployCommander struct {
 	app             string
 	ignoreSkuidDb   bool
 	skipDataSources bool
+	entities        []metadata.MetadataEntity
 }
 
 func (c *deployCommander) GetCommand() *cobra.Command {
@@ -39,12 +42,19 @@ func (c *deployCommander) GetCommand() *cobra.Command {
 	cmdutil.AddStringFlag(cmd, &c.dir, flags.Dir)
 	cmdutil.AddStringFlag(cmd, &c.app, flags.App)
 	cmdutil.AddBoolFlag(cmd, &c.ignoreSkuidDb, flags.IgnoreSkuidDb)
+	cmdutil.AddSliceValueFlag(cmd, &c.entities, flags.Entities)
 	// TODO: SkipDataSources can be removed once https://github.com/skuid/skuid-cli/issues/150 is resolved
 	cmdutil.AddBoolFlag(cmd, &c.skipDataSources, flags.SkipDataSources)
 	// TODO: Pages does not work as expected - remove completely or fix issues depending on https://github.com/skuid/skuid-cli/issues/147 & https://github.com/skuid/skuid-cli/issues/148
-	//cmdutil.StringSliceFlag(cmd, &c.pages, flags.Pages)
+	//cmdutil.AddStringSliceFlag(cmd, &c.pages, flags.Pages)
 
 	cmd.MarkFlagsMutuallyExclusive(flags.IgnoreSkuidDb.Name, flags.SkipDataSources.Name)
+	cmd.MarkFlagsMutuallyExclusive(flags.Entities.Name, flags.App.Name)
+	cmd.MarkFlagsMutuallyExclusive(flags.Entities.Name, flags.IgnoreSkuidDb.Name)
+	cmd.MarkFlagsMutuallyExclusive(flags.Entities.Name, flags.SkipDataSources.Name)
+	// TODO: Pages does not work as expected - once https://github.com/skuid/skuid-cli/issues/147 & https://github.com/skuid/skuid-cli/issues/148 are addressed, if
+	// Pages flag is maintained, uncomment below, else remove below
+	//cmd.MarkFlagsMutuallyExclusive(flags.Entities.Name, flags.Pages.Name)
 
 	return cmd
 }
@@ -102,14 +112,7 @@ func (c *deployCommander) deploy(cmd *cobra.Command, _ []string) (err error) {
 	fields["ignoreSkuidDb"] = c.ignoreSkuidDb
 	filter.IgnoreSkuidDb = c.ignoreSkuidDb
 
-	// skip datasources
-	// TODO: This can be removed once https://github.com/skuid/skuid-cli/issues/150 is resolved
-	fields["skipDataSources"] = c.skipDataSources
-	var excludedMetadataDirs []metadata.MetadataType
-	if c.skipDataSources {
-		logging.WithFields(fields).Info("Skipping deployment of all DataSources")
-		excludedMetadataDirs = append(excludedMetadataDirs, metadata.MetadataTypeDataSources)
-	}
+	archiveFilter, entitiesToArchive := c.getArchiveFilter(fields)
 
 	// get directory argument
 	var targetDirectory string
@@ -121,7 +124,10 @@ func (c *deployCommander) deploy(cmd *cobra.Command, _ []string) (err error) {
 	logging.WithFields(fields).Info("Getting Deployment Payload")
 
 	var deploymentPlan []byte
-	if deploymentPlan, _, err = pkg.Archive(os.DirFS(targetDirectory), util.NewFileUtil(), pkg.MetadataTypeArchiveFilter(excludedMetadataDirs)); err != nil {
+	var archivedEntities []metadata.MetadataEntity
+	if deploymentPlan, _, archivedEntities, err = pkg.Archive(os.DirFS(targetDirectory), util.NewFileUtil(), archiveFilter); err != nil {
+		return
+	} else if err = validateArchive(entitiesToArchive, archivedEntities); err != nil {
 		return
 	}
 
@@ -156,4 +162,51 @@ func (c *deployCommander) deploy(cmd *cobra.Command, _ []string) (err error) {
 	logging.Get().Info(color.Green.Sprint("Finished Deploy"))
 
 	return
+}
+
+// Resolve the pkg.ArchiveFilter to apply to the deployment
+// Flags affecting the ArchiveFilter (e.g., Entities, SkipDataSources) should always be marked MutuallyExclusive
+// so only one is eligible to be applied based on flags specified
+func (c *deployCommander) getArchiveFilter(fields logrus.Fields) (pkg.ArchiveFilter, []metadata.MetadataEntity) {
+	if len(c.entities) > 0 {
+		// dedupe in case input contains same entity multiple times
+		uniqueEntities := metadata.UniqueEntities(c.entities)
+
+		var paths []string
+		for _, e := range uniqueEntities {
+			paths = append(paths, fmt.Sprintf("%q", e.Path))
+		}
+		fields["entities"] = paths
+		logging.WithFields(fields).Infof("Deploying entities: %v", paths)
+		return pkg.MetadataEntityArchiveFilter(c.entities), uniqueEntities
+	}
+
+	// skip datasources
+	// TODO: This can be removed once https://github.com/skuid/skuid-cli/issues/150 is resolved
+	if c.skipDataSources {
+		fields["skipDataSources"] = c.skipDataSources
+		logging.WithFields(fields).Info("Skipping deployment of all DataSources")
+		return pkg.MetadataTypeArchiveFilter([]metadata.MetadataType{metadata.MetadataTypeDataSources}), nil
+	}
+
+	return nil, nil
+}
+
+func validateArchive(expectedEntities []metadata.MetadataEntity, actualEntities []metadata.MetadataEntity) error {
+	if expectedEntities != nil && !metadata.EntitiesMatch(expectedEntities, actualEntities) {
+		var expectedEntityPaths []string
+		var actualEntityPaths []string
+		for _, e := range expectedEntities {
+			expectedEntityPaths = append(expectedEntityPaths, fmt.Sprintf("%q", e.Path))
+		}
+		for _, e := range actualEntities {
+			actualEntityPaths = append(actualEntityPaths, fmt.Sprintf("%q", e.Path))
+		}
+		// display paths in order to improve ability to identify which are missing
+		slices.Sort(expectedEntityPaths)
+		slices.Sort(actualEntityPaths)
+		return fmt.Errorf("one or more specified entities (%v) were not found, found: %v", expectedEntityPaths, actualEntityPaths)
+	}
+
+	return nil
 }

@@ -10,6 +10,9 @@ unset SKUID_LOG_LEVEL
 # Redacted String
 unset SKUID_PASSWORD
 
+# Comma-delimited String
+unset SKUID_ENTITIES
+
 # Boolean
 unset SKUID_DEBUG
 unset SKUID_FILE_LOGGING
