@@ -22,25 +22,7 @@ var (
 	entityNameValidator = regexp.MustCompile(`^[a-zA-Z0-9_\- ]+$`)
 	// Allow only use spaces, letters, numbers, underscores, dashes, parenthesis and periods
 	fileEntityNameValidator = regexp.MustCompile(`^[a-zA-Z0-9_\-\(\)\. ]+$`)
-)
 
-type MetadataTypeValue string
-
-func (s MetadataTypeValue) Equal(other MetadataTypeValue) bool {
-	return strings.EqualFold(string(s), string(other))
-}
-
-type MetadataType enum.Member[MetadataTypeValue]
-
-func (m MetadataType) Name() string {
-	return string(m.Value)
-}
-
-func (m MetadataType) DirName() string {
-	return strings.ToLower(m.Name())
-}
-
-var (
 	metadataTypeBuilder            = enum.NewBuilder[MetadataTypeValue, MetadataType]()
 	MetadataTypeApps               = metadataTypeBuilder.Add(MetadataType{"Apps"})
 	MetadataTypeAuthProviders      = metadataTypeBuilder.Add(MetadataType{"AuthProviders"})
@@ -59,18 +41,46 @@ var (
 	MetadataTypes                  = metadataTypeBuilder.Enum()
 )
 
+const (
+	MetadataSubTypeNone MetadataSubType = iota + 1
+	MetadataSubTypeSiteLogo
+	MetadataSubTypeSiteFavicon
+
+	EntityNameSite                     string = "site"
+	metadataTypeEntityPathNotSupported string = "metadata type %q does not support the entity path: %q"
+)
+
+type MetadataTypeValue string
+type MetadataSubType int
+
+func (s MetadataTypeValue) Equal(other MetadataTypeValue) bool {
+	return strings.EqualFold(string(s), string(other))
+}
+
+type MetadataType enum.Member[MetadataTypeValue]
+
+func (m MetadataType) Name() string {
+	return string(m.Value)
+}
+
+func (m MetadataType) DirName() string {
+	return strings.ToLower(m.Name())
+}
+
 type entityPathDetails struct {
 	Type         MetadataType
+	SubType      MetadataSubType
 	Name         string // The name of the entity/file (e.g., my_page.xml, my_page)
 	Path         string // Path to the entity/file (e.g., pages/my_page.xml, pages/my_page)
 	PathRelative string // Path to the entity/file relative to the metadata directory (e.g., my_page.xml, my_page, logo/somelogo.png)
 }
 
 type MetadataEntity struct {
-	Type         MetadataType // The of the entity (e.g., Pages)
-	Name         string       // Name of the entity (e.g., my_page)
-	Path         string       // Path to the entity (e.g., pages/my_page)
-	PathRelative string       // Path to the entity relative to the metadata directory (e.g., my_page, logo/my_logo)
+	Type         MetadataType    // The of the entity (e.g., Pages)
+	SubType      MetadataSubType // The subtype of the entity type (e.g., MetadataSubTypeNone for pages/my_page, MetadataSubTypeSiteLogo for site/logo/my_logo)
+	Name         string          // Name of the entity (e.g., my_page)
+	Path         string          // Path to the entity (e.g., pages/my_page)
+	PathRelative string          // Path to the entity relative to the metadata directory (e.g., my_page, logo/my_logo)
 }
 
 type MetadataEntityFile struct {
@@ -144,10 +154,11 @@ func NewMetadataEntity(entityPath string) (*MetadataEntity, error) {
 	}
 	valid := validateEntityName(details)
 	if !valid {
-		return nil, fmt.Errorf("metadata type %q does not support the entity path: %q", details.Type.Name(), entityPath)
+		return nil, fmt.Errorf(metadataTypeEntityPathNotSupported, details.Type.Name(), entityPath)
 	}
 	entity := MetadataEntity{
 		Type:         details.Type,
+		SubType:      details.SubType,
 		Name:         details.Name,
 		Path:         details.Path,
 		PathRelative: details.PathRelative,
@@ -164,7 +175,7 @@ func NewMetadataEntityFile(entityFilePath string) (*MetadataEntityFile, error) {
 	}
 	entityName, entityRelativePath, isEntityDefinitionFile, valid := entityNameFromFilePath(details)
 	if !valid {
-		return nil, fmt.Errorf("metadata type %q does not support the entity path: %q", details.Type.Name(), entityFilePath)
+		return nil, fmt.Errorf(metadataTypeEntityPathNotSupported, details.Type.Name(), entityFilePath)
 	}
 
 	// not really necessary but a santity check for future proofing against code adjustments that don't have full test coverage
@@ -175,6 +186,7 @@ func NewMetadataEntityFile(entityFilePath string) (*MetadataEntityFile, error) {
 	item := &MetadataEntityFile{
 		Entity: MetadataEntity{
 			Type:         details.Type,
+			SubType:      details.SubType,
 			Name:         entityName,
 			Path:         path.Join(details.Type.DirName(), entityRelativePath),
 			PathRelative: entityRelativePath,
@@ -239,9 +251,14 @@ func parseEntityPath(originalEntityPath string) (*entityPathDetails, error) {
 	baseName := path.Base(normalizedEntityPath)
 	relativePathSegments := append(subFolders, baseName)
 	relativeEntityPath := path.Join(relativePathSegments...)
+	subType, ok := parseMetadataSubType(*metadataType, relativeEntityPath)
+	if !ok {
+		return nil, fmt.Errorf(metadataTypeEntityPathNotSupported, (*metadataType).Name(), originalEntityPath)
+	}
 
 	details := &entityPathDetails{
 		Type:         *metadataType,
+		SubType:      subType,
 		Name:         baseName,
 		Path:         normalizedEntityPath,
 		PathRelative: relativeEntityPath,
@@ -274,6 +291,48 @@ func parseMetadataType(originalEntityPath string) (string, *MetadataType, []stri
 	return normalizedEntityPath, metadataType, subFolders, nil
 }
 
+// parses a path in the form <any>/** returning the following:
+// MetadataSubType - the subtype for the specified metadata type
+// bool - true if the path is valid, false otherwise
+//
+// Except for ComponentPacks, validation will be performed to ensure that the path is located in a valid directory
+// relative to the metadata directory itself for the metadata type specified.  Validation is not performed on the entity name
+// only the relative directory location of the entity. For example:
+//  1. For the metadata type pages, a relativeEntityPath of "my_page" will return MetadataSubTypeNone, true since pages does
+//     not have any subtypes and "my_page" is located in the root of pages.
+//  2. For the metadata type pages, a relativeEntityPath of "foobar/my_page" will return MetadataSubTypeNone, false since
+//     pages does not allow subdirectories
+//  3. For the metadata type site, a relativeEntityPath of "favicon/my_icon.ico" will return MetadataSubTypeFavicon, true
+//  4. For the metadata type site, a relativeEntityPath of "foobar/my_icon.ico" will return MetadataSubTypeFavicon, false since
+//     foobar is not a valid subdirectory for site
+//  5. For the metadata type site, a relativeEntityPath of "foobar.json" will return MetadataSubTypeNone, true since site
+//     allows files in the root of site directory
+//
+// For Component Packs, unlike all other types, the entity name comes from the directory name as opposed to the filename
+// so MetadataSubTypeNone, true is returned regardless of relativeEntityPath structure
+func parseMetadataSubType(mdt MetadataType, relativeEntityPath string) (MetadataSubType, bool) {
+	subdir := path.Dir(relativeEntityPath)
+	switch mdt {
+	case MetadataTypeSite:
+		if subdir == "favicon" {
+			return MetadataSubTypeSiteFavicon, true
+		} else if subdir == "logo" {
+			return MetadataSubTypeSiteLogo, true
+		} else {
+			return MetadataSubTypeNone, subdir == "."
+		}
+	case MetadataTypeComponentPacks:
+		// Skuid Review Required - the entity name is the name of the subdir which can be any value
+		// so when parsing the entity name, the directory will be "." but when parsing an entity file
+		// the dir will be <any> where <any> can be 1 to N layers deep.  Given this, we need to allow
+		// for "." and <any> for directory and the corresponding Entity & Entity File parsing validation
+		// will ensure the directory is valid.  Not sure there is any other way to enforce this here?
+		return MetadataSubTypeNone, true
+	default:
+		return MetadataSubTypeNone, subdir == "."
+	}
+}
+
 // Skuid Review Required - This code uses concepts in the code at https://github.com/skuid/skuid-cli/blob/master/pkg/metadata.go#L68
 // along with applying knowledge from observations of retrieving site metadata obtained via retrieve.  For some metadata types, I have
 // no way to test behavior on a real site (e.g., componentpacks are only supported on v1 but unclear how to create a v1 page - see
@@ -282,29 +341,36 @@ func parseMetadataType(originalEntityPath string) (string, *MetadataType, []stri
 // unable to determine where/how those files would exist. In short, this code should be throughly reviewed for accuracy and
 // completeness across all metadata types.
 func validateEntityName(details *entityPathDetails) bool {
-	directory := path.Dir(details.PathRelative)
 	entityName := details.Name
 	ext := path.Ext(entityName)
 	entityNameWithoutExtension := strings.TrimSuffix(entityName, ext)
 
 	switch details.Type {
 	case MetadataTypeFiles:
-		return directory == "." && fileEntityNameValidator.MatchString(entityName)
+		return details.SubType == MetadataSubTypeNone && fileEntityNameValidator.MatchString(entityName)
 	case MetadataTypeSite:
 		// Skuid Review Required - For favicon & logo, the Web UI indicates that only ico & png/jpg/gif are supported respectively.
 		// How does skuid evaluate validty - by extension and if so, which are valid?  by mime-type and if so, which are valid?
 		// TODO: Modify below and update tests based on answers to these questions
-		if directory == "." {
-			return entityName == "site"
-		} else if directory == "favicon" {
+		if details.SubType == MetadataSubTypeNone {
+			return entityName == EntityNameSite
+		} else if details.SubType == MetadataSubTypeSiteFavicon {
 			return ext == ".ico" && fileEntityNameValidator.MatchString(entityNameWithoutExtension)
-		} else if directory == "logo" {
+		} else if details.SubType == MetadataSubTypeSiteLogo {
 			return (ext == ".png" || ext == ".jpg" || ext == ".gif") && fileEntityNameValidator.MatchString(entityNameWithoutExtension)
 		} else {
 			return false
 		}
+	case MetadataTypeComponentPacks:
+		// Skuid Review Required - Component pack entity names come from the directory name as opposed to the filename so parseMetadataSubType
+		// must allow both and therefore we must validate the directory name to ensure its in the root of the Metadata Type
+		// directory.  Not sure there is a better way to do this?
+		directory := path.Dir(details.PathRelative)
+		return details.SubType == MetadataSubTypeNone && directory == "." && ext == "" && entityNameValidator.MatchString(entityNameWithoutExtension)
+
 	default:
-		return directory == "." && ext == "" && entityNameValidator.MatchString(entityNameWithoutExtension)
+		//return directory == "." && ext == "" && entityNameValidator.MatchString(entityNameWithoutExtension)
+		return details.SubType == MetadataSubTypeNone && ext == "" && entityNameValidator.MatchString(entityNameWithoutExtension)
 	}
 }
 
@@ -337,7 +403,7 @@ func entityNameFromFilePath(details *entityPathDetails) (string, string, bool, b
 
 	switch details.Type {
 	case MetadataTypeFiles:
-		if directory != "." {
+		if details.SubType != MetadataSubTypeNone {
 			return "", "", false, false
 		} else if !fileEntityNameValidator.MatchString(fileName) {
 			return "", "", false, false
@@ -350,15 +416,14 @@ func entityNameFromFilePath(details *entityPathDetails) (string, string, bool, b
 	// How does skuid evaluate validty - by extension and if so, which are valid?  by mime-type and if so, which are valid?
 	// TODO: Modify below and update tests based on answers to these questions
 	case MetadataTypeSite:
-		switch directory {
-		case ".":
-			// only allow site.json in site directory root
-			if fileName == "site.json" {
-				return "site", "site", true, true
+		switch details.SubType {
+		case MetadataSubTypeNone:
+			if fileName == (EntityNameSite + ".json") {
+				return EntityNameSite, EntityNameSite, true, true
 			} else {
 				return "", "", false, false
 			}
-		case "favicon":
+		case MetadataSubTypeSiteFavicon:
 			if !fileEntityNameValidator.MatchString(fileName) {
 				return "", "", false, false
 			} else if strings.HasSuffix(fileName, ".ico.skuid.json") {
@@ -369,7 +434,7 @@ func entityNameFromFilePath(details *entityPathDetails) (string, string, bool, b
 			} else {
 				return "", "", false, false
 			}
-		case "logo":
+		case MetadataSubTypeSiteLogo:
 			if !fileEntityNameValidator.MatchString(fileName) {
 				return "", "", false, false
 			} else if hasSuffix([]string{".png.skuid.json", ".jpg.skuid.json", ".gif.skuid.json"}, fileName) {
@@ -388,7 +453,7 @@ func entityNameFromFilePath(details *entityPathDetails) (string, string, bool, b
 			return "", "", false, false
 		}
 	case MetadataTypePages:
-		if directory != "." {
+		if details.SubType != MetadataSubTypeNone {
 			return "", "", false, false
 		} else if !entityNameValidator.MatchString(fileNameWithoutExtension) {
 			return "", "", false, false
@@ -399,7 +464,7 @@ func entityNameFromFilePath(details *entityPathDetails) (string, string, bool, b
 		}
 	case MetadataTypeComponentPacks:
 		// each component pack should be in its own directory
-		if directory == "" || directory == "." {
+		if details.SubType != MetadataSubTypeNone || directory == "." {
 			return "", "", false, false
 		}
 		// Skuid Review Required - The previous logic would match on any file as long as it was in a subdirectory
@@ -426,7 +491,7 @@ func entityNameFromFilePath(details *entityPathDetails) (string, string, bool, b
 		// to theems.
 		// TODO: If .inline.css is no longer supported, remove it, else adjust as needed based on current metadata types and scenarios
 		// it is supported in
-		if directory != "." {
+		if details.SubType != MetadataSubTypeNone {
 			return "", "", false, false
 		} else if s, found := strings.CutSuffix(fileName, ".inline.css"); found {
 			return s, s, false, true
@@ -438,7 +503,7 @@ func entityNameFromFilePath(details *entityPathDetails) (string, string, bool, b
 			return "", "", false, false
 		}
 	default:
-		if directory != "." {
+		if details.SubType != MetadataSubTypeNone {
 			return "", "", false, false
 		} else if !entityNameValidator.MatchString(fileNameWithoutExtension) {
 			return "", "", false, false

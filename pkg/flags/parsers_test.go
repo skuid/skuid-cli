@@ -377,12 +377,12 @@ func TestParseMetadataEntity(t *testing.T) {
 		{
 			testDescription: "valid entity",
 			giveValue:       "pages/my_entity",
-			wantValue:       metadata.MetadataEntity{Type: metadata.MetadataTypePages, Name: "my_entity", Path: "pages/my_entity", PathRelative: "my_entity"},
+			wantValue:       metadata.MetadataEntity{Type: metadata.MetadataTypePages, SubType: metadata.MetadataSubTypeNone, Name: "my_entity", Path: "pages/my_entity", PathRelative: "my_entity"},
 		},
 		{
 			testDescription: "valid nested entity",
 			giveValue:       "site/favicon/my_entity.ico",
-			wantValue:       metadata.MetadataEntity{Type: metadata.MetadataTypeSite, Name: "my_entity.ico", Path: "site/favicon/my_entity.ico", PathRelative: "favicon/my_entity.ico"},
+			wantValue:       metadata.MetadataEntity{Type: metadata.MetadataTypeSite, SubType: metadata.MetadataSubTypeSiteFavicon, Name: "my_entity.ico", Path: "site/favicon/my_entity.ico", PathRelative: "favicon/my_entity.ico"},
 		},
 	}
 

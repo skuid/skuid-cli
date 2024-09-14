@@ -468,26 +468,27 @@ func TestMetadataTypesTestSuite(t *testing.T) {
 }
 
 func TestNewMetadataEntity(t *testing.T) {
-	createFixture := func(mdt metadata.MetadataType, name string) *metadata.MetadataEntity {
+	createFixture := func(mdt metadata.MetadataType, mdtst metadata.MetadataSubType, name string) *metadata.MetadataEntity {
 		return &metadata.MetadataEntity{
 			Type:         mdt,
+			SubType:      mdtst,
 			Name:         name,
 			Path:         mdt.DirName() + "/" + name,
 			PathRelative: name,
 		}
 	}
 
-	createStandardValidTestCases := func(mdt metadata.MetadataType, entityName string) []NewMetadataEntityTestCase {
+	createStandardValidTestCases := func(mdt metadata.MetadataType, mdtst metadata.MetadataSubType, entityName string) []NewMetadataEntityTestCase {
 		return []NewMetadataEntityTestCase{
 			{
 				testDescription: fmt.Sprintf("%v valid", mdt.Name()),
 				givePath:        fmt.Sprintf("%v/%v", mdt.DirName(), entityName),
-				wantEntity:      createFixture(mdt, entityName),
+				wantEntity:      createFixture(mdt, mdtst, entityName),
 			},
 			{
 				testDescription: fmt.Sprintf("%v valid . relative", mdt.Name()),
 				givePath:        fmt.Sprintf("./%v/%v", mdt.DirName(), entityName),
-				wantEntity:      createFixture(mdt, entityName),
+				wantEntity:      createFixture(mdt, mdtst, entityName),
 			},
 		}
 	}
@@ -537,35 +538,35 @@ func TestNewMetadataEntity(t *testing.T) {
 		}
 	}
 
-	createStandardTestCases := func(mdt metadata.MetadataType, entityName string) []NewMetadataEntityTestCase {
-		return append(createStandardValidTestCases(mdt, entityName), createStandardInvalidTestCases(mdt, entityName)...)
+	createStandardTestCases := func(mdt metadata.MetadataType, mdtst metadata.MetadataSubType, entityName string) []NewMetadataEntityTestCase {
+		return append(createStandardValidTestCases(mdt, mdtst, entityName), createStandardInvalidTestCases(mdt, entityName)...)
 	}
 
 	filesTestCases := []NewMetadataEntityTestCase{
 		{
 			testDescription: "Files valid no extension",
 			givePath:        "files/" + VALID_FILE_ENTITY_NAME,
-			wantEntity:      createFixture(metadata.MetadataTypeFiles, VALID_FILE_ENTITY_NAME),
+			wantEntity:      createFixture(metadata.MetadataTypeFiles, metadata.MetadataSubTypeNone, VALID_FILE_ENTITY_NAME),
 		},
 		{
 			testDescription: "Files valid contains json extension",
 			givePath:        "files/md_file.json",
-			wantEntity:      createFixture(metadata.MetadataTypeFiles, "md_file.json"),
+			wantEntity:      createFixture(metadata.MetadataTypeFiles, metadata.MetadataSubTypeNone, "md_file.json"),
 		},
 		{
 			testDescription: "Files valid contains skuid.json extension",
 			givePath:        "files/md_file.skuid.json",
-			wantEntity:      createFixture(metadata.MetadataTypeFiles, "md_file.skuid.json"),
+			wantEntity:      createFixture(metadata.MetadataTypeFiles, metadata.MetadataSubTypeNone, "md_file.skuid.json"),
 		},
 		{
 			testDescription: "Files valid contains txt filename",
 			givePath:        "files/md_file.txt",
-			wantEntity:      createFixture(metadata.MetadataTypeFiles, "md_file.txt"),
+			wantEntity:      createFixture(metadata.MetadataTypeFiles, metadata.MetadataSubTypeNone, "md_file.txt"),
 		},
 		{
 			testDescription: "Files valid contains xml filename",
 			givePath:        "files/md_file.xml",
-			wantEntity:      createFixture(metadata.MetadataTypeFiles, "md_file.xml"),
+			wantEntity:      createFixture(metadata.MetadataTypeFiles, metadata.MetadataSubTypeNone, "md_file.xml"),
 		},
 		{
 			testDescription: "Files invalid contains nested no extension",
@@ -595,6 +596,7 @@ func TestNewMetadataEntity(t *testing.T) {
 			givePath:        "site/favicon/my_favicon.ico",
 			wantEntity: &metadata.MetadataEntity{
 				Type:         metadata.MetadataTypeSite,
+				SubType:      metadata.MetadataSubTypeSiteFavicon,
 				Name:         "my_favicon.ico",
 				Path:         "site/favicon/my_favicon.ico",
 				PathRelative: "favicon/my_favicon.ico",
@@ -620,6 +622,7 @@ func TestNewMetadataEntity(t *testing.T) {
 			givePath:        "site/logo/my_logo.png",
 			wantEntity: &metadata.MetadataEntity{
 				Type:         metadata.MetadataTypeSite,
+				SubType:      metadata.MetadataSubTypeSiteLogo,
 				Name:         "my_logo.png",
 				Path:         "site/logo/my_logo.png",
 				PathRelative: "logo/my_logo.png",
@@ -635,6 +638,7 @@ func TestNewMetadataEntity(t *testing.T) {
 			givePath:        "site/logo/my_logo.jpg",
 			wantEntity: &metadata.MetadataEntity{
 				Type:         metadata.MetadataTypeSite,
+				SubType:      metadata.MetadataSubTypeSiteLogo,
 				Name:         "my_logo.jpg",
 				Path:         "site/logo/my_logo.jpg",
 				PathRelative: "logo/my_logo.jpg",
@@ -650,6 +654,7 @@ func TestNewMetadataEntity(t *testing.T) {
 			givePath:        "site/logo/my_logo.gif",
 			wantEntity: &metadata.MetadataEntity{
 				Type:         metadata.MetadataTypeSite,
+				SubType:      metadata.MetadataSubTypeSiteLogo,
 				Name:         "my_logo.gif",
 				Path:         "site/logo/my_logo.gif",
 				PathRelative: "logo/my_logo.gif",
@@ -715,10 +720,10 @@ func TestNewMetadataEntity(t *testing.T) {
 		case metadata.MetadataTypeFiles:
 			testCases = append(testCases, filesTestCases...)
 		case metadata.MetadataTypeSite:
-			testCases = append(testCases, createStandardTestCases(mdt, "site")...)
+			testCases = append(testCases, createStandardTestCases(mdt, metadata.MetadataSubTypeNone, "site")...)
 			testCases = append(testCases, siteTestCases...)
 		default:
-			testCases = append(testCases, createStandardTestCases(mdt, VALID_ENTITY_NAME)...)
+			testCases = append(testCases, createStandardTestCases(mdt, metadata.MetadataSubTypeNone, VALID_ENTITY_NAME)...)
 		}
 	}
 
@@ -737,10 +742,11 @@ func TestNewMetadataEntity(t *testing.T) {
 }
 
 func TestNewMetadataEntityFile(t *testing.T) {
-	createFixture := func(mdt metadata.MetadataType, name string, fileName string, isEntityDefinitionFile bool) *metadata.MetadataEntityFile {
+	createFixture := func(mdt metadata.MetadataType, mdtst metadata.MetadataSubType, name string, fileName string, isEntityDefinitionFile bool) *metadata.MetadataEntityFile {
 		return &metadata.MetadataEntityFile{
 			Entity: metadata.MetadataEntity{
 				Type:         mdt,
+				SubType:      mdtst,
 				Name:         name,
 				Path:         path.Join(mdt.DirName(), name),
 				PathRelative: name,
@@ -752,17 +758,17 @@ func TestNewMetadataEntityFile(t *testing.T) {
 		}
 	}
 
-	createStandardValidTestCases := func(mdt metadata.MetadataType, entityName string) []NewMetadataEntityFileTestCase {
+	createStandardValidTestCases := func(mdt metadata.MetadataType, mdtst metadata.MetadataSubType, entityName string) []NewMetadataEntityFileTestCase {
 		return []NewMetadataEntityFileTestCase{
 			{
 				testDescription: fmt.Sprintf("%v valid json extension", mdt.Name()),
 				givePath:        fmt.Sprintf("%v/%v.json", mdt.DirName(), entityName),
-				wantEntityFile:  createFixture(mdt, entityName, entityName+".json", true),
+				wantEntityFile:  createFixture(mdt, mdtst, entityName, entityName+".json", true),
 			},
 			{
 				testDescription: fmt.Sprintf("%v valid . relative", mdt.Name()),
 				givePath:        fmt.Sprintf("./%v/%v.json", mdt.DirName(), entityName),
-				wantEntityFile:  createFixture(mdt, entityName, entityName+".json", true),
+				wantEntityFile:  createFixture(mdt, mdtst, entityName, entityName+".json", true),
 			},
 		}
 	}
@@ -828,15 +834,15 @@ func TestNewMetadataEntityFile(t *testing.T) {
 		return tests
 	}
 
-	createStandardTestCases := func(mdt metadata.MetadataType, entityName string) []NewMetadataEntityFileTestCase {
-		return append(createStandardValidTestCases(mdt, entityName), createStandardInvalidTestCases(mdt, entityName, true, true)...)
+	createStandardTestCases := func(mdt metadata.MetadataType, mdtst metadata.MetadataSubType, entityName string) []NewMetadataEntityFileTestCase {
+		return append(createStandardValidTestCases(mdt, mdtst, entityName), createStandardInvalidTestCases(mdt, entityName, true, true)...)
 	}
 
 	themesTestCases := []NewMetadataEntityFileTestCase{
 		{
 			testDescription: "Themes valid .inline.css extension",
 			givePath:        fmt.Sprintf("%v/%v.inline.css", metadata.MetadataTypeThemes.DirName(), VALID_ENTITY_NAME),
-			wantEntityFile:  createFixture(metadata.MetadataTypeThemes, VALID_ENTITY_NAME, VALID_ENTITY_NAME+".inline.css", false),
+			wantEntityFile:  createFixture(metadata.MetadataTypeThemes, metadata.MetadataSubTypeNone, VALID_ENTITY_NAME, VALID_ENTITY_NAME+".inline.css", false),
 		},
 	}
 
@@ -847,6 +853,7 @@ func TestNewMetadataEntityFile(t *testing.T) {
 			wantEntityFile: &metadata.MetadataEntityFile{
 				Entity: metadata.MetadataEntity{
 					Type:         metadata.MetadataTypeComponentPacks,
+					SubType:      metadata.MetadataSubTypeNone,
 					Name:         "subdir",
 					Path:         "componentpacks/subdir",
 					PathRelative: "subdir",
@@ -863,6 +870,7 @@ func TestNewMetadataEntityFile(t *testing.T) {
 			wantEntityFile: &metadata.MetadataEntityFile{
 				Entity: metadata.MetadataEntity{
 					Type:         metadata.MetadataTypeComponentPacks,
+					SubType:      metadata.MetadataSubTypeNone,
 					Name:         "subdir",
 					Path:         "componentpacks/subdir",
 					PathRelative: "subdir",
@@ -879,6 +887,7 @@ func TestNewMetadataEntityFile(t *testing.T) {
 			wantEntityFile: &metadata.MetadataEntityFile{
 				Entity: metadata.MetadataEntity{
 					Type:         metadata.MetadataTypeComponentPacks,
+					SubType:      metadata.MetadataSubTypeNone,
 					Name:         "subdir",
 					Path:         "componentpacks/subdir",
 					PathRelative: "subdir",
@@ -895,6 +904,7 @@ func TestNewMetadataEntityFile(t *testing.T) {
 			wantEntityFile: &metadata.MetadataEntityFile{
 				Entity: metadata.MetadataEntity{
 					Type:         metadata.MetadataTypeComponentPacks,
+					SubType:      metadata.MetadataSubTypeNone,
 					Name:         "subdir",
 					Path:         "componentpacks/subdir",
 					PathRelative: "subdir",
@@ -911,6 +921,7 @@ func TestNewMetadataEntityFile(t *testing.T) {
 			wantEntityFile: &metadata.MetadataEntityFile{
 				Entity: metadata.MetadataEntity{
 					Type:         metadata.MetadataTypeComponentPacks,
+					SubType:      metadata.MetadataSubTypeNone,
 					Name:         "subdir",
 					Path:         "componentpacks/subdir",
 					PathRelative: "subdir",
@@ -957,11 +968,11 @@ func TestNewMetadataEntityFile(t *testing.T) {
 		{
 			testDescription: fmt.Sprintf("%v valid xml extension", metadata.MetadataTypePages.Name()),
 			givePath:        fmt.Sprintf("%v/%v.xml", metadata.MetadataTypePages.DirName(), VALID_ENTITY_NAME),
-			wantEntityFile:  createFixture(metadata.MetadataTypePages, VALID_ENTITY_NAME, VALID_ENTITY_NAME+".xml", false),
+			wantEntityFile:  createFixture(metadata.MetadataTypePages, metadata.MetadataSubTypeNone, VALID_ENTITY_NAME, VALID_ENTITY_NAME+".xml", false),
 		},
 	}
 
-	createSiteImageTestCases := func(subdir string, extensions []string) []NewMetadataEntityFileTestCase {
+	createSiteImageTestCases := func(subdir string, subType metadata.MetadataSubType, extensions []string) []NewMetadataEntityFileTestCase {
 		mdt := metadata.MetadataTypeSite
 
 		testCases := []NewMetadataEntityFileTestCase{
@@ -981,6 +992,7 @@ func TestNewMetadataEntityFile(t *testing.T) {
 					wantEntityFile: &metadata.MetadataEntityFile{
 						Entity: metadata.MetadataEntity{
 							Type:         mdt,
+							SubType:      subType,
 							Name:         entityName,
 							Path:         path.Join(mdt.DirName(), subdir, entityName),
 							PathRelative: path.Join(subdir, entityName),
@@ -997,6 +1009,7 @@ func TestNewMetadataEntityFile(t *testing.T) {
 					wantEntityFile: &metadata.MetadataEntityFile{
 						Entity: metadata.MetadataEntity{
 							Type:         mdt,
+							SubType:      subType,
 							Name:         entityName,
 							Path:         path.Join(mdt.DirName(), subdir, entityName),
 							PathRelative: path.Join(subdir, entityName),
@@ -1053,6 +1066,7 @@ func TestNewMetadataEntityFile(t *testing.T) {
 					wantEntityFile: &metadata.MetadataEntityFile{
 						Entity: metadata.MetadataEntity{
 							Type:         mdt,
+							SubType:      metadata.MetadataSubTypeNone,
 							Name:         entityName,
 							Path:         path.Join(mdt.DirName(), entityName),
 							PathRelative: entityName,
@@ -1069,6 +1083,7 @@ func TestNewMetadataEntityFile(t *testing.T) {
 					wantEntityFile: &metadata.MetadataEntityFile{
 						Entity: metadata.MetadataEntity{
 							Type:         mdt,
+							SubType:      metadata.MetadataSubTypeNone,
 							Name:         entityName,
 							Path:         path.Join(mdt.DirName(), entityName),
 							PathRelative: entityName,
@@ -1148,22 +1163,22 @@ func TestNewMetadataEntityFile(t *testing.T) {
 		case metadata.MetadataTypeFiles:
 			testCases = append(testCases, filesTestCases...)
 		case metadata.MetadataTypeSite:
-			testCases = append(testCases, createStandardTestCases(mdt, "site")...)
+			testCases = append(testCases, createStandardTestCases(mdt, metadata.MetadataSubTypeNone, "site")...)
 			testCases = append(testCases, createStandardInvalidTestCases(mdt, VALID_ENTITY_NAME, true, true)...)
-			testCases = append(testCases, createSiteImageTestCases("favicon", []string{".ico"})...)
-			testCases = append(testCases, createSiteImageTestCases("logo", []string{".jpg", ".png", ".gif"})...)
+			testCases = append(testCases, createSiteImageTestCases("favicon", metadata.MetadataSubTypeSiteFavicon, []string{".ico"})...)
+			testCases = append(testCases, createSiteImageTestCases("logo", metadata.MetadataSubTypeSiteLogo, []string{".jpg", ".png", ".gif"})...)
 		case metadata.MetadataTypePages:
-			testCases = append(testCases, createStandardValidTestCases(mdt, VALID_ENTITY_NAME)...)
+			testCases = append(testCases, createStandardValidTestCases(mdt, metadata.MetadataSubTypeNone, VALID_ENTITY_NAME)...)
 			testCases = append(testCases, createStandardInvalidTestCases(mdt, VALID_ENTITY_NAME, true, false)...)
 			testCases = append(testCases, pagesTestCases...)
 		case metadata.MetadataTypeComponentPacks:
 			testCases = append(testCases, createStandardInvalidTestCases(mdt, VALID_ENTITY_NAME, false, true)...)
 			testCases = append(testCases, componentPacksTestCases...)
 		case metadata.MetadataTypeThemes:
-			testCases = append(testCases, createStandardTestCases(mdt, VALID_ENTITY_NAME)...)
+			testCases = append(testCases, createStandardTestCases(mdt, metadata.MetadataSubTypeNone, VALID_ENTITY_NAME)...)
 			testCases = append(testCases, themesTestCases...)
 		default:
-			testCases = append(testCases, createStandardTestCases(mdt, VALID_ENTITY_NAME)...)
+			testCases = append(testCases, createStandardTestCases(mdt, metadata.MetadataSubTypeNone, VALID_ENTITY_NAME)...)
 		}
 	}
 
