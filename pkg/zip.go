@@ -7,13 +7,14 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"maps"
+	"strings"
 	"sync/atomic"
 
+	"github.com/bobg/go-generics/v4/slices"
 	"github.com/skuid/skuid-cli/pkg/logging"
 	"github.com/skuid/skuid-cli/pkg/metadata"
 	"github.com/skuid/skuid-cli/pkg/util"
-	"golang.org/x/exp/maps"
-	"golang.org/x/exp/slices"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -50,11 +51,6 @@ import (
 
 // true if relativePath meets criteria, false otherwise
 type ArchiveFilter func(metadata.MetadataEntityFile) bool
-
-type archiveFile struct {
-	Bytes      []byte
-	EntityFile metadata.MetadataEntityFile
-}
 
 var (
 	ErrArchiveNoFiles = errors.New("unable to create archive, no files were found")
@@ -97,11 +93,11 @@ func Archive(fsys fs.FS, fileUtil util.FileUtil, filterArchive ArchiveFilter) ([
 	archivedFiles := addFiles(ctx, g, zipWriter, filesToArchive)
 
 	var archivedFilePaths []string
-	archivedEntities := make(map[metadata.MetadataEntity][]archiveFile)
+	archivedEntities := make(map[metadata.MetadataEntity][]metadata.MetadataEntityFileContents)
 	for archivedFile := range archivedFiles {
-		entity := archivedFile.EntityFile.Entity
+		entity := archivedFile.Entity
 		archivedEntities[entity] = append(archivedEntities[entity], archivedFile)
-		archivedFilePaths = append(archivedFilePaths, archivedFile.EntityFile.Path)
+		archivedFilePaths = append(archivedFilePaths, archivedFile.Path)
 	}
 
 	if err := g.Wait(); err != nil {
@@ -112,6 +108,16 @@ func Archive(fsys fs.FS, fileUtil util.FileUtil, filterArchive ArchiveFilter) ([
 		return nil, nil, nil, ErrArchiveNoFiles
 	}
 
+	var validationErrors []string
+	for entity, files := range archivedEntities {
+		if errors, ok := entity.Validate(files); !ok {
+			validationErrors = append(validationErrors, errors...)
+		}
+	}
+	if len(validationErrors) > 0 {
+		return nil, nil, nil, fmt.Errorf("one or more entities were invalid:\n%v", strings.Join(validationErrors, "\n"))
+	}
+
 	if err := zipWriter.Close(); err != nil {
 		return nil, nil, nil, err
 	}
@@ -119,7 +125,7 @@ func Archive(fsys fs.FS, fileUtil util.FileUtil, filterArchive ArchiveFilter) ([
 	if result, err := io.ReadAll(buffer); err != nil {
 		return nil, nil, nil, err
 	} else {
-		return result, archivedFilePaths, maps.Keys(archivedEntities), nil
+		return result, archivedFilePaths, slices.Collect(maps.Keys(archivedEntities)), nil
 	}
 }
 
@@ -145,7 +151,7 @@ func getFiles(ctx context.Context, g *errgroup.Group, fsys fs.FS, fileUtil util.
 					logging.Get().Tracef("metadata directory does not exist, skipping: %v", metadataDirName)
 					return nil
 				}
-				return getMetadataEntityFiles(ctx, fsys, fileUtil, metadataType.DirName(), entityFiles, filterArchive)
+				return getMetadataEntityFiles(ctx, fsys, fileUtil, metadataDirName, entityFiles, filterArchive)
 			})
 		}
 
@@ -193,8 +199,8 @@ func getMetadataEntityFiles(ctx context.Context, fsys fs.FS, fileUtil util.FileU
 	})
 }
 
-func readFiles(ctx context.Context, g *errgroup.Group, fsys fs.FS, fileUtil util.FileUtil, entityFiles <-chan metadata.MetadataEntityFile) <-chan archiveFile {
-	filesToArchive := make(chan archiveFile)
+func readFiles(ctx context.Context, g *errgroup.Group, fsys fs.FS, fileUtil util.FileUtil, entityFiles <-chan metadata.MetadataEntityFile) <-chan metadata.MetadataEntityFileContents {
+	filesToArchive := make(chan metadata.MetadataEntityFileContents)
 
 	/*
 		TODO: Skuid Review Required
@@ -237,8 +243,8 @@ func readFiles(ctx context.Context, g *errgroup.Group, fsys fs.FS, fileUtil util
 	return filesToArchive
 }
 
-func addFiles(ctx context.Context, g *errgroup.Group, zipWriter util.ZipWriter, filesToArchive <-chan archiveFile) <-chan archiveFile {
-	archivedFiles := make(chan archiveFile)
+func addFiles(ctx context.Context, g *errgroup.Group, zipWriter util.ZipWriter, filesToArchive <-chan metadata.MetadataEntityFileContents) <-chan metadata.MetadataEntityFileContents {
+	archivedFiles := make(chan metadata.MetadataEntityFileContents)
 
 	// add files to zip - must be single worker as archive/zip package does not appear to be thread-safe (e.g., must
 	// write file contents to io.Writer prior to calling Create again - see https://pkg.go.dev/archive/zip#Writer.Create
@@ -255,11 +261,11 @@ func addFiles(ctx context.Context, g *errgroup.Group, zipWriter util.ZipWriter, 
 
 			var zipFileWriter io.Writer
 
-			zipFileWriter, err := zipWriter.Create(archiveFile.EntityFile.Path)
+			zipFileWriter, err := zipWriter.Create(archiveFile.Path)
 			if err != nil {
 				return err
 			}
-			_, err = zipFileWriter.Write(archiveFile.Bytes)
+			_, err = zipFileWriter.Write(archiveFile.Contents)
 			if err != nil {
 				return err
 			}
@@ -279,7 +285,7 @@ func addFiles(ctx context.Context, g *errgroup.Group, zipWriter util.ZipWriter, 
 	return archivedFiles
 }
 
-func readFile(ctx context.Context, fsys fs.FS, fileUtil util.FileUtil, entityFiles <-chan metadata.MetadataEntityFile, filesToArchive chan archiveFile) error {
+func readFile(ctx context.Context, fsys fs.FS, fileUtil util.FileUtil, entityFiles <-chan metadata.MetadataEntityFile, filesToArchive chan metadata.MetadataEntityFileContents) error {
 	for entityFile := range entityFiles {
 		// exit if cancelled - see note below in select
 		if ctx.Err() != nil {
@@ -294,7 +300,7 @@ func readFile(ctx context.Context, fsys fs.FS, fileUtil util.FileUtil, entityFil
 		// NOTE: select will pseudo-randomly choose a case when both are ready so we could send even though we are cancelled at this point.  See
 		// above ctx.Err() to ensure we don't start any new files once cancel occurred.  See https://go.dev/ref/spec#Select_statements.
 		select {
-		case filesToArchive <- archiveFile{fileBytes, entityFile}:
+		case filesToArchive <- metadata.MetadataEntityFileContents{MetadataEntityFile: entityFile, Contents: fileBytes}:
 		case <-ctx.Done():
 			return ctx.Err()
 		}

@@ -3,11 +3,11 @@ package cmdutil_test
 import (
 	"fmt"
 	"reflect"
-	"slices"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/bobg/go-generics/v4/slices"
 	"github.com/skuid/skuid-cli/pkg/cmdutil"
 	"github.com/skuid/skuid-cli/pkg/flags"
 	"github.com/skuid/skuid-cli/pkg/testutil"

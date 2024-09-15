@@ -10,8 +10,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/bobg/go-generics/v4/slices"
 	"github.com/stretchr/testify/assert"
-	"golang.org/x/exp/slices"
 
 	"github.com/skuid/skuid-cli/pkg"
 )

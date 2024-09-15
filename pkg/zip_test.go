@@ -6,9 +6,12 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"maps"
+	"path"
 	"testing"
 	"testing/fstest"
 
+	"github.com/bobg/go-generics/v4/slices"
 	"github.com/orsinium-labs/enum"
 	"github.com/skuid/skuid-cli/pkg"
 	"github.com/skuid/skuid-cli/pkg/metadata"
@@ -19,12 +22,8 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	"golang.org/x/exp/maps"
 )
 
-const validJSON = `{
-	"good": "json"
-}`
 const validXML = `
 	<skuid__page unsavedchangeswarning="yes">
 	</skuid__page>
@@ -42,6 +41,11 @@ type ArchiveTestDetails struct {
 	wantError          error
 	wantResultFiles    testutil.TestFiles
 	wantResultEntities []metadata.MetadataEntity
+}
+
+type EntityValidationTestCase struct {
+	giveMetadataType metadata.MetadataType
+	giveFiles        []string
 }
 
 type ArchiveTestSuite struct {
@@ -291,7 +295,8 @@ func (suite *ArchiveTestSuite) TestWalkDirOnlyMetadataTypeDirsThatExist() {
 	t := suite.T()
 
 	validMetadataTypeFiles := testutil.TestFiles{
-		"pages/page1.xml": validXML,
+		"pages/page1.xml":  validXML,
+		"pages/page1.json": `{"name": "page1"}`,
 	}
 	fsys := testutil.CreateFS(validMetadataTypeFiles)
 	mockFileUtil := testutil.NewFileUtilBuilder().WithoutWalkDir().Build(t)
@@ -387,6 +392,49 @@ func (suite *ArchiveTestSuite) TestWriteToZipError() {
 		wantResultFiles:    nil,
 		wantResultEntities: nil,
 	})
+}
+
+func (suite *ArchiveTestSuite) TestEntityValidationFailure() {
+	var testCases []EntityValidationTestCase
+
+	// for types that require more than one file, a validation error will be encountered
+	// all types will have a validation error encountered due to missing entity name in definition file
+	for _, mdt := range metadata.MetadataTypes.Members() {
+		switch mdt {
+		case metadata.MetadataTypeSite:
+			testCases = append(testCases,
+				EntityValidationTestCase{mdt, []string{"site.json"}},
+				EntityValidationTestCase{mdt, []string{"favicon/my_icon.ico.skuid.json"}},
+				EntityValidationTestCase{mdt, []string{"logo/my_logo.png.skuid.json"}},
+			)
+		case metadata.MetadataTypeComponentPacks:
+			// unable to validate component packs because the only validation performed is that there is at least 1 file
+			// and archive only operates on the presence of a file.
+			continue
+		default:
+			testCases = append(testCases, EntityValidationTestCase{mdt, []string{"my_mdt.json"}})
+		}
+	}
+
+	for _, tc := range testCases {
+		suite.Run(tc.giveMetadataType.Name(), func() {
+			t := suite.T()
+			testFiles := make(testutil.TestFiles)
+			for _, fp := range tc.giveFiles {
+				testFiles[path.Join(tc.giveMetadataType.DirName(), fp)] = "" // force validation failure due to empty entity name in file
+			}
+			fsys := testutil.CreateFS(testFiles)
+
+			runArchiveTest(t, ArchiveTestDetails{
+				giveFS:             fsys,
+				giveFileUtil:       util.NewFileUtil(),
+				giveArchiveFilter:  nil,
+				wantError:          fmt.Errorf("one or more entities were invalid"),
+				wantResultFiles:    nil,
+				wantResultEntities: nil,
+			})
+		})
+	}
 }
 
 func TestArchiveTestSuite(t *testing.T) {
@@ -546,7 +594,7 @@ func runArchiveTest(t *testing.T, atd ArchiveTestDetails) {
 		require.NoError(t, err, "Expected Archive err to be nil, but got not nil")
 	}
 
-	assert.ElementsMatch(t, maps.Keys(atd.wantResultFiles), archivedFilePaths)
+	assert.ElementsMatch(t, slices.Collect(maps.Keys(atd.wantResultFiles)), archivedFilePaths)
 	assert.ElementsMatch(t, atd.wantResultEntities, archivedEntities)
 
 	if atd.wantResultFiles != nil {
@@ -592,16 +640,44 @@ func readArchive(t *testing.T, actualResult []byte) testutil.TestFiles {
 // go doesn't support const maps so creating closure (vs. var) to ensure not modified by a test
 func createValidMetadataTypeFilesFixture() testutil.TestFiles {
 	return testutil.TestFiles{
-		"apps/my_app.json":                 validJSON,
-		"pages/page1.xml":                  validXML,
-		"pages/page1.json":                 validJSON,
-		"files/file1.js":                   validJS,
-		"files/file1.js.skuid.json":        validJSON,
-		"files/file2.txt":                  validTXT,
-		"files/file2.txt.skuid.json":       validJSON,
-		"site/site.json":                   validJSON,
-		"site/logo/my_logo.png":            validPNG,
-		"site/logo/my_logo.png.skuid.json": validJSON,
+		"apps/my_app.json":                                 `{"name": "my_app"}`,
+		"authproviders/my_ap.json":                         `{"name": "my_ap"}`,
+		"componentpacks/mycomponents/custom_runtime.json":  ``,
+		"componentpacks/mycomponents/custom_builders.json": ``,
+		"componentpacks/mycomponents/js/custom.js":         ``,
+		"componentpacks/mycomponents/css/custom.css":       ``,
+		// Skuid Review Required - Unable to determine how to create dataservices, there is no "add" option on the Data Services tab
+		// within "Data Sources" in settings and the "DefaultSiteCertificate" that is there doesn't download with a retrieve. What is the structure
+		// and how to create and should DefaultSiteCertificate be downloaded on a retrieve?
+		"dataservices/my_ds.json":  `{"name": "my_ds"}`,
+		"datasources/my_ds.json":   `{"name": "my_ds"}`,
+		"designsystems/my_ds.json": `{"objectData": {"name": "my_ds"}}`,
+		// Skuid Review Required - Unable to determine how to create variables, what is the structure and how to create?
+		"variables/my_variables.json":    `{"name": "my_variables"}`,
+		"files/file1.js":                 validJS,
+		"files/file1.js.skuid.json":      `{"name": "file1.js"}`,
+		"files/file2.txt":                validTXT,
+		"files/file2.txt.skuid.json":     `{"name": "file2.txt"}`,
+		"pages/page1.xml":                validXML,
+		"pages/page1.json":               `{"name": "page1"}`,
+		"permissionsets/my_ps.json":      `{"name": "my_ps"}`,
+		"sitepermissionsets/editor.json": `{"name": "editor"}`,
+		// Skuid Review Required - Unable to determine how to create sessionvariables, what is the structure and how to create?
+		"sessionvariables/my_sv.json":        `{"name": "my_sv"}`,
+		"site/site.json":                     `{"name": "my site name"}`,
+		"site/logo/foobar.png":               validPNG,
+		"site/logo/foobar.png.skuid.json":    `{"name": "foobar.png"}`,
+		"site/logo/foobar2.gif":              validPNG,
+		"site/logo/foobar2.gif.skuid.json":   `{"name": "foobar2.gif"}`,
+		"site/logo/foobar3.jpg":              validPNG,
+		"site/logo/foobar3.jpg.skuid.json":   `{"name": "foobar3.jpg"}`,
+		"site/favicon/foobar.ico":            validPNG,
+		"site/favicon/foobar.ico.skuid.json": `{"name": "foobar.ico"}`,
+		// Skuid Review Required - Unable to determine how to create themes. Docs indicate v1 only but unable to determine
+		// how to create v1 page since the "API Version" option is not available when creating a page as the docs indicate
+		// it should be (https://docs.skuid.com/nlx/v2/en/skuid/api-version/#how-do-i-use-skuid-s-api-versions).  What is
+		// the structure and how to create?
+		"themes/my_theme.json": `{"name": "my_theme"}`,
 	}
 }
 
@@ -623,7 +699,7 @@ func createEntitiesFromFiles(t *testing.T, files testutil.TestFiles) []metadata.
 		entities[entity] = entity
 	}
 
-	return maps.Keys(entities)
+	return slices.Collect(maps.Keys(entities))
 }
 
 // files that do not have a valid metadata type

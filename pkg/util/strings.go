@@ -2,9 +2,9 @@ package util
 
 import (
 	"fmt"
-	"slices"
 	"time"
 
+	"github.com/bobg/go-generics/v4/slices"
 	"github.com/goschtalt/approx"
 	"github.com/itlightning/dateparse"
 )

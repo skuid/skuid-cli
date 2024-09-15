@@ -109,6 +109,19 @@ type NewMetadataEntityFileTestCase struct {
 	wantError       error
 }
 
+type ValidateTestCase struct {
+	testDescription string
+	giveEntity      metadata.MetadataEntity
+	giveFiles       []metadata.MetadataEntityFileContents
+	wantOK          bool
+}
+
+type ValidateFile struct {
+	FileName         string
+	FileContent      string
+	IsDefinitionFile bool
+}
+
 type NlxMetadataTestSuite struct {
 	suite.Suite
 }
@@ -1384,6 +1397,215 @@ func TestUniqueEntities(t *testing.T) {
 			assert.ElementsMatch(t, tc.wantValue, actualValue)
 		})
 	}
+}
+
+type MetadataEntityTestSuite struct {
+	suite.Suite
+}
+
+func (suite *MetadataEntityTestSuite) TestValidate() {
+	createEntityFixture := func(mdt metadata.MetadataType, mdtst metadata.MetadataSubType, name string) metadata.MetadataEntity {
+		return metadata.MetadataEntity{
+			Type:         mdt,
+			SubType:      mdtst,
+			Name:         name,
+			Path:         path.Join(mdt.DirName(), name),
+			PathRelative: name,
+		}
+	}
+
+	createEntityFileContentsFixture := func(me metadata.MetadataEntity, filePath string, isEntityDefinitionFile bool, contents string) metadata.MetadataEntityFileContents {
+		fileName := path.Base(filePath)
+		return metadata.MetadataEntityFileContents{
+			MetadataEntityFile: metadata.MetadataEntityFile{
+				Entity:                 me,
+				Name:                   fileName,
+				Path:                   path.Join(me.Type.DirName(), filePath),
+				PathRelative:           filePath,
+				IsEntityDefinitionFile: isEntityDefinitionFile,
+			},
+			Contents: []byte(contents),
+		}
+	}
+
+	createStandardTestCases := func(mdt metadata.MetadataType, mdtst metadata.MetadataSubType, entityName string, testCaseSensitive bool, testDefFile bool, testTooManyFiles bool, files []ValidateFile) []ValidateTestCase {
+		me := createEntityFixture(mdt, mdtst, strings.ToLower(entityName))
+		var validFiles []metadata.MetadataEntityFileContents
+		var emptyContentFiles []metadata.MetadataEntityFileContents
+		var emptyNameValueFiles []metadata.MetadataEntityFileContents
+		var mismatchedCaseNameValueFiles []metadata.MetadataEntityFileContents
+		var additionalFileFiles []metadata.MetadataEntityFileContents
+		var defFileOnlyFiles []metadata.MetadataEntityFileContents
+		for _, f := range files {
+			validContents := f.FileContent
+			emptyContents := ""
+			emptyNameValueContents := f.FileContent
+			mismatchedCaseNameValueContents := f.FileContent
+			if f.IsDefinitionFile {
+				validContents = strings.Replace(f.FileContent, "__NAME__", entityName, 1)
+				emptyContents = ""
+				emptyNameValueContents = strings.Replace(f.FileContent, "__NAME__", "", 1)
+				mismatchedCaseNameValueContents = strings.Replace(f.FileContent, "__NAME__", strings.ToUpper(entityName), 1)
+				defFileOnlyFiles = append(defFileOnlyFiles, createEntityFileContentsFixture(me, f.FileName, f.IsDefinitionFile, validContents))
+				additionalFileFiles = append(additionalFileFiles, createEntityFileContentsFixture(me, f.FileName, f.IsDefinitionFile, validContents))
+			}
+			validFiles = append(validFiles, createEntityFileContentsFixture(me, f.FileName, f.IsDefinitionFile, validContents))
+			emptyContentFiles = append(emptyContentFiles, createEntityFileContentsFixture(me, f.FileName, f.IsDefinitionFile, emptyContents))
+			emptyNameValueFiles = append(emptyNameValueFiles, createEntityFileContentsFixture(me, f.FileName, f.IsDefinitionFile, emptyNameValueContents))
+			mismatchedCaseNameValueFiles = append(mismatchedCaseNameValueFiles, createEntityFileContentsFixture(me, f.FileName, f.IsDefinitionFile, mismatchedCaseNameValueContents))
+			additionalFileFiles = append(additionalFileFiles, createEntityFileContentsFixture(me, f.FileName, f.IsDefinitionFile, validContents))
+		}
+
+		standardCases := []ValidateTestCase{
+			{
+				testDescription: fmt.Sprintf("%v valid", me.Type.Name()),
+				giveEntity:      me,
+				giveFiles:       validFiles,
+				wantOK:          true,
+			},
+			{
+				testDescription: fmt.Sprintf("%v invalid nil files", me.Type.Name()),
+				giveEntity:      me,
+				giveFiles:       nil,
+				wantOK:          false,
+			},
+			{
+				testDescription: fmt.Sprintf("%v invalid empty files", me.Type.Name()),
+				giveEntity:      me,
+				giveFiles:       []metadata.MetadataEntityFileContents{},
+				wantOK:          false,
+			},
+		}
+
+		if testDefFile {
+			standardCases = append(standardCases, []ValidateTestCase{
+				{
+					testDescription: fmt.Sprintf("%v invalid empty file content", me.Type.Name()),
+					giveEntity:      me,
+					giveFiles:       emptyContentFiles,
+					wantOK:          false,
+				},
+				{
+					testDescription: fmt.Sprintf("%v invalid empty name value", me.Type.Name()),
+					giveEntity:      me,
+					giveFiles:       emptyNameValueFiles,
+					wantOK:          false,
+				},
+				{
+					testDescription: fmt.Sprintf("%v invalid too many files and multiple definition files", me.Type.Name()),
+					giveEntity:      me,
+					giveFiles:       additionalFileFiles,
+					wantOK:          false,
+				},
+			}...)
+		}
+
+		if testCaseSensitive && testDefFile {
+			standardCases = append(standardCases, []ValidateTestCase{
+				{
+					testDescription: fmt.Sprintf("%v invalid mismatched case name value", me.Type.Name()),
+					giveEntity:      me,
+					giveFiles:       mismatchedCaseNameValueFiles,
+					wantOK:          false,
+				},
+			}...)
+		}
+
+		if testTooManyFiles && len(files) > 1 {
+			standardCases = append(standardCases, []ValidateTestCase{
+				{
+					testDescription: fmt.Sprintf("%v invalid not enough files", me.Type.Name()),
+					giveEntity:      me,
+					giveFiles:       defFileOnlyFiles,
+					wantOK:          false,
+				},
+			}...)
+		}
+
+		return standardCases
+	}
+
+	createAdditionalSiteTestCases := func() []ValidateTestCase {
+		me := createEntityFixture(metadata.MetadataTypeSite, metadata.MetadataSubTypeNone, metadata.EntityNameSite)
+		meNotASite := createEntityFixture(metadata.MetadataTypeSite, metadata.MetadataSubTypeNone, "my_site")
+
+		return []ValidateTestCase{
+			{
+				testDescription: fmt.Sprintf("%v valid custom entity name", me.Type.Name()),
+				giveEntity:      me,
+				giveFiles:       []metadata.MetadataEntityFileContents{createEntityFileContentsFixture(me, "site.json", true, `{"name": "This is my name"}`)},
+				wantOK:          true,
+			},
+			{
+				testDescription: fmt.Sprintf("%v valid single space entity name", me.Type.Name()),
+				giveEntity:      me,
+				giveFiles:       []metadata.MetadataEntityFileContents{createEntityFileContentsFixture(me, "site.json", true, `{"name": " "}`)},
+				wantOK:          true,
+			},
+			{
+				testDescription: fmt.Sprintf("%v invalid entity name is not site", me.Type.Name()),
+				giveEntity:      meNotASite,
+				giveFiles:       []metadata.MetadataEntityFileContents{createEntityFileContentsFixture(meNotASite, "site.json", true, `{"name": "my_site"}`)},
+				wantOK:          false,
+			},
+		}
+	}
+
+	var testCases []ValidateTestCase
+	for _, mdt := range metadata.MetadataTypes.Members() {
+		switch mdt {
+		case metadata.MetadataTypeFiles:
+			testCases = append(testCases, createStandardTestCases(metadata.MetadataTypeFiles, metadata.MetadataSubTypeNone, "my_file", true, true, true, []ValidateFile{
+				{"my_file.txt.skuid.json", `{"name": "__NAME__"}`, true},
+				{"my_file.txt", "", false},
+			})...)
+		case metadata.MetadataTypeSite:
+			testCases = append(testCases, createStandardTestCases(metadata.MetadataTypeSite, metadata.MetadataSubTypeNone, metadata.EntityNameSite, false, true, true, []ValidateFile{
+				{"site.json", `{"name": "__NAME__"}`, true},
+			})...)
+			testCases = append(testCases, createAdditionalSiteTestCases()...)
+			testCases = append(testCases, createStandardTestCases(metadata.MetadataTypeSite, metadata.MetadataSubTypeSiteLogo, "my_favicon", true, true, true, []ValidateFile{
+				{"favicon/my_favicon.ico.skuid.json", `{"name": "__NAME__"}`, true},
+				{"favicon/my_favicon.ico", "", false},
+			})...)
+			testCases = append(testCases, createStandardTestCases(metadata.MetadataTypeSite, metadata.MetadataSubTypeSiteLogo, "my_logo", true, true, true, []ValidateFile{
+				{"logo/my_logo.png.skuid.json", `{"name": "__NAME__"}`, true},
+				{"logo/my_logo.png", "", false},
+			})...)
+		case metadata.MetadataTypeDesignSystems:
+			testCases = append(testCases, createStandardTestCases(mdt, metadata.MetadataSubTypeNone, "my_mdt", true, true, true, []ValidateFile{
+				{"my_mdt.json", `{"objectData": { "name": "__NAME__"}}`, true},
+			})...)
+		case metadata.MetadataTypePages:
+			testCases = append(testCases, createStandardTestCases(metadata.MetadataTypePages, metadata.MetadataSubTypeNone, "my_page", true, true, true, []ValidateFile{
+				{"my_page.json", `{"name": "__NAME__"}`, true},
+				{"my_page.xml", "", false},
+			})...)
+		case metadata.MetadataTypeComponentPacks:
+			testCases = append(testCases, createStandardTestCases(metadata.MetadataTypeComponentPacks, metadata.MetadataSubTypeNone, "my_pack", false, false, false, []ValidateFile{
+				{"mycomponents/custom_runtime.json", "", false},
+				{"mycomponents/custom_builders.json", "", false},
+				{"mycomponents/js/custom.js", "", false},
+				{"mycomponents/css/custom.css", "", false},
+			})...)
+		default:
+			testCases = append(testCases, createStandardTestCases(mdt, metadata.MetadataSubTypeNone, "my_mdt", true, true, true, []ValidateFile{
+				{"my_mdt.json", `{"name": "__NAME__"}`, true},
+			})...)
+		}
+	}
+
+	for _, tc := range testCases {
+		suite.Run(tc.testDescription, func() {
+			t := suite.T()
+			_, ok := tc.giveEntity.Validate(tc.giveFiles)
+			assert.Equal(t, tc.wantOK, ok)
+		})
+	}
+}
+
+func TestMetadataEntityTestSuite(t *testing.T) {
+	suite.Run(t, new(MetadataEntityTestSuite))
 }
 
 func createPathError(mdt metadata.MetadataType, path string) error {

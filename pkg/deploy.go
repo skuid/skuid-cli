@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
-	"slices"
 	"time"
 
+	"github.com/bobg/go-generics/v4/slices"
 	"github.com/gookit/color"
 	"github.com/sirupsen/logrus"
 	"github.com/skuid/skuid-cli/pkg/logging"
@@ -109,10 +110,8 @@ func Deploy(auth *Authorization, targetDirectory string, archiveFilter ArchiveFi
 	}
 
 	logging.Get().Info("Building deployment request")
-	deploymentRequest, archivedFilePaths, archivedEntities, err := Archive(os.DirFS(targetDirectory), util.NewFileUtil(), archiveFilter)
+	deploymentRequest, archivedFilePaths, archivedEntities, err := archive(targetDirectory, archiveFilter, getMetadataEntityPaths(entitiesToArchive))
 	if err != nil {
-		return err
-	} else if err := validateArchive(entitiesToArchive, archivedEntities); err != nil {
 		return err
 	}
 	logging.WithFields(logrus.Fields{
@@ -187,11 +186,16 @@ func ExecuteDeployPlan(auth *Authorization, plans NlxDynamicPlanMap, targetDir s
 		logging.Get().Infof("Deploying %v", color.Magenta.Sprint(plan.Type))
 
 		logging.Get().Tracef("Archiving %v", targetDir)
-		payload, _, _, err := Archive(os.DirFS(targetDir), util.NewFileUtil(), MetadataArchiveFilter(&plan.Metadata))
+		payload, archivedFilePaths, archivedEntities, err := archive(targetDir, MetadataArchiveFilter(&plan.Metadata), getPlanEntityPaths(plan))
 		if err != nil {
 			logging.Get().Trace("Error creating deployment ZIP archive")
 			return
 		}
+		logging.WithFields(logrus.Fields{
+			"payloadBytes":     len(payload),
+			"payloadEntities":  len(archivedEntities),
+			"payloadFilePaths": len(archivedFilePaths),
+		}).Tracef("Built payload for deploy plan %q", plan.Type)
 
 		headers := GeneratePlanHeaders(auth, plan)
 		logging.Get().Tracef("Plan Headers: %v\n", headers)
@@ -310,21 +314,50 @@ func (result NlxDeploymentResult) String() string {
 	)
 }
 
-func validateArchive(expectedEntities []metadata.MetadataEntity, actualEntities []metadata.MetadataEntity) error {
-	if expectedEntities != nil && !metadata.EntitiesMatch(expectedEntities, actualEntities) {
-		var expectedEntityPaths []string
-		var actualEntityPaths []string
-		for _, e := range expectedEntities {
-			expectedEntityPaths = append(expectedEntityPaths, fmt.Sprintf("%q", e.Path))
+func archive(targetDirectory string, archiveFilter ArchiveFilter, entitiesToArchive []string) ([]byte, []string, []metadata.MetadataEntity, error) {
+	if deploymentRequest, archivedFilePaths, archivedEntities, err := Archive(os.DirFS(targetDirectory), util.NewFileUtil(), archiveFilter); err != nil {
+		return deploymentRequest, archivedFilePaths, archivedEntities, err
+	} else if err = validateArchive(entitiesToArchive, archivedEntities); err != nil {
+		return deploymentRequest, archivedFilePaths, archivedEntities, err
+	} else {
+		return deploymentRequest, archivedFilePaths, archivedEntities, nil
+	}
+}
+
+func getPlanEntityPaths(plan NlxPlan) []string {
+	var planEntityPaths []string
+	for _, mdt := range metadata.MetadataTypes.Members() {
+		entities := plan.Metadata.GetFieldValue(mdt)
+		for _, e := range entities {
+			// entity paths are always '/' separated
+			planEntityPaths = append(planEntityPaths, path.Join(mdt.DirName(), e))
 		}
-		for _, e := range actualEntities {
-			actualEntityPaths = append(actualEntityPaths, fmt.Sprintf("%q", e.Path))
-		}
-		// display paths in order to improve ability to identify which are missing
-		slices.Sort(expectedEntityPaths)
-		slices.Sort(actualEntityPaths)
-		return fmt.Errorf("one or more specified entities (%v) were not found, found: %v", expectedEntityPaths, actualEntityPaths)
 	}
 
-	return nil
+	return planEntityPaths
+}
+
+func getMetadataEntityPaths(entities []metadata.MetadataEntity) []string {
+	var metadataEntityPaths []string
+	for _, me := range entities {
+		metadataEntityPaths = append(metadataEntityPaths, me.Path)
+	}
+
+	return metadataEntityPaths
+}
+
+func validateArchive(expectedEntityPaths []string, actualEntities []metadata.MetadataEntity) error {
+	if expectedEntityPaths == nil {
+		return nil
+	}
+
+	actualEntityPaths := getMetadataEntityPaths(actualEntities)
+	slices.Sort(actualEntityPaths)
+	slices.Sort(expectedEntityPaths)
+
+	if len(expectedEntityPaths) == len(actualEntityPaths) && slices.Equal(expectedEntityPaths, actualEntityPaths) {
+		return nil
+	}
+
+	return fmt.Errorf("one or more specified entities (%q) were not found, found: %q", expectedEntityPaths, actualEntityPaths)
 }
