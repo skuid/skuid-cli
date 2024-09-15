@@ -17,7 +17,7 @@ steps:
     commands:
       - git fetch --tags
   - name: test
-    image: golang:1.22.5-alpine
+    image: golang:1.23.1-alpine
     commands:
       - apk add git
       - go test -v -cover -short ./...
