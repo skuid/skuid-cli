@@ -150,6 +150,10 @@ func Teardown() {
 	debug = false
 }
 
+func DebugEnabled() bool {
+	return debug
+}
+
 func setupLog(options *LoggingOptions) error {
 	// should never occur in production
 	clierrors.MustConditionf(loggerSingleton == nil, "logger already initialized")
