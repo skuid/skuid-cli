@@ -138,7 +138,7 @@ func UnzipArchive(sourceFileLocation, targetLocation string, fileCreator util.Fi
 		}
 
 		// TODO: Skuid Review Required - See https://github.com/skuid/skuid-cli/issues/145
-		// This code existed in 0.67.0 but I don't think it's a valid scenario as archives cannot have directories.  Does this need to be here,
+		// This code existed in 0.6.7 but I don't think it's a valid scenario as archives cannot have directories.  Does this need to be here,
 		// can there be a Dir in an archive and if there is one, why do we return and not process the remainder of the archive?  Leaving this
 		// code for now since I don't fully understand it and don't think it will ever get hit since archives cannot contain directories (at
 		// least from what I am aware of).

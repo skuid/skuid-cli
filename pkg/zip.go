@@ -36,11 +36,11 @@ import (
 		   It does this by looking only at known metadata directories (obtained from NlxMetadata tag via GetFieldValueByName function)
 		   which results in anything not in a known metadata directory to not be included in the ExecuteDeployPlan payload.  However,
 		   when generating the payload for GetDeployPlan, all directories are walked, not just known metadata directories. Given how
-		   ExecuteDeployPlan works in 0.67.0, there does not seem to be any reason to "walk" any directories other than known metadata
+		   ExecuteDeployPlan works in 0.6.7, there does not seem to be any reason to "walk" any directories other than known metadata
 		   directories for all requests to Archive.  Limiting to known metadata directories eliminates several issues that are present
-		   in 0.67.0.  Given this, the version of Archive below (used to create payload for GenerateDeployPlan and ExecuteDeployPlan).
+		   in 0.6.7.  Given this, the version of Archive below (used to create payload for GenerateDeployPlan and ExecuteDeployPlan).
 		   The approach I've taken should be validated since without internal knowledge of how Skuid works I can't say for certain that
-		   the modified approach I've taken is valid (although it seems likely given the way ExecuteDeployPlan works in 0.67.0).
+		   the modified approach I've taken is valid (although it seems likely given the way ExecuteDeployPlan works in 0.6.7).
 
 	see related issues:
 		https://github.com/skuid/skuid-cli/issues/159
@@ -205,7 +205,7 @@ func readFiles(ctx context.Context, g *errgroup.Group, fsys fs.FS, fileUtil util
 	/*
 		TODO: Skuid Review Required
 
-		In version 0.67.0, a separate go routine was started for every file to read it and send to a channel.  However, this approach
+		In version 0.6.7, a separate go routine was started for every file to read it and send to a channel.  However, this approach
 		had issues (e.g., channels weren't closed, errors didn't cancel context, etc.).  In the version below, a fixed number of workers
 		is used to read files.  This approach was taken for three reasons:
 
