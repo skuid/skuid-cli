@@ -423,7 +423,7 @@ func (suite *ApplyEnvVarsTestSuite) TestIntConversion() {
 }
 
 func (suite *ApplyEnvVarsTestSuite) TestPtrTimeConversion() {
-	d := time.Date(2026, 1, 1, 0, 0, 0, 0, time.Local)
+	d := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
 	layout := time.RFC3339Nano
 	envVarsSuccess := map[string]testutil.EnvVar[*time.Time]{
 		"SKUID_GOOD_FOO_DATE_TIME": {EnvValue: d.Format(layout), Value: &d},
@@ -435,7 +435,7 @@ func (suite *ApplyEnvVarsTestSuite) TestPtrTimeConversion() {
 	addFlag := func(fs *pflag.FlagSet, name string, p **time.Time) *flags.Flag[*time.Time, *time.Time] {
 		flag := &flags.Flag[*time.Time, *time.Time]{Name: name, Usage: "this is a flag"}
 		v := flags.NewValue(flag.Default, p, func(val string) (*time.Time, error) {
-			t, err := time.ParseInLocation(layout, val, time.Local)
+			t, err := time.ParseInLocation(layout, val, time.UTC)
 			return &t, err
 		})
 		fs.Var(v, flag.Name, flag.Usage)

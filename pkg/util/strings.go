@@ -2,6 +2,7 @@ package util
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/bobg/go-generics/v4/slices"
@@ -42,6 +43,7 @@ func StringSliceContainsAnyKey(strings []string, keys []string) bool {
 //   - Durations: year, week and day in addition to standard golang durations.
 //   - Times: any golang layout except for those that contain timezone abbreviations (e.g., UnixDate).
 func GetTime(value string, reference time.Time, noFuture bool) (time.Time, error) {
+	value = strings.TrimSpace(value)
 	if value == "" || value == "0" {
 		return time.Time{}, fmt.Errorf("value is not a valid time or duration: %q", value)
 	}
