@@ -35,6 +35,10 @@ func TestAddValueFlag(t *testing.T) {
 	runAddFlagTests(t, cmdutil.AddValueFlag, 500, "int", true, false)
 }
 
+func TestAddSliceValueFlag(t *testing.T) {
+	runAddFlagTests(t, cmdutil.AddSliceValueFlag, []int{500}, "intSlice", true, false)
+}
+
 func TestAddValueWithRedactFlag(t *testing.T) {
 	runAddFlagTests(t, func(cmd *cobra.Command, valPtr *int, flagInfo *flags.Flag[int, int]) {
 		cmdutil.AddValueWithRedactFlag(cmd, valPtr, flagInfo)
@@ -163,14 +167,6 @@ func emptyParse[F flags.FlagType](val string) (F, error) {
 
 func emptyRedact[T flags.FlagType | ~[]F, F flags.FlagType](val T) string {
 	return ""
-}
-
-type AddFlagTest[T flags.FlagType | ~[]F, F flags.FlagType] struct {
-	testDescription string
-	giveFlag        *flags.Flag[T, F]
-	wantPanic       bool
-	wantError       error
-	wantValue       T
 }
 
 func runAddFlagTests[T flags.FlagType | ~[]F, F flags.FlagType](t *testing.T, addFlag addFlag[T, F], defaultValue T, expectedType string, supportsParse bool, supportsRedact bool) {
