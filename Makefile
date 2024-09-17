@@ -9,7 +9,6 @@ IMAGE ?= golang
 ARCH=amd64
 OS=darwin
 
-VERSION=`cat .version`
 LDFLAGS=-ldflags="-w"
 
 .PHONY: setup fmt vendored
