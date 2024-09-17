@@ -14,10 +14,9 @@ The minimum version of Go supported is identified in this repositories [go.mod](
 
 To change the Go version, the following must also be updated:
 
-1. [github workflow](.github/workflows/github-actions-release.yml#L24)
-2. [dockerfile](compose/Dockerfile#L1)
-3. [drone ci](.drone.yml#L20)
-4. [makefile](Makefile#L6)
+1. [dockerfile](compose/Dockerfile#L1)
+1. [drone ci](.drone.yml#L20)
+1. [makefile](Makefile#L6)
 
 ## Environment Variables
 
