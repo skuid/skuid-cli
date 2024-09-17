@@ -10,7 +10,7 @@ ARCH=amd64
 OS=darwin
 
 VERSION=`cat .version`
-LDFLAGS=-ldflags="-w -X github.com/skuid/skuid-cli/version.Name=$(VERSION)"
+LDFLAGS=-ldflags="-w"
 
 .PHONY: setup fmt vendored
 
