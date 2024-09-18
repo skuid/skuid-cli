@@ -20,6 +20,7 @@ type retrieveCommander struct {
 	dir      string
 	app      string
 	since    *time.Time
+	noClean  bool
 }
 
 func (c *retrieveCommander) GetCommand() *cobra.Command {
@@ -35,6 +36,7 @@ func (c *retrieveCommander) GetCommand() *cobra.Command {
 	cmdutil.AddStringFlag(cmd, &c.dir, flags.Dir)
 	cmdutil.AddStringFlag(cmd, &c.app, flags.App)
 	cmdutil.AddValueFlag(cmd, &c.since, flags.Since)
+	cmdutil.AddBoolFlag(cmd, &c.noClean, flags.NoClean)
 	// TODO: Pages does not work as expected - remove completely or fix issues depending on https://github.com/skuid/skuid-cli/issues/147 & https://github.com/skuid/skuid-cli/issues/148
 	//cmdutil.StringSliceFlag(cmd, &c.pages, flags.Pages)
 
@@ -141,10 +143,12 @@ func (c *retrieveCommander) retrieve(cmd *cobra.Command, _ []string) (err error)
 	fields["targetDirectory"] = targetDirectory
 	logging.WithFields(fields).Infof("Target Directory is %v", color.Cyan.Sprint(targetDirectory))
 
-	// TODO: put this behind a boolean command flag to avoid this process
-	if err = pkg.ClearDirectories(targetDirectory); err != nil {
-		logging.Get().Errorf("Unable to clear directory: %v", targetDirectory)
-		return
+	if !c.noClean {
+		logging.WithFields(fields).Infof("Cleaning target directory: %v", color.Cyan.Sprint(targetDirectory))
+		if err = pkg.ClearDirectories(targetDirectory); err != nil {
+			logging.Get().Errorf("Unable to clean target directory: %v", color.Cyan.Sprint(targetDirectory))
+			return
+		}
 	}
 
 	fields["writeStart"] = time.Now()

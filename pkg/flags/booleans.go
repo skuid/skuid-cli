@@ -58,6 +58,11 @@ var (
 		Global: true,
 	}
 
+	NoClean = &Flag[bool, bool]{
+		Name:  "no-clean",
+		Usage: "Do not clean the target directory",
+	}
+
 	// TODO: This can be removed once https://github.com/skuid/skuid-cli/issues/150 is resolved
 	SkipDataSources = &Flag[bool, bool]{
 		Name:  "skip-data-sources",
