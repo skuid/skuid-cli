@@ -73,19 +73,11 @@ var (
 )
 
 func WithFields(fields logrus.Fields) *logrus.Entry {
-	loggerSingleton = Get()
-	if debug {
-		return loggerSingleton.WithFields(fields)
-	}
-	return logrus.NewEntry(loggerSingleton)
+	return Get().WithFields(fields)
 }
 
 func WithField(field string, value interface{}) *logrus.Entry {
-	loggerSingleton = Get()
-	if debug {
-		return loggerSingleton.WithField(field, value)
-	}
-	return logrus.NewEntry(loggerSingleton)
+	return Get().WithField(field, value)
 }
 
 func Get() *logrus.Logger {
@@ -171,12 +163,13 @@ func setupLog(options *LoggingOptions) error {
 		}
 	}
 
+	debug = options.Debug
 	loggerSingleton = logrus.New()
 	loggerSingleton.SetLevel(options.Level)
-	loggerSingleton.SetFormatter(&logrus.TextFormatter{})
+	loggerSingleton.SetFormatter(&customFormatter{logrus.TextFormatter{}, debug})
 	loggerSingleton.SetOutput(output)
 	if options.FileLogging {
-		loggerSingleton.AddHook(lfshook.NewHook(logFile, &logrus.TextFormatter{DisableColors: true}))
+		loggerSingleton.AddHook(lfshook.NewHook(logFile, &customFormatter{logrus.TextFormatter{DisableColors: true}, debug}))
 	}
 	// force disabling colors applied to log messages (not the entire message itself, only the colors that we explicitly applied to the text
 	// inside the message) to avoid ANSI characters in the log file.  We lose colors in console by doing this (we really only want to disable
@@ -184,7 +177,6 @@ func setupLog(options *LoggingOptions) error {
 	// to the entire log message itself by logrus will still appear in the terminal and the lfshook will disable the logrus colors going to the
 	// file.  In short, we only lose colors that we applied directly to the text in the message (e.g. color.Green.Sprintf(...)).
 	color.Enable = !options.FileLogging
-	debug = options.Debug
 	return nil
 }
 
@@ -208,4 +200,20 @@ func createLogFile(loggingDirectory string) (*os.File, error) {
 	}
 
 	return file, nil
+}
+
+type customFormatter struct {
+	logrus.TextFormatter
+	includeFields bool
+}
+
+// Wrap Format to control the output of Fields (Data) in log messages.
+// This ensures that when logEntries are reused and additional fields
+// added, the fields won't be logged when debug is disabled.
+// See https://github.com/skuid/skuid-cli/issues/219
+func (f *customFormatter) Format(entry *logrus.Entry) ([]byte, error) {
+	if !f.includeFields {
+		clear(entry.Data)
+	}
+	return f.TextFormatter.Format(entry)
 }
