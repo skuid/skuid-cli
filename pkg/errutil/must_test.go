@@ -1,10 +1,10 @@
-package errors_test
+package errutil_test
 
 import (
 	"fmt"
 	"testing"
 
-	"github.com/skuid/skuid-cli/pkg/errors"
+	"github.com/skuid/skuid-cli/pkg/errutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -13,11 +13,11 @@ func TestMust(t *testing.T) {
 
 	// panics
 	assert.PanicsWithError(t, errMsg, func() {
-		errors.Must(errors.Critical(errMsg))
+		errutil.Must(errutil.Critical(errMsg))
 	})
 
 	// does not panic
-	errors.Must(nil)
+	errutil.Must(nil)
 }
 
 func TestMustConditionf(t *testing.T) {
@@ -27,9 +27,9 @@ func TestMustConditionf(t *testing.T) {
 
 	// panics
 	assert.PanicsWithError(t, errMsg, func() {
-		errors.MustConditionf(false, baseMsg, arg)
+		errutil.MustConditionf(false, baseMsg, arg)
 	})
 
 	// does not panic
-	errors.MustConditionf(true, baseMsg, arg)
+	errutil.MustConditionf(true, baseMsg, arg)
 }
