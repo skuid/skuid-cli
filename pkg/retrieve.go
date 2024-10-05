@@ -53,20 +53,6 @@ func Retrieve(options RetrieveOptions) (err error) {
 		return err
 	}
 
-	// Skuid Review Required - The prior code only "synced" the values here when `--since` was specified, however
-	// if any other filter flag was specified (e.g., --app), a planFilter would be constructed and it would contain
-	// a since value (the zero value of time.Time) so technically there is a "since" value provided to the server
-	// even though its value didn't come from user provided flag.  Given that, shouldn't this code sync the values
-	// for since if we have a non-nil filter instead of only when --since was specified by user via flag?
-	//
-	// TODO: Based on answer to above, adjust condition below and remove Since from RetrieveOptions as it isn't needed
-	// for anything other than to ensure consistent logic with v0.6.7
-	//
-	// pliny and warden are supposed to give the since value back for the retrieve, but just in case...
-	if options.Since != nil && options.PlanFilter != nil {
-		syncSince(options.PlanFilter, plans)
-	}
-
 	results, err := ExecuteRetrievePlan(options.Auth, plans)
 	if err != nil {
 		return err
@@ -126,6 +112,19 @@ func GetRetrievePlan(auth *Authorization, filter *NlxPlanFilter) (plans *NlxPlan
 	planNames := logging.CSV(slices.Values(plans.PlanNames))
 	logger = logger.WithField("planNames", planNames)
 	logger.Debugf("Received retrieval plan(s) %v", planNames)
+
+	// Skuid Review Required - Based on testing, it appears that a Metadata service plan should always be present, even if there is no metadata in it.  Modifying behavior
+	// to perform a validation to ensure we have a metadata service plan.  Is there any situation where a metadata service plan would not be present?  Should a Cloud data
+	// service that is present be processed if there isn't a metadata service plan?
+	// See https://github.com/skuid/skuid-cli/issues/225 & https://github.com/skuid/skuid-cli/issues/226.
+	//
+	// TODO: Adjust based on answer to above and/or https://github.com/skuid/skuid-cli/issues/225 & https://github.com/skuid/skuid-cli/issues/226
+	if plans.MetadataService == nil {
+		return nil, fmt.Errorf("unexpected retrieval plan(s) received, expected a %v plan but did not receive one, %v", logging.QuoteText(PlanNamePliny), logging.FILE_AN_ISSUE)
+	}
+
+	// pliny and warden are supposed to give the since value back for the retrieve, but just in case...
+	syncSince(filter, plans)
 
 	logger = logger.WithSuccess()
 	return plans, nil
@@ -253,6 +252,23 @@ func executeRetrievePlan(auth *Authorization, plan *NlxPlan, logger *logging.Log
 }
 
 func syncSince(planFilter *NlxPlanFilter, plans *NlxPlans) {
+	// Skuid Review Required - The prior code only "synced" the values here when `--since` was specified, however
+	// if any other filter flag was specified (e.g., --app), a planFilter would be constructed and it would contain
+	// a since value (the zero value of time.Time) so technically there is a "since" value provided to the server
+	// even though its value didn't come from user provided since flag.  Given that, shouldn't this code sync the
+	// values for since if we have a non-nil filter instead of only when --since was specified by user via flag
+	// (e.g., planFilter.Since.IsZero() != true)?  In short, if any filter flag is specified, a "since" value will
+	// be sent to server in the GetRetrievePlans request that will either contain Zero value of time.Time (if no
+	// since was specified, or non-zero value of time if since was specified).  Since we sent a time, shouldn't we
+	// always sync?  Or possibly we change NlxPlanFilter to be *time.Time to avoid writing something unless there
+	// was a flag?
+	//
+	// TODO: Based on answer to above, adjust condition below and remove Since from RetrieveOptions as it isn't needed
+	// for anything other than to ensure consistent logic with v0.6.7
+	if planFilter == nil || planFilter.Since.IsZero() {
+		return
+	}
+
 	sinceStr := flags.FormatSince(&planFilter.Since)
 	if plans.MetadataService.Since == "" {
 		plans.MetadataService.Since = sinceStr
