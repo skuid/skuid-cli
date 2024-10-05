@@ -223,6 +223,16 @@ func GetDeployPlan(auth *Authorization, sourceDirectory string, archiveFilter Ar
 	logger = logger.WithField("planNames", planNames)
 	logger.Debugf("Received deployment plan(s) %v", planNames)
 
+	// Skuid Review Required - Based on testing, it appears that a Metadata service plan should always be present, even if there is no metadata in it.  Modifying behavior
+	// to perform a validation to ensure we have a metadata service plan.  Is there any situation where a metadata service plan would not be present?  Should a Cloud data
+	// service that is present be processed if there isn't a metadata service plan?
+	// See https://github.com/skuid/skuid-cli/issues/225, https://github.com/skuid/skuid-cli/issues/226 & https://github.com/skuid/skuid-cli/issues/229
+	//
+	// TODO: Adjust based on answer to above and/or https://github.com/skuid/skuid-cli/issues/225, https://github.com/skuid/skuid-cli/issues/226 & https://github.com/skuid/skuid-cli/issues/229
+	if plans.MetadataService == nil {
+		return nil, fmt.Errorf("unexpected deployment plan(s) received, expected a %v plan but did not receive one, %v", logging.QuoteText(PlanNamePliny), logging.FileAnIssueText)
+	}
+
 	if err := validateDeployPlans(plans, archivedEntities, logger); err != nil {
 		// intentionally ignoring any error as currently using validation for logging purposes only
 		// TODO: This could be potentially relaxed to Debug/Trace level once all the known server-side API
@@ -293,12 +303,16 @@ func ExecuteDeployPlan(auth *Authorization, plans *NlxPlans, sourceDirectory str
 		return nil, fmt.Errorf("sourceDirectory %v must be an absolute path", logging.QuoteText(sourceDirectory))
 	}
 
-	if plans.MetadataService == nil && plans.CloudDataService == nil {
-		// Skuid Review Required - Would this ever be expected? Should this be an error or at least a warning? See https://github.com/skuid/skuid-cli/issues/229
-		// TODO: Adjust based on answer to above
-		logger.Tracef("No plan to execute, skipping")
-		logger = logger.WithSuccess()
-		return nil, nil
+	// Skuid Review Required - v0.6.7 would check if both plans were nil and if so, Tracef and return resulting in the user thinking the deployment was successful but nothing actually happened.  Also,
+	// if metadata service was nil but cloud data service was not, cloud data service would be processed.  Based on my testing and what I've experienced, it would
+	// seem that a MetadataService should always be present, even if it is empty and some code that exists in v0.6.7 assumes it's there and some code doesn't assume leading me to believe its always
+	// expected.  Given this, modifying the logic to explicitly require MetadataService plan (even if empty inside) and fail if not present.  Is it correct that MetadataService should always be present
+	// in all situations?  Should a CloudDataService plan ever be processed if MetadataService isn't present?
+	// See https://github.com/skuid/skuid-cli/issues/225, https://github.com/skuid/skuid-cli/issues/226 & https://github.com/skuid/skuid-cli/issues/229
+	//
+	// TODO: Adjust based on answer to above and/or to https://github.com/skuid/skuid-cli/issues/225, https://github.com/skuid/skuid-cli/issues/226 & https://github.com/skuid/skuid-cli/issues/229
+	if plans.MetadataService == nil {
+		return nil, fmt.Errorf("unable to execute deployment plan(s), expected a %v plan but did not receive one, %v", logging.QuoteText(PlanNamePliny), logging.FileAnIssueText)
 	}
 
 	allEntityPaths := logging.CSV(plans.EntityPaths.All())
@@ -310,35 +324,31 @@ func ExecuteDeployPlan(auth *Authorization, plans *NlxPlans, sourceDirectory str
 	// initialize to max of what we expect
 	deploymentResults = make([]deploymentValidator, 0, 4)
 
-	if plans.MetadataService != nil {
-		if result, err := executeDeploymentPlan[plinyResponse](auth, plans.MetadataService, sourceDirectory, logger); err != nil {
-			return nil, err
-		} else {
-			deploymentResults = append(deploymentResults, &plinyValidator{result})
-			if plans.CloudDataService != nil {
-				syncPermissionSets(result.response, plans.CloudDataService)
-			}
-		}
+	metaResult, err := executeDeploymentPlan[plinyResponse](auth, plans.MetadataService, sourceDirectory, logger)
+	if err != nil {
+		return nil, err
 	}
+	deploymentResults = append(deploymentResults, &plinyValidator{metaResult})
 
 	if plans.CloudDataService != nil {
-		if result, err := executeDeploymentPlan[plinyResponse](auth, plans.CloudDataService, sourceDirectory, logger); err != nil {
+		// Skuid Review Required - See comment/question in syncPermissionSets function
+		// TODO: Adjust based on answer to above
+		syncPermissionSets(metaResult.response, plans.CloudDataService)
+		dataResult, err := executeDeploymentPlan[wardenResponse](auth, plans.CloudDataService, sourceDirectory, logger)
+		if err != nil {
 			return nil, err
-		} else {
-			deploymentResults = append(deploymentResults, result)
-			if len(plans.CloudDataService.AllPermissionSets) > 0 {
-				result, err := updatePermissionSets(auth, plans.CloudDataService, logger)
-				if err != nil {
-					return nil, err
-				} else {
-					deploymentResults = append(deploymentResults, result)
-				}
+		}
+		deploymentResults = append(deploymentResults, dataResult)
+
+		if len(plans.CloudDataService.AllPermissionSets) > 0 {
+			if result, err := updatePermissionSets(auth, plans.CloudDataService, logger); err != nil {
+				return nil, err
+			} else {
+				deploymentResults = append(deploymentResults, result)
 			}
 		}
-	}
 
-	// Tell pliny to sync datasource external_id field with warden ids
-	if plans.MetadataService != nil && plans.CloudDataService != nil {
+		// Tell pliny to sync datasource external_id field with warden ids
 		if result, err := syncDataSources(auth, plans.MetadataService, logger); err != nil {
 			return nil, err
 		} else {

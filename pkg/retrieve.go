@@ -116,9 +116,9 @@ func GetRetrievePlan(auth *Authorization, filter *NlxPlanFilter) (plans *NlxPlan
 	// Skuid Review Required - Based on testing, it appears that a Metadata service plan should always be present, even if there is no metadata in it.  Modifying behavior
 	// to perform a validation to ensure we have a metadata service plan.  Is there any situation where a metadata service plan would not be present?  Should a Cloud data
 	// service that is present be processed if there isn't a metadata service plan?
-	// See https://github.com/skuid/skuid-cli/issues/225 & https://github.com/skuid/skuid-cli/issues/226.
+	// See https://github.com/skuid/skuid-cli/issues/225, https://github.com/skuid/skuid-cli/issues/226 & https://github.com/skuid/skuid-cli/issues/229
 	//
-	// TODO: Adjust based on answer to above and/or https://github.com/skuid/skuid-cli/issues/225 & https://github.com/skuid/skuid-cli/issues/226
+	// TODO: Adjust based on answer to above and/or https://github.com/skuid/skuid-cli/issues/225, https://github.com/skuid/skuid-cli/issues/226 & https://github.com/skuid/skuid-cli/issues/229
 	if plans.MetadataService == nil {
 		return nil, fmt.Errorf("unexpected retrieval plan(s) received, expected a %v plan but did not receive one, %v", logging.QuoteText(PlanNamePliny), logging.FileAnIssueText)
 	}
@@ -140,21 +140,21 @@ func ExecuteRetrievePlan(auth *Authorization, plans *NlxPlans) (results []NlxRet
 	logger := logging.WithTracking("pkg.ExecuteRetrieval", message, fields).StartTracking()
 	defer func() { logger.FinishTracking(err) }()
 
+	// Skuid Review Required - v0.6.7 simply checks for != nil and skips MetadataService but will process CloudDataService if present.  Based on my testing and what I've experienced, it would
+	// seem that a MetadataService should always be present, even if it is empty (e.g., a filter was applied and no results that matched it).  Given this, modifying the logic to explicitly
+	// require MetadataService plan (even if empty inside) and fail if not present.  Is it correct that MetadataService should always be present in all situations?  Should a CLoudDataService
+	// plan ever be processed if MetadataService isn't present? See https://github.com/skuid/skuid-cli/issues/225, https://github.com/skuid/skuid-cli/issues/226 & https://github.com/skuid/skuid-cli/issues/229
+	//
+	// TODO: Adjust based on answer to above and/or to https://github.com/skuid/skuid-cli/issues/225, https://github.com/skuid/skuid-cli/issues/226 & https://github.com/skuid/skuid-cli/issues/229
+	if plans.MetadataService == nil {
+		return nil, fmt.Errorf("unable to execute retrieval plan(s), expected a %v plan but did not receive one, %v", logging.QuoteText(PlanNamePliny), logging.FileAnIssueText)
+	}
+
 	allEntityPaths := logging.CSV(plans.EntityPaths.All())
 	logger.WithFields(logging.Fields{
 		"entities":     allEntityPaths,
 		"entitiesFrom": "Execute retrieval plan(s) " + planNames,
 	}).Debugf("Requesting entities %v", logging.ColorResource.Text(allEntityPaths))
-
-	// Skuid Review Required - v0.6.7 simply checks for != nil and skips MetadataService but will process CloudDataService if present.  Based on my testing and what I've experienced, it would
-	// seem that a MetadataService should always be present, even if it is empty (e.g., a filter was applied and no results that matched it).  Given this, modifying the logic to explicitly
-	// require MetadataService plan (even if empty inside) and fail if not present.  Is it correct that MetadataService should always be present in all situations?  Should a CLoudDataService
-	// plan ever be processed if MetadataService isn't present? See https://github.com/skuid/skuid-cli/issues/225
-	//
-	// TODO: Adjust based on answer to above and/or to https://github.com/skuid/skuid-cli/issues/225
-	if plans.MetadataService == nil {
-		return nil, fmt.Errorf("unable to execute retrieval plan(s), expected a %v plan but did not receive one, %v", logging.QuoteText(PlanNamePliny), logging.FileAnIssueText)
-	}
 
 	// has to be pliny, then warden
 	if result, err := executeRetrievePlan(auth, plans.MetadataService, logger); err != nil {

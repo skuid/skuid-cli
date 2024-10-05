@@ -132,9 +132,13 @@ func newNlxPlans(payload *nlxPlansPayload, planMode PlanMode) *NlxPlans {
 		return details
 	}
 
-	if payload.MetadataService != nil {
-		plans.MetadataService = addPlan(payload.MetadataService, PlanNamePliny)
-	}
+	// Skuid Review Required - Modifying to expect that a MetadataService plan will always exist.  Is this correct or is it possible metadata service
+	// may not exist and if there is a cloud service we should process it?
+	// See https://github.com/skuid/skuid-cli/issues/225, https://github.com/skuid/skuid-cli/issues/226 & https://github.com/skuid/skuid-cli/issues/229
+	//
+	// TODO: Adjust below with conditional if its possible that metadataservice may not exist and cloud data service, if present, should be processed
+	// even though there isn't a metadata service.
+	plans.MetadataService = addPlan(payload.MetadataService, PlanNamePliny)
 	if payload.CloudDataService != nil {
 		plans.CloudDataService = addPlan(payload.CloudDataService, PlanNameWarden)
 	}
