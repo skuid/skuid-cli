@@ -6,6 +6,7 @@ import (
 	"net/url"
 
 	"github.com/skuid/skuid-cli/pkg/flags"
+	"github.com/skuid/skuid-cli/pkg/logging"
 )
 
 type Authorization struct {
@@ -20,7 +21,7 @@ type AuthorizeOptions struct {
 	Password *flags.Value[string]
 }
 
-func GetAccessToken(opts *AuthorizeOptions) (accessToken string, err error) {
+func GetAccessToken(opts *AuthorizeOptions) (string, error) {
 	// prep the body
 	body := []byte(url.Values{
 		"grant_type": []string{"password"},
@@ -33,8 +34,7 @@ func GetAccessToken(opts *AuthorizeOptions) (accessToken string, err error) {
 		AccessToken string `json:"access_token"`
 	}
 
-	var resp AccessTokenResponse
-	if resp, err = JsonBodyRequest[AccessTokenResponse](
+	if resp, err := JsonBodyRequest[AccessTokenResponse](
 		opts.Host+"/auth/oauth/token",
 		http.MethodPost,
 		body,
@@ -42,21 +42,18 @@ func GetAccessToken(opts *AuthorizeOptions) (accessToken string, err error) {
 			HeaderContentType: URL_ENCODED_CONTENT_TYPE,
 		},
 	); err != nil {
-		return
+		return "", err
+	} else {
+		return resp.AccessToken, nil
 	}
-
-	accessToken = resp.AccessToken
-
-	return
 }
 
-func GetAuthorizationToken(host, accessToken string) (authToken string, err error) {
+func GetAuthorizationToken(host, accessToken string) (string, error) {
 	type AuthorizationTokenResponse struct {
 		AuthorizationToken string `json:"token"`
 	}
 
-	var resp AuthorizationTokenResponse
-	if resp, err = JsonBodyRequest[AuthorizationTokenResponse](
+	if resp, err := JsonBodyRequest[AuthorizationTokenResponse](
 		fmt.Sprintf("%v/api/%v/auth/token", host, DEFAULT_API_VERSION),
 		http.MethodGet,
 		[]byte{},
@@ -64,24 +61,42 @@ func GetAuthorizationToken(host, accessToken string) (authToken string, err erro
 			HeaderAuthorization: fmt.Sprintf("Bearer %v", string(accessToken)),
 		},
 	); err != nil {
-		return
+		return "", err
+	} else {
+		return resp.AuthorizationToken, nil
 	}
-
-	authToken = resp.AuthorizationToken
-
-	return
 }
 
-func Authorize(opts *AuthorizeOptions) (info *Authorization, err error) {
-	info = &Authorization{
-		Host: opts.Host,
+func AuthorizeOnce(opts *AuthorizeOptions) (*Authorization, error) {
+	auth, err := Authorize(opts)
+	// we don't need it anymore - very inelegant approach but at least it is something for now
+	// Clearing it here instead of in auth package which is the only place its accessed because the tests that exist
+	// for auth rely on package global variables so clearing in there would break those tests as they currently exist.
+	//
+	// TODO: Implement a solution for secure storage of the password while in memory and implement a proper one-time use
+	// approach assuming Skuid supports refresh tokens (see https://github.com/skuid/skuid-cli/issues/172)
+	// intentionally ignoring error since there is nothing we can do and we should fail entirely as a result
+	_ = opts.Password.Set("")
+	return auth, err
+}
+
+func Authorize(opts *AuthorizeOptions) (auth *Authorization, err error) {
+	message := "Requesting authentication"
+	fields := logging.Fields{
+		"host":     opts.Host,
+		"username": opts.Username,
+	}
+	logger := logging.WithTracking("pkg.Authorize", message, fields).StartTracking()
+	defer func() { logger.FinishTracking(err) }()
+
+	auth = &Authorization{Host: opts.Host}
+	if auth.AccessToken, err = GetAccessToken(opts); err != nil {
+		return nil, err
+	}
+	if auth.AuthorizationToken, err = GetAuthorizationToken(auth.Host, auth.AccessToken); err != nil {
+		return nil, err
 	}
 
-	if info.AccessToken, err = GetAccessToken(opts); err != nil {
-		return
-	}
-
-	info.AuthorizationToken, err = GetAuthorizationToken(info.Host, info.AccessToken)
-
-	return
+	logger = logger.WithSuccess()
+	return auth, nil
 }

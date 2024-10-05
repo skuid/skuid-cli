@@ -1,10 +1,10 @@
 package util
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
 
+	"github.com/goccy/go-json"
 	"github.com/skuid/skuid-cli/pkg/logging"
 )
 
@@ -44,37 +44,38 @@ func ReplaceNamePlaceholders(in []byte) []byte {
 	)
 }
 
-func ReSortJson(data []byte) (replaced []byte, err error) {
-	return ReSortJsonIndent(data, true)
-}
-
 // this takes marshalled json in bytes and resorts it recursively the way
 // we want it, with "name" field first.
-func ReSortJsonIndent(data []byte, indent bool) (replaced []byte, err error) {
+func ReSortJson(data []byte, indent bool) (sorted []byte, err error) {
+	message := "Re-sorting JSON"
+	fields := logging.Fields{
+		"dataLen": len(data),
+		"indent":  indent,
+	}
+	logger := logging.WithTraceTracking("util.ReSortJsonIndent", message, fields).StartTracking()
+	defer func() { logger.FinishTracking(err) }()
+
 	var unsorted map[string]interface{}
-	err = json.Unmarshal(data, &unsorted)
-	if err != nil {
-		logging.Get().Tracef("Error Unmarshalling into map[string]interface{}: %v", string(data))
-		return
+	if err := json.Unmarshal(data, &unsorted); err != nil {
+		logger.WithError(err).Debugf("Error unmarshalling into map[string]interface{}: %s", data)
+		return nil, fmt.Errorf("unable to re-sort json indent due to parsing error: %w", err)
 	}
 
 	// insert the name placeholders
-	InsertNamePlaceholders(unsorted)
+	unsorted = InsertNamePlaceholders(unsorted)
 
 	// marshal, which uses the native ordering
 	// (will do alphanumerically)
-	var sorted []byte
 	if indent {
 		sorted, err = json.MarshalIndent(unsorted, "", "\t")
 	} else {
 		sorted, err = json.Marshal(unsorted)
 	}
 	if err != nil {
-		return
+		logger.WithError(err).Debugf("Error marshalling data: %v", unsorted)
+		return nil, fmt.Errorf("unable to convert data to JSON bytes: %w", err)
 	}
 
-	// replace the name placeholders
-	replaced = ReplaceNamePlaceholders(sorted)
-
-	return
+	logger = logger.WithSuccess()
+	return ReplaceNamePlaceholders(sorted), nil
 }

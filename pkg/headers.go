@@ -2,6 +2,8 @@ package pkg
 
 import (
 	"fmt"
+
+	"github.com/skuid/skuid-cli/pkg/logging"
 )
 
 const (
@@ -200,17 +202,16 @@ func ContainsHeader(headers RequestHeaders, header string, value string) bool {
 
 // GeneratePlanHeaders is a lot like GenerateRoute. We check whether it's a warden
 // or a pliny request, then change the parameters depending on that.
-func GeneratePlanHeaders(info *Authorization, plan NlxPlan) (headers RequestHeaders) {
+func GeneratePlanHeaders(info *Authorization, planName PlanName, host string) RequestHeaders {
 	// pliny requests will be to the same host that info authorization came from,
-	// so plan.Host will be empty string
-	wardenRequest := plan.Host != ""
-
-	// when given a warden request we need to provide the authorization / jwt token
-	if wardenRequest {
-		headers = GenerateHeaders(info.Host, info.AuthorizationToken)
+	// so plan.Host will be empty string. When given a warden request we need to
+	// provide the authorization / jwt token
+	if planName == PlanNameWarden {
+		return GenerateHeaders(info.Host, info.AuthorizationToken)
+	} else if planName == PlanNamePliny {
+		return GenerateHeaders(info.Host, info.AccessToken)
 	} else {
-		headers = GenerateHeaders(info.Host, info.AccessToken)
+		// should not happen in production
+		panic(fmt.Errorf("unexpected plan name %v", logging.QuoteText(planName)))
 	}
-
-	return
 }

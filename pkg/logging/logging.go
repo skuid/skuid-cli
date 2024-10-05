@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"os"
 	"strings"
 	"sync"
@@ -14,12 +15,12 @@ import (
 	"github.com/gookit/color"
 	"github.com/rifflock/lfshook"
 	"github.com/sirupsen/logrus"
-	clierrors "github.com/skuid/skuid-cli/pkg/errors"
+	"github.com/skuid/skuid-cli/pkg/errutil"
 )
 
 type LoggingOptions struct {
 	Level            logrus.Level
-	Debug            bool
+	Diag             bool
 	FileLogging      bool
 	FileLoggingDir   string
 	NoConsoleLogging bool
@@ -43,16 +44,21 @@ type LoggingOptions struct {
 type LogInformer interface {
 	Setup(*LoggingOptions) error
 	Teardown()
+	IsInitialized() bool
 }
 
 type LogConfig struct{}
 
 func (l *LogConfig) Setup(opts *LoggingOptions) error {
-	return Setup(opts)
+	return setup(opts)
 }
 
 func (l *LogConfig) Teardown() {
-	Teardown()
+	teardown()
+}
+
+func (l *LogConfig) IsInitialized() bool {
+	return isInitialized()
 }
 
 func NewLogConfig() LogInformer {
@@ -62,25 +68,14 @@ func NewLogConfig() LogInformer {
 var (
 	safe             sync.Mutex
 	loggerSingleton  *logrus.Logger
-	debug            bool
+	diag             bool
 	logFile          *os.File
-	fileStringFormat = func() (ret string) {
-		ret = time.RFC3339
-		ret = strings.ReplaceAll(ret, " ", "")
-		ret = strings.ReplaceAll(ret, ":", "")
-		return
+	fileStringFormat = func() string {
+		return strings.ReplaceAll(strings.ReplaceAll(time.RFC3339, " ", ""), ":", "")
 	}()
 )
 
-func WithFields(fields logrus.Fields) *logrus.Entry {
-	return Get().WithFields(fields)
-}
-
-func WithField(field string, value interface{}) *logrus.Entry {
-	return Get().WithField(field, value)
-}
-
-func Get() *logrus.Logger {
+func newLogrusLogger() *logrus.Logger {
 	safe.Lock()
 	defer safe.Unlock()
 
@@ -106,7 +101,7 @@ func Get() *logrus.Logger {
 	//       of maintaining all current tests while enforcing that during normal execution, Init must
 	//       be called prior to any log messages being emitted. Once DI is implemented, the entire logging package
 	//       goes away so this will be eliminated.
-	if testing.Testing() && loggerSingleton == nil {
+	if testing.Testing() && !isInitializedInternal() {
 		if err := setupLog(&LoggingOptions{}); err != nil {
 			panic(err)
 		}
@@ -115,20 +110,20 @@ func Get() *logrus.Logger {
 		// this enforces that during normal execution, no logging occurs prior to logging being initialized
 		// as we want to ensure that all logs go to a single location and initialization is required to
 		// configure the target location (stdout, file) with the specified logging level.
-		clierrors.MustConditionf(loggerSingleton != nil, "logger not initialized")
+		errutil.MustConditionf(loggerSingleton != nil, "logger not initialized")
 	}
 
 	return loggerSingleton
 }
 
-func Setup(options *LoggingOptions) error {
+func setup(options *LoggingOptions) error {
 	safe.Lock()
 	defer safe.Unlock()
 
 	return setupLog(options)
 }
 
-func Teardown() {
+func teardown() {
 	safe.Lock()
 	defer safe.Unlock()
 
@@ -139,16 +134,29 @@ func Teardown() {
 		logFile = nil
 	}
 	loggerSingleton = nil
-	debug = false
+	diag = false
 }
 
-func DebugEnabled() bool {
-	return debug
+func diagEnabled() bool {
+	return diag
 }
 
+func isInitialized() bool {
+	safe.Lock()
+	defer safe.Unlock()
+
+	return isInitializedInternal()
+}
+
+// Assumes lock has been acquired by calling function
+func isInitializedInternal() bool {
+	return loggerSingleton != nil
+}
+
+// Assumes lock has been acquired by calling function
 func setupLog(options *LoggingOptions) error {
 	// should never occur in production
-	clierrors.MustConditionf(loggerSingleton == nil, "logger already initialized")
+	errutil.MustConditionf(loggerSingleton == nil, "logger already initialized")
 
 	var output io.Writer = os.Stdout
 	if options.NoConsoleLogging {
@@ -163,20 +171,20 @@ func setupLog(options *LoggingOptions) error {
 		}
 	}
 
-	debug = options.Debug
+	// if file logging is enabled, we disable all colors, both within our messages (via color package) and within logrus (it applies colors to log levels, field names, etc.)
+	// to avoid ANSI characters in the log file. Given current usage of color package, in order to always have colors in TTY and no colors in log files, we would need
+	// to write a custom formatter to strip colors when going to a file.  To avoid that complexity, we simply disable colors in our messages (via color.Enable below).  We
+	// also disable logrus colors when file logging is enabled to avoid the only colors in the TTY output being that of logrus in order to have consistent TTY output
+	// between when file logging is disabled (both our colors and logrus colors emit) and when file logging enabled (neither emit)
+	color.Enable = !options.FileLogging
+	diag = options.Diag
 	loggerSingleton = logrus.New()
 	loggerSingleton.SetLevel(options.Level)
-	loggerSingleton.SetFormatter(&customFormatter{logrus.TextFormatter{}, debug})
+	loggerSingleton.SetFormatter(&customFormatter{logrus.TextFormatter{TimestampFormat: TimestampFormat, ForceQuote: true, DisableColors: !color.Enable}, diag})
 	loggerSingleton.SetOutput(output)
 	if options.FileLogging {
-		loggerSingleton.AddHook(lfshook.NewHook(logFile, &customFormatter{logrus.TextFormatter{DisableColors: true}, debug}))
+		loggerSingleton.AddHook(lfshook.NewHook(logFile, &customFormatter{logrus.TextFormatter{TimestampFormat: TimestampFormat, ForceQuote: true, DisableColors: true}, diag}))
 	}
-	// force disabling colors applied to log messages (not the entire message itself, only the colors that we explicitly applied to the text
-	// inside the message) to avoid ANSI characters in the log file.  We lose colors in console by doing this (we really only want to disable
-	// in the file) but the only alternative is to have a custom formatters that strips the ansi codes during the file log.  The colors applied
-	// to the entire log message itself by logrus will still appear in the terminal and the lfshook will disable the logrus colors going to the
-	// file.  In short, we only lose colors that we applied directly to the text in the message (e.g. color.Green.Sprintf(...)).
-	color.Enable = !options.FileLogging
 	return nil
 }
 
@@ -215,5 +223,21 @@ func (f *customFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	if !f.includeFields {
 		clear(entry.Data)
 	}
+
+	// ensure types are formatted consistently as logrus will not use TextFormatter.TimestampFormat
+	// for anything other than the logrus.FieldKeyTime
+	for k, v := range maps.All(entry.Data) {
+		switch val := v.(type) {
+		case *time.Time:
+			entry.Data[k] = FormatTime(val)
+		case time.Time:
+			entry.Data[k] = FormatTime(&val)
+		case *time.Duration:
+			entry.Data[k] = FormatDuration(val)
+		case time.Duration:
+			entry.Data[k] = FormatDuration(&val)
+		}
+	}
+
 	return f.TextFormatter.Format(entry)
 }

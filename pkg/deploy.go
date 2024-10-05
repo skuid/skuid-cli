@@ -7,31 +7,31 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/bobg/go-generics/v4/set"
 	"github.com/bobg/go-generics/v4/slices"
+	"github.com/bobg/seqs"
 	"github.com/goccy/go-json"
 	"github.com/google/uuid"
-	"github.com/gookit/color"
-	"github.com/sirupsen/logrus"
+	"github.com/skuid/skuid-cli/pkg/constants"
+	"github.com/skuid/skuid-cli/pkg/flags"
 	"github.com/skuid/skuid-cli/pkg/logging"
 	"github.com/skuid/skuid-cli/pkg/metadata"
 	"github.com/skuid/skuid-cli/pkg/util"
 )
 
 var (
-	DeployPlanRoute = fmt.Sprintf("api/%v/metadata/deploy/plan", DEFAULT_API_VERSION)
+	DeployPlanRoute   = fmt.Sprintf("api/%v/metadata/deploy/plan", DEFAULT_API_VERSION)
+	ErrArchiveNoFiles = fmt.Errorf("unable to create archive, no files were found, %v", flags.UseDebugMessage())
 )
 
-const (
-	METADATA_PLAN_KEY  = "skuidMetadataService"
-	METADATA_PLAN_TYPE = "metadataService"
-	DATA_PLAN_KEY      = "skuidCloudDataService"
-	DATA_PLAN_TYPE     = "dataService"
-)
-
-type NlxDynamicPlanMap map[string]NlxPlan
+type DeployOptions struct {
+	ArchiveFilter     ArchiveFilter
+	Auth              *Authorization
+	EntitiesToArchive []metadata.MetadataEntity
+	PlanFilter        *NlxPlanFilter
+	SourceDirectory   string
+}
 
 type FilteredRequestBody struct {
 	AppName string `json:"appName"`
@@ -68,7 +68,7 @@ type permissionSetResults struct {
 	Deletes []PermissionSetResult `json:"deletes"`
 }
 
-type plinyResult struct {
+type plinyResponse struct {
 	Apps               metadataTypeResults  `json:"apps"`
 	AuthProviders      metadataTypeResults  `json:"authproviders"`
 	ComponentPacks     metadataTypeResults  `json:"componentpacks"`
@@ -85,100 +85,187 @@ type plinyResult struct {
 	Themes             metadataTypeResults  `json:"themes"`
 }
 
+type wardenResponse struct{}
+
+type deploymentResponse interface {
+	wardenResponse | plinyResponse | []byte
+}
+
+type deploymentValidator interface {
+	Validate() (string, bool)
+	Name() string
+}
+
+type deploymentResult[T any, R deploymentResponse] struct {
+	name     string
+	request  deploymentRequest[T]
+	response R
+}
+
+func (r *deploymentResult[T, R]) Validate() (string, bool) {
+	// Skuid Review Required - Except for the metadata plan (see plinyValidator) which returns partial results, the other deployment APIs return either
+	// no results at all (data plan & update permission sets) or an unknown format (sync data sources) so there is no way to validate actual vs expected
+	// which is critical due to all the server API issues (e.g., https://github.com/skuid/skuid-cli/issues/163).
+	// See https://github.com/skuid/skuid-cli/issues/211
+	//
+	// TODO:  adjust once https://github.com/skuid/skuid-cli/issues/211 is addressed and all 4 APIs return results that are reliable and in a known
+	// format
+	logging.
+		WithName("pkg.deploymentResult::Validate", logging.Fields{"deploymentName": r.name}).
+		Debugf("%v %v", logging.ColorWarning.Text("Skipping validation of result for deployment "), logging.QuoteText(r.name))
+	return r.name, true
+}
+
+func (r *deploymentResult[T, R]) Name() string {
+	return r.name
+}
+
+type plinyValidator struct {
+	*deploymentResult[NlxPlan, plinyResponse]
+}
+
+func (r *plinyValidator) Validate() (deploymentName string, isValid bool) {
+	message := fmt.Sprintf("Validating result for deployment %v", r.name)
+	fields := logging.Fields{
+		"deploymentName": r.name,
+	}
+	logger := logging.WithTraceTracking("pkg.plinyValidator::Validate", message, fields).StartTracking()
+	defer func() { logger.FinishTracking(nil) }()
+
+	// Skuid Review Required - The metadata plan does not contain the full set of entities in the result returned.  For now, we treat it
+	// as if there are full results and indicate in the message that the results returned are NOT RELIABLE so the warning may be a false positive.
+	// see https://github.com/skuid/skuid-cli/issues/211
+	//
+	// TODO: Adjust once https://github.com/skuid/skuid-cli/issues/211 is addressed
+	plan := r.request.payload
+	response := r.response
+	planEntityPaths := plan.EntityPaths
+	modifiedEntityPaths, deletedEntityPaths := getDeploymentResultEntityPaths(response)
+
+	modifiedEqual := planEntityPaths.Equal(modifiedEntityPaths)
+	hasDeleted := len(deletedEntityPaths) > 0
+
+	if modifiedEqual && !hasDeleted {
+		logger = logger.WithSuccess()
+		return r.name, true
+	}
+
+	msgPrefix := logging.ColorWarning.Sprintf("Unexpected deployment result %v:", logging.QuoteText(r.name))
+	if !modifiedEqual {
+		planMissing := set.Diff(planEntityPaths, modifiedEntityPaths)
+		modifiedMissing := set.Diff(modifiedEntityPaths, planEntityPaths)
+
+		for _, p := range slices.Sorted(planMissing.All()) {
+			// TODO: Change to Warnf once https://github.com/skuid/skuid-cli/issues/211 is addressed
+			logger.Debugf("%v entity %v was not deployed but was expected", msgPrefix, logging.ColorResource.QuoteText(p))
+		}
+		for _, p := range slices.Sorted(modifiedMissing.All()) {
+			// TODO: Change to Warnf once https://github.com/skuid/skuid-cli/issues/211 is addressed
+			logger.Debugf("%v entity %v was deployed but was not expected", msgPrefix, logging.ColorResource.QuoteText(p))
+		}
+	}
+	if hasDeleted {
+		for _, p := range slices.Sorted(deletedEntityPaths.All()) {
+			// TODO: Change to Warnf once https://github.com/skuid/skuid-cli/issues/211 is addressed
+			logger.Debugf("%v entity %v was deleted which was not expected", msgPrefix, logging.ColorResource.QuoteText(p))
+		}
+	}
+
+	return r.name, false
+}
+
+type deploymentRequest[T any] struct {
+	headers RequestHeaders
+	url     string
+	payload *T
+	body    []byte
+}
+
 // TODO: This can be made private once improvements are made to address https://github.com/skuid/skuid-cli/issues/166 (e.g., test coverage, dependency injection to enable proper unit tests, etc.)
-func GetDeployPlan(auth *Authorization, deploymentPlan []byte, filter *NlxPlanFilter) (duration time.Duration, results NlxDynamicPlanMap, err error) {
-	logging.Get().Trace("Getting Deploy Plan")
-	start := time.Now()
-	defer func() { duration = time.Since(start) }()
+func GetDeployPlan(auth *Authorization, sourceDirectory string, archiveFilter ArchiveFilter, entitiesToArchive []metadata.MetadataEntity, planFilter *NlxPlanFilter) (plans *NlxPlans, err error) {
+	message := "Getting deployment plan(s)"
+	fields := logging.Fields{
+		"sourceDirectory":      sourceDirectory,
+		"archiveFilterNil":     archiveFilter == nil,
+		"entitiesToArchiveLen": len(entitiesToArchive),
+		"planFilter":           fmt.Sprintf("%+v", planFilter),
+	}
+	logger := logging.WithTracking("pkg.GetDeployPlan", message, fields).StartTracking()
+	defer func() { logger.FinishTracking(err) }()
+
+	if !filepath.IsAbs(sourceDirectory) {
+		return nil, fmt.Errorf("sourceDirectory %v must be an absolute path", logging.QuoteText(sourceDirectory))
+	}
+
+	payload, _, archivedEntities, err := archive(sourceDirectory, archiveFilter, metadata.MetadataEntityPaths(entitiesToArchive))
+	if err != nil {
+		return nil, err
+	}
 
 	// pliny request, use access token
 	headers := GenerateHeaders(auth.Host, auth.AccessToken)
 	headers[HeaderContentType] = ZIP_CONTENT_TYPE
-
-	var body []byte
-	if filter != nil {
-		logging.Get().Debug("Using file filter")
-		// change content type to json and add content encoding
-		headers[HeaderContentType] = JSON_CONTENT_TYPE
-		headers[HeaderContentEncoding] = GZIP_CONTENT_ENCODING
-		// add the deployment plan bytes to the payload
-		// instead of just using that as the payload
-		requestBody := FilteredRequestBody{
-			filter.AppName,
-			// pages flag does not work as expected so commenting out
-			// TODO: Remove completely or fix issues depending on https://github.com/skuid/skuid-cli/issues/147 & https://github.com/skuid/skuid-cli/issues/148
-			//filter.PageNames,
-			deploymentPlan,
-			filter.IgnoreSkuidDb,
-		}
-
-		if body, err = json.Marshal(requestBody); err != nil {
-			logging.Get().Warnf("Error marshalling filter request: %v", err)
-			return
-		}
-	} else {
-		// set the deployment plan as the payload
-		body = deploymentPlan
+	reqBody, err := getDeployPlanRequestBody(headers, payload, planFilter, logger)
+	if err != nil {
+		return nil, err
 	}
 
-	// make the request
-	results, err = JsonBodyRequest[NlxDynamicPlanMap](
-		fmt.Sprintf("%s/%s", auth.Host, DeployPlanRoute),
-		http.MethodPost,
-		body,
-		headers,
-	)
+	loggerEntityPaths := logging.CSV(metadata.MetadataEntityPaths(archivedEntities).All())
+	logger.WithFields(logging.Fields{
+		"entities":     loggerEntityPaths,
+		"entitiesFrom": "Get deployment plan(s) request",
+	}).Debugf("Requesting deployment plan(s) for entities %v", logging.ColorResource.Text(loggerEntityPaths))
+	plans, err = RequestNlxPlans(fmt.Sprintf("%s/%s", auth.Host, DeployPlanRoute), headers, reqBody, PlanModeDeploy)
+	if err != nil {
+		return nil, err
+	}
+	planNames := logging.CSV(slices.Values(plans.PlanNames))
+	logger = logger.WithField("planNames", planNames)
+	logger.Debugf("Received deployment plan(s) %v", planNames)
 
-	return
+	if err := validateDeployPlans(plans, archivedEntities, logger); err != nil {
+		// intentionally ignoring any error as currently using validation for logging purposes only
+		// TODO: This could be potentially relaxed to Debug/Trace level once all the known server-side API
+		//       issues are addressed and things are more reliable in general.  For example, attempting
+		//       to upload a Files entity with a name that starts with a period (e.g., .my-file.txt) will
+		//       result in the deployment plan not containing that file even though the web ui allows
+		//       it (see https://github.com/skuid/skuid-cli/issues/158).
+		logger.Warn(logging.ColorWarning.Text(err.Error()))
+	}
+
+	logger = logger.WithSuccess()
+	return plans, nil
 }
 
-func Deploy(auth *Authorization, targetDirectory string, archiveFilter ArchiveFilter, entitiesToArchive []metadata.MetadataEntity, planFilter *NlxPlanFilter) error {
-	if !filepath.IsAbs(targetDirectory) {
-		return fmt.Errorf("targetDirectory must be an absolute path")
+func Deploy(options DeployOptions) (err error) {
+	message := fmt.Sprintf("Deploying site %v from directory %v", logging.ColorResource.Text(options.Auth.Host), logging.ColorResource.QuoteText(options.SourceDirectory))
+	fields := logging.Fields{
+		"host":                 options.Auth.Host,
+		"sourceDirectory":      options.SourceDirectory,
+		"archiveFilterNil":     options.ArchiveFilter == nil,
+		"entitiesToArchiveLen": len(options.EntitiesToArchive),
+		"planFilter":           fmt.Sprintf("%+v", options.PlanFilter),
+	}
+	logger := logging.WithTracking("pkg.Deploy", message, fields).StartTracking()
+	defer func() { logger.FinishTracking(err) }()
+
+	if !filepath.IsAbs(options.SourceDirectory) {
+		return fmt.Errorf("sourceDirectory %v must be an absolute path", logging.QuoteText(options.SourceDirectory))
 	}
 
-	logging.Get().Info("Building deployment request")
-	deploymentRequest, archivedFilePaths, archivedEntities, err := archive(targetDirectory, archiveFilter, getMetadataEntityPaths(entitiesToArchive))
+	plans, err := GetDeployPlan(options.Auth, options.SourceDirectory, options.ArchiveFilter, options.EntitiesToArchive, options.PlanFilter)
 	if err != nil {
 		return err
 	}
-	logging.WithFields(logrus.Fields{
-		"deploymentBytes":     len(deploymentRequest),
-		"deploymentEntities":  len(archivedEntities),
-		"deploymentFilePaths": len(archivedFilePaths),
-	}).Tracef("Built deployment request")
 
-	logging.Get().Info("Getting deployment plan(s)")
-	duration, plans, err := GetDeployPlan(auth, deploymentRequest, planFilter)
+	results, err := ExecuteDeployPlan(options.Auth, plans, options.SourceDirectory)
 	if err != nil {
 		return err
-	} else if err := validateDeployPlans(plans, archivedEntities); err != nil {
-		// intentionally ignoring any error as currently using validation for logging purposes only
-		logging.Get().Warn(err)
 	}
-	logging.WithFields(logrus.Fields{
-		"plans":    len(plans),
-		"duration": duration,
-	}).Tracef("Received deployment plan(s)")
 
-	logging.Get().Info("Executing deployment plan(s)")
-	duration, results, err := ExecuteDeployPlan(auth, plans, targetDirectory)
-	if err != nil {
-		return err
-	} else if logging.DebugEnabled() {
-		// deployment results are unreliable and will lead to false positives so only inspect them when debug is enabled for perf reasons
-		// intentionally ignoring any error and using Trace to log since its only for informational purposes at this point
-		// TODO: when Issue #211 is addressed server side, the error could be acted upon as appropriate
-		// see https://github.com/skuid/skuid-cli/issues/211
-		if vErr := validateDeployResults(results); vErr != nil {
-			logging.Get().Tracef("deployment results do not match expected results, however the deployment results are NOT RELIABLE so there may be false positives: %v", vErr)
-		}
-	}
-	logging.WithFields(logrus.Fields{
-		"results":  len(results),
-		"duration": duration,
-	}).Tracef("Executed deployment plan(s)")
-
+	logger = logger.WithSuccess(logging.Fields{
+		"resultsLen": len(results),
+	})
 	return nil
 }
 
@@ -192,182 +279,252 @@ func Deploy(auth *Authorization, targetDirectory string, archiveFilter ArchiveFi
 // 5. If metadata and data was deployed, send a request to pliny to sync its datasources' external_ids with warden datasource
 // ids, in case they changed during the deploy
 // TODO: This can be made private once improvements are made to address https://github.com/skuid/skuid-cli/issues/166 (e.g., test coverage, dependency injection to enable proper unit tests, etc.)
-func ExecuteDeployPlan(auth *Authorization, plans NlxDynamicPlanMap, targetDir string) (duration time.Duration, planResults []NlxDeploymentResult, err error) {
-	logging.Get().Trace("Executing Deploy Plan")
+func ExecuteDeployPlan(auth *Authorization, plans *NlxPlans, sourceDirectory string) (deploymentResults []deploymentValidator, err error) {
+	planNames := logging.CSV(slices.Values(plans.PlanNames))
+	message := "Executing deployment plan(s)"
+	fields := logging.Fields{
+		"planNames":       planNames,
+		"sourceDirectory": sourceDirectory,
+	}
+	logger := logging.WithTracking("pkg.ExecuteDeployPlan", message, fields).StartTracking()
+	defer func() { logger.FinishTracking(err) }()
 
-	start := time.Now()
-	defer func() { duration = time.Since(start) }()
-
-	if !filepath.IsAbs(targetDir) {
-		err = fmt.Errorf("targetDir must be an absolute path")
-		return
+	if !filepath.IsAbs(sourceDirectory) {
+		return nil, fmt.Errorf("sourceDirectory %v must be an absolute path", logging.QuoteText(sourceDirectory))
 	}
 
-	metaPlan, mok := plans[METADATA_PLAN_KEY]
-	dataPlan, dok := plans[DATA_PLAN_KEY]
-	if !mok && !dok {
-		return
+	if plans.MetadataService == nil && plans.CloudDataService == nil {
+		// Skuid Review Required - Would this ever be expected? Should this be an error or at least a warning? See https://github.com/skuid/skuid-cli/issues/229
+		// TODO: Adjust based on answer to above
+		logger.Tracef("No plan to execute, skipping")
+		logger = logger.WithSuccess()
+		return nil, nil
 	}
 
-	// Warning for metaplan
-	for _, warning := range metaPlan.Warnings {
-		logging.Get().Warnf("Warning %v", warning)
-	}
+	allEntityPaths := logging.CSV(plans.EntityPaths.All())
+	logger.WithFields(logging.Fields{
+		"entities":     allEntityPaths,
+		"entitiesFrom": "Execute deployment plan(s) " + planNames,
+	}).Debugf("Deploying entities %v", logging.ColorResource.Text(allEntityPaths))
 
-	// Warning for dataplan
-	for _, warning := range dataPlan.Warnings {
-		logging.Get().Warnf("Warning %v", warning)
-	}
+	// initialize to max of what we expect
+	deploymentResults = make([]deploymentValidator, 0, 4)
 
-	planResults = make([]NlxDeploymentResult, 0)
-
-	executePlan := func(plan NlxPlan) (err error) {
-		logging.Get().Infof("Deploying %v", color.Magenta.Sprint(plan.Type))
-
-		logging.Get().Tracef("Archiving %v", targetDir)
-		payload, archivedFilePaths, archivedEntities, err := archive(targetDir, MetadataArchiveFilter(&plan.Metadata), getPlanEntityPaths(plan))
-		if err != nil {
-			logging.Get().Trace("Error creating deployment ZIP archive")
-			return
-		}
-		logging.WithFields(logrus.Fields{
-			"payloadBytes":     len(payload),
-			"payloadEntities":  len(archivedEntities),
-			"payloadFilePaths": len(archivedFilePaths),
-		}).Tracef("Built payload for deploy plan %q", plan.Type)
-
-		headers := GeneratePlanHeaders(auth, plan)
-		logging.Get().Tracef("Plan Headers: %v\n", headers)
-
-		url := GenerateRoute(auth, plan)
-		logging.Get().Tracef("Plan Request: %v\n", url)
-
-		var response []byte
-		// Skuid Review Required - Results are not complete for metadataService and completely blank for dataService.  Need full results in
-		// order to validate against plan.
-		// see https://github.com/skuid/skuid-cli/issues/211
-		// TODO: dataService is skipped during validation because its blank, update validationDeployResults once above is answered/addressed.
-		response, err = Request(url, http.MethodPost, payload, headers)
-		if err != nil {
-			logging.Get().Tracef("Url: %v", url)
-			logging.Get().Tracef("Error on request: %v\n", err.Error())
-			return
-		}
-		logging.Get().Infof("Finished Deploying %v", color.Magenta.Sprint(plan.Type))
-
-		var resultMap plinyResult
-		err = json.Unmarshal(response, &resultMap)
-		if err != nil {
-			return
-		}
-		planResults = append(planResults, NlxDeploymentResult{
-			Plan:           plan,
-			ResultName:     plan.Type,
-			Url:            url,
-			ResponseLength: len(response),
-			Data:           resultMap,
-		})
-
-		if plan.Type == METADATA_PLAN_TYPE {
-			// Collect all app permission set UUIDs and datasource permissions from pliny so we can use them to create
-			// datasource permissions in warden. This is necessary because we need the UUIDs and the deploy plan only has the names
-			insertLen := len(resultMap.PermissionSets.Inserts)
-			updateLen := len(resultMap.PermissionSets.Updates)
-			dataPlan.AllPermissionSets = make([]PermissionSetResult, insertLen+updateLen)
-			i := 0
-			for _, v := range resultMap.PermissionSets.Inserts {
-				dataPlan.AllPermissionSets[i] = v
-				i++
-			}
-			for _, v := range resultMap.PermissionSets.Updates {
-				dataPlan.AllPermissionSets[i] = v
-				i++
+	if plans.MetadataService != nil {
+		if result, err := executeDeploymentPlan[plinyResponse](auth, plans.MetadataService, sourceDirectory, logger); err != nil {
+			return nil, err
+		} else {
+			deploymentResults = append(deploymentResults, &plinyValidator{result})
+			if plans.CloudDataService != nil {
+				syncPermissionSets(result.response, plans.CloudDataService)
 			}
 		}
-
-		if plan.Type == DATA_PLAN_TYPE && len(plan.AllPermissionSets) > 0 {
-			// Create permission set datasource permissions with the UUIDs that the metadata service generated and assigned
-			newPsPlan := plan // we do not need a deep copy, as we are only changing the path
-			newPsPlan.Endpoint = "/metadata/update-permissionsets"
-			psurl := GenerateRoute(auth, newPsPlan)
-			var pspayload []byte
-			pay := newPsPlan.AllPermissionSets
-			pspayload, err = json.Marshal(pay)
-			if err != nil {
-				return
-			}
-			// Skuid Review Required - How can the response be validated here as an empty result is returned?
-			// see https://github.com/skuid/skuid-cli/issues/211
-			// TODO: Add result to planResults with a PlanName of "PermissionSets" to differentiate it from "dataService" since that is the "Plan.Type" for both and update validateDeployResults
-			// accordingly once above is answered
-			_, err = Request(
-				psurl,
-				http.MethodPost,
-				pspayload,
-				headers,
-			)
-			if err != nil {
-				return
-			}
-		}
-		return
 	}
 
-	// Run metadata plan first, because there may be PermissionSet data to create
-	if mok {
-		err = executePlan(metaPlan)
-		if err != nil {
-			return
-		}
-	}
-	if dok {
-		err = executePlan(dataPlan)
-		if err != nil {
-			return
+	if plans.CloudDataService != nil {
+		if result, err := executeDeploymentPlan[plinyResponse](auth, plans.CloudDataService, sourceDirectory, logger); err != nil {
+			return nil, err
+		} else {
+			deploymentResults = append(deploymentResults, result)
+			if len(plans.CloudDataService.AllPermissionSets) > 0 {
+				result, err := updatePermissionSets(auth, plans.CloudDataService, logger)
+				if err != nil {
+					return nil, err
+				} else {
+					deploymentResults = append(deploymentResults, result)
+				}
+			}
 		}
 	}
 
 	// Tell pliny to sync datasource external_id field with warden ids
-	if mok && dok {
-		syncPlan := metaPlan
-		headers := GeneratePlanHeaders(auth, syncPlan)
-		syncPlan.Endpoint = "/metadata/deploy/sync"
-		url := GenerateRoute(auth, syncPlan)
-		// Skuid Review Required - How can the response be validated here?  It appears that an array is returned and the array includes objects with properties similar to the results returned
-		// from metaPlan & dataPlan deploys but they aren't shaped within metadata types.  Is Sync only for datasources?  Can it affect other metadata types?  What is the response structure
-		// and how can it be validated against syncPlan?
-		// see https://github.com/skuid/skuid-cli/issues/211
-		// TODO: Add result to planResults with a PlanName of "Sync" to differentiate it from "metadataService" since that is the "Plan.Type" for both and update validateDeployResults
-		// accordingly once above is answered
-		_, err = Request(
-			url,
-			http.MethodPost,
-			[]byte{},
-			headers,
-		)
+	if plans.MetadataService != nil && plans.CloudDataService != nil {
+		if result, err := syncDataSources(auth, plans.MetadataService, logger); err != nil {
+			return nil, err
+		} else {
+			deploymentResults = append(deploymentResults, result)
+		}
 	}
 
-	return
+	if logger.DiagEnabled() {
+		// deployment results are unreliable and will lead to false positives so only inspect them when debug is enabled for perf reasons
+		// intentionally ignoring any error as currently using validation for logging purposes only
+		// TODO: when Issue #211 is addressed server side, DebugEnable check should be removed and the error could be acted upon as appropriate
+		// see https://github.com/skuid/skuid-cli/issues/211
+		if vErr := validateDeployResults(deploymentResults, logger); vErr != nil {
+			logger.Warnf("%v %v", logging.ColorWarning.Sprintf("Deployment results do not match expected results, however the deployment results are NOT RELIABLE so there may be false positives:"), vErr)
+		}
+	}
+
+	deploymentResultNames := logging.CSV(seqs.Map(slices.Values(deploymentResults), func(v deploymentValidator) string {
+		return v.Name()
+	}))
+	logger = logger.WithSuccess(logging.Fields{"deploymentResultNames": deploymentResultNames})
+	return deploymentResults, nil
 }
 
-type NlxDeploymentResult struct {
-	Plan           NlxPlan
-	ResultName     string
-	Url            string
-	ResponseLength int
-	Data           plinyResult
+func syncDataSources(auth *Authorization, metaPlan *NlxPlan, logger *logging.Logger) (result *deploymentResult[[]byte, []byte], err error) {
+	message := "Syncing Data Sources"
+	logger = logger.WithTraceTracking("pkg.syncDataSources", message).StartTracking()
+	defer func() { logger.FinishTracking(err) }()
+
+	payload := []byte{}
+	req := deploymentRequest[[]byte]{
+		payload: &payload,
+		body:    payload,
+		headers: GeneratePlanHeaders(auth, metaPlan.Name, metaPlan.Host),
+		url:     GeneratePlanRoute(auth, metaPlan.Name, metaPlan.Host, metaPlan.Port, "/metadata/deploy/sync"),
+	}
+	result, err = executeDeployment[[]byte, []byte]("Sync Data Sources", req, logger)
+	if err != nil {
+		return nil, err
+	}
+
+	logger = logger.WithSuccess()
+	return result, nil
 }
 
-func (result NlxDeploymentResult) String() string {
-	return fmt.Sprintf("( Name: '%v', Url: %v => %v bytes )",
-		result.ResultName,
-		result.Url,
-		result.ResponseLength,
-	)
+func updatePermissionSets(auth *Authorization, dataPlan *NlxPlan, logger *logging.Logger) (result *deploymentResult[[]PermissionSetResult, []byte], err error) {
+	payload := dataPlan.AllPermissionSets
+	permissionSetNames := logging.CSV(seqs.Map(slices.Values(payload), func(p PermissionSetResult) string {
+		return resolveEntityName(p.metadataTypeResult)
+	}))
+	message := "Updating Permission Sets"
+	fields := logging.Fields{
+		"permissionSetNames": permissionSetNames,
+	}
+	logger = logger.WithTraceTracking("pkg.updatePermissionSets", message, fields).StartTracking()
+	defer func() { logger.FinishTracking(err) }()
+
+	reqBody, err := json.Marshal(payload)
+	if err != nil {
+		logger.WithError(err).Debugf("Error marshalling update permission sets request payload: %+v", payload)
+		return nil, err
+	}
+
+	req := deploymentRequest[[]PermissionSetResult]{
+		payload: &payload,
+		body:    reqBody,
+		headers: GeneratePlanHeaders(auth, dataPlan.Name, dataPlan.Host),
+		url:     GeneratePlanRoute(auth, dataPlan.Name, dataPlan.Host, dataPlan.Port, "/metadata/update-permissionsets"),
+	}
+	logger.WithFields(logging.Fields{
+		"entities":     permissionSetNames,
+		"entitiesFrom": "Update Permission Sets request",
+	}).Tracef("Requesting update of Permission Sets %v", logging.ColorResource.Text(permissionSetNames))
+	result, err = executeDeployment[[]PermissionSetResult, []byte]("Update Permission Sets", req, logger)
+	if err != nil {
+		return nil, err
+	}
+	// TODO: Log result either here or within Validate() once https://github.com/skuid/skuid-cli/issues/211 is addressed
+
+	logger = logger.WithSuccess()
+	return result, nil
 }
 
-func archive(targetDirectory string, archiveFilter ArchiveFilter, entitiesToArchive set.Of[string]) ([]byte, []string, []metadata.MetadataEntity, error) {
-	if deploymentRequest, archivedFilePaths, archivedEntities, err := Archive(os.DirFS(targetDirectory), util.NewFileUtil(), archiveFilter); err != nil {
+func syncPermissionSets(result plinyResponse, dataPlan *NlxPlan) {
+	// Skuid Review Required - In v0.6.7, NlxPlan contained an AllPermissionSets property that was set on the dataPlan when there is a metadata
+	// plan.  The AllPermissionSets property would then be sent in the payload for the "execute dataPlan" request and then extracted and sent
+	// in the "/metadata/update-permissionsets" request.  The question here is does the server expect AllPermissionSets property when executing
+	// the request for the dataPlan itself, or was the property just added to NlxPlan for "convenience" and only the "update-permissionsets"
+	// api actually needs it?
+	//
+	// TODO: If the answer to above is that only "update-permissionsets" needs AllPermissionSets, refactor the code to not modify the dataPlan
+	// itself and just use the metaPlan directly when building the "update-permissionsets" payload.  If the "execute dataPlan" API itself
+	// expects AllPermissionSets property, then everything can stay as-is.
+	//
+	// Collect all app permission set UUIDs and datasource permissions from pliny so we can use them to create
+	// datasource permissions in warden. This is necessary because we need the UUIDs and the deploy plan only has the names
+	insertLen := len(result.PermissionSets.Inserts)
+	updateLen := len(result.PermissionSets.Updates)
+	dataPlan.AllPermissionSets = make([]PermissionSetResult, insertLen+updateLen)
+	i := 0
+	for _, v := range result.PermissionSets.Inserts {
+		dataPlan.AllPermissionSets[i] = v
+		i++
+	}
+	for _, v := range result.PermissionSets.Updates {
+		dataPlan.AllPermissionSets[i] = v
+		i++
+	}
+}
+
+func executeDeployment[T any, R deploymentResponse](deploymentName string, req deploymentRequest[T], logger *logging.Logger) (result *deploymentResult[T, R], err error) {
+	message := fmt.Sprintf("Executing deployment %v", logging.QuoteText(deploymentName))
+	fields := logging.Fields{
+		"deploymentName": deploymentName,
+	}
+	logger = logger.WithTraceTracking("pkg.executeDeployment", message, fields).StartTracking()
+	defer func() { logger.FinishTracking(err) }()
+
+	respBody, err := Request(req.url, http.MethodPost, req.body, req.headers)
+	if err != nil {
+		return nil, err
+	}
+
+	var response R
+	switch r := any(&response).(type) {
+	case *wardenResponse, *plinyResponse:
+		if err := json.Unmarshal(respBody, r); err != nil {
+			return nil, fmt.Errorf("unable to parse JSON returned from executing plan %v: %w", logging.QuoteText(deploymentName), err)
+		}
+	case *[]byte:
+		*r = respBody
+	default:
+		// should not happen in production
+		panic(fmt.Errorf("unexpected type %T for deployment request", r))
+	}
+
+	result = &deploymentResult[T, R]{
+		name:     deploymentName,
+		request:  req,
+		response: response,
+	}
+	logger = logger.WithSuccess()
+	return result, nil
+}
+
+func executeDeploymentPlan[R deploymentResponse](auth *Authorization, plan *NlxPlan, sourceDirectory string, logger *logging.Logger) (result *deploymentResult[NlxPlan, R], err error) {
+	message := fmt.Sprintf("Executing deployment for plan %v", logging.QuoteText(plan.Name))
+	fields := logging.Fields{
+		"planName": plan.Name,
+		"planType": plan.Type,
+	}
+	logger = logger.WithTraceTracking("pkg.executeDeployPlan", message, fields).StartTracking()
+	defer func() { logger.FinishTracking(err) }()
+
+	reqBody, _, archivedEntities, err := archive(sourceDirectory, MetadataArchiveFilter(&plan.Metadata), plan.EntityPaths)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, warning := range plan.Warnings {
+		logger.Warn(logging.ColorWarning.Sprintf("%v plan warning: %v", plan.Name, warning))
+	}
+
+	req := deploymentRequest[NlxPlan]{
+		payload: plan,
+		body:    reqBody,
+		headers: GeneratePlanHeaders(auth, plan.Name, plan.Host),
+		url:     GeneratePlanRoute(auth, plan.Name, plan.Host, plan.Port, plan.Endpoint),
+	}
+	loggerEntityPaths := logging.CSV(metadata.MetadataEntityPaths(archivedEntities).All())
+	logger.WithFields(logging.Fields{
+		"entities":     loggerEntityPaths,
+		"entitiesFrom": "Execute deployment plan " + logging.QuoteText(plan.Name) + " request",
+	}).Tracef("Requesting deployment of plan %v for entities %v", logging.QuoteText(plan.Name), logging.ColorResource.Text(loggerEntityPaths))
+	result, err = executeDeployment[NlxPlan, R](string(plan.Name), req, logger)
+	if err != nil {
+		return nil, err
+	}
+	// TODO: Log result either here or within Validate() once https://github.com/skuid/skuid-cli/issues/211 is addressed
+
+	logger = logger.WithSuccess()
+	return result, nil
+}
+
+func archive(sourceDirectory string, archiveFilter ArchiveFilter, entitiesToArchive set.Of[string]) ([]byte, []string, []metadata.MetadataEntity, error) {
+	if deploymentRequest, archivedFilePaths, archivedEntities, err := Archive(os.DirFS(sourceDirectory), util.NewFileUtil(), archiveFilter); err != nil {
 		return deploymentRequest, archivedFilePaths, archivedEntities, err
 	} else if err = validateArchive(entitiesToArchive, archivedEntities); err != nil {
 		return deploymentRequest, archivedFilePaths, archivedEntities, err
@@ -376,114 +533,70 @@ func archive(targetDirectory string, archiveFilter ArchiveFilter, entitiesToArch
 	}
 }
 
-func getPlanEntityPaths(plan NlxPlan) set.Of[string] {
-	planEntityPaths := set.New[string]()
-	for _, mdt := range metadata.MetadataTypes.Members() {
-		entities := plan.Metadata.GetFieldValue(mdt)
-		planEntityPaths.Add(slices.Map(entities, func(e string) string {
-			return path.Join(mdt.DirName(), e)
-		})...)
+func validateArchive(expectedEntityPaths set.Of[string], actualEntities []metadata.MetadataEntity) (err error) {
+	message := "Validating archive"
+	fields := logging.Fields{
+		"expectedEntityPathsLen": len(expectedEntityPaths),
+		"actualEntitiesLen":      len(actualEntities),
 	}
+	logger := logging.WithTraceTracking("pkg.validateArchive", message, fields).StartTracking()
+	defer func() { logger.FinishTracking(err) }()
 
-	return planEntityPaths
-}
-
-func getMetadataEntityPaths(entities []metadata.MetadataEntity) set.Of[string] {
-	return set.New(slices.Map(entities, func(me metadata.MetadataEntity) string {
-		return me.Path
-	})...)
-}
-
-func validateArchive(expectedEntityPaths set.Of[string], actualEntities []metadata.MetadataEntity) error {
+	// if no expected entities were specified (e.g., --entities flag, archiving entities from deploy plan) we're unable
+	// to validate the entities themselves since we should have gathered all files on disk.  In that case, we only ensure
+	// that we have something in the archive.
 	if len(expectedEntityPaths) == 0 {
+		if len(actualEntities) == 0 {
+			return ErrArchiveNoFiles
+		}
+		logger = logger.WithSuccess()
 		return nil
 	}
 
-	actualEntityPaths := getMetadataEntityPaths(actualEntities)
-
+	actualEntityPaths := metadata.MetadataEntityPaths(actualEntities)
 	if expectedEntityPaths.Equal(actualEntityPaths) {
+		logger = logger.WithSuccess()
 		return nil
 	}
 
 	expectedMissing := set.Diff(expectedEntityPaths, actualEntityPaths)
 	actualMissing := set.Diff(actualEntityPaths, expectedEntityPaths)
 
-	var errors []string
-	if len(expectedMissing) > 0 {
-		errors = append(errors, fmt.Sprintf("requested entities %q were not found", expectedMissing.Slice()))
+	msgPrefix := logging.ColorWarning.Sprintf("Unable to prepare archive:")
+	for _, p := range slices.Sorted(expectedMissing.All()) {
+		logger.Warnf("%v requested entity %v was not found", msgPrefix, logging.ColorResource.QuoteText(p))
 	}
-
-	if len(actualMissing) > 0 {
-		errors = append(errors, fmt.Sprintf("found entities %q which were not requested", actualMissing.Slice()))
+	for _, p := range slices.Sorted(actualMissing.All()) {
+		logger.Warnf("%v includes entity %v which was not requested", msgPrefix, logging.ColorResource.QuoteText(p))
 	}
-
-	errMsg := strings.Join(errors, " **AND** ")
-	if len(errors) == 0 {
-		// should never happen since len(errors) should always be > 0 but just in case
-		errMsg = fmt.Sprintf("requested entities %q does not match found entities %q", expectedEntityPaths.Slice(), actualEntityPaths.Slice())
-	}
-	return fmt.Errorf("unable to prepare archive: %v", errMsg)
+	return fmt.Errorf("unable to prepare archive, %v", flags.UseDebugMessage())
 }
 
-func validateDeployResults(results []NlxDeploymentResult) error {
-	var errors []string
+func validateDeployResults(results []deploymentValidator, logger *logging.Logger) (err error) {
+	deploymentNames := logging.CSV(seqs.Map(slices.Values(results), func(v deploymentValidator) string {
+		return v.Name()
+	}))
+	message := fmt.Sprintf("Validating deployment result(s) %v", deploymentNames)
+	fields := logging.Fields{
+		"resultsLen":      len(results),
+		"deploymentNames": deploymentNames,
+	}
+	logger = logger.WithTraceTracking("validateDeployResults", message, fields).StartTracking()
+	defer func() { logger.FinishTracking(err) }()
+
+	var invalidDeploymentNames []string
 	for _, result := range results {
-		// Skuid Review Required - dataService and permission-set APIs return empty responses and sync API returns unknown format so its not known how to
-		// reliably parse.  Need to have complete results from all APIs to be able to reliably validate results.
-		// see https://github.com/skuid/skuid-cli/issues/211
-		// TODO: All 4 APIs should be validated once the results are reliable and in a known format that can be parsed
-		if result.Plan.Type != METADATA_PLAN_TYPE {
-			continue
-		}
-		errMsg, ok := validateDeployResult(result)
-		if !ok {
-			errors = append(errors, errMsg)
+		if deploymentName, ok := result.Validate(); !ok {
+			invalidDeploymentNames = append(invalidDeploymentNames, deploymentName)
 		}
 	}
 
-	if len(errors) > 0 {
-		return fmt.Errorf("%v", strings.Join(errors, "; "))
+	if len(invalidDeploymentNames) > 0 {
+		return fmt.Errorf("unexpected deployment result(s) %v, %v", logging.CSV(slices.Values(invalidDeploymentNames)), flags.UseDebugMessage())
 	}
 
+	logger = logger.WithSuccess()
 	return nil
-}
-
-func validateDeployResult(result NlxDeploymentResult) (string, bool) {
-	planEntityPaths := getPlanEntityPaths(result.Plan)
-	modifiedEntityPaths, deletedEntityPaths := getResultEntityPaths(result)
-
-	modifiedEqual := planEntityPaths.Equal(modifiedEntityPaths)
-	hasDeleted := len(deletedEntityPaths) > 0
-
-	if modifiedEqual && !hasDeleted {
-		return "", true
-	}
-
-	var errors []string
-	if !modifiedEqual {
-		planMissing := set.Diff(planEntityPaths, modifiedEntityPaths)
-		modifiedMissing := set.Diff(modifiedEntityPaths, planEntityPaths)
-
-		if len(planMissing) > 0 {
-			errors = append(errors, fmt.Sprintf("result indicated that expected entities %q were not deployed", planMissing.Slice()))
-		}
-
-		if len(modifiedMissing) > 0 {
-			errors = append(errors, fmt.Sprintf("result indicated that entities %q were deployed but they were not expected", modifiedMissing.Slice()))
-		}
-	}
-
-	if hasDeleted {
-		errors = append(errors, fmt.Sprintf("result indicated that entites %q were deleted which is not expected", deletedEntityPaths.Slice()))
-	}
-
-	errMsg := strings.Join(errors, " **AND** ")
-	if len(errors) == 0 {
-		// should never happen since len(errors) should always be > 0 but just in case
-		// Note - hasDeleted must be false here so do not need to include it in message
-		errMsg = fmt.Sprintf("expected result to contain entities %q but it contained %q", planEntityPaths.Slice(), modifiedEntityPaths.Slice())
-	}
-	return fmt.Sprintf("unexpected deployment result for %v: %v", result.ResultName, errMsg), false
 }
 
 func resolveEntityName(r metadataTypeResult) string {
@@ -500,101 +613,166 @@ func resolveEntityName(r metadataTypeResult) string {
 	return "noname-" + uuid.NewString()
 }
 
-func getResultEntityPaths(result NlxDeploymentResult) (set.Of[string], set.Of[string]) {
+func getDeploymentResultEntityPaths(result plinyResponse) (set.Of[string], set.Of[string]) {
 	modifiedEntityPaths := set.New[string]()
 	deletedEntityPaths := set.New[string]()
 
 	for _, mdt := range metadata.MetadataTypes.Members() {
 		typeResults := getTypeResults(mdt, result)
-		modifiedEntityPaths.Add(slices.Map(typeResults.Inserts, func(r metadataTypeResult) string {
-			return path.Join(mdt.DirName(), resolveEntityName(r))
-		})...)
-		modifiedEntityPaths.Add(slices.Map(typeResults.Updates, func(r metadataTypeResult) string {
-			return path.Join(mdt.DirName(), resolveEntityName(r))
-		})...)
-		deletedEntityPaths.Add(slices.Map(typeResults.Deletes, func(r metadataTypeResult) string {
-			return path.Join(mdt.DirName(), resolveEntityName(r))
-		})...)
+		modifiedEntityPaths.AddSeq(seqs.Map(slices.Values(typeResults.Inserts), func(r metadataTypeResult) string {
+			return getMetadataTypeResultEntityPaths(mdt, r)
+		}))
+		modifiedEntityPaths.AddSeq(seqs.Map(slices.Values(typeResults.Updates), func(r metadataTypeResult) string {
+			return getMetadataTypeResultEntityPaths(mdt, r)
+		}))
+		deletedEntityPaths.AddSeq(seqs.Map(slices.Values(typeResults.Deletes), func(r metadataTypeResult) string {
+			return getMetadataTypeResultEntityPaths(mdt, r)
+		}))
 	}
 
 	return modifiedEntityPaths, deletedEntityPaths
 }
 
-func getTypeResults(mdt metadata.MetadataType, result NlxDeploymentResult) metadataTypeResults {
+func getMetadataTypeResultEntityPaths(mdt metadata.MetadataType, r metadataTypeResult) string {
+	return path.Join(mdt.DirName(), resolveEntityName(r))
+}
+
+func getTypeResults(mdt metadata.MetadataType, result plinyResponse) metadataTypeResults {
 	switch mdt {
 	case metadata.MetadataTypeApps:
-		return result.Data.Apps
+		return result.Apps
 	case metadata.MetadataTypeAuthProviders:
-		return result.Data.AuthProviders
+		return result.AuthProviders
 	case metadata.MetadataTypeComponentPacks:
-		return result.Data.ComponentPacks
+		return result.ComponentPacks
 	case metadata.MetadataTypeDataServices:
-		return result.Data.DataServices
+		return result.DataServices
 	case metadata.MetadataTypeDataSources:
-		return result.Data.DataSources
+		return result.DataSources
 	case metadata.MetadataTypeDesignSystems:
-		return result.Data.DesignSystems
+		return result.DesignSystems
 	case metadata.MetadataTypeVariables:
-		return result.Data.Variables
+		return result.Variables
 	case metadata.MetadataTypeFiles:
-		return result.Data.Files
+		return result.Files
 	case metadata.MetadataTypePages:
-		return result.Data.Pages
+		return result.Pages
 	case metadata.MetadataTypePermissionSets:
-		inserted := slices.Map(result.Data.PermissionSets.Inserts, func(r PermissionSetResult) metadataTypeResult {
+		inserted := slices.Map(result.PermissionSets.Inserts, func(r PermissionSetResult) metadataTypeResult {
 			return r.metadataTypeResult
 		})
-		updated := slices.Map(result.Data.PermissionSets.Updates, func(r PermissionSetResult) metadataTypeResult {
+		updated := slices.Map(result.PermissionSets.Updates, func(r PermissionSetResult) metadataTypeResult {
 			return r.metadataTypeResult
 		})
-		deleted := slices.Map(result.Data.PermissionSets.Deletes, func(r PermissionSetResult) metadataTypeResult {
+		deleted := slices.Map(result.PermissionSets.Deletes, func(r PermissionSetResult) metadataTypeResult {
 			return r.metadataTypeResult
 		})
 		return metadataTypeResults{inserted, updated, deleted}
 	case metadata.MetadataTypeSitePermissionSets:
-		return result.Data.SitePermissionSets
+		return result.SitePermissionSets
 	case metadata.MetadataTypeSessionVariables:
-		return result.Data.SessionVariables
+		return result.SessionVariables
 	case metadata.MetadataTypeSite:
-		return result.Data.Site
+		return result.Site
 	case metadata.MetadataTypeThemes:
-		return result.Data.Themes
+		return result.Themes
 	default:
 		// should not happen in production
 		panic(fmt.Errorf("unexpected metadata type encountered while obtaining deployment result"))
 	}
 }
 
-func validateDeployPlans(plans NlxDynamicPlanMap, archivedEntities []metadata.MetadataEntity) error {
-	metaPlan, ok := plans[METADATA_PLAN_KEY]
-	if !ok {
-		// only the metadata plan will have the full set of entities that were archived so if we don't have one, nothing we can do
-		return nil
+func validateDeployPlans(plans *NlxPlans, archivedEntities []metadata.MetadataEntity, logger *logging.Logger) (err error) {
+	planNames := logging.CSV(slices.Values(plans.PlanNames))
+	message := "Validating deployment plan(s)"
+	fields := logging.Fields{
+		"planNames":           planNames,
+		"archivedEntitiesLen": len(archivedEntities),
+	}
+	logger = logger.WithTraceTracking("validateDeployPlans", message, fields).StartTracking()
+	defer func() { logger.FinishTracking(err) }()
+
+	var invalidPlanNames []PlanName
+	archivedEntityPaths := metadata.MetadataEntityPaths(archivedEntities)
+	for _, plan := range plans.Plans {
+		if planName, ok := validateDeployPlan(plan, archivedEntityPaths, logger); !ok {
+			invalidPlanNames = append(invalidPlanNames, planName)
+		}
 	}
 
-	archivedEntityPaths := getMetadataEntityPaths(archivedEntities)
-	planEntityPaths := getPlanEntityPaths(metaPlan)
+	if len(invalidPlanNames) != 0 {
+		return fmt.Errorf("unexpected deployment plan(s) %v, possibly due to a filter and may be benign, %v", logging.CSV(slices.Values(invalidPlanNames)), flags.UseDebugMessage())
+	}
 
-	if archivedEntityPaths.Equal(planEntityPaths) {
-		return nil
+	logger = logger.WithSuccess()
+	return nil
+}
+
+func validateDeployPlan(plan *NlxPlan, archivedEntityPaths set.Of[string], logger *logging.Logger) (PlanName, bool) {
+	logger = logger.WithName("validateDeployPlan", logging.Fields{"planName": plan.Name})
+	logger.Tracef("Validating deployment plan %v", logging.QuoteText(plan.Name))
+
+	// only the metadata plan will have the full set of entities that were archived so if we don't have one, nothing we can do
+	if plan.Name != constants.PLINY {
+		return plan.Name, true
+	}
+
+	planEntityPaths := plan.EntityPaths
+	if archivedEntityPaths.Equal(plan.EntityPaths) {
+		return plan.Name, true
 	}
 
 	archivedMissing := set.Diff(archivedEntityPaths, planEntityPaths)
 	planMissing := set.Diff(planEntityPaths, archivedEntityPaths)
 
-	var errors []string
-	if len(archivedMissing) > 0 {
-		errors = append(errors, fmt.Sprintf("cannot deploy entities %q because plan did not contain them", archivedMissing.Slice()))
+	msgPrefix := logging.ColorWarning.Sprintf("Unexpected deployment plan %v:", logging.QuoteText(plan.Name))
+	for _, p := range slices.Sorted(archivedMissing.All()) {
+		// Intentionally using Debug instead of Warn here because entities may have been filtered by server (e.g., app name)
+		// so there isn't a reliable way to determine if the missing entity is valid or invalid.  Calling function
+		// emits warning with message to use debug log level for details
+		logger.Debugf("%v cannot deploy entity %v because plan did not contain it", msgPrefix, logging.ColorResource.QuoteText(p))
+	}
+	for _, p := range slices.Sorted(planMissing.All()) {
+		// Skuid Review Required - Would this situation ever be expected to happen?
+		//
+		// TODO: Change to warn based on answer to above
+		logger.Debugf("%v includes entity %v which was not requested ", msgPrefix, logging.ColorResource.QuoteText(p))
 	}
 
-	if len(planMissing) > 0 {
-		errors = append(errors, fmt.Sprintf("plan includes entities %q which were not expected", planMissing.Slice()))
+	return plan.Name, false
+}
+
+func getDeployPlanRequestBody(headers RequestHeaders, plan []byte, filter *NlxPlanFilter, logger *logging.Logger) ([]byte, error) {
+	logger = logger.WithName("getDeployPlanRequestBody", logging.Fields{
+		"planLen": len(plan),
+		"filter":  filter,
+	})
+	logger.Trace("Getting deployment plan request body")
+
+	if filter == nil {
+		return plan, nil
 	}
 
-	errMsg := strings.Join(errors, " **AND** ")
-	if len(errors) == 0 {
-		// should never happen since len(errors) should always be > 0 but just in case
-		errMsg = fmt.Sprintf("expected plan to contain entities %q but it contained %q", archivedEntityPaths.Slice(), planEntityPaths.Slice())
+	logger.Debugf("Including %v in get deployment plan(s) request", logging.ColorFilter.Text("plan filter"))
+	// change content type to json and add content encoding
+	headers[HeaderContentType] = JSON_CONTENT_TYPE
+	headers[HeaderContentEncoding] = GZIP_CONTENT_ENCODING
+	// add the deployment plan bytes to the payload
+	// instead of just using that as the payload
+	requestBody := FilteredRequestBody{
+		filter.AppName,
+		// pages flag does not work as expected so commenting out
+		// TODO: Remove completely or fix issues depending on https://github.com/skuid/skuid-cli/issues/147 & https://github.com/skuid/skuid-cli/issues/148
+		//filter.PageNames,
+		plan,
+		filter.IgnoreSkuidDb,
 	}
-	return fmt.Errorf("unexpected deployment plan: %v", errMsg)
+
+	body, err := json.Marshal(requestBody)
+	if err != nil {
+		// intentionally not logging requestBody because the plan is a zip file
+		return nil, fmt.Errorf("unable to convert deploy plan with filter to JSON bytes: %w", err)
+	}
+
+	return body, nil
 }

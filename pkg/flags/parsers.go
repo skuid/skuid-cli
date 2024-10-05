@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -106,5 +107,13 @@ func ParseMetadataEntity(val string) (metadata.MetadataEntity, error) {
 		return metadata.MetadataEntity{}, err
 	} else {
 		return *e, nil
+	}
+}
+
+func ParseDirectory(val string) (string, error) {
+	if targetDirectory, err := filepath.Abs(val); err != nil {
+		return "", fmt.Errorf("unable to convert %q to absolute path: %w", val, err)
+	} else {
+		return targetDirectory, nil
 	}
 }

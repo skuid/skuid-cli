@@ -1,6 +1,7 @@
 package errutil_test
 
 import (
+	"errors"
 	"fmt"
 	"testing"
 
@@ -13,7 +14,7 @@ func TestMust(t *testing.T) {
 
 	// panics
 	assert.PanicsWithError(t, errMsg, func() {
-		errutil.Must(errutil.Critical(errMsg))
+		errutil.Must(errors.New(errMsg))
 	})
 
 	// does not panic

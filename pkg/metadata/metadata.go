@@ -8,10 +8,12 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/bobg/go-generics/v4/set"
 	"github.com/bobg/go-generics/v4/slices"
+	"github.com/bobg/seqs"
 	"github.com/goccy/go-json"
 	"github.com/orsinium-labs/enum"
-	"github.com/skuid/skuid-cli/pkg/errors"
+	"github.com/skuid/skuid-cli/pkg/errutil"
 	"github.com/skuid/skuid-cli/pkg/logging"
 )
 
@@ -46,13 +48,36 @@ const (
 	MetadataSubTypeSiteLogo
 	MetadataSubTypeSiteFavicon
 
+	MetadataPathTypeEntity MetadataPathType = iota + 1
+	MetadataPathTypeEntityFile
+
 	EntityNameSite                     string = "site"
 	metadataTypeEntityPathNotSupported string = "metadata type %q does not support the entity path: %q"
 	AnyValue                           string = "*"
 )
 
+type MetadataPathError struct {
+	// Note: not struct{error}: only *MetadataPathError should satisfy error.
+	Path     string
+	PathType MetadataPathType
+	err      error
+}
+
+func (ce *MetadataPathError) Error() string {
+	return ce.err.Error()
+}
+
+func (ce *MetadataPathError) Unwrap() error {
+	return ce.err
+}
+
+func NewMetadataPathError(path string, pathType MetadataPathType, err error) error {
+	return &MetadataPathError{path, pathType, err}
+}
+
 type MetadataTypeValue string
 type MetadataSubType int
+type MetadataPathType int
 
 func (s MetadataTypeValue) Equal(other MetadataTypeValue) bool {
 	return strings.EqualFold(string(s), string(other))
@@ -76,14 +101,19 @@ type entityPathDetails struct {
 	PathRelative string // Path to the entity/file relative to the metadata directory (e.g., my_page.xml, my_page, logo/somelogo.png)
 }
 
-type entityNameValidationDetails struct {
+type entityDefFileValidationDetails struct {
 	NameJSONPath  string
 	NameJSONValue string
+	Extension     string
+}
+
+type entityFilesValidationDetails struct {
+	Extensions []string
 }
 
 type validationDetails struct {
-	EntityName *entityNameValidationDetails
-	NumFiles   int // equal comparison for values >= 0, greater than equal the absolute value for values < 0
+	DefFile *entityDefFileValidationDetails
+	Files   *entityFilesValidationDetails
 }
 
 type MetadataEntity struct {
@@ -92,6 +122,12 @@ type MetadataEntity struct {
 	Name         string          // Name of the entity (e.g., my_page)
 	Path         string          // Path to the entity (e.g., pages/my_page)
 	PathRelative string          // Path to the entity relative to the metadata directory (e.g., my_page, logo/my_logo)
+}
+
+func MetadataEntityPaths(entities []MetadataEntity) set.Of[string] {
+	return set.Collect(seqs.Map(slices.Values(entities), func(me MetadataEntity) string {
+		return me.Path
+	}))
 }
 
 type MetadataEntityFile struct {
@@ -107,13 +143,13 @@ type MetadataEntityFileContents struct {
 	Contents []byte
 }
 
-func (e *MetadataEntity) Validate(files []MetadataEntityFileContents) ([]string, bool) {
-	vd, err := e.getValidationDetails()
+func (e *MetadataEntity) Validate(files []MetadataEntityFileContents) ([]string, error) {
+	details, err := e.getValidationDetails()
 	if err != nil {
-		return []string{err.Error()}, false
+		return nil, fmt.Errorf("unable to get validation details for entity %v", e.Path)
 	}
-	validationErrors := append(e.checkNumFiles(vd, files), e.checkDefinitionFile(vd, files)...)
-	return validationErrors, len(validationErrors) == 0
+	validationErrors := append(e.checkFiles(details, files), e.checkDefinitionFile(details, files)...)
+	return validationErrors, nil
 }
 
 // Skuid Review Required - For the following metadata types, I'm unable to determine a way to create them in my
@@ -128,60 +164,62 @@ func (e *MetadataEntity) Validate(files []MetadataEntityFileContents) ([]string,
 func (e *MetadataEntity) getValidationDetails() (*validationDetails, error) {
 	switch e.Type {
 	case MetadataTypeFiles:
-		return &validationDetails{&entityNameValidationDetails{"$.name", e.Name}, 2}, nil
+		return &validationDetails{&entityDefFileValidationDetails{"$.name", e.Name, ".skuid.json"}, &entityFilesValidationDetails{[]string{"", ".skuid.json"}}}, nil
 	case MetadataTypePages:
-		return &validationDetails{&entityNameValidationDetails{"$.name", e.Name}, 2}, nil
+		return &validationDetails{&entityDefFileValidationDetails{"$.name", e.Name, ".json"}, &entityFilesValidationDetails{[]string{".xml", ".json"}}}, nil
 	case MetadataTypeSite:
 		if e.SubType == MetadataSubTypeSiteFavicon || e.SubType == MetadataSubTypeSiteLogo {
-			return &validationDetails{&entityNameValidationDetails{"$.name", e.Name}, 2}, nil
+			return &validationDetails{&entityDefFileValidationDetails{"$.name", e.Name, ".skuid.json"}, &entityFilesValidationDetails{[]string{"", ".skuid.json"}}}, nil
 		} else if e.SubType == MetadataSubTypeNone && e.Name == EntityNameSite {
-			return &validationDetails{&entityNameValidationDetails{"$.name", AnyValue}, 1}, nil
+			return &validationDetails{&entityDefFileValidationDetails{"$.name", AnyValue, ".json"}, &entityFilesValidationDetails{[]string{".json"}}}, nil
 		} else {
 			// should not happen in production
-			return nil, fmt.Errorf("unexpected subtype %v for entity type %q", e.SubType, e.Type.Name())
+			return nil, fmt.Errorf("unexpected subtype %v for entity type %v", e.SubType, logging.QuoteText(e.Type.Name()))
 		}
 	case MetadataTypeDesignSystems:
-		return &validationDetails{&entityNameValidationDetails{"$.objectData.name", e.Name}, 1}, nil
+		return &validationDetails{&entityDefFileValidationDetails{"$.objectData.name", e.Name, ".json"}, &entityFilesValidationDetails{[]string{".json"}}}, nil
 	case MetadataTypeComponentPacks:
 		// Skuid Review Required - according to Skuid docs, while the filenames skuid_runtime.json and skuid_builders.json
 		// are recommended, the manifest files can be any filename so there is no reliable way to detect the definition
 		// file.  Its also unknown how many files a component pack will have so we will validate that there is at least one.
 		// Not sure if one file is valid structure for a component pack or if there must be at least 2 or at least 3 or what
 		// defines a "valid" component pack???
-		return &validationDetails{nil, -1}, nil
+		return &validationDetails{nil, nil}, nil
 	default:
-		return &validationDetails{&entityNameValidationDetails{"$.name", e.Name}, 1}, nil
+		return &validationDetails{&entityDefFileValidationDetails{"$.name", e.Name, ".json"}, &entityFilesValidationDetails{[]string{".json"}}}, nil
 	}
 }
 
-func (e *MetadataEntity) checkNumFiles(vd *validationDetails, files []MetadataEntityFileContents) []string {
-	actual := len(files)
-	gte := vd.NumFiles < 0
-	var expected int
-	var gteMsg string
-	if gte {
-		expected = -vd.NumFiles
-		if actual >= expected {
-			return nil
+func (e *MetadataEntity) checkFiles(vd *validationDetails, files []MetadataEntityFileContents) []string {
+	if vd.Files == nil || len(vd.Files.Extensions) == 0 {
+		if len(files) == 0 {
+			// this should never happen unless there is a bug elsewhere
+			return []string{"expected at least 1 file"}
 		}
-		gteMsg = "or more "
-	} else {
-		expected = vd.NumFiles
-		if actual == expected {
-			return nil
-		}
-		gteMsg = ""
+
+		return nil
 	}
 
-	var filePaths []string
-	for _, ef := range files {
-		filePaths = append(filePaths, fmt.Sprintf("%q", ef.Path))
+	var missingFiles []string
+	slices.Each(vd.Files.Extensions, func(ext string) {
+		expectedFilePath := e.Path
+		if ext != "" {
+			expectedFilePath = expectedFilePath + ext
+		}
+		if !slices.ContainsFunc(files, func(mefc MetadataEntityFileContents) bool { return expectedFilePath == mefc.Path }) {
+			missingFiles = append(missingFiles, expectedFilePath)
+		}
+	})
+
+	if len(missingFiles) == 0 {
+		return nil
 	}
-	return []string{fmt.Sprintf("metadata type %q for entity %q: expects %v %vfile(s) but found %v (%v)", e.Type.Name(), e.Name, expected, gteMsg, actual, strings.Join(filePaths, ", "))}
+
+	return []string{fmt.Sprintf("missing file(s) %v", logging.CSVColor(slices.Values(missingFiles), &logging.ColorResource))}
 }
 
 func (e *MetadataEntity) checkDefinitionFile(vd *validationDetails, files []MetadataEntityFileContents) []string {
-	if vd.EntityName == nil {
+	if vd.DefFile == nil {
 		return nil
 	}
 
@@ -189,31 +227,41 @@ func (e *MetadataEntity) checkDefinitionFile(vd *validationDetails, files []Meta
 		return ef.IsEntityDefinitionFile
 	})
 	numDefFiles := len(defFiles)
-	if numDefFiles != 1 {
-		return []string{fmt.Sprintf("metadata type %q for entity %q: %v definition file(s) were found, expected 1", e.Type.Name(), e.Name, numDefFiles)}
+	if numDefFiles == 0 {
+		return []string{fmt.Sprintf("missing definition file %v", logging.ColorResource.QuoteText(e.Path+vd.DefFile.Extension))}
+	} else if numDefFiles > 1 {
+		// this should never happen unless there is a bug elsewhere (e.g., parsing of entity file names)
+		names := slices.Map(defFiles, func(mefc MetadataEntityFileContents) string {
+			return mefc.Path
+		})
+		return []string{fmt.Sprintf("expected 1 definition file but found %v %v", numDefFiles, logging.CSVColor(slices.Values(names), &logging.ColorResource))}
+	} else if e.Path+vd.DefFile.Extension != defFiles[0].Path {
+		// this should never happen unless there is a bug elsewhere (e.g., parsing of entity file names)
+		return []string{fmt.Sprintf("definition file %v is expected to have the file name %v", logging.ColorResource.QuoteText(defFiles[0].Path), logging.ColorResource.QuoteText(e.Path+vd.DefFile.Extension))}
 	}
 
 	entityDefFile := defFiles[0]
-	jsonPath, err := json.CreatePath(vd.EntityName.NameJSONPath)
+	jsonPath, err := json.CreatePath(vd.DefFile.NameJSONPath)
 	if err != nil {
-		return []string{fmt.Sprintf("metadata type %q for entity %q: unable to determine name field %q", e.Type.Name(), e.Name, vd.EntityName.NameJSONPath)}
+		// this should never happen unless there is a bug elsewhere (e.g., validation details mis-configured, skuid changes structure of entity files and CLI hasn't been updated to reflect, etc.)
+		return []string{fmt.Sprintf("invalid JSON path %v to entity name field for file %v", logging.QuoteText(vd.DefFile.NameJSONPath), logging.ColorResource.QuoteText(entityDefFile.Path))}
 	}
 
 	var entityName string
 	err = jsonPath.Unmarshal(entityDefFile.Contents, &entityName)
 	if err != nil {
-		return []string{fmt.Sprintf("metadata type %q for entity %q: unable to locate name field %q", e.Type.Name(), e.Name, vd.EntityName.NameJSONPath)}
+		return []string{fmt.Sprintf("unable to locate entity name field %v in file %v", logging.QuoteText(vd.DefFile.NameJSONPath), logging.ColorResource.QuoteText(entityDefFile.Path))}
 	}
 
 	// Skuid Review Required - For site name, the Web UI requires at least one character but it allows that character to be whitespace which seems like
 	// a potential bug?
 	// TODO: Adjust validation condition based on answer to question
-	if vd.EntityName.NameJSONValue == entityName || (vd.EntityName.NameJSONValue == AnyValue && len(entityName) > 0) {
+	if vd.DefFile.NameJSONValue == entityName || (vd.DefFile.NameJSONValue == AnyValue && len(entityName) > 0) {
 		return nil
-	} else if vd.EntityName.NameJSONValue != AnyValue {
-		return []string{fmt.Sprintf("metadata type %q for entity %q: entity name %q in definition file does not match file name %q", e.Type.Name(), e.Name, entityName, entityDefFile.Path)}
+	} else if vd.DefFile.NameJSONValue != AnyValue {
+		return []string{fmt.Sprintf("entity name %v in definition file does not match file name %v", logging.ColorResource.QuoteText(entityName), logging.ColorResource.QuoteText(entityDefFile.Path))}
 	} else {
-		return []string{fmt.Sprintf("metadata type %q for entity %q: entity name %q in definition file %q must contain at least one character", e.Type.Name(), e.Name, entityName, entityDefFile.Path)}
+		return []string{fmt.Sprintf("entity name field %v in definition file %v must contain at least one character", logging.QuoteText(vd.DefFile.NameJSONPath), logging.ColorResource.QuoteText(entityDefFile.Path))}
 	}
 }
 
@@ -239,19 +287,15 @@ func (from NlxMetadata) GetFieldValue(target MetadataType) []string {
 	value := reflect.ValueOf(from)
 	field := value.FieldByName(name)
 	// should never occur in production
-	errors.MustConditionf(field.IsValid(), "unable to locate metadata field for metadata type %q", name)
+	errutil.MustConditionf(field.IsValid(), "unable to locate metadata field for metadata type %q", name)
 	return field.Interface().([]string)
 }
 
 // FilterItem returns true if the path meets the filter criteria, otherwise it returns false
 func (from NlxMetadata) FilterItem(item MetadataEntityFile) bool {
 	validMetadataNames := from.GetFieldValue(item.Entity.Type)
-	if slices.Contains(validMetadataNames, item.Entity.PathRelative) {
-		logging.Get().Tracef("keeping metadata file: %v", item.Path)
-		return true
-	}
 
-	// We can get here for the following reasons:
+	// An entity may not be in the slice of validMetadataNames for the following reasons:
 	// 1. The entity was filtered via NlxMetadata filter (e.g., app name) - this scenario would be expected
 	// 2. We detected a valid metadata file locally, included it in the GetDeployPayload request but the server, for some reason, did not include
 	//    it in the deploy plan - this scenario is NOT expected.
@@ -267,8 +311,7 @@ func (from NlxMetadata) FilterItem(item MetadataEntityFile) bool {
 	// info to identify it's permission sets, pages, etc. in the scenario where we are filtering by app.
 	// TODO: The server API should be updated to fail if an invalid payload (e.g., a file it doesn't like) is submitted in GetDeployPlan so that we only
 	// hit this code due to a filter having been applied
-	logging.Get().Tracef("skipping metadata file, possibly due to a filter being applied: %q", item.Path)
-	return false
+	return slices.Contains(validMetadataNames, item.Entity.PathRelative)
 }
 
 // Accepts a relative entity path (e.g, pages/my_page, ) and returns a *MetadataEntity or error if
@@ -276,11 +319,11 @@ func (from NlxMetadata) FilterItem(item MetadataEntityFile) bool {
 func NewMetadataEntity(entityPath string) (*MetadataEntity, error) {
 	details, err := parseEntityPath(entityPath)
 	if err != nil {
-		return nil, err
+		return nil, NewMetadataPathError(entityPath, MetadataPathTypeEntity, err)
 	}
 	valid := validateEntityName(details)
 	if !valid {
-		return nil, fmt.Errorf(metadataTypeEntityPathNotSupported, details.Type.Name(), entityPath)
+		return nil, NewMetadataPathError(entityPath, MetadataPathTypeEntity, fmt.Errorf(metadataTypeEntityPathNotSupported, details.Type.Name(), entityPath))
 	}
 	entity := MetadataEntity{
 		Type:         details.Type,
@@ -297,17 +340,17 @@ func NewMetadataEntity(entityPath string) (*MetadataEntity, error) {
 func NewMetadataEntityFile(entityFilePath string) (*MetadataEntityFile, error) {
 	details, err := parseEntityPath(entityFilePath)
 	if err != nil {
-		return nil, err
+		return nil, NewMetadataPathError(entityFilePath, MetadataPathTypeEntityFile, err)
 	}
 	entityName, entityRelativePath, isEntityDefinitionFile, valid := entityNameFromFilePath(details)
 	if !valid {
-		return nil, fmt.Errorf(metadataTypeEntityPathNotSupported, details.Type.Name(), entityFilePath)
+		return nil, NewMetadataPathError(entityFilePath, MetadataPathTypeEntityFile, fmt.Errorf(metadataTypeEntityPathNotSupported, details.Type.Name(), entityFilePath))
 	}
 
 	// not really necessary but a santity check for future proofing against code adjustments that don't have full test coverage
 	// recognizing that just because it has a .json extension doesn't mean its a json file :(
 	// should never happen in production
-	errors.MustConditionf(!isEntityDefinitionFile || path.Ext(details.Path) == ".json", "entity definition file does not have .json extension: %q", details.Path)
+	errutil.MustConditionf(!isEntityDefinitionFile || path.Ext(details.Path) == ".json", "entity definition file does not have .json extension: %q", details.Path)
 
 	item := &MetadataEntityFile{
 		Entity: MetadataEntity{

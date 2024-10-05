@@ -3,7 +3,6 @@ package pkg
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -49,12 +48,15 @@ import (
 
 */
 
+type entityValidationError struct {
+	Entity   metadata.MetadataEntity
+	Messages []string
+}
+
+type archivedEntities map[metadata.MetadataEntity][]metadata.MetadataEntityFileContents
+
 // true if relativePath meets criteria, false otherwise
 type ArchiveFilter func(metadata.MetadataEntityFile) bool
-
-var (
-	ErrArchiveNoFiles = errors.New("unable to create archive, no files were found")
-)
 
 // filters files not in NlxMetadata
 // TODO: Skuid Review Required - See comment above ArchiveFilter type in this file
@@ -83,75 +85,122 @@ func MetadataTypeArchiveFilter(excludedMetadataTypes []metadata.MetadataType) Ar
 	}
 }
 
-func Archive(fsys fs.FS, fileUtil util.FileUtil, filterArchive ArchiveFilter) ([]byte, []string, []metadata.MetadataEntity, error) {
+func Archive(fsys fs.FS, fileUtil util.FileUtil, filterArchive ArchiveFilter) (contents []byte, filePaths []string, entities []metadata.MetadataEntity, err error) {
+	message := fmt.Sprintf("Archiving files from %v", logging.ColorResource.QuoteText(fsys))
+	fields := logging.Fields{
+		"sourceDirectory":  fsys,
+		"filterArchiveNil": filterArchive == nil,
+	}
+	logger := logging.WithTraceTracking("pkg.Archive", message, fields).StartTracking()
+	defer func() { logger.FinishTracking(err) }()
+
 	buffer := new(bytes.Buffer)
 	zipWriter := fileUtil.NewZipWriter(buffer)
 	g, ctx := errgroup.WithContext(context.Background())
 
-	entityFiles := getFiles(ctx, g, fsys, fileUtil, filterArchive)
-	filesToArchive := readFiles(ctx, g, fsys, fileUtil, entityFiles)
-	archivedFiles := addFiles(ctx, g, zipWriter, filesToArchive)
+	entityFiles := getFiles(ctx, g, fsys, fileUtil, filterArchive, logger)
+	filesToArchive := readFiles(ctx, g, fsys, fileUtil, entityFiles, logger)
+	archivedFiles := addFiles(ctx, g, zipWriter, filesToArchive, logger)
 
-	var archivedFilePaths []string
-	archivedEntities := make(map[metadata.MetadataEntity][]metadata.MetadataEntityFileContents)
+	archivedEntities := make(archivedEntities)
 	for archivedFile := range archivedFiles {
 		entity := archivedFile.Entity
 		archivedEntities[entity] = append(archivedEntities[entity], archivedFile)
-		archivedFilePaths = append(archivedFilePaths, archivedFile.Path)
+		filePaths = append(filePaths, archivedFile.Path)
 	}
 
 	if err := g.Wait(); err != nil {
+		return nil, nil, nil, fmt.Errorf("error occurred collecting files for archive: %w", err)
+	}
+
+	if err := validateArchiveEntities(fmt.Sprint(fsys), archivedEntities, logger); err != nil {
 		return nil, nil, nil, err
-	}
-
-	if len(archivedEntities) == 0 {
-		return nil, nil, nil, ErrArchiveNoFiles
-	}
-
-	var validationErrors []string
-	for entity, files := range archivedEntities {
-		if errors, ok := entity.Validate(files); !ok {
-			validationErrors = append(validationErrors, errors...)
-		}
-	}
-	if len(validationErrors) > 0 {
-		return nil, nil, nil, fmt.Errorf("one or more entities were invalid:\n%v", strings.Join(validationErrors, "\n"))
 	}
 
 	if err := zipWriter.Close(); err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, fmt.Errorf("unable to close zip file: %w", err)
 	}
 
-	if result, err := io.ReadAll(buffer); err != nil {
-		return nil, nil, nil, err
-	} else {
-		return result, archivedFilePaths, slices.Collect(maps.Keys(archivedEntities)), nil
+	contents, err = io.ReadAll(buffer)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("unable to read zip file contents: %w", err)
 	}
+
+	entities = slices.Collect(maps.Keys(archivedEntities))
+	logger = logger.WithSuccess(logging.Fields{
+		"contentsLen":  len(contents),
+		"filePathsLen": len(filePaths),
+		"entitiesLen":  len(archivedEntities),
+	})
+	return contents, filePaths, entities, nil
 }
 
-func getFiles(ctx context.Context, g *errgroup.Group, fsys fs.FS, fileUtil util.FileUtil, filterArchive ArchiveFilter) <-chan metadata.MetadataEntityFile {
+func validateArchiveEntities(sourceDirectory string, archivedEntities archivedEntities, logger *logging.Logger) error {
+	logger = logger.WithName("validateArchiveEntities", logging.Fields{
+		"sourceDirectory":     sourceDirectory,
+		"archivedEntitiesLen": len(archivedEntities),
+	})
+
+	// sort by entity path so that any warnings are in entity name order
+	sortedArchivedEntities := slices.SortedFunc(maps.Keys(archivedEntities), func(a metadata.MetadataEntity, b metadata.MetadataEntity) int {
+		return strings.Compare(a.Path, b.Path)
+	})
+
+	var archiveValidationErrors []entityValidationError
+	for _, entity := range sortedArchivedEntities {
+		files := archivedEntities[entity]
+		messages, err := entity.Validate(files)
+		if err != nil {
+			return err
+		}
+
+		if len(messages) > 0 {
+			archiveValidationErrors = append(archiveValidationErrors, entityValidationError{Entity: entity, Messages: messages})
+		}
+	}
+
+	if len(archiveValidationErrors) > 0 {
+		slices.Each(archiveValidationErrors, func(ve entityValidationError) {
+			slices.Each(ve.Messages, func(m string) {
+				logger.Warnf("%v %v: %v", logging.ColorWarning.Text("Invalid Entity"), logging.ColorResource.QuoteText(ve.Entity.Path), m)
+			})
+		})
+
+		return fmt.Errorf("one or more entities found in %v were invalid, see log for details", logging.QuoteText(sourceDirectory))
+	}
+
+	return nil
+}
+
+func getFiles(ctx context.Context, g *errgroup.Group, fsys fs.FS, fileUtil util.FileUtil, filterArchive ArchiveFilter, logger *logging.Logger) <-chan metadata.MetadataEntityFile {
 	entityFiles := make(chan metadata.MetadataEntityFile)
+	logger = logger.WithName("getFiles")
 
 	g.Go(func() error {
+		defer func() {
+			logger.FatalGoRoutineConditionf(recover(), "getting files from %v", logging.ColorResource.Sprint(fsys))
+		}()
 		var fileWorkers atomic.Int32
 		fileWorkers.Store(int32(metadata.MetadataTypes.Len()))
 		for _, mdt := range metadata.MetadataTypes.Members() {
 			metadataType := mdt
 			g.Go(func() error {
+				metadataDirName := metadataType.DirName()
 				defer func() {
+					logger.FatalGoRoutineConditionf(recover(), "getting files for metadata type %v from %v", logging.ColorResource.Text(metadataType.Name()), logging.ColorResource.Text(metadataDirName))
 					// Last one out closes shop
 					if fileWorkers.Add(-1) == 0 {
 						close(entityFiles)
 					}
 				}()
-				metadataDirName := metadataType.DirName()
+				logger := logger.WithName("getFiles_"+mdt.Name(), logging.Fields{"metadataDirName": metadataDirName})
 				if exists, err := fileUtil.DirExists(fsys, metadataDirName); err != nil {
-					return fmt.Errorf("unable to detect if metadata path %q is a directory: %w", metadataDirName, err)
+					return fmt.Errorf("unable to detect if metadata path %v is a directory: %w", logging.QuoteText(metadataDirName), err)
 				} else if !exists {
-					logging.Get().Tracef("metadata directory does not exist, skipping: %v", metadataDirName)
+					logger.Tracef("Metadata directory does not exist, skipping %v", logging.ColorFilter.QuoteText(metadataDirName))
 					return nil
 				}
-				return getMetadataEntityFiles(ctx, fsys, fileUtil, metadataDirName, entityFiles, filterArchive)
+				return getMetadataEntityFiles(ctx, fsys, fileUtil, metadataDirName, entityFiles, filterArchive, logger)
 			})
 		}
 
@@ -161,7 +210,9 @@ func getFiles(ctx context.Context, g *errgroup.Group, fsys fs.FS, fileUtil util.
 	return entityFiles
 }
 
-func getMetadataEntityFiles(ctx context.Context, fsys fs.FS, fileUtil util.FileUtil, metadataDirName string, entityFiles chan<- metadata.MetadataEntityFile, filterArchive ArchiveFilter) error {
+func getMetadataEntityFiles(ctx context.Context, fsys fs.FS, fileUtil util.FileUtil, metadataDirName string, entityFiles chan<- metadata.MetadataEntityFile, filterArchive ArchiveFilter, logger *logging.Logger) error {
+	logger = logger.WithName("getMetadataEntityFiles")
+	logger.Tracef("Looking for files to archive in metadata directory %v", logging.ColorResource.QuoteText(metadataDirName))
 	return fileUtil.WalkDir(fsys, metadataDirName, func(filePath string, dirEntry fs.DirEntry, e error) error {
 		if e != nil {
 			return e
@@ -184,8 +235,10 @@ func getMetadataEntityFiles(ctx context.Context, fsys fs.FS, fileUtil util.FileU
 
 		// TODO: Skuid Review Required - See comment above ArchiveFilter type in this file
 		if filterArchive != nil && !filterArchive(*entityFile) {
+			logger.Tracef("File excluded by filter, skipping %v", logging.ColorFilter.QuoteText(entityFile.Path))
 			return nil
 		}
+		logger.Tracef("Adding file to archive from %v", logging.ColorResource.QuoteText(entityFile.Path))
 
 		// NOTE: select will pseudo-randomly choose a case when both are ready so we could send even though we are cancelled at this point.  See
 		// above ctx.Err() to ensure we don't start any new files once cancel occurred.  See https://go.dev/ref/spec#Select_statements.
@@ -199,8 +252,9 @@ func getMetadataEntityFiles(ctx context.Context, fsys fs.FS, fileUtil util.FileU
 	})
 }
 
-func readFiles(ctx context.Context, g *errgroup.Group, fsys fs.FS, fileUtil util.FileUtil, entityFiles <-chan metadata.MetadataEntityFile) <-chan metadata.MetadataEntityFileContents {
+func readFiles(ctx context.Context, g *errgroup.Group, fsys fs.FS, fileUtil util.FileUtil, entityFiles <-chan metadata.MetadataEntityFile, logger *logging.Logger) <-chan metadata.MetadataEntityFileContents {
 	filesToArchive := make(chan metadata.MetadataEntityFileContents)
+	logger = logger.WithName("readFiles")
 
 	/*
 		TODO: Skuid Review Required
@@ -228,8 +282,10 @@ func readFiles(ctx context.Context, g *errgroup.Group, fsys fs.FS, fileUtil util
 	var itemWorkers atomic.Int32
 	itemWorkers.Store(numItemWorkers)
 	for i := 0; i < numItemWorkers; i++ {
+		workerNum := i
 		g.Go(func() error {
 			defer func() {
+				logger.FatalGoRoutineConditionf(recover(), "reading files in worker %v", workerNum)
 				// Last one out closes shop
 				if itemWorkers.Add(-1) == 0 {
 					close(filesToArchive)
@@ -243,13 +299,15 @@ func readFiles(ctx context.Context, g *errgroup.Group, fsys fs.FS, fileUtil util
 	return filesToArchive
 }
 
-func addFiles(ctx context.Context, g *errgroup.Group, zipWriter util.ZipWriter, filesToArchive <-chan metadata.MetadataEntityFileContents) <-chan metadata.MetadataEntityFileContents {
+func addFiles(ctx context.Context, g *errgroup.Group, zipWriter util.ZipWriter, filesToArchive <-chan metadata.MetadataEntityFileContents, logger *logging.Logger) <-chan metadata.MetadataEntityFileContents {
 	archivedFiles := make(chan metadata.MetadataEntityFileContents)
+	logger = logger.WithName("addFiles")
 
 	// add files to zip - must be single worker as archive/zip package does not appear to be thread-safe (e.g., must
 	// write file contents to io.Writer prior to calling Create again - see https://pkg.go.dev/archive/zip#Writer.Create
 	g.Go(func() error {
 		defer func() {
+			logger.FatalGoRoutineCondition(recover(), "adding files to archive")
 			close(archivedFiles)
 		}()
 
@@ -263,11 +321,11 @@ func addFiles(ctx context.Context, g *errgroup.Group, zipWriter util.ZipWriter, 
 
 			zipFileWriter, err := zipWriter.Create(archiveFile.Path)
 			if err != nil {
-				return err
+				return fmt.Errorf("unable to create zip file %v: %w", logging.QuoteText(archiveFile.Path), err)
 			}
 			_, err = zipFileWriter.Write(archiveFile.Contents)
 			if err != nil {
-				return err
+				return fmt.Errorf("unable to write to zip file %v: %w", logging.QuoteText(archiveFile.Path), err)
 			}
 
 			// NOTE: select will pseudo-randomly choose a case when both are ready so we could send even though we are cancelled at this point.  See
@@ -294,7 +352,7 @@ func readFile(ctx context.Context, fsys fs.FS, fileUtil util.FileUtil, entityFil
 
 		fileBytes, err := fileUtil.ReadFile(fsys, entityFile.Path)
 		if err != nil {
-			return err
+			return fmt.Errorf("unable to read file %v: %w", logging.QuoteText(entityFile.Path), err)
 		}
 
 		// NOTE: select will pseudo-randomly choose a case when both are ready so we could send even though we are cancelled at this point.  See

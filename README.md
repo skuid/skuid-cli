@@ -60,6 +60,6 @@ Where it makes sense, a mock may have a corresponding builder which is manually 
 
 To generate new mocks or update existing mocks:
 
-1. Follow the instructions to install [mockery](https://vektra.github.io/mockery/latest/installation/).
+1. Follow the instructions to install the latest version of [mockery](https://vektra.github.io/mockery/latest/installation/).
 2. If updating a mock for an existing interface simply run `mockery` to re-generate all mocks.
 3. If generating a new mock, update the `interfaces` list for the corresponding `package` (the package may need to be added) in [.mockery.yaml](.mockery.yaml) and run `mockery` to (re)generate all mocks.

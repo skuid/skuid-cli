@@ -59,7 +59,7 @@ func (suite *ArchiveTestSuite) TestNoMetadataDirs() {
 		giveFS:             fsysNoDirs,
 		giveFileUtil:       util.NewFileUtil(),
 		giveArchiveFilter:  nil,
-		wantError:          pkg.ErrArchiveNoFiles,
+		wantError:          nil,
 		wantResultFiles:    nil,
 		wantResultEntities: nil,
 	})
@@ -75,7 +75,7 @@ func (suite *ArchiveTestSuite) TestNoMetadataFiles() {
 		giveFS:             fsysNoFiles,
 		giveFileUtil:       util.NewFileUtil(),
 		giveArchiveFilter:  nil,
-		wantError:          pkg.ErrArchiveNoFiles,
+		wantError:          nil,
 		wantResultFiles:    nil,
 		wantResultEntities: nil,
 	})
@@ -169,7 +169,7 @@ func (suite *ArchiveTestSuite) TestFilterNotCalledOnFilenamesForInvalidMetadataT
 		giveFS:             fsys,
 		giveFileUtil:       util.NewFileUtil(),
 		giveArchiveFilter:  filter.Execute,
-		wantError:          pkg.ErrArchiveNoFiles,
+		wantError:          nil,
 		wantResultFiles:    nil,
 		wantResultEntities: nil,
 	})
@@ -188,7 +188,7 @@ func (suite *ArchiveTestSuite) TestArchiveFilterEliminatesAllFiles() {
 		giveFS:             testutil.CreateFS(validMetadataTypeFiles),
 		giveFileUtil:       util.NewFileUtil(),
 		giveArchiveFilter:  func(item metadata.MetadataEntityFile) bool { return false },
-		wantError:          pkg.ErrArchiveNoFiles,
+		wantError:          nil,
 		wantResultFiles:    nil,
 		wantResultEntities: nil,
 	})
@@ -341,7 +341,7 @@ func (suite *ArchiveTestSuite) TestWalkDirNotCalledOnInvalidMetadataTypeDirs() {
 		giveFS:             fsys,
 		giveFileUtil:       mockFileUtil,
 		giveArchiveFilter:  nil,
-		wantError:          pkg.ErrArchiveNoFiles,
+		wantError:          nil,
 		wantResultFiles:    nil,
 		wantResultEntities: nil,
 	})
@@ -429,7 +429,7 @@ func (suite *ArchiveTestSuite) TestEntityValidationFailure() {
 				giveFS:             fsys,
 				giveFileUtil:       util.NewFileUtil(),
 				giveArchiveFilter:  nil,
-				wantError:          fmt.Errorf("one or more entities were invalid"),
+				wantError:          fmt.Errorf("one or more entities found in %#q were invalid", fmt.Sprint(fsys)),
 				wantResultFiles:    nil,
 				wantResultEntities: nil,
 			})

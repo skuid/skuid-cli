@@ -1,7 +1,7 @@
 package cmdutil
 
 import (
-	"github.com/skuid/skuid-cli/pkg/errors"
+	"github.com/skuid/skuid-cli/pkg/errutil"
 	"github.com/spf13/cobra"
 )
 
@@ -37,8 +37,8 @@ func (ct *CmdTemplate) ToCommand(run CobraRunE) *cobra.Command {
 
 func (ct *CmdTemplate) checkValidTemplate(run CobraRunE) {
 	// should never happen in production
-	errors.MustConditionf(ct.Use != "", "must provide a value for Use")
-	errors.MustConditionf(ct.Short != "", "must provide a value for Short")
-	errors.MustConditionf(ct.Long != "", "must provide a value for Long")
-	errors.MustConditionf(run == nil || ct.Example != "", "must provide a value for Example")
+	errutil.MustConditionf(ct.Use != "", "must provide a value for Use")
+	errutil.MustConditionf(ct.Short != "", "must provide a value for Short")
+	errutil.MustConditionf(ct.Long != "", "must provide a value for Long")
+	errutil.MustConditionf(run == nil || ct.Example != "", "must provide a value for Example")
 }

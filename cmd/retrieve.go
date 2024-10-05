@@ -2,11 +2,8 @@ package cmd
 
 import (
 	"fmt"
-	"path/filepath"
 	"time"
 
-	"github.com/gookit/color"
-	"github.com/sirupsen/logrus"
 	"github.com/skuid/skuid-cli/pkg"
 	"github.com/skuid/skuid-cli/pkg/cmdutil"
 	"github.com/skuid/skuid-cli/pkg/flags"
@@ -33,7 +30,7 @@ func (c *retrieveCommander) GetCommand() *cobra.Command {
 	cmd := template.ToCommand(c.retrieve)
 
 	cmdutil.AddAuthFlags(cmd, &c.authOpts)
-	cmdutil.AddStringFlag(cmd, &c.dir, flags.Dir)
+	cmdutil.AddValueFlag(cmd, &c.dir, flags.Dir)
 	cmdutil.AddStringFlag(cmd, &c.app, flags.App)
 	cmdutil.AddValueFlag(cmd, &c.since, flags.Since)
 	cmdutil.AddBoolFlag(cmd, &c.noClean, flags.NoClean)
@@ -50,123 +47,72 @@ func NewCmdRetrieve(factory *cmdutil.Factory) *cobra.Command {
 }
 
 func (c *retrieveCommander) retrieve(cmd *cobra.Command, _ []string) (err error) {
-	fields := make(logrus.Fields)
-	start := time.Now()
-	fields["process"] = "retrieve"
-	fields["start"] = start
-	logging.WithFields(fields).Info(color.Green.Sprint("Starting Retrieve"))
+	message := fmt.Sprintf("Executing command %v entities from site %v to directory %v", logging.QuoteText(cmd.Name()), logging.ColorResource.Text(c.authOpts.Host), logging.ColorResource.QuoteText(c.dir))
+	fields := logging.Fields{
+		logging.CommandNameKey: cmd.Name(),
+		"host":                 c.authOpts.Host,
+		"username":             c.authOpts.Username,
+		"targetDirectory":      c.dir,
+		"app":                  c.app,
+		"since":                c.since,
+		"noClean":              c.noClean,
+	}
+	logger := logging.WithTracking("cmd.retrieve", message, fields).StartTracking()
+	defer func() {
+		err = cmdutil.CheckError(cmd, err, recover())
+		logger = logger.FinishTracking(err)
+		err = cmdutil.HandleCommandResult(cmd, logger, err, fmt.Sprintf("Retrieved site %v to %v", logging.ColorResource.Text(c.authOpts.Host), logging.ColorResource.QuoteText(c.dir)))
+	}()
 
-	fields["host"] = c.authOpts.Host
-	fields["username"] = c.authOpts.Username
-	logging.WithFields(fields).Debug("Credentials gathered")
-
-	auth, err := pkg.Authorize(&c.authOpts)
-	// we don't need it anymore - very inelegant approach but at least it is something for now
-	// Clearing it here instead of in auth package which is the only place its accessed because the tests that exist
-	// for auth rely on package global variables so clearing in there would break those tests as they currently exist.
-	//
-	// TODO: Implement a solution for secure storage of the password while in memory and implement a proper one-time use
-	// approach assuming Skuid supports refresh tokens (see https://github.com/skuid/skuid-cli/issues/172)
-	// intentionally ignoring error since there is nothing we can do and we should fail entirely as a result
-	_ = c.authOpts.Password.Set("")
+	auth, err := pkg.AuthorizeOnce(&c.authOpts)
 	if err != nil {
-		return
+		return err
+	}
+	options := pkg.RetrieveOptions{
+		Auth:            auth,
+		NoClean:         c.noClean,
+		PlanFilter:      c.getPlanFilter(logger),
+		Since:           c.since,
+		TargetDirectory: c.dir,
+	}
+	if err := pkg.Retrieve(options); err != nil {
+		return err
 	}
 
-	fields["authorized"] = true
-	logging.WithFields(fields).Info("Authentication Successful")
+	logger = logger.WithSuccess()
+	return nil
+}
 
-	// we want the filter nil because it will be discarded without
-	// initialization
-	var filter *pkg.NlxPlanFilter = &pkg.NlxPlanFilter{}
+func (c *retrieveCommander) getPlanFilter(logger *logging.Logger) *pkg.NlxPlanFilter {
+	var filter *pkg.NlxPlanFilter
+	initFilter := func() {
+		if filter == nil {
+			filter = &pkg.NlxPlanFilter{}
+		}
+	}
 
 	// filter by app name
 	if c.app != "" {
-		fields["appName"] = c.app
+		initFilter()
 		filter.AppName = c.app
+		logger.Debugf("Filtering retrieval to app %v", logging.ColorFilter.QuoteText(c.app))
 	}
 
 	// filter by page name
 	// TODO: pages flag does not work as expected - remove completely or fix issues depending on https://github.com/skuid/skuid-cli/issues/147 & https://github.com/skuid/skuid-cli/issues/148
 	/*
 		if len(c.pages) > 0 {
-			fields["pages"] = c.pages
+			initFilter()
+			logger.Infof("Filtering retrieval to pages: %q", c.pages)
 			filter.PageNames = c.pages
 		}
 	*/
 
-	var sinceStr string
 	if c.since != nil {
+		initFilter()
 		filter.Since = c.since.UTC()
-		sinceStr = filter.Since.Format(time.RFC3339)
-		fields["sinceUTC"] = sinceStr
-		logging.WithFields(fields).Info(fmt.Sprintf("retrieving metadata records updated since: %s", c.since.Format(time.RFC3339)))
+		logger.Debugf("Filtering retrieval to metadata records updated since %v", logging.ColorFilter.QuoteText(flags.FormatSince(c.since)))
 	}
 
-	logging.WithFields(fields).Info("Getting Retrieve Plan")
-
-	var plans pkg.NlxPlanPayload
-	if _, plans, err = pkg.GetRetrievePlan(auth, filter); err != nil {
-		return
-	}
-
-	logging.WithFields(fields).Info("Got Retrieve Plan")
-
-	// pliny and warden are supposed to give the since value back for the retrieve, but just in case...
-	if sinceStr != "" {
-		if plans.MetadataService.Since == "" {
-			plans.MetadataService.Since = sinceStr
-		}
-		if plans.CloudDataService != nil {
-			if plans.CloudDataService.Since == "" {
-				plans.CloudDataService.Since = sinceStr
-			}
-		}
-	}
-
-	var results []pkg.NlxRetrievalResult
-	if _, results, err = pkg.ExecuteRetrieval(auth, plans); err != nil {
-		return
-	}
-
-	fields["results"] = len(results)
-	fields["finished"] = time.Now()
-	fields["retrievalDuration"] = time.Since(start)
-
-	logging.WithFields(fields).Debugf("Received %v Results", color.Green.Sprint(len(results)))
-
-	var targetDirectory string
-	if targetDirectory, err = filepath.Abs(c.dir); err != nil {
-		return
-	}
-
-	fields["targetDirectory"] = targetDirectory
-	logging.WithFields(fields).Infof("Target Directory is %v", color.Cyan.Sprint(targetDirectory))
-
-	if !c.noClean {
-		logging.WithFields(fields).Infof("Cleaning target directory: %v", color.Cyan.Sprint(targetDirectory))
-		if err = pkg.ClearDirectories(targetDirectory); err != nil {
-			logging.Get().Errorf("Unable to clean target directory: %v", color.Cyan.Sprint(targetDirectory))
-			return
-		}
-	}
-
-	fields["writeStart"] = time.Now()
-
-	for _, v := range results {
-		if err = pkg.WriteResultsToDisk(
-			targetDirectory,
-			pkg.WritePayload{
-				PlanName: v.PlanName,
-				PlanData: v.Data,
-			},
-		); err != nil {
-			return
-		}
-	}
-
-	logging.Get().Infof("Finished Writing to %v", color.Cyan.Sprint(targetDirectory))
-	logging.WithFields(fields).Info(color.Green.Sprint("Finished Retrieve"))
-
-	return
+	return filter
 }

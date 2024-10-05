@@ -7,6 +7,7 @@ import (
 
 	"github.com/mmatczuk/anyflag"
 	"github.com/sirupsen/logrus"
+	"github.com/skuid/skuid-cli/pkg/logging"
 	"github.com/skuid/skuid-cli/pkg/metadata"
 )
 
@@ -52,6 +53,18 @@ type Flag[T FlagType | ~[]F, F FlagType] struct {
 	Global        bool         // is this a global/persistent flag?
 	Parse         Parse[F]     // optional, parse user-input during pflag.Set() - only supported by Value & ValueWithRedact
 	Redact        Redact[T, F] // optional, mask value - only supported by ValueWithRedact
+}
+
+func UseDebugMessage() string {
+	return fmt.Sprintf("use %v for details", logging.QuoteText(fmt.Sprintf("--%v %v", LogLevel.Name, logrus.DebugLevel)))
+}
+
+func FormatSince(since *time.Time) string {
+	if since == nil {
+		return ""
+	} else {
+		return since.Format(time.RFC3339)
+	}
 }
 
 // Value[T] is a wrapper for anyflag.Value[T] to address anyflag's issue

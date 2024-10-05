@@ -15,7 +15,7 @@ var (
 )
 
 type TestReadCloser struct {
-	read  func(p []byte) (n int, err error)
+	read  func(p []byte) (int, error)
 	close func() error
 }
 
@@ -41,7 +41,7 @@ func TestCombineJSON(t *testing.T) {
 		{
 			description: "reader error",
 			readcloser: TestReadCloser{
-				read:  func(p []byte) (n int, err error) { return 0, fmt.Errorf("read") },
+				read:  func(p []byte) (int, error) { return 0, fmt.Errorf("read") },
 				close: func() error { return fmt.Errorf("close") },
 			},
 			reader: func(path string) ([]byte, error) {
@@ -52,7 +52,7 @@ func TestCombineJSON(t *testing.T) {
 		{
 			description: "read error",
 			readcloser: TestReadCloser{
-				read: func(p []byte) (n int, err error) { return len(p), fmt.Errorf("read") },
+				read: func(p []byte) (int, error) { return len(p), fmt.Errorf("read") },
 			},
 			reader: func(path string) ([]byte, error) {
 				return []byte{}, nil
@@ -62,7 +62,7 @@ func TestCombineJSON(t *testing.T) {
 		{
 			description: "invalid json patch",
 			readcloser: TestReadCloser{
-				read: func(p []byte) (n int, err error) { return 0, io.EOF },
+				read: func(p []byte) (int, error) { return 0, io.EOF },
 			},
 			reader: func(path string) ([]byte, error) {
 				return []byte{}, nil
@@ -72,15 +72,14 @@ func TestCombineJSON(t *testing.T) {
 		{
 			description: "success",
 			readcloser: TestReadCloser{
-				read: func(p []byte) (n int, err error) {
+				read: func(p []byte) (int, error) {
 					if readIndex >= int64(len(testData)) {
-						err = io.EOF
-						return
+						return 0, io.EOF
 					}
 
-					n = copy(p, testData[readIndex:])
+					n := copy(p, testData[readIndex:])
 					readIndex += int64(n)
-					return
+					return n, nil
 				},
 			},
 			reader: func(path string) ([]byte, error) {

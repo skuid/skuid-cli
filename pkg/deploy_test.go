@@ -28,25 +28,17 @@ func TestGetDeployPlan(t *testing.T) {
 		fp = filepath.Join(wd, "..", "..", "_deploy")
 	}
 
-	deploymentPlan, _, _, err := pkg.Archive(os.DirFS(fp), util.NewFileUtil(), nil)
+	plans, err := pkg.GetDeployPlan(auth, fp, nil, nil, nil)
 	if err != nil {
 		t.Log(err)
 		t.FailNow()
 	}
 
-	duration, plans, err := pkg.GetDeployPlan(auth, deploymentPlan, nil)
+	_, err = pkg.ExecuteDeployPlan(auth, plans, fp)
 	if err != nil {
 		t.Log(err)
 		t.FailNow()
 	}
-	t.Log(duration)
-
-	duration, _, err = pkg.ExecuteDeployPlan(auth, plans, fp)
-	if err != nil {
-		t.Log(err)
-		t.FailNow()
-	}
-	t.Log(duration)
 }
 
 func BenchmarkDeploymentPlan(b *testing.B) {
@@ -54,11 +46,10 @@ func BenchmarkDeploymentPlan(b *testing.B) {
 	auth, _ := pkg.Authorize(authOptions)
 	wd, _ := os.Getwd()
 	fp := filepath.Join(wd, ".", ".", "_deploy")
-	deploymentPlan, _, _, _ := pkg.Archive(os.DirFS(fp), util.NewFileUtil(), nil)
-	_, plans, _ := pkg.GetDeployPlan(auth, deploymentPlan, nil)
+	plans, _ := pkg.GetDeployPlan(auth, fp, nil, nil, nil)
 	b.ResetTimer()
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		_, _, _ = pkg.ExecuteDeployPlan(auth, plans, fp)
+		_, _ = pkg.ExecuteDeployPlan(auth, plans, fp)
 	}
 }

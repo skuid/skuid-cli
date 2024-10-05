@@ -7,10 +7,8 @@ import (
 	"io"
 	"io/fs"
 	"os"
+	"regexp"
 	"strings"
-	"time"
-
-	"github.com/gookit/color"
 
 	"github.com/skuid/skuid-cli/pkg/logging"
 )
@@ -110,65 +108,67 @@ type DirectoryCreator func(path string, fileMode os.FileMode) error
 
 type FileReader func(path string) ([]byte, error)
 
-func CreateTemporaryFile(planName string, data []byte) (name string, err error) {
-	var tmpfile *os.File
-	var n int
+var cleanFileNameRE = regexp.MustCompile(`[^a-zA-Z0-9.-_]`)
+var replaceFileNameRE = regexp.MustCompile(`[_]+`)
 
-	for attempts := 0; attempts < MAX_ATTEMPTS; attempts++ {
-		if tmpfile, err = os.CreateTemp("", strings.ReplaceAll(planName, " ", "-")); err == nil {
-			break
-		}
-		time.NewTimer(time.Second * time.Duration(attempts))
+func CleanFileName(name string) string {
+	return strings.Trim(replaceFileNameRE.ReplaceAllString(cleanFileNameRE.ReplaceAllString(name, "_"), "_"), "_")
+}
+
+func CreateTemporaryFile(name string, ext string, data []byte) (string, error) {
+	pattern := "skuid-cli-" + CleanFileName(name) + "-*"
+	if ext != "" {
+		pattern += ext
 	}
+	fields := logging.Fields{
+		"name":    name,
+		"ext":     ext,
+		"pattern": pattern,
+		"dataLen": len(data),
+	}
+	logger := logging.WithName("util.CreateTemporaryFile", fields)
+	logger.Tracef("Creating temp file with pattern %v", logging.QuoteText(pattern))
 
+	tmpFile, err := os.CreateTemp("", pattern)
 	if err != nil {
-		logging.Get().WithError(err).Warn("Couldn't create tempfile")
-		return
+		return "", fmt.Errorf("could not create temp file with pattern %v: %w", logging.QuoteText(pattern), err)
+	}
+	defer tmpFile.Close()
+
+	logger.Tracef("Created temp file %v", logging.QuoteText(tmpFile.Name()))
+	if len(data) > 0 {
+		if n, err := tmpFile.Write(data); err != nil {
+			return "", fmt.Errorf("unable to write to temp file %v: %w", logging.QuoteText(tmpFile.Name()), err)
+		} else if n == 0 {
+			return "", fmt.Errorf("did not write anything to temp file %v: %w", logging.QuoteText(tmpFile.Name()), err)
+		}
 	}
 
-	logging.Get().Tracef("created temp file: %v", color.Green.Sprintf(tmpfile.Name()))
-
-	if n, err = tmpfile.Write(data); err != nil {
-		logging.Get().WithError(err).Warn("Couldn't write to temp file")
-		return
-	} else if n == 0 {
-		err = fmt.Errorf("didn't write anything")
-		logging.Get().WithError(err).Warn("wrote nothing to tempfile")
-		return
-	} else {
-		name = tmpfile.Name()
-	}
-
-	logging.Get().WithField("tempFileName", name).Tracef("Created Temp File")
-	return
+	return tmpFile.Name(), nil
 }
 
-func CreateDirectoryDeep(path string, fileMode os.FileMode) (err error) {
-	if _, err = os.Stat(path); err != nil {
-		logging.Get().Tracef("Creating intermediate directory: %v", color.Cyan.Sprint(path))
-		err = os.MkdirAll(path, fileMode)
+func CreateDirectoryDeep(path string, fileMode os.FileMode) error {
+	logging.WithName("util.CreateDirectoryDeep", logging.Fields{"path": path}).Tracef("Ensuring directory exists at %v", logging.ColorResource.QuoteText(path))
+	if err := os.MkdirAll(path, fileMode); err != nil {
+		return fmt.Errorf("unable to create directory for path %v: %w", logging.QuoteText(path), err)
 	}
-	return
+
+	return nil
 }
 
-func CopyToFile(fileReader io.ReadCloser, path string) (err error) {
-	logging.Get().Tracef("%v: %v", color.Yellow.Sprint("Creating File"), path)
-
-	var targetFile *os.File
-	if targetFile, err = os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644); err != nil {
-		logging.Get().WithError(err).Warn("unable to open file in copytofile")
-		return
+func CopyToFile(fileReader io.ReadCloser, path string) error {
+	logging.WithName("util.CopyToFile", logging.Fields{"path": path}).Tracef("Creating and writing to file %v", logging.ColorResource.QuoteText(path))
+	targetFile, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
+	if err != nil {
+		return fmt.Errorf("unable to open file %v: %w", logging.QuoteText(path), err)
 	}
 	defer targetFile.Close()
 
 	if _, err = io.Copy(targetFile, fileReader); err != nil {
-		logging.Get().WithError(err).Error("unable to copy to target")
-		return
+		return fmt.Errorf("unable to copy file %v: %w", logging.QuoteText(path), err)
 	}
 
-	logging.Get().Tracef("%v: %v", color.Yellow.Sprint("Copied to File"), path)
-
-	return
+	return nil
 }
 
 func pathExists(fsys fs.FS, path string) (bool, fs.FileInfo, error) {

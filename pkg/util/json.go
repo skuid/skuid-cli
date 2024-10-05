@@ -2,57 +2,51 @@ package util
 
 import (
 	"bytes"
-	"encoding/json"
+	"fmt"
 	"io"
 
-	"github.com/gookit/color"
-	"github.com/sirupsen/logrus"
 	jsonpatch "github.com/skuid/json-patch"
 
+	"github.com/goccy/go-json"
 	"github.com/skuid/skuid-cli/pkg/logging"
 )
 
-func CombineJSON(readCloser io.ReadCloser, fileReader FileReader, path string) (newReadCloser io.ReadCloser, err error) {
-	fields := logrus.Fields{
-		"function": "CombineJSON",
+func CombineJSON(inReader io.ReadCloser, fileReader FileReader, path string) (outReader io.ReadCloser, err error) {
+	message := fmt.Sprintf("Adding additional JSON data to file %v", logging.QuoteText(path))
+	fields := logging.Fields{
+		"path": path,
 	}
+	logger := logging.WithTraceTracking("CombineJSON", message, fields).StartTracking()
+	defer func() { logger.FinishTracking(err) }()
 
-	logging.WithFields(fields).Tracef("Augmenting File with more JSON Data: %v\n", color.Magenta.Sprint(path))
 	existingBytes, err := fileReader(path)
 	if err != nil {
-		logging.Get().Warnf("existingFileReader: %v", err)
-		return
+		return nil, err
 	}
 
-	newBytes, err := io.ReadAll(readCloser)
+	newBytes, err := io.ReadAll(inReader)
 	if err != nil {
-		logging.Get().Warnf("ioutil.ReadAll: %v", err)
-		return
+		return nil, fmt.Errorf("unable to read new bytes to merge with file %v: %w", logging.QuoteText(path), err)
 	}
 
 	// merge the files together using the json patch library
 	combined, err := jsonpatch.MergePatch(existingBytes, newBytes)
 	if err != nil {
-		logging.Get().Warnf("jsonpatch.MergePatch: %v", err)
-		return
+		return nil, fmt.Errorf("unable to patch new bytes with file %v: %w", logging.QuoteText(path), err)
 	}
 
 	// sort all of the keys in the json. custom sort logic.
 	// this puts "name" first, then everything alphanumerically
-	sorted, err := ReSortJsonIndent(combined, true)
+	sorted, err := ReSortJson(combined, true)
 	if err != nil {
-		logging.Get().Warnf("ReSortJsonIndent: %v", err)
-		return
+		return nil, err
 	}
 
 	var indented bytes.Buffer
-	err = json.Indent(&indented, sorted, "", "\t")
-	if err != nil {
-		logging.Get().Warnf("Indent: %v", err)
-		return
+	if err := json.Indent(&indented, sorted, "", "\t"); err != nil {
+		return nil, fmt.Errorf("unable to indent merged json for file %v: %w", logging.QuoteText(path), err)
 	}
 
-	newReadCloser = io.NopCloser(bytes.NewReader(indented.Bytes()))
-
-	return
+	logger = logger.WithSuccess()
+	return io.NopCloser(bytes.NewReader(indented.Bytes())), nil
 }

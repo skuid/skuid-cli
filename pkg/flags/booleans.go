@@ -17,8 +17,13 @@ var (
 		Global:  true,
 	}
 
-	Debug = &Flag[bool, bool]{
-		Name:   "debug",
+	// Equivalent of a "verbose" mode that will include any logging.Fields in log messages. Should
+	// not be confused with logging level which is controlled via --log-level.  The --verbose
+	// flag existed in v0.6.7 and has been deprecated, however for backwards compat, it could not
+	// be re-used so --diag was added and chosen in favor of a --debug to avoid confusion with
+	// the logging level.
+	Diag = &Flag[bool, bool]{
+		Name:   "diag",
 		Usage:  "Show additional information in log messages",
 		Global: true,
 	}

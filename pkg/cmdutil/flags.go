@@ -8,8 +8,9 @@ import (
 
 	"github.com/skuid/skuid-cli/pkg"
 	"github.com/skuid/skuid-cli/pkg/constants"
-	"github.com/skuid/skuid-cli/pkg/errors"
+	"github.com/skuid/skuid-cli/pkg/errutil"
 	"github.com/skuid/skuid-cli/pkg/flags"
+	"github.com/skuid/skuid-cli/pkg/logging"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -99,23 +100,23 @@ func setAnnotations[T flags.FlagType | ~[]F, F flags.FlagType](fs *pflag.FlagSet
 	// mark the flag as created by us since Cobra (and any plugin that may be used in future) will/could
 	// create their own flags (e.g., cobra automatically creates a "help" flag)
 	// should never error - only error possible is if flag doesn't exist and we just added it
-	errors.Must(fs.SetAnnotation(flagInfo.Name, FlagSetBySkuidCliAnnotation, []string{"true"}))
-	errors.Must(fs.SetAnnotation(flagInfo.Name, LegacyEnvVarsAnnotation, flagInfo.LegacyEnvVars))
+	errutil.Must(fs.SetAnnotation(flagInfo.Name, FlagSetBySkuidCliAnnotation, []string{"true"}))
+	errutil.Must(fs.SetAnnotation(flagInfo.Name, LegacyEnvVarsAnnotation, flagInfo.LegacyEnvVars))
 }
 
 func checkValidFlag[T flags.FlagType | ~[]F, F flags.FlagType](f *flags.Flag[T, F], allowParse bool, allowRedact bool) {
 	// should never happen in production
-	errors.MustConditionf(flagNameValidator.MatchString(f.Name), "flag name %q is invalid", f.Name)
-	errors.MustConditionf(len(f.Usage) >= 10, "flag usage %q is invalid for flag name %q", f.Usage, f.Name)
+	errutil.MustConditionf(flagNameValidator.MatchString(f.Name), "flag name %q is invalid", f.Name)
+	errutil.MustConditionf(len(f.Usage) >= 10, "flag usage %q is invalid for flag name %q", f.Usage, f.Name)
 	if allowParse {
-		errors.MustConditionf(f.Parse != nil, "flag type %T requires Parse to be defined for flag name %q", f, f.Name)
+		errutil.MustConditionf(f.Parse != nil, "flag type %T requires Parse to be defined for flag name %q", f, f.Name)
 	} else {
-		errors.MustConditionf(f.Parse == nil, "flag type %T does not support Parse for flag name %q", f, f.Name)
+		errutil.MustConditionf(f.Parse == nil, "flag type %T does not support Parse for flag name %q", f, f.Name)
 	}
 	if allowRedact {
-		errors.MustConditionf(f.Redact != nil, "flag type %T requires Redact to be defined for flag name %q", f, f.Name)
+		errutil.MustConditionf(f.Redact != nil, "flag type %T requires Redact to be defined for flag name %q", f, f.Name)
 	} else {
-		errors.MustConditionf(f.Redact == nil, "flag type %T does not support Redact for flag name %q", f, f.Name)
+		errutil.MustConditionf(f.Redact == nil, "flag type %T does not support Redact for flag name %q", f, f.Name)
 	}
 	// due to limitations of Go generics, it is possible to define a flags.Flag that has mismatched types
 	// for T & F when T is not a slice.  The below will validate that T & F point to the same type when T
@@ -128,12 +129,12 @@ func checkValidFlag[T flags.FlagType | ~[]F, F flags.FlagType](f *flags.Flag[T, 
 	tType := reflect.TypeOf(*new(T))
 	if tType.Kind() != reflect.Slice {
 		fType := reflect.TypeOf(*new(F))
-		errors.MustConditionf(tType == fType, "type parameters must be the same type for flag name %q", f.Name)
+		errutil.MustConditionf(tType == fType, "type parameters must be the same type for flag name %q", f.Name)
 	}
 }
 
 func usage[T flags.FlagType | ~[]F, F flags.FlagType](flagInfo *flags.Flag[T, F]) string {
-	return fmt.Sprintf("%v\nEnvironment variable: %v", flagInfo.Usage, EnvVarName(flagInfo.Name))
+	return fmt.Sprintf("%v\nEnvironment variable: %v", flagInfo.Usage, logging.ColorEnvVar.Text(EnvVarName(flagInfo.Name)))
 }
 
 func getFlagSet[T flags.FlagType | ~[]F, F flags.FlagType](cmd *cobra.Command, flagInfo *flags.Flag[T, F]) *pflag.FlagSet {

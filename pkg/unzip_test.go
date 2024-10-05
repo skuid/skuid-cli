@@ -10,8 +10,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/bobg/go-generics/v4/set"
 	"github.com/bobg/go-generics/v4/slices"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/skuid/skuid-cli/pkg"
 )
@@ -87,6 +89,7 @@ func TestWriteResultsToDisk(t *testing.T) {
 		giveTargetDir   string
 		giveFiles       []RetrieveFile
 		wantFiles       []RetrieveFile
+		wantEntityPaths []string
 		wantDirectories []string
 		wantError       error
 	}{
@@ -96,7 +99,7 @@ func TestWriteResultsToDisk(t *testing.T) {
 			giveFiles:       []RetrieveFile{},
 			wantFiles:       []RetrieveFile{},
 			wantDirectories: []string{},
-			wantError:       fmt.Errorf("targetDirectory must be an absolute path"),
+			wantError:       fmt.Errorf("targetDirectory `` must be an absolute path"),
 		},
 		{
 			testDescription: "whitespace targetDirectory specified",
@@ -104,7 +107,7 @@ func TestWriteResultsToDisk(t *testing.T) {
 			giveFiles:       []RetrieveFile{},
 			wantFiles:       []RetrieveFile{},
 			wantDirectories: []string{},
-			wantError:       fmt.Errorf("targetDirectory must be an absolute path"),
+			wantError:       fmt.Errorf("targetDirectory `    ` must be an absolute path"),
 		},
 		{
 			testDescription: "current directory targetDirectory specified",
@@ -112,7 +115,7 @@ func TestWriteResultsToDisk(t *testing.T) {
 			giveFiles:       []RetrieveFile{},
 			wantFiles:       []RetrieveFile{},
 			wantDirectories: []string{},
-			wantError:       fmt.Errorf("targetDirectory must be an absolute path"),
+			wantError:       fmt.Errorf("targetDirectory `.` must be an absolute path"),
 		},
 		{
 			testDescription: "non-absolute targetDirectory specified",
@@ -120,7 +123,7 @@ func TestWriteResultsToDisk(t *testing.T) {
 			giveFiles:       []RetrieveFile{},
 			wantFiles:       []RetrieveFile{},
 			wantDirectories: []string{},
-			wantError:       fmt.Errorf("targetDirectory must be an absolute path"),
+			wantError:       fmt.Errorf("targetDirectory `someDir` must be an absolute path"),
 		},
 		{
 			testDescription: "non-absolute relative to current directory targetDirectory specified",
@@ -128,13 +131,14 @@ func TestWriteResultsToDisk(t *testing.T) {
 			giveFiles:       []RetrieveFile{},
 			wantFiles:       []RetrieveFile{},
 			wantDirectories: []string{},
-			wantError:       fmt.Errorf("targetDirectory must be an absolute path"),
+			wantError:       fmt.Errorf("targetDirectory `./anotherDir` must be an absolute path"),
 		},
 		{
 			testDescription: "retrieve nothing",
 			giveTargetDir:   curDir,
 			giveFiles:       []RetrieveFile{},
 			wantFiles:       []RetrieveFile{},
+			wantEntityPaths: []string{},
 			wantDirectories: []string{curDir},
 			wantError:       nil,
 		},
@@ -143,6 +147,7 @@ func TestWriteResultsToDisk(t *testing.T) {
 			giveTargetDir:   curDir,
 			giveFiles:       []RetrieveFile{{"invalidfolder/myfile.txt", "This file is in non-metadata folder"}, {"readme.txt", "This archive contains some text files"}, {"gopher.txt", "Gopher names:\nGeorge\nGeoffrey\nGonzo"}, {"todo.txt", "Get animal handling licence.\nWrite more examples"}},
 			wantFiles:       []RetrieveFile{},
+			wantEntityPaths: []string{},
 			wantDirectories: []string{curDir},
 			wantError:       nil,
 		},
@@ -151,22 +156,23 @@ func TestWriteResultsToDisk(t *testing.T) {
 			giveTargetDir:   curDir,
 			giveFiles:       []RetrieveFile{{"datasources/mydatasource.json", goodJson}, {"invalidfolder/myfile.txt", "This file is in non-metadata folder"}, {"readme.txt", "This archive contains some text files"}, {"gopher.txt", "Gopher names:\nGeorge\nGeoffrey\nGonzo"}, {"todo.txt", "Get animal handling licence.\nWrite more examples"}, {"datasources/mydatasource1.json", goodJson}},
 			wantFiles:       []RetrieveFile{{filepath.Join(curDir, filepath.FromSlash("datasources/mydatasource.json")), goodJson}, {filepath.Join(curDir, filepath.FromSlash("datasources/mydatasource1.json")), goodJson}},
+			wantEntityPaths: []string{"datasources/mydatasource", "datasources/mydatasource1"},
 			wantDirectories: []string{curDir, filepath.Join(curDir, "datasources")},
 			wantError:       nil,
 		},
-
 		{
 			testDescription: "bad json",
 			giveTargetDir:   curDir,
 			giveFiles:       []RetrieveFile{{"datasources/mydatasource.json", badJson}},
 			wantDirectories: []string{curDir, filepath.Join(curDir, "datasources")},
-			wantError:       fmt.Errorf("invalid character 'h' in literal true (expecting 'r')"),
+			wantError:       fmt.Errorf("expected { character for map value"),
 		},
 		{
 			testDescription: "retrieve a data source",
 			giveTargetDir:   curDir,
 			giveFiles:       []RetrieveFile{{"datasources/mydatasource.json", goodJson}},
 			wantFiles:       []RetrieveFile{{filepath.Join(curDir, filepath.FromSlash("datasources/mydatasource.json")), goodJson}},
+			wantEntityPaths: []string{"datasources/mydatasource"},
 			wantDirectories: []string{curDir, filepath.Join(curDir, "datasources")},
 			wantError:       nil,
 		},
@@ -175,6 +181,7 @@ func TestWriteResultsToDisk(t *testing.T) {
 			giveTargetDir:   curDir,
 			giveFiles:       []RetrieveFile{{"datasources/mydatasource.json", goodJson}, {"datasources/mydatasource2.json", strings.ReplaceAll(goodJson, "json", "json2")}},
 			wantFiles:       []RetrieveFile{{filepath.Join(curDir, filepath.FromSlash("datasources/mydatasource.json")), goodJson}, {filepath.Join(curDir, filepath.FromSlash("datasources/mydatasource2.json")), strings.ReplaceAll(goodJson, "json", "json2")}},
+			wantEntityPaths: []string{"datasources/mydatasource", "datasources/mydatasource2"},
 			wantDirectories: []string{curDir, filepath.Join(curDir, "datasources")},
 			wantError:       nil,
 		},
@@ -183,6 +190,7 @@ func TestWriteResultsToDisk(t *testing.T) {
 			giveTargetDir:   filepath.Join(curDir, "myTargetDirSubfolder"),
 			giveFiles:       []RetrieveFile{{"datasources/mydatasource.json", goodJson}},
 			wantFiles:       []RetrieveFile{{filepath.Join(curDir, filepath.FromSlash("myTargetDirSubfolder/datasources/mydatasource.json")), goodJson}},
+			wantEntityPaths: []string{"datasources/mydatasource"},
 			wantDirectories: []string{filepath.Join(curDir, "myTargetDirSubfolder"), filepath.Join(curDir, filepath.FromSlash("myTargetDirSubfolder/datasources"))},
 			wantError:       nil,
 		},
@@ -196,6 +204,7 @@ func TestWriteResultsToDisk(t *testing.T) {
 			wantFiles: []RetrieveFile{
 				{filepath.Join(curDir, filepath.FromSlash("sitepermissionsets/myprofile.json")), mergedSitePermissionSetBody},
 			},
+			wantEntityPaths: []string{"sitepermissionsets/myprofile"},
 			wantDirectories: []string{
 				curDir,
 				filepath.Join(curDir, "sitepermissionsets"),
@@ -257,9 +266,9 @@ func TestWriteResultsToDisk(t *testing.T) {
 				return []byte(existingProfileBody), nil
 			}
 
-			err = pkg.WriteResults(tc.giveTargetDir, pkg.WritePayload{PlanData: buf.Bytes(), PlanName: "test"}, mockFileMaker, mockDirectoryMaker, mockExistingFileReader)
+			entityPaths, err := pkg.WriteResults(tc.giveTargetDir, pkg.WritePayload{PlanData: buf.Bytes(), PlanName: "test"}, mockFileMaker, mockDirectoryMaker, mockExistingFileReader)
 			if tc.wantError != nil {
-				assert.Equal(t, tc.wantError.Error(), err.Error())
+				assert.ErrorContains(t, err, tc.wantError.Error())
 			} else if err != nil {
 				t.Fatal(err)
 			}
@@ -269,6 +278,12 @@ func TestWriteResultsToDisk(t *testing.T) {
 				filesCreated = append(filesCreated, file)
 			}
 			assert.ElementsMatch(t, tc.wantFiles, filesCreated)
+			if tc.wantEntityPaths == nil {
+				assert.Nil(t, entityPaths)
+			} else {
+				require.NotNil(t, entityPaths)
+				assert.Equal(t, set.New(tc.wantEntityPaths...), entityPaths)
+			}
 			assert.ElementsMatch(t, tc.wantDirectories, directoriesCreated)
 		})
 	}

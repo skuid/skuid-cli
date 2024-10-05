@@ -1,11 +1,11 @@
 package pkg_test
 
 import (
-	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/goccy/go-json"
 	"github.com/skuid/skuid-cli/pkg"
 	"github.com/skuid/skuid-cli/pkg/util"
 )
@@ -28,7 +28,7 @@ func TestRetrievePlan(t *testing.T) {
 		{},
 	} {
 		t.Run(tc.description, func(t *testing.T) {
-			_, result, err := pkg.GetRetrievePlan(auth, tc.givenFilter)
+			result, err := pkg.GetRetrievePlan(auth, tc.givenFilter)
 			assert.NoError(t, err)
 
 			data, err := json.Marshal(result)
@@ -53,13 +53,11 @@ func TestExecuteRetrieval(t *testing.T) {
 		{},
 	} {
 		t.Run(tc.description, func(t *testing.T) {
-			duration, plans, err := pkg.GetRetrievePlan(auth, nil)
-			t.Log(duration)
+			plans, err := pkg.GetRetrievePlan(auth, nil)
 			t.Log(plans)
 			t.Log(err)
 
-			duration, results, err := pkg.ExecuteRetrieval(auth, plans)
-			t.Log(duration)
+			results, err := pkg.ExecuteRetrievePlan(auth, plans)
 			t.Log(results)
 			t.Log(err)
 		})

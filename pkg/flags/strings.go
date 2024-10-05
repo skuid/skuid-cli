@@ -52,6 +52,7 @@ var (
 		Shorthand:     "d",
 		Usage:         "Target directory for this operation",
 		LegacyEnvVars: []string{constants.ENV_SKUID_DEFAULT_FOLDER},
+		Parse:         ParseDirectory,
 	}
 
 	LogDirectory = &Flag[string, string]{

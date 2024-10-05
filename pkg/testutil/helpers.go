@@ -28,7 +28,7 @@ func SameMatcher(a any) func(fn any) bool {
 
 func EmptyCobraRun(*cobra.Command, []string) error { return nil }
 
-func ExecuteCommand(root *cobra.Command, args ...string) (err error) {
+func ExecuteCommand(root *cobra.Command, args ...string) error {
 	buf := new(bytes.Buffer)
 	root.SetOut(buf)
 	root.SetErr(buf)

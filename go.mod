@@ -5,6 +5,7 @@ go 1.23.1
 
 require (
 	github.com/bobg/go-generics/v4 v4.1.1
+	github.com/bobg/seqs v1.5.1
 	github.com/goccy/go-json v0.10.3
 	github.com/google/uuid v1.6.0
 	github.com/gookit/color v1.5.4
@@ -24,6 +25,7 @@ require (
 )
 
 require (
+	github.com/bobg/go-generics/v3 v3.7.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/kr/pretty v0.3.1 // indirect

@@ -24,14 +24,14 @@ func TestNewCmdRoot(t *testing.T) {
 func TestSetupSuccess(t *testing.T) {
 	loggingOptions := &logging.LoggingOptions{
 		Level:            logrus.TraceLevel,
-		Debug:            true,
+		Diag:             true,
 		FileLogging:      true,
 		FileLoggingDir:   "mylogs",
 		NoConsoleLogging: true,
 	}
 	envVars := map[string]testutil.EnvVar[string]{
 		cmdutil.EnvVarName(flags.LogLevel.Name):         {EnvValue: "trace", Value: "trace"},
-		cmdutil.EnvVarName(flags.Debug.Name):            {EnvValue: "1", Value: "1"},
+		cmdutil.EnvVarName(flags.Diag.Name):             {EnvValue: "1", Value: "1"},
 		cmdutil.EnvVarName(flags.FileLogging.Name):      {EnvValue: "1", Value: "1"},
 		cmdutil.EnvVarName(flags.LogDirectory.Name):     {EnvValue: "mylogs", Value: "mylogs"},
 		cmdutil.EnvVarName(flags.NoConsoleLogging.Name): {EnvValue: "1", Value: "1"},
@@ -99,92 +99,92 @@ func TestSupportsDeprecatedLoggingFlags(t *testing.T) {
 		testDescription string
 		giveArgs        []string
 		giveLevel       logrus.Level
-		giveDebug       bool
+		giveDiag        bool
 		wantError       []string
 	}{
 		{
 			testDescription: "verbose specified",
 			giveArgs:        []string{"--verbose"},
 			giveLevel:       logrus.DebugLevel,
-			giveDebug:       false,
+			giveDiag:        false,
 		},
 		{
 			testDescription: "trace specified",
 			giveArgs:        []string{"--trace"},
 			giveLevel:       logrus.TraceLevel,
-			giveDebug:       false,
+			giveDiag:        false,
 		},
 		{
 			testDescription: "diagnostic specified",
 			giveArgs:        []string{"--diagnostic"},
 			giveLevel:       logrus.TraceLevel,
-			giveDebug:       true,
+			giveDiag:        true,
 		},
 		{
 			testDescription: "verbose & trace specified",
 			giveArgs:        []string{"--verbose", "--trace"},
 			giveLevel:       logrus.TraceLevel,
-			giveDebug:       false,
+			giveDiag:        false,
 		},
 		{
 			testDescription: "verbose & diagnostic specified",
 			giveArgs:        []string{"--verbose", "--diagnostic"},
 			giveLevel:       logrus.TraceLevel,
-			giveDebug:       true,
+			giveDiag:        true,
 		},
 		{
 			testDescription: "trace & diagnostic specified",
 			giveArgs:        []string{"--trace", "--diagnostic"},
 			giveLevel:       logrus.TraceLevel,
-			giveDebug:       true,
+			giveDiag:        true,
 		},
 		{
 			testDescription: "verbose & trace & diagnosticspecified",
 			giveArgs:        []string{"--verbose", "--trace", "--diagnostic"},
 			giveLevel:       logrus.TraceLevel,
-			giveDebug:       true,
+			giveDiag:        true,
 		},
 		{
 			testDescription: "log-level & verbose",
 			giveArgs:        []string{"--log-level", "warn", "--verbose"},
 			giveLevel:       logrus.WarnLevel,
-			giveDebug:       false,
+			giveDiag:        false,
 			wantError:       []string{"log-level", "verbose"},
 		},
 		{
 			testDescription: "log-level & trace",
 			giveArgs:        []string{"--log-level", "warn", "--trace"},
 			giveLevel:       logrus.WarnLevel,
-			giveDebug:       false,
+			giveDiag:        false,
 			wantError:       []string{"log-level", "trace"},
 		},
 		{
 			testDescription: "log-level & diagnostic",
 			giveArgs:        []string{"--log-level", "warn", "--diagnostic"},
 			giveLevel:       logrus.WarnLevel,
-			giveDebug:       false,
+			giveDiag:        false,
 			wantError:       []string{"log-level", "diagnostic"},
 		},
 		{
-			testDescription: "debug & verbose",
-			giveArgs:        []string{"--debug", "--verbose"},
+			testDescription: "diag & verbose",
+			giveArgs:        []string{"--diag", "--verbose"},
 			giveLevel:       logrus.InfoLevel,
-			giveDebug:       true,
-			wantError:       []string{"debug", "verbose"},
+			giveDiag:        true,
+			wantError:       []string{"diag", "verbose"},
 		},
 		{
-			testDescription: "debug & trace",
-			giveArgs:        []string{"--debug", "--trace"},
+			testDescription: "diag & trace",
+			giveArgs:        []string{"--diag", "--trace"},
 			giveLevel:       logrus.InfoLevel,
-			giveDebug:       true,
-			wantError:       []string{"debug", "trace"},
+			giveDiag:        true,
+			wantError:       []string{"diag", "trace"},
 		},
 		{
-			testDescription: "debug & diagnostic",
-			giveArgs:        []string{"--debug", "--diagnostic"},
+			testDescription: "diag & diagnostic",
+			giveArgs:        []string{"--diag", "--diagnostic"},
 			giveLevel:       logrus.InfoLevel,
-			giveDebug:       true,
-			wantError:       []string{"debug", "diagnostic"},
+			giveDiag:        true,
+			wantError:       []string{"diag", "diagnostic"},
 		},
 	}
 
@@ -193,7 +193,7 @@ func TestSupportsDeprecatedLoggingFlags(t *testing.T) {
 			mockLI := mocks.NewLogInformer(t)
 			loggingOptions := &logging.LoggingOptions{
 				Level:          tc.giveLevel,
-				Debug:          tc.giveDebug,
+				Diag:           tc.giveDiag,
 				FileLoggingDir: flags.LogDirectory.Default,
 			}
 			mockLI.EXPECT().Setup(loggingOptions).Return(nil).Once()

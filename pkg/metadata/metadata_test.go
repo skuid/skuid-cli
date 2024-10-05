@@ -113,7 +113,8 @@ type ValidateTestCase struct {
 	testDescription string
 	giveEntity      metadata.MetadataEntity
 	giveFiles       []metadata.MetadataEntityFileContents
-	wantOK          bool
+	wantError       bool
+	wantMessages    bool
 }
 
 type ValidateFile struct {
@@ -1404,12 +1405,24 @@ type MetadataEntityTestSuite struct {
 }
 
 func (suite *MetadataEntityTestSuite) TestValidate() {
+	entityFullName := func(me metadata.MetadataEntity) string {
+		return fmt.Sprintf("%v_SubType_%v", me.Type.Name(), me.SubType)
+	}
+
 	createEntityFixture := func(mdt metadata.MetadataType, mdtst metadata.MetadataSubType, name string) metadata.MetadataEntity {
+		relFilePath := name
+		if mdt == metadata.MetadataTypeSite {
+			if mdtst == metadata.MetadataSubTypeSiteFavicon {
+				relFilePath = path.Join("favicon", relFilePath)
+			} else if mdtst == metadata.MetadataSubTypeSiteLogo {
+				relFilePath = path.Join("logo", relFilePath)
+			}
+		}
 		return metadata.MetadataEntity{
 			Type:         mdt,
 			SubType:      mdtst,
 			Name:         name,
-			Path:         path.Join(mdt.DirName(), name),
+			Path:         path.Join(mdt.DirName(), relFilePath),
 			PathRelative: name,
 		}
 	}
@@ -1456,46 +1469,53 @@ func (suite *MetadataEntityTestSuite) TestValidate() {
 			additionalFileFiles = append(additionalFileFiles, createEntityFileContentsFixture(me, f.FileName, f.IsDefinitionFile, validContents))
 		}
 
+		entityFullName := entityFullName(me)
 		standardCases := []ValidateTestCase{
 			{
-				testDescription: fmt.Sprintf("%v valid", me.Type.Name()),
+				testDescription: fmt.Sprintf("%v valid", entityFullName),
 				giveEntity:      me,
 				giveFiles:       validFiles,
-				wantOK:          true,
+				wantError:       false,
+				wantMessages:    false,
 			},
 			{
-				testDescription: fmt.Sprintf("%v invalid nil files", me.Type.Name()),
+				testDescription: fmt.Sprintf("%v invalid nil files", entityFullName),
 				giveEntity:      me,
 				giveFiles:       nil,
-				wantOK:          false,
+				wantError:       false,
+				wantMessages:    true,
 			},
 			{
-				testDescription: fmt.Sprintf("%v invalid empty files", me.Type.Name()),
+				testDescription: fmt.Sprintf("%v invalid empty files", entityFullName),
 				giveEntity:      me,
 				giveFiles:       []metadata.MetadataEntityFileContents{},
-				wantOK:          false,
+				wantError:       false,
+				wantMessages:    true,
 			},
 		}
 
 		if testDefFile {
 			standardCases = append(standardCases, []ValidateTestCase{
 				{
-					testDescription: fmt.Sprintf("%v invalid empty file content", me.Type.Name()),
+					testDescription: fmt.Sprintf("%v invalid empty file content", entityFullName),
 					giveEntity:      me,
 					giveFiles:       emptyContentFiles,
-					wantOK:          false,
+					wantError:       false,
+					wantMessages:    true,
 				},
 				{
-					testDescription: fmt.Sprintf("%v invalid empty name value", me.Type.Name()),
+					testDescription: fmt.Sprintf("%v invalid empty name value", entityFullName),
 					giveEntity:      me,
 					giveFiles:       emptyNameValueFiles,
-					wantOK:          false,
+					wantError:       false,
+					wantMessages:    true,
 				},
 				{
-					testDescription: fmt.Sprintf("%v invalid too many files and multiple definition files", me.Type.Name()),
+					testDescription: fmt.Sprintf("%v invalid too many files and multiple definition files", entityFullName),
 					giveEntity:      me,
 					giveFiles:       additionalFileFiles,
-					wantOK:          false,
+					wantError:       false,
+					wantMessages:    true,
 				},
 			}...)
 		}
@@ -1503,10 +1523,11 @@ func (suite *MetadataEntityTestSuite) TestValidate() {
 		if testCaseSensitive && testDefFile {
 			standardCases = append(standardCases, []ValidateTestCase{
 				{
-					testDescription: fmt.Sprintf("%v invalid mismatched case name value", me.Type.Name()),
+					testDescription: fmt.Sprintf("%v invalid mismatched case name value", entityFullName),
 					giveEntity:      me,
 					giveFiles:       mismatchedCaseNameValueFiles,
-					wantOK:          false,
+					wantError:       false,
+					wantMessages:    true,
 				},
 			}...)
 		}
@@ -1514,10 +1535,11 @@ func (suite *MetadataEntityTestSuite) TestValidate() {
 		if testTooManyFiles && len(files) > 1 {
 			standardCases = append(standardCases, []ValidateTestCase{
 				{
-					testDescription: fmt.Sprintf("%v invalid not enough files", me.Type.Name()),
+					testDescription: fmt.Sprintf("%v invalid not enough files", entityFullName),
 					giveEntity:      me,
 					giveFiles:       defFileOnlyFiles,
-					wantOK:          false,
+					wantError:       false,
+					wantMessages:    true,
 				},
 			}...)
 		}
@@ -1527,26 +1549,30 @@ func (suite *MetadataEntityTestSuite) TestValidate() {
 
 	createAdditionalSiteTestCases := func() []ValidateTestCase {
 		me := createEntityFixture(metadata.MetadataTypeSite, metadata.MetadataSubTypeNone, metadata.EntityNameSite)
+		entityFullName := entityFullName(me)
 		meNotASite := createEntityFixture(metadata.MetadataTypeSite, metadata.MetadataSubTypeNone, "my_site")
 
 		return []ValidateTestCase{
 			{
-				testDescription: fmt.Sprintf("%v valid custom entity name", me.Type.Name()),
+				testDescription: fmt.Sprintf("%v valid custom entity name", entityFullName),
 				giveEntity:      me,
 				giveFiles:       []metadata.MetadataEntityFileContents{createEntityFileContentsFixture(me, "site.json", true, `{"name": "This is my name"}`)},
-				wantOK:          true,
+				wantError:       false,
+				wantMessages:    false,
 			},
 			{
-				testDescription: fmt.Sprintf("%v valid single space entity name", me.Type.Name()),
+				testDescription: fmt.Sprintf("%v valid single space entity name", entityFullName),
 				giveEntity:      me,
 				giveFiles:       []metadata.MetadataEntityFileContents{createEntityFileContentsFixture(me, "site.json", true, `{"name": " "}`)},
-				wantOK:          true,
+				wantError:       false,
+				wantMessages:    false,
 			},
 			{
-				testDescription: fmt.Sprintf("%v invalid entity name is not site", me.Type.Name()),
+				testDescription: fmt.Sprintf("%v invalid entity name is not site", entityFullName),
 				giveEntity:      meNotASite,
 				giveFiles:       []metadata.MetadataEntityFileContents{createEntityFileContentsFixture(meNotASite, "site.json", true, `{"name": "my_site"}`)},
-				wantOK:          false,
+				wantError:       true,
+				wantMessages:    false,
 			},
 		}
 	}
@@ -1555,7 +1581,7 @@ func (suite *MetadataEntityTestSuite) TestValidate() {
 	for _, mdt := range metadata.MetadataTypes.Members() {
 		switch mdt {
 		case metadata.MetadataTypeFiles:
-			testCases = append(testCases, createStandardTestCases(metadata.MetadataTypeFiles, metadata.MetadataSubTypeNone, "my_file", true, true, true, []ValidateFile{
+			testCases = append(testCases, createStandardTestCases(metadata.MetadataTypeFiles, metadata.MetadataSubTypeNone, "my_file.txt", true, true, true, []ValidateFile{
 				{"my_file.txt.skuid.json", `{"name": "__NAME__"}`, true},
 				{"my_file.txt", "", false},
 			})...)
@@ -1564,11 +1590,11 @@ func (suite *MetadataEntityTestSuite) TestValidate() {
 				{"site.json", `{"name": "__NAME__"}`, true},
 			})...)
 			testCases = append(testCases, createAdditionalSiteTestCases()...)
-			testCases = append(testCases, createStandardTestCases(metadata.MetadataTypeSite, metadata.MetadataSubTypeSiteLogo, "my_favicon", true, true, true, []ValidateFile{
+			testCases = append(testCases, createStandardTestCases(metadata.MetadataTypeSite, metadata.MetadataSubTypeSiteFavicon, "my_favicon.ico", true, true, true, []ValidateFile{
 				{"favicon/my_favicon.ico.skuid.json", `{"name": "__NAME__"}`, true},
 				{"favicon/my_favicon.ico", "", false},
 			})...)
-			testCases = append(testCases, createStandardTestCases(metadata.MetadataTypeSite, metadata.MetadataSubTypeSiteLogo, "my_logo", true, true, true, []ValidateFile{
+			testCases = append(testCases, createStandardTestCases(metadata.MetadataTypeSite, metadata.MetadataSubTypeSiteLogo, "my_logo.png", true, true, true, []ValidateFile{
 				{"logo/my_logo.png.skuid.json", `{"name": "__NAME__"}`, true},
 				{"logo/my_logo.png", "", false},
 			})...)
@@ -1598,8 +1624,9 @@ func (suite *MetadataEntityTestSuite) TestValidate() {
 	for _, tc := range testCases {
 		suite.Run(tc.testDescription, func() {
 			t := suite.T()
-			_, ok := tc.giveEntity.Validate(tc.giveFiles)
-			assert.Equal(t, tc.wantOK, ok)
+			messages, err := tc.giveEntity.Validate(tc.giveFiles)
+			assert.Equal(t, tc.wantError, err != nil, "err value was not expected")
+			assert.Equal(t, tc.wantMessages, len(messages) > 0, "messages length was not expected")
 		})
 	}
 }
