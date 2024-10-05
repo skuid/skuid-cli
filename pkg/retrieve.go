@@ -9,7 +9,6 @@ import (
 
 	"github.com/bobg/go-generics/v4/set"
 	"github.com/bobg/go-generics/v4/slices"
-	"github.com/bobg/seqs"
 	"github.com/goccy/go-json"
 	"github.com/skuid/skuid-cli/pkg/flags"
 	"github.com/skuid/skuid-cli/pkg/logging"
@@ -22,6 +21,11 @@ var (
 type NlxRetrievalResult struct {
 	Plan *NlxPlan
 	Data []byte
+}
+
+type NlxRetrievalResults struct {
+	MetadataService  *NlxRetrievalResult
+	CloudDataService *NlxRetrievalResult
 }
 
 type RetrieveOptions struct {
@@ -131,7 +135,7 @@ func GetRetrievePlan(auth *Authorization, filter *NlxPlanFilter) (plans *NlxPlan
 }
 
 // TODO: This can be made private once improvements are made to address https://github.com/skuid/skuid-cli/issues/166 (e.g., test coverage, dependency injection to enable proper unit tests, etc.)
-func ExecuteRetrievePlan(auth *Authorization, plans *NlxPlans) (results []NlxRetrievalResult, err error) {
+func ExecuteRetrievePlan(auth *Authorization, plans *NlxPlans) (results *NlxRetrievalResults, err error) {
 	planNames := logging.CSV(slices.Values(plans.PlanNames))
 	message := "Executing retrieval plan(s)"
 	fields := logging.Fields{
@@ -156,18 +160,19 @@ func ExecuteRetrievePlan(auth *Authorization, plans *NlxPlans) (results []NlxRet
 		"entitiesFrom": "Execute retrieval plan(s) " + planNames,
 	}).Debugf("Requesting entities %v", logging.ColorResource.Text(allEntityPaths))
 
+	results = &NlxRetrievalResults{}
 	// has to be pliny, then warden
 	if result, err := executeRetrievePlan(auth, plans.MetadataService, logger); err != nil {
 		return nil, err
 	} else {
-		results = append(results, *result)
+		results.MetadataService = result
 	}
 
 	if plans.CloudDataService != nil {
 		if result, err := executeRetrievePlan(auth, plans.CloudDataService, logger); err != nil {
 			return nil, err
 		} else {
-			results = append(results, *result)
+			results.CloudDataService = result
 		}
 	}
 
@@ -176,7 +181,7 @@ func ExecuteRetrievePlan(auth *Authorization, plans *NlxPlans) (results []NlxRet
 	return results, nil
 }
 
-func writeRetrievePlan(targetDirectory string, results []NlxRetrievalResult) (allEntityPaths set.Of[string], err error) {
+func writeRetrievePlan(targetDirectory string, results *NlxRetrievalResults) (allEntityPaths set.Of[string], err error) {
 	resultPlanNames := logging.CSV(getResultPlanNames(results))
 	message := "Writing retrieval result(s) to disk"
 	fields := logging.Fields{
@@ -187,22 +192,28 @@ func writeRetrievePlan(targetDirectory string, results []NlxRetrievalResult) (al
 	defer func() { logger.FinishTracking(err) }()
 
 	allEntityPaths = set.New[string]()
-	for _, v := range results {
-		writePayload := WritePayload{
-			PlanName: v.Plan.Name,
-			PlanData: v.Data,
-		}
-		if planEntityPaths, err := WriteResultsToDisk(targetDirectory, writePayload); err != nil {
+
+	// Skuid Review Required - The code in v0.6.7 had a []NlxRetrieveResult parameter and would iterate it and process
+	// results in array order.  This could lead to unexpected final state of the written files because if the order
+	// of the items in the array ever changed (intentionally or unintentionally) the files would be written in a different
+	// order and then for those files that are processed through CombineJSON, the final file potentially different.  To
+	// avoid any intentional/unintentional outcomes, based on my understanding and the way v0.6.7 appeared to "expect"
+	// things to work was that the metadata service result would always be written first, followed by the data service
+	// result.  The below assumes that is the expectation and the correct way the results should be written based on the
+	// way CombineJSON works.  Is this correct?  Which file should be written first?
+	// See https://github.com/skuid/skuid-cli/issues/227
+	//
+	// TODO: Adjust below based on answer to above and/or https://github.com/skuid/skuid-cli/issues/227
+	if err := writePlanResultToDisk(targetDirectory, results.MetadataService, allEntityPaths, logger); err != nil {
+		return nil, err
+	}
+
+	if results.CloudDataService != nil {
+		if err := writePlanResultToDisk(targetDirectory, results.CloudDataService, allEntityPaths, logger); err != nil {
 			return nil, err
-		} else {
-			loggerEntityPaths := logging.CSV(planEntityPaths.All())
-			logger.WithFields(logging.Fields{
-				"entities":     loggerEntityPaths,
-				"entitiesFrom": "Execute retrieval plan " + logging.QuoteText(v.Plan.Name) + " response",
-			}).Tracef("Received retrieval plan %v entities %v", logging.QuoteText(v.Plan.Name), logging.ColorResource.Text(loggerEntityPaths))
-			allEntityPaths.AddSeq(planEntityPaths.All())
 		}
 	}
+
 	loggerEntityPaths := logging.CSV(allEntityPaths.All())
 	logger.WithFields(logging.Fields{
 		"entities":     loggerEntityPaths,
@@ -211,6 +222,25 @@ func writeRetrievePlan(targetDirectory string, results []NlxRetrievalResult) (al
 
 	logger = logger.WithSuccess()
 	return allEntityPaths, nil
+}
+
+func writePlanResultToDisk(targetDirectory string, result *NlxRetrievalResult, allEntityPaths set.Of[string], logger *logging.Logger) error {
+	writePayload := WritePayload{
+		PlanName: result.Plan.Name,
+		PlanData: result.Data,
+	}
+	planEntityPaths, err := WriteResultsToDisk(targetDirectory, writePayload)
+	if err != nil {
+		return err
+	}
+
+	loggerEntityPaths := logging.CSV(planEntityPaths.All())
+	logger.WithFields(logging.Fields{
+		"entities":     loggerEntityPaths,
+		"entitiesFrom": "Execute retrieval plan " + logging.QuoteText(result.Plan.Name) + " response",
+	}).Tracef("Received retrieval plan %v entities %v", logging.QuoteText(result.Plan.Name), logging.ColorResource.Text(loggerEntityPaths))
+	allEntityPaths.AddSeq(planEntityPaths.All())
+	return nil
 }
 
 // this function generically handles a plan based on name / stuff
@@ -280,8 +310,10 @@ func syncSince(planFilter *NlxPlanFilter, plans *NlxPlans) {
 	}
 }
 
-func getResultPlanNames(results []NlxRetrievalResult) iter.Seq[PlanName] {
-	return seqs.Map(slices.Values(results), func(r NlxRetrievalResult) PlanName {
-		return r.Plan.Name
-	})
+func getResultPlanNames(results *NlxRetrievalResults) iter.Seq[PlanName] {
+	names := []PlanName{results.MetadataService.Plan.Name}
+	if results.CloudDataService != nil {
+		names = append(names, results.CloudDataService.Plan.Name)
+	}
+	return slices.Values(names)
 }
