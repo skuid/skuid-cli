@@ -83,9 +83,13 @@ func Retrieve(options RetrieveOptions) (err error) {
 		return err
 	}
 
-	logger = logger.WithSuccess(logging.Fields{
-		"entityPathsLen": len(entityPaths),
-	})
+	entitiesWritten := len(entityPaths)
+	logger = logger.WithField("entityPathsLen", entitiesWritten)
+	if entitiesWritten == 0 {
+		logger.Warn(logging.ColorWarning.Sprintf("No entities retrieved, please check any filter(s) that may have been specified, %v", flags.UseDebugMessage()))
+	}
+
+	logger = logger.WithSuccess()
 	return nil
 }
 
@@ -143,13 +147,21 @@ func ExecuteRetrievePlan(auth *Authorization, plans *NlxPlans) (results []NlxRet
 		"entitiesFrom": "Execute retrieval plan(s) " + planNames,
 	}).Debugf("Requesting entities %v", logging.ColorResource.Text(allEntityPaths))
 
+	// Skuid Review Required - v0.6.7 simply checks for != nil and skips MetadataService but will process CloudDataService if present.  Based on my testing and what I've experienced, it would
+	// seem that a MetadataService should always be present, even if it is empty (e.g., a filter was applied and no results that matched it).  Given this, modifying the logic to explicitly
+	// require MetadataService plan (even if empty inside) and fail if not present.  Is it correct that MetadataService should always be present in all situations?  Should a CLoudDataService
+	// plan ever be processed if MetadataService isn't present? See https://github.com/skuid/skuid-cli/issues/225
+	//
+	// TODO: Adjust based on answer to above and/or to https://github.com/skuid/skuid-cli/issues/225
+	if plans.MetadataService == nil {
+		return nil, fmt.Errorf("unable to execute retrieval plan(s), expected a %v plan but did not receive one, %v", logging.QuoteText(PlanNamePliny), logging.FILE_AN_ISSUE)
+	}
+
 	// has to be pliny, then warden
-	if plans.MetadataService != nil {
-		if result, err := executeRetrievePlan(auth, plans.MetadataService, logger); err != nil {
-			return nil, err
-		} else {
-			results = append(results, *result)
-		}
+	if result, err := executeRetrievePlan(auth, plans.MetadataService, logger); err != nil {
+		return nil, err
+	} else {
+		results = append(results, *result)
 	}
 
 	if plans.CloudDataService != nil {

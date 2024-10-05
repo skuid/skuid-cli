@@ -29,11 +29,14 @@ var (
 	ColorStart    = LogColor{color.Gray}    // Starting tracked activity
 )
 
-const SUCCESS_TEXT = "SUCCESS"
-const FAILURE_TEXT = "FAILURE"
-const START_TEXT = "START"
-const SUCCESS_ICON = "✓"
-const FAILURE_ICON = "X"
+const (
+	SUCCESS_TEXT  = "SUCCESS"
+	FAILURE_TEXT  = "FAILURE"
+	START_TEXT    = "START"
+	SUCCESS_ICON  = "✓"
+	FAILURE_ICON  = "X"
+	FILE_AN_ISSUE = "please try again and if the problem persists create an issue at https://github.com/skuid/skuid-cli/issues"
+)
 
 func ColorSuccessIcon() string {
 	return ColorSuccess.Text(SUCCESS_ICON)

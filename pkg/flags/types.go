@@ -56,7 +56,7 @@ type Flag[T FlagType | ~[]F, F FlagType] struct {
 }
 
 func UseDebugMessage() string {
-	return fmt.Sprintf("use %v for details", logging.QuoteText(fmt.Sprintf("--%v %v", LogLevel.Name, logrus.DebugLevel)))
+	return fmt.Sprintf("use %v for more information", logging.QuoteText(fmt.Sprintf("--%v %v", LogLevel.Name, logrus.DebugLevel)))
 }
 
 func FormatSince(since *time.Time) string {
