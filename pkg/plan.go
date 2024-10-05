@@ -2,7 +2,6 @@ package pkg
 
 import (
 	"encoding/json"
-	"fmt"
 	"time"
 
 	"github.com/skuid/skuid-cli/pkg/metadata"
@@ -34,13 +33,6 @@ type NlxPlan struct {
 	AppSpecific       bool                  `json:"appSpecific"`
 	Warnings          []string              `json:"warnings"`
 	AllPermissionSets []PermissionSetResult `json:"allPermissionSets"`
-}
-
-type JSONTime time.Time
-
-func (t JSONTime) MarshalJSON() ([]byte, error) {
-	tstr := fmt.Sprintf("\"%s\"", time.Time(t).Format(time.RFC3339))
-	return []byte(tstr), nil
 }
 
 // Skuid Review Required - Is the NlxPlanFilter struct accurate based on current APIs?
