@@ -27,7 +27,7 @@ type rootCommander struct {
 
 func (c *rootCommander) GetCommand() *cobra.Command {
 	rootTemplate := cmdutil.CmdTemplate{
-		Use:   constants.PROJECT_NAME,
+		Use:   constants.ProjectName,
 		Short: "A CLI for Skuid APIs",
 		Long:  `A command-line interface used to retrieve and deploy Skuid NLX sites.`,
 	}
@@ -38,7 +38,7 @@ func (c *rootCommander) GetCommand() *cobra.Command {
 	}
 	cmd.SilenceErrors = true
 	cmd.Version = c.factory.AppVersion
-	cmd.SetVersionTemplate(fmt.Sprintf(constants.VERSION_TEMPLATE+"\n", c.factory.AppVersion))
+	cmd.SetVersionTemplate(fmt.Sprintf(constants.VersionTemplate+"\n", c.factory.AppVersion))
 	cmd.PersistentPreRunE = c.setup
 
 	cmdutil.AddValueFlag(cmd, &c.loggingOpts.Level, flags.LogLevel)
@@ -100,7 +100,7 @@ func (c *rootCommander) setup(cmd *cobra.Command, args []string) error {
 	}
 
 	logger := logging.WithName("cmd.setup")
-	logger.Debugf(constants.VERSION_TEMPLATE, constants.VERSION_NAME)
+	logger.Debugf(constants.VersionTemplate, constants.VersionName)
 
 	for _, v := range appliedEnvVars {
 		if v.Deprecated {

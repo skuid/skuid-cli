@@ -20,7 +20,7 @@ func TestGetDeployPlan(t *testing.T) {
 	}
 
 	var fp string
-	envdir := os.Getenv(constants.ENV_SKUID_DEFAULT_FOLDER)
+	envdir := os.Getenv(constants.EnvSkuidDefaultFolder)
 	if envdir != "" {
 		fp = envdir
 	} else {

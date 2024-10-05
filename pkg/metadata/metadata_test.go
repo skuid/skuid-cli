@@ -91,8 +91,8 @@ import (
 
 // contains one or more of every valid character for an entity name (except for every lower & upper letter)
 const (
-	VALID_ENTITY_NAME      = "my _-0123456789 FILE"
-	VALID_FILE_ENTITY_NAME = "my FO0123456789_-.() FILE"
+	ValidEntityName     = "my _-0123456789 FILE"
+	ValidFileEntityName = "my FO0123456789_-.() FILE"
 )
 
 type NewMetadataEntityTestCase struct {
@@ -559,8 +559,8 @@ func TestNewMetadataEntity(t *testing.T) {
 	filesTestCases := []NewMetadataEntityTestCase{
 		{
 			testDescription: "Files valid no extension",
-			givePath:        "files/" + VALID_FILE_ENTITY_NAME,
-			wantEntity:      createFixture(metadata.MetadataTypeFiles, metadata.MetadataSubTypeNone, VALID_FILE_ENTITY_NAME),
+			givePath:        "files/" + ValidFileEntityName,
+			wantEntity:      createFixture(metadata.MetadataTypeFiles, metadata.MetadataSubTypeNone, ValidFileEntityName),
 		},
 		{
 			testDescription: "Files valid contains json extension",
@@ -737,7 +737,7 @@ func TestNewMetadataEntity(t *testing.T) {
 			testCases = append(testCases, createStandardTestCases(mdt, metadata.MetadataSubTypeNone, "site")...)
 			testCases = append(testCases, siteTestCases...)
 		default:
-			testCases = append(testCases, createStandardTestCases(mdt, metadata.MetadataSubTypeNone, VALID_ENTITY_NAME)...)
+			testCases = append(testCases, createStandardTestCases(mdt, metadata.MetadataSubTypeNone, ValidEntityName)...)
 		}
 	}
 
@@ -855,15 +855,15 @@ func TestNewMetadataEntityFile(t *testing.T) {
 	themesTestCases := []NewMetadataEntityFileTestCase{
 		{
 			testDescription: "Themes valid .inline.css extension",
-			givePath:        fmt.Sprintf("%v/%v.inline.css", metadata.MetadataTypeThemes.DirName(), VALID_ENTITY_NAME),
-			wantEntityFile:  createFixture(metadata.MetadataTypeThemes, metadata.MetadataSubTypeNone, VALID_ENTITY_NAME, VALID_ENTITY_NAME+".inline.css", false),
+			givePath:        fmt.Sprintf("%v/%v.inline.css", metadata.MetadataTypeThemes.DirName(), ValidEntityName),
+			wantEntityFile:  createFixture(metadata.MetadataTypeThemes, metadata.MetadataSubTypeNone, ValidEntityName, ValidEntityName+".inline.css", false),
 		},
 	}
 
 	componentPacksTestCases := []NewMetadataEntityFileTestCase{
 		{
 			testDescription: fmt.Sprintf("%v valid nested dir json extension", metadata.MetadataTypeComponentPacks.Name()),
-			givePath:        fmt.Sprintf("%v/subdir/%v.json", metadata.MetadataTypeComponentPacks.DirName(), VALID_ENTITY_NAME),
+			givePath:        fmt.Sprintf("%v/subdir/%v.json", metadata.MetadataTypeComponentPacks.DirName(), ValidEntityName),
 			wantEntityFile: &metadata.MetadataEntityFile{
 				Entity: metadata.MetadataEntity{
 					Type:         metadata.MetadataTypeComponentPacks,
@@ -872,15 +872,15 @@ func TestNewMetadataEntityFile(t *testing.T) {
 					Path:         "componentpacks/subdir",
 					PathRelative: "subdir",
 				},
-				Name:                   VALID_ENTITY_NAME + ".json",
-				Path:                   fmt.Sprintf("%v/subdir/%v.json", metadata.MetadataTypeComponentPacks.DirName(), VALID_ENTITY_NAME),
-				PathRelative:           fmt.Sprintf("subdir/%v.json", VALID_ENTITY_NAME),
+				Name:                   ValidEntityName + ".json",
+				Path:                   fmt.Sprintf("%v/subdir/%v.json", metadata.MetadataTypeComponentPacks.DirName(), ValidEntityName),
+				PathRelative:           fmt.Sprintf("subdir/%v.json", ValidEntityName),
 				IsEntityDefinitionFile: false,
 			},
 		},
 		{
 			testDescription: fmt.Sprintf("%v valid nested dir js extension", metadata.MetadataTypeComponentPacks.Name()),
-			givePath:        fmt.Sprintf("%v/subdir/%v.js", metadata.MetadataTypeComponentPacks.DirName(), VALID_ENTITY_NAME),
+			givePath:        fmt.Sprintf("%v/subdir/%v.js", metadata.MetadataTypeComponentPacks.DirName(), ValidEntityName),
 			wantEntityFile: &metadata.MetadataEntityFile{
 				Entity: metadata.MetadataEntity{
 					Type:         metadata.MetadataTypeComponentPacks,
@@ -889,15 +889,15 @@ func TestNewMetadataEntityFile(t *testing.T) {
 					Path:         "componentpacks/subdir",
 					PathRelative: "subdir",
 				},
-				Name:                   VALID_ENTITY_NAME + ".js",
-				Path:                   fmt.Sprintf("%v/subdir/%v.js", metadata.MetadataTypeComponentPacks.DirName(), VALID_ENTITY_NAME),
-				PathRelative:           fmt.Sprintf("subdir/%v.js", VALID_ENTITY_NAME),
+				Name:                   ValidEntityName + ".js",
+				Path:                   fmt.Sprintf("%v/subdir/%v.js", metadata.MetadataTypeComponentPacks.DirName(), ValidEntityName),
+				PathRelative:           fmt.Sprintf("subdir/%v.js", ValidEntityName),
 				IsEntityDefinitionFile: false,
 			},
 		},
 		{
 			testDescription: fmt.Sprintf("%v valid nested dir css extension", metadata.MetadataTypeComponentPacks.Name()),
-			givePath:        fmt.Sprintf("%v/subdir/%v.css", metadata.MetadataTypeComponentPacks.DirName(), VALID_ENTITY_NAME),
+			givePath:        fmt.Sprintf("%v/subdir/%v.css", metadata.MetadataTypeComponentPacks.DirName(), ValidEntityName),
 			wantEntityFile: &metadata.MetadataEntityFile{
 				Entity: metadata.MetadataEntity{
 					Type:         metadata.MetadataTypeComponentPacks,
@@ -906,15 +906,15 @@ func TestNewMetadataEntityFile(t *testing.T) {
 					Path:         "componentpacks/subdir",
 					PathRelative: "subdir",
 				},
-				Name:                   VALID_ENTITY_NAME + ".css",
-				Path:                   fmt.Sprintf("%v/subdir/%v.css", metadata.MetadataTypeComponentPacks.DirName(), VALID_ENTITY_NAME),
-				PathRelative:           fmt.Sprintf("subdir/%v.css", VALID_ENTITY_NAME),
+				Name:                   ValidEntityName + ".css",
+				Path:                   fmt.Sprintf("%v/subdir/%v.css", metadata.MetadataTypeComponentPacks.DirName(), ValidEntityName),
+				PathRelative:           fmt.Sprintf("subdir/%v.css", ValidEntityName),
 				IsEntityDefinitionFile: false,
 			},
 		},
 		{
 			testDescription: fmt.Sprintf("%v valid nested dir no extension", metadata.MetadataTypeComponentPacks.Name()),
-			givePath:        fmt.Sprintf("%v/subdir/%v", metadata.MetadataTypeComponentPacks.DirName(), VALID_ENTITY_NAME),
+			givePath:        fmt.Sprintf("%v/subdir/%v", metadata.MetadataTypeComponentPacks.DirName(), ValidEntityName),
 			wantEntityFile: &metadata.MetadataEntityFile{
 				Entity: metadata.MetadataEntity{
 					Type:         metadata.MetadataTypeComponentPacks,
@@ -923,15 +923,15 @@ func TestNewMetadataEntityFile(t *testing.T) {
 					Path:         "componentpacks/subdir",
 					PathRelative: "subdir",
 				},
-				Name:                   VALID_ENTITY_NAME,
-				Path:                   fmt.Sprintf("%v/subdir/%v", metadata.MetadataTypeComponentPacks.DirName(), VALID_ENTITY_NAME),
-				PathRelative:           fmt.Sprintf("subdir/%v", VALID_ENTITY_NAME),
+				Name:                   ValidEntityName,
+				Path:                   fmt.Sprintf("%v/subdir/%v", metadata.MetadataTypeComponentPacks.DirName(), ValidEntityName),
+				PathRelative:           fmt.Sprintf("subdir/%v", ValidEntityName),
 				IsEntityDefinitionFile: false,
 			},
 		},
 		{
 			testDescription: fmt.Sprintf("%v valid nested dir . relative json extension", metadata.MetadataTypeComponentPacks.Name()),
-			givePath:        fmt.Sprintf("./%v/subdir/%v.json", metadata.MetadataTypeComponentPacks.DirName(), VALID_ENTITY_NAME),
+			givePath:        fmt.Sprintf("./%v/subdir/%v.json", metadata.MetadataTypeComponentPacks.DirName(), ValidEntityName),
 			wantEntityFile: &metadata.MetadataEntityFile{
 				Entity: metadata.MetadataEntity{
 					Type:         metadata.MetadataTypeComponentPacks,
@@ -940,31 +940,31 @@ func TestNewMetadataEntityFile(t *testing.T) {
 					Path:         "componentpacks/subdir",
 					PathRelative: "subdir",
 				},
-				Name:                   VALID_ENTITY_NAME + ".json",
-				Path:                   fmt.Sprintf("%v/subdir/%v.json", metadata.MetadataTypeComponentPacks.DirName(), VALID_ENTITY_NAME),
-				PathRelative:           fmt.Sprintf("subdir/%v.json", VALID_ENTITY_NAME),
+				Name:                   ValidEntityName + ".json",
+				Path:                   fmt.Sprintf("%v/subdir/%v.json", metadata.MetadataTypeComponentPacks.DirName(), ValidEntityName),
+				PathRelative:           fmt.Sprintf("subdir/%v.json", ValidEntityName),
 				IsEntityDefinitionFile: false,
 			},
 		},
 		{
 			testDescription: fmt.Sprintf("%v invalid json file in metadata dir root", metadata.MetadataTypeComponentPacks.Name()),
-			givePath:        fmt.Sprintf("%v/%v.json", metadata.MetadataTypeComponentPacks.DirName(), VALID_ENTITY_NAME),
-			wantError:       createPathError(metadata.MetadataTypeComponentPacks, fmt.Sprintf("%v/%v.json", metadata.MetadataTypeComponentPacks.DirName(), VALID_ENTITY_NAME)),
+			givePath:        fmt.Sprintf("%v/%v.json", metadata.MetadataTypeComponentPacks.DirName(), ValidEntityName),
+			wantError:       createPathError(metadata.MetadataTypeComponentPacks, fmt.Sprintf("%v/%v.json", metadata.MetadataTypeComponentPacks.DirName(), ValidEntityName)),
 		},
 		{
 			testDescription: fmt.Sprintf("%v invalid . relative to componentpacks directory", metadata.MetadataTypeComponentPacks.Name()),
-			givePath:        fmt.Sprintf("./%v/%v.json", metadata.MetadataTypeComponentPacks.DirName(), VALID_ENTITY_NAME),
-			wantError:       createPathError(metadata.MetadataTypeComponentPacks, fmt.Sprintf("./%v/%v.json", metadata.MetadataTypeComponentPacks.DirName(), VALID_ENTITY_NAME)),
+			givePath:        fmt.Sprintf("./%v/%v.json", metadata.MetadataTypeComponentPacks.DirName(), ValidEntityName),
+			wantError:       createPathError(metadata.MetadataTypeComponentPacks, fmt.Sprintf("./%v/%v.json", metadata.MetadataTypeComponentPacks.DirName(), ValidEntityName)),
 		},
 		{
 			testDescription: fmt.Sprintf("%v invalid nested dir contains invalid $ character", metadata.MetadataTypeComponentPacks.Name()),
-			givePath:        fmt.Sprintf("%v/sub$dir/%v.json", metadata.MetadataTypeComponentPacks.DirName(), VALID_ENTITY_NAME),
-			wantError:       createPathError(metadata.MetadataTypeComponentPacks, fmt.Sprintf("%v/sub$dir/%v.json", metadata.MetadataTypeComponentPacks.DirName(), VALID_ENTITY_NAME)),
+			givePath:        fmt.Sprintf("%v/sub$dir/%v.json", metadata.MetadataTypeComponentPacks.DirName(), ValidEntityName),
+			wantError:       createPathError(metadata.MetadataTypeComponentPacks, fmt.Sprintf("%v/sub$dir/%v.json", metadata.MetadataTypeComponentPacks.DirName(), ValidEntityName)),
 		},
 		{
 			testDescription: fmt.Sprintf("%v invalid nested dir contains invalid ^ character", metadata.MetadataTypeComponentPacks.Name()),
-			givePath:        fmt.Sprintf("%v/sub^dir/%v.json", metadata.MetadataTypeComponentPacks.DirName(), VALID_ENTITY_NAME),
-			wantError:       createPathError(metadata.MetadataTypeComponentPacks, fmt.Sprintf("%v/sub^dir/%v.json", metadata.MetadataTypeComponentPacks.DirName(), VALID_ENTITY_NAME)),
+			givePath:        fmt.Sprintf("%v/sub^dir/%v.json", metadata.MetadataTypeComponentPacks.DirName(), ValidEntityName),
+			wantError:       createPathError(metadata.MetadataTypeComponentPacks, fmt.Sprintf("%v/sub^dir/%v.json", metadata.MetadataTypeComponentPacks.DirName(), ValidEntityName)),
 		},
 		{
 			testDescription: fmt.Sprintf("%v invalid nested dir contains no filename", metadata.MetadataTypeComponentPacks.Name()),
@@ -981,8 +981,8 @@ func TestNewMetadataEntityFile(t *testing.T) {
 	pagesTestCases := []NewMetadataEntityFileTestCase{
 		{
 			testDescription: fmt.Sprintf("%v valid xml extension", metadata.MetadataTypePages.Name()),
-			givePath:        fmt.Sprintf("%v/%v.xml", metadata.MetadataTypePages.DirName(), VALID_ENTITY_NAME),
-			wantEntityFile:  createFixture(metadata.MetadataTypePages, metadata.MetadataSubTypeNone, VALID_ENTITY_NAME, VALID_ENTITY_NAME+".xml", false),
+			givePath:        fmt.Sprintf("%v/%v.xml", metadata.MetadataTypePages.DirName(), ValidEntityName),
+			wantEntityFile:  createFixture(metadata.MetadataTypePages, metadata.MetadataSubTypeNone, ValidEntityName, ValidEntityName+".xml", false),
 		},
 	}
 
@@ -992,13 +992,13 @@ func TestNewMetadataEntityFile(t *testing.T) {
 		testCases := []NewMetadataEntityFileTestCase{
 			{
 				testDescription: fmt.Sprintf("%v %v invalid no extension", mdt.Name(), subdir),
-				givePath:        fmt.Sprintf("%v/%v/%v.xml", mdt.DirName(), subdir, VALID_FILE_ENTITY_NAME),
-				wantError:       createPathError(mdt, fmt.Sprintf("%v/%v/%v.xml", mdt.DirName(), subdir, VALID_FILE_ENTITY_NAME)),
+				givePath:        fmt.Sprintf("%v/%v/%v.xml", mdt.DirName(), subdir, ValidFileEntityName),
+				wantError:       createPathError(mdt, fmt.Sprintf("%v/%v/%v.xml", mdt.DirName(), subdir, ValidFileEntityName)),
 			},
 		}
 
 		for _, ext := range extensions {
-			entityName := VALID_FILE_ENTITY_NAME + ext
+			entityName := ValidFileEntityName + ext
 			testCases = append(testCases, []NewMetadataEntityFileTestCase{
 				{
 					testDescription: fmt.Sprintf("%v %v valid %v extension", mdt.Name(), subdir, ext),
@@ -1060,19 +1060,19 @@ func TestNewMetadataEntityFile(t *testing.T) {
 		testCases := []NewMetadataEntityFileTestCase{
 			{
 				testDescription: fmt.Sprintf("%v invalid contains nested no extension", mdt.Name()),
-				givePath:        fmt.Sprintf("%v/subdir/%v", mdt.DirName(), VALID_FILE_ENTITY_NAME),
-				wantError:       createPathError(mdt, fmt.Sprintf("%v/subdir/%v", mdt.DirName(), VALID_FILE_ENTITY_NAME)),
+				givePath:        fmt.Sprintf("%v/subdir/%v", mdt.DirName(), ValidFileEntityName),
+				wantError:       createPathError(mdt, fmt.Sprintf("%v/subdir/%v", mdt.DirName(), ValidFileEntityName)),
 			},
 			{
 				testDescription: fmt.Sprintf("%v invalid contains nested json extension", mdt.Name()),
-				givePath:        fmt.Sprintf("%v/subdir/%v.json", mdt.DirName(), VALID_FILE_ENTITY_NAME),
-				wantError:       createPathError(mdt, fmt.Sprintf("%v/subdir/%v.json", mdt.DirName(), VALID_FILE_ENTITY_NAME)),
+				givePath:        fmt.Sprintf("%v/subdir/%v.json", mdt.DirName(), ValidFileEntityName),
+				wantError:       createPathError(mdt, fmt.Sprintf("%v/subdir/%v.json", mdt.DirName(), ValidFileEntityName)),
 			},
 		}
 
 		extensions := []string{"", ".xml", ".json", ".txt", ".jpg", ".gif", ".png", ".js", ".css", ".log", ".txt.log"}
 		for _, ext := range extensions {
-			entityName := VALID_FILE_ENTITY_NAME + ext
+			entityName := ValidFileEntityName + ext
 			testCases = append(testCases, []NewMetadataEntityFileTestCase{
 				{
 					testDescription: fmt.Sprintf("%v valid %v extension", mdt.Name(), ext),
@@ -1178,21 +1178,21 @@ func TestNewMetadataEntityFile(t *testing.T) {
 			testCases = append(testCases, filesTestCases...)
 		case metadata.MetadataTypeSite:
 			testCases = append(testCases, createStandardTestCases(mdt, metadata.MetadataSubTypeNone, "site")...)
-			testCases = append(testCases, createStandardInvalidTestCases(mdt, VALID_ENTITY_NAME, true, true)...)
+			testCases = append(testCases, createStandardInvalidTestCases(mdt, ValidEntityName, true, true)...)
 			testCases = append(testCases, createSiteImageTestCases("favicon", metadata.MetadataSubTypeSiteFavicon, []string{".ico"})...)
 			testCases = append(testCases, createSiteImageTestCases("logo", metadata.MetadataSubTypeSiteLogo, []string{".jpg", ".png", ".gif"})...)
 		case metadata.MetadataTypePages:
-			testCases = append(testCases, createStandardValidTestCases(mdt, metadata.MetadataSubTypeNone, VALID_ENTITY_NAME)...)
-			testCases = append(testCases, createStandardInvalidTestCases(mdt, VALID_ENTITY_NAME, true, false)...)
+			testCases = append(testCases, createStandardValidTestCases(mdt, metadata.MetadataSubTypeNone, ValidEntityName)...)
+			testCases = append(testCases, createStandardInvalidTestCases(mdt, ValidEntityName, true, false)...)
 			testCases = append(testCases, pagesTestCases...)
 		case metadata.MetadataTypeComponentPacks:
-			testCases = append(testCases, createStandardInvalidTestCases(mdt, VALID_ENTITY_NAME, false, true)...)
+			testCases = append(testCases, createStandardInvalidTestCases(mdt, ValidEntityName, false, true)...)
 			testCases = append(testCases, componentPacksTestCases...)
 		case metadata.MetadataTypeThemes:
-			testCases = append(testCases, createStandardTestCases(mdt, metadata.MetadataSubTypeNone, VALID_ENTITY_NAME)...)
+			testCases = append(testCases, createStandardTestCases(mdt, metadata.MetadataSubTypeNone, ValidEntityName)...)
 			testCases = append(testCases, themesTestCases...)
 		default:
-			testCases = append(testCases, createStandardTestCases(mdt, metadata.MetadataSubTypeNone, VALID_ENTITY_NAME)...)
+			testCases = append(testCases, createStandardTestCases(mdt, metadata.MetadataSubTypeNone, ValidEntityName)...)
 		}
 	}
 

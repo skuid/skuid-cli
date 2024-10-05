@@ -20,8 +20,8 @@ type PlanName string
 type PlanMode int
 
 const (
-	PlanNamePliny  PlanName = constants.PLINY
-	PlanNameWarden PlanName = constants.WARDEN
+	PlanNamePliny  PlanName = constants.Pliny
+	PlanNameWarden PlanName = constants.Warden
 
 	PlanModeRetrieve PlanMode = iota + 1
 	PlanModeDeploy

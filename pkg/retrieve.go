@@ -16,7 +16,7 @@ import (
 )
 
 var (
-	RetrievePlanRoute = fmt.Sprintf("api/%v/metadata/retrieve/plan", DEFAULT_API_VERSION)
+	RetrievePlanRoute = fmt.Sprintf("api/%v/metadata/retrieve/plan", DefaultApiVersion)
 )
 
 type NlxRetrievalResult struct {
@@ -103,7 +103,7 @@ func GetRetrievePlan(auth *Authorization, filter *NlxPlanFilter) (plans *NlxPlan
 	// no matter what we want to pass application/json
 	// because the application/zip is discarded by pliny
 	// and warden will throw an error
-	headers[HeaderContentType] = JSON_CONTENT_TYPE
+	headers[HeaderContentType] = JsonContentType
 
 	plans, err = RequestNlxPlans(fmt.Sprintf("%s/%s", auth.Host, RetrievePlanRoute), headers, body, PlanModeRetrieve)
 	if err != nil {
@@ -120,7 +120,7 @@ func GetRetrievePlan(auth *Authorization, filter *NlxPlanFilter) (plans *NlxPlan
 	//
 	// TODO: Adjust based on answer to above and/or https://github.com/skuid/skuid-cli/issues/225 & https://github.com/skuid/skuid-cli/issues/226
 	if plans.MetadataService == nil {
-		return nil, fmt.Errorf("unexpected retrieval plan(s) received, expected a %v plan but did not receive one, %v", logging.QuoteText(PlanNamePliny), logging.FILE_AN_ISSUE)
+		return nil, fmt.Errorf("unexpected retrieval plan(s) received, expected a %v plan but did not receive one, %v", logging.QuoteText(PlanNamePliny), logging.FileAnIssueText)
 	}
 
 	// pliny and warden are supposed to give the since value back for the retrieve, but just in case...
@@ -153,7 +153,7 @@ func ExecuteRetrievePlan(auth *Authorization, plans *NlxPlans) (results []NlxRet
 	//
 	// TODO: Adjust based on answer to above and/or to https://github.com/skuid/skuid-cli/issues/225
 	if plans.MetadataService == nil {
-		return nil, fmt.Errorf("unable to execute retrieval plan(s), expected a %v plan but did not receive one, %v", logging.QuoteText(PlanNamePliny), logging.FILE_AN_ISSUE)
+		return nil, fmt.Errorf("unable to execute retrieval plan(s), expected a %v plan but did not receive one, %v", logging.QuoteText(PlanNamePliny), logging.FileAnIssueText)
 	}
 
 	// has to be pliny, then warden
@@ -226,7 +226,7 @@ func executeRetrievePlan(auth *Authorization, plan *NlxPlan, logger *logging.Log
 	defer func() { logger.FinishTracking(err) }()
 
 	headers := GeneratePlanHeaders(auth, plan.Name, plan.Host)
-	headers[HeaderContentType] = JSON_CONTENT_TYPE
+	headers[HeaderContentType] = JsonContentType
 
 	reqBody, err := NewRetrievalRequestBody(plan.Metadata, plan.Since, plan.AppSpecific)
 	if err != nil {

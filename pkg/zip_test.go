@@ -24,15 +24,17 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-const validXML = `
-	<skuid__page unsavedchangeswarning="yes">
-	</skuid__page>
-`
-const validJS = `function testme() { console.log('hello'); }`
-const validTXT = `hello there`
-const validPNG = `
-	data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACEAAAAgCAYAAAHrvyFcAAACTklEQVR4nNRXTShEURR+S0tLS0tLS0tLS0sLCzZSVjZSFmykbGajlM0sZSFlIyGSSEhKFEKiSZNG8hdp+I7Ode575753n5mXcerMe/fec793fu+5E6we3ZWHZ8/KIDwxDvASdC7SJFMwNn9Ok8wkRCtiksaMx5hBBAsTraM7xLRVYhCzCuDe/BFta8/t21+XQoX7VxLC0xJ6efuwob+4ZWTb2kh2hG2RNhm7pG3SRmOn8YLybglo5BRIRIgIIFyqwNzurRk09K1Zi7mFy29fYCHsh/qelR8/uJy0cFCk59ZpKfppV+yS3FI1EGS35IvisxsEyQmq616yxqomVDcxINpYcn79OlpNkcoSTy1CtMa2NvavO8E05vBaIEyUGDGbtbIw9cIMH8VFJiwfuL4ik4sTTouiEwDvOE1wsrDjUgFoVDGARqkAkM7hFM/OBBlOfq9RAOS2nEBJD86c+ANMbxXUvOfsYwBNhhonxTKmgI5vHgnMWfrh3ubLADYAXDy+m9ErTCaGk0U7gaSD0XglqQdtpfXB5IudWgk6mEUkXXOZKoEgNg1s0JnOearNZapETYQjC/qfnmgb37PizhdgrnG+aWSqBD4ilcA6E+Z/pYQsrz9TAuWVJNgxcWCA8ZeimkpQM4Bw19RhorDkOCUwxiWB8ycOx9xU8YOzHIeNrxJQmhNRU8KH0V84qa3mI/+9pWFYNLl8VW4e2vSSh8GyiUU64P7lA3W63yjjw/J24VSCCXH1tSyJ0VNgnIucSkgqPb3T/4Y07salTB5kcfQJAAD//xMfR9wAAAAGSURBVAMACOfMIINaPS4AAAAASUVORK5CYII=
-`
+const (
+	validXML = `
+		<skuid__page unsavedchangeswarning="yes">
+		</skuid__page>
+	`
+	validJS  = `function testme() { console.log('hello'); }`
+	validTXT = `hello there`
+	validPNG = `
+		data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACEAAAAgCAYAAAHrvyFcAAACTklEQVR4nNRXTShEURR+S0tLS0tLS0tLS0sLCzZSVjZSFmykbGajlM0sZSFlIyGSSEhKFEKiSZNG8hdp+I7Ode575753n5mXcerMe/fec793fu+5E6we3ZWHZ8/KIDwxDvASdC7SJFMwNn9Ok8wkRCtiksaMx5hBBAsTraM7xLRVYhCzCuDe/BFta8/t21+XQoX7VxLC0xJ6efuwob+4ZWTb2kh2hG2RNhm7pG3SRmOn8YLybglo5BRIRIgIIFyqwNzurRk09K1Zi7mFy29fYCHsh/qelR8/uJy0cFCk59ZpKfppV+yS3FI1EGS35IvisxsEyQmq616yxqomVDcxINpYcn79OlpNkcoSTy1CtMa2NvavO8E05vBaIEyUGDGbtbIw9cIMH8VFJiwfuL4ik4sTTouiEwDvOE1wsrDjUgFoVDGARqkAkM7hFM/OBBlOfq9RAOS2nEBJD86c+ANMbxXUvOfsYwBNhhonxTKmgI5vHgnMWfrh3ubLADYAXDy+m9ErTCaGk0U7gaSD0XglqQdtpfXB5IudWgk6mEUkXXOZKoEgNg1s0JnOearNZapETYQjC/qfnmgb37PizhdgrnG+aWSqBD4ilcA6E+Z/pYQsrz9TAuWVJNgxcWCA8ZeimkpQM4Bw19RhorDkOCUwxiWB8ycOx9xU8YOzHIeNrxJQmhNRU8KH0V84qa3mI/+9pWFYNLl8VW4e2vSSh8GyiUU64P7lA3W63yjjw/J24VSCCXH1tSyJ0VNgnIucSkgqPb3T/4Y07salTB5kcfQJAAD//xMfR9wAAAAGSURBVAMACOfMIINaPS4AAAAASUVORK5CYII=
+	`
+)
 
 type ArchiveTestDetails struct {
 	giveFS             fs.FS

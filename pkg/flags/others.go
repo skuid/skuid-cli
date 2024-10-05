@@ -13,7 +13,7 @@ var (
 		Name:          "since",
 		Shorthand:     "s",
 		Usage:         "Only retrieve objects modified since the specified `time`, e.g., \"yyyy-MM-dd HH:mm AM\", \"HH:mm AM\", \"1y2w3d8h30m\"",
-		LegacyEnvVars: []string{constants.ENV_SKUID_RETRIEVE_SINCE},
+		LegacyEnvVars: []string{constants.EnvSkuidRetrieveSince},
 		Parse:         ParseSince,
 	}
 

@@ -13,7 +13,7 @@ import (
 
 func TestHttpMethods(t *testing.T) {
 	util.SkipIntegrationTest(t)
-	const YES_NO_API = "yesno.wtf/api"
+	const YesNoApi = "yesno.wtf/api"
 
 	type YesNoResponse struct {
 		Answer string `json:"answer"`
@@ -29,20 +29,20 @@ func TestHttpMethods(t *testing.T) {
 	}{
 		{
 			description: "https",
-			givenHost:   fmt.Sprintf("https://%v", YES_NO_API),
+			givenHost:   fmt.Sprintf("https://%v", YesNoApi),
 		},
 		{
 			description:  "empty header map",
-			givenHost:    fmt.Sprintf("https://%v", YES_NO_API),
+			givenHost:    fmt.Sprintf("https://%v", YesNoApi),
 			givenHeaders: make(map[string]string),
 		},
 		{
 			description: "no https, should add",
-			givenHost:   YES_NO_API,
+			givenHost:   YesNoApi,
 		},
 		{
 			description: "http should replace",
-			givenHost:   fmt.Sprintf("http://%v", YES_NO_API),
+			givenHost:   fmt.Sprintf("http://%v", YesNoApi),
 		},
 		{
 			description:      "301 redirect to 404 page",

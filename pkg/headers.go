@@ -7,16 +7,13 @@ import (
 )
 
 const (
-	ZIP_CONTENT_TYPE         = "application/zip"
-	JSON_CONTENT_TYPE        = "application/json"
-	URL_ENCODED_CONTENT_TYPE = "application/x-www-form-urlencoded"
-	GZIP_CONTENT_ENCODING    = "gzip"
+	ZipContentType               = "application/zip"
+	JsonContentType              = "application/json"
+	UrlEncodedContentType        = "application/x-www-form-urlencoded"
+	GzipContentEncoding          = "gzip"
+	HeaderSkuidPublicKeyEndpoint = "x-skuid-public-key-endpoint"
 
-	HEADER_SKUID_PUBLIC_KEY_ENDPOINT = "x-skuid-public-key-endpoint"
-)
-
-// Headers
-const (
+	// Headers
 	// Authentication
 	HeaderAuthorization      = "Authorization"
 	HeaderProxyAuthenticate  = "Proxy-Authenticate"
@@ -185,8 +182,8 @@ type RequestHeaders map[string]string
 func GenerateHeaders(host, token string) RequestHeaders {
 	host = FixUrl(host)
 	return RequestHeaders{
-		HeaderAuthorization:              fmt.Sprintf("Bearer %v", token),
-		HEADER_SKUID_PUBLIC_KEY_ENDPOINT: fmt.Sprintf("%v/api/v1/site/verificationkey", host),
+		HeaderAuthorization:          fmt.Sprintf("Bearer %v", token),
+		HeaderSkuidPublicKeyEndpoint: fmt.Sprintf("%v/api/v1/site/verificationkey", host),
 	}
 }
 

@@ -46,7 +46,7 @@ var (
 	Diagnostic = &Flag[bool, bool]{
 		Name:          "diagnostic",
 		Usage:         "Log additional fields with each log statement. Used for diagnostic purposes.",
-		LegacyEnvVars: []string{constants.ENV_SKUID_FIELD_LOGGING},
+		LegacyEnvVars: []string{constants.EnvSkuidFieldLogging},
 		Global:        true,
 	}
 
@@ -54,7 +54,7 @@ var (
 		Name:          "ignore-skuid-db",
 		Shorthand:     "i",
 		Usage:         "Force deployment by ignoring skuid db errors",
-		LegacyEnvVars: []string{constants.ENV_SKUID_IGNORE_SKUIDDB},
+		LegacyEnvVars: []string{constants.EnvSkuidIgnoreSkuidDb},
 	}
 
 	NoConsoleLogging = &Flag[bool, bool]{

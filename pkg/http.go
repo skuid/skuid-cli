@@ -22,10 +22,9 @@ var (
 )
 
 const (
-	DEFAULT_API_VERSION              = "v2"
-	MAX_AUTHORIZATION_ATTEMPTS       = 2 // 5 will lock you out
-	REQUEST_TOTAL_ATTEMPTS_FIELD_KEY = "totalAttempts"
-	REQUEST_ATTEMPT_NUM_FIELD_KEY    = "attemptNum"
+	DefaultApiVersion            = "v2"
+	MaxAuthorizationAttempts     = 2 // 5 will lock you out
+	RequestTotalAttemptsFieldKey = "totalAttempts"
 )
 
 func JsonBodyRequest[T any](
@@ -46,7 +45,7 @@ func JsonBodyRequest[T any](
 	defer func() { logger.FinishTracking(err) }()
 
 	responseBody, err := requestHelper(route, method, body, additionalHeaders, &attempts, logger)
-	logger = logger.WithFields(logging.Fields{"responseBodyLen": len(responseBody), REQUEST_TOTAL_ATTEMPTS_FIELD_KEY: attempts})
+	logger = logger.WithFields(logging.Fields{"responseBodyLen": len(responseBody), RequestTotalAttemptsFieldKey: attempts})
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +90,7 @@ func Request(
 		return nil, err
 	}
 
-	logger = logger.WithSuccess(logging.Fields{"responseBodyLen": len(responseBody), REQUEST_TOTAL_ATTEMPTS_FIELD_KEY: attempts})
+	logger = logger.WithSuccess(logging.Fields{"responseBodyLen": len(responseBody), RequestTotalAttemptsFieldKey: attempts})
 	return responseBody, nil
 }
 
@@ -145,8 +144,8 @@ func requestHelper(
 	case http.StatusOK, http.StatusCreated, http.StatusAccepted, http.StatusNoContent:
 		// we're good
 	case http.StatusUnauthorized:
-		if *attempts < MAX_AUTHORIZATION_ATTEMPTS {
-			logger.Tracef("Retrying request to %v (%v of %v)", route, (*attempts)+1, MAX_AUTHORIZATION_ATTEMPTS)
+		if *attempts < MaxAuthorizationAttempts {
+			logger.Tracef("Retrying request to %v (%v of %v)", route, (*attempts)+1, MaxAuthorizationAttempts)
 			// intentionally passing parentLogger here since its not a child of the current logger
 			return requestHelper(route, method, body, headers, attempts, parentLogger)
 		} else {
@@ -219,7 +218,7 @@ func createRequest(route string, method string, body []byte, headers RequestHead
 	logger = logger.WithTraceTracking("createRequest", message).StartTracking()
 	defer func() { logger.FinishTracking(err) }()
 
-	if ContainsHeader(headers, HeaderContentEncoding, GZIP_CONTENT_ENCODING) {
+	if ContainsHeader(headers, HeaderContentEncoding, GzipContentEncoding) {
 		req, err = createGzipRequest(route, method, body, logger)
 	} else {
 		req, err = createStandardRequest(route, method, body, logger)
@@ -233,7 +232,7 @@ func createRequest(route string, method string, body []byte, headers RequestHead
 	}
 
 	// prep the request headers
-	SkuidUserAgent := fmt.Sprintf("%s/%s", constants.PROJECT_NAME, constants.VERSION_NAME)
+	SkuidUserAgent := fmt.Sprintf("%s/%s", constants.ProjectName, constants.VersionName)
 	req.Header.Set(HeaderUserAgent, SkuidUserAgent)
 
 	logger = logger.WithSuccess()

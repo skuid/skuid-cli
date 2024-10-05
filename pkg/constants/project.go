@@ -1,14 +1,11 @@
 package constants
 
 const (
-	PROJECT_NAME     = "skuid-cli"
-	VERSION_TEMPLATE = "Skuid CLI Version %v"
-)
-
-const (
-	WARDEN = "Skuid Cloud Data Service"
-	PLINY  = "Skuid NLX"
+	ProjectName     = "skuid-cli"
+	VersionTemplate = "Skuid CLI Version %v"
+	Warden          = "Skuid Cloud Data Service"
+	Pliny           = "Skuid NLX"
 )
 
 // TODO: This can be eliminated when Factory used to obtain the Version in RequestHelper
-var VERSION_NAME string = "unknown"
+var VersionName string = "unknown"

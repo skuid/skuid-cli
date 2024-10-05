@@ -13,10 +13,6 @@ import (
 	"github.com/skuid/skuid-cli/pkg/logging"
 )
 
-const (
-	MAX_ATTEMPTS = 2
-)
-
 // ZipFile used for testing
 type ZipFile interface {
 	io.Writer

@@ -32,5 +32,5 @@ func GeneratePlanRoute(info *Authorization, planName PlanName, host string, port
 		// should not happen in production
 		panic(fmt.Errorf("unexpected plan name %v", logging.QuoteText(planName)))
 	}
-	return fmt.Sprintf("%s%s/api/%v%s", host, port, DEFAULT_API_VERSION, endpoint)
+	return fmt.Sprintf("%s%s/api/%v%s", host, port, DefaultApiVersion, endpoint)
 }

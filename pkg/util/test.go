@@ -21,5 +21,5 @@ func SkipBenchmark(b *testing.B) {
 }
 
 func LoadTestEnvironment() error {
-	return godotenv.Load(constants.TEST_ENVIRONMENT_FILE)
+	return godotenv.Load(constants.TestEnvironmentFile)
 }

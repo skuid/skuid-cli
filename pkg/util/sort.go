@@ -12,7 +12,7 @@ import (
 // might want to use foreign keys or something. if a
 // page has the word "%NAME%" in it, this might interfere.
 const (
-	PLACEHOLDER = `%NAME%`
+	Placeholder = `%NAME%`
 )
 
 // InsertNamePlaceholders replaces the thing that we want to go first (name) with
@@ -23,7 +23,7 @@ func InsertNamePlaceholders(in map[string]interface{}) map[string]interface{} {
 	for k, v := range in {
 		if k == "name" {
 			delete(in, k)
-			k = fmt.Sprintf("%v", PLACEHOLDER)
+			k = fmt.Sprintf("%v", Placeholder)
 			in[k] = v
 		}
 		if m, anotherMap := v.(map[string]interface{}); anotherMap {
@@ -39,7 +39,7 @@ func ReplaceNamePlaceholders(in []byte) []byte {
 	return []byte(
 		strings.ReplaceAll(
 			string(in),
-			fmt.Sprintf(`"%v"`, PLACEHOLDER),
+			fmt.Sprintf(`"%v"`, Placeholder),
 			`"name"`),
 	)
 }

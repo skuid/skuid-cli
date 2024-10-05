@@ -18,8 +18,14 @@ import (
 	"github.com/skuid/skuid-cli/pkg"
 )
 
-const badJson = "this is not even close to good JSON"
+const (
+	badJson   = "this is not even close to good JSON"
+	targetDir = "myTargetDir"
+)
 
+// Intentional stand-alone constants due to issue with the tests that zip contents which results in compression payload such that when read back
+// out, the actual doesn't match expected.
+// TODO: Fix the tests to eliminate the fragility and then format all consts in a single block definition
 const goodJson = `{
 	"good": "json"
 }`
@@ -70,8 +76,6 @@ const mergedSitePermissionSetBody = `{
 	},
 	"requireEmailVerificationOnSignup": true
 }`
-
-const targetDir = "myTargetDir"
 
 type RetrieveFile struct {
 	Name string

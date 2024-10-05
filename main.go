@@ -22,15 +22,15 @@ const (
 	exitError exitCode = 1
 )
 
-// VERSION_NAME has to be here instead of in the constants package
+// VersionName has to be here instead of in the constants package
 // because embed does not allow relative paths (parent directories)
 
 //go:embed .version
-var VERSION_NAME string
+var VersionName string
 
 func init() {
-	VERSION_NAME = strings.TrimSpace(VERSION_NAME)
-	constants.VERSION_NAME = VERSION_NAME
+	VersionName = strings.TrimSpace(VersionName)
+	constants.VersionName = VersionName
 }
 
 func main() {
@@ -41,7 +41,7 @@ func main() {
 // Run is a function so that TestMain can execute it
 func Run() exitCode {
 	start := time.Now()
-	factory := cmdutil.NewFactory(VERSION_NAME)
+	factory := cmdutil.NewFactory(VersionName)
 	defer Teardown(factory)
 	if err := cmd.NewCmdRoot(factory).Execute(); err != nil {
 		finished := time.Now()

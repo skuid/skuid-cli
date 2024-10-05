@@ -21,7 +21,7 @@ import (
 )
 
 var (
-	DeployPlanRoute   = fmt.Sprintf("api/%v/metadata/deploy/plan", DEFAULT_API_VERSION)
+	DeployPlanRoute   = fmt.Sprintf("api/%v/metadata/deploy/plan", DefaultApiVersion)
 	ErrArchiveNoFiles = fmt.Errorf("unable to create archive, no files were found, %v", flags.UseDebugMessage())
 )
 
@@ -204,7 +204,7 @@ func GetDeployPlan(auth *Authorization, sourceDirectory string, archiveFilter Ar
 
 	// pliny request, use access token
 	headers := GenerateHeaders(auth.Host, auth.AccessToken)
-	headers[HeaderContentType] = ZIP_CONTENT_TYPE
+	headers[HeaderContentType] = ZipContentType
 	reqBody, err := getDeployPlanRequestBody(headers, payload, planFilter, logger)
 	if err != nil {
 		return nil, err
@@ -713,7 +713,7 @@ func validateDeployPlan(plan *NlxPlan, archivedEntityPaths set.Of[string], logge
 	logger.Tracef("Validating deployment plan %v", logging.QuoteText(plan.Name))
 
 	// only the metadata plan will have the full set of entities that were archived so if we don't have one, nothing we can do
-	if plan.Name != constants.PLINY {
+	if plan.Name != constants.Pliny {
 		return plan.Name, true
 	}
 
@@ -755,8 +755,8 @@ func getDeployPlanRequestBody(headers RequestHeaders, plan []byte, filter *NlxPl
 
 	logger.Debugf("Including %v in get deployment plan(s) request", logging.ColorFilter.Text("plan filter"))
 	// change content type to json and add content encoding
-	headers[HeaderContentType] = JSON_CONTENT_TYPE
-	headers[HeaderContentEncoding] = GZIP_CONTENT_ENCODING
+	headers[HeaderContentType] = JsonContentType
+	headers[HeaderContentEncoding] = GzipContentEncoding
 	// add the deployment plan bytes to the payload
 	// instead of just using that as the payload
 	requestBody := FilteredRequestBody{

@@ -85,7 +85,7 @@ func AddAuthFlags(cmd *cobra.Command, opts *pkg.AuthorizeOptions) {
 func EnvVarName(name string) string {
 	envVarName := strings.ToUpper(name)
 	envVarName = strings.ReplaceAll(envVarName, "-", "_")
-	envVarName = constants.ENV_PREFIX + "_" + envVarName
+	envVarName = constants.EnvPrefix + "_" + envVarName
 	return envVarName
 }
 

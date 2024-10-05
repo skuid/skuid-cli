@@ -39,7 +39,7 @@ func GetAccessToken(opts *AuthorizeOptions) (string, error) {
 		http.MethodPost,
 		body,
 		map[string]string{
-			HeaderContentType: URL_ENCODED_CONTENT_TYPE,
+			HeaderContentType: UrlEncodedContentType,
 		},
 	); err != nil {
 		return "", err
@@ -54,7 +54,7 @@ func GetAuthorizationToken(host, accessToken string) (string, error) {
 	}
 
 	if resp, err := JsonBodyRequest[AuthorizationTokenResponse](
-		fmt.Sprintf("%v/api/%v/auth/token", host, DEFAULT_API_VERSION),
+		fmt.Sprintf("%v/api/%v/auth/token", host, DefaultApiVersion),
 		http.MethodGet,
 		[]byte{},
 		map[string]string{

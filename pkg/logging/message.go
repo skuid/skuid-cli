@@ -30,24 +30,24 @@ var (
 )
 
 const (
-	SUCCESS_TEXT  = "SUCCESS"
-	FAILURE_TEXT  = "FAILURE"
-	START_TEXT    = "START"
-	SUCCESS_ICON  = "✓"
-	FAILURE_ICON  = "X"
-	FILE_AN_ISSUE = "please try again and if the problem persists create an issue at https://github.com/skuid/skuid-cli/issues"
+	SuccessText     = "SUCCESS"
+	FailureText     = "FAILURE"
+	StartText       = "START"
+	SuccessIcon     = "✓"
+	FailureIcon     = "X"
+	FileAnIssueText = "please try again and if the problem persists create an issue at https://github.com/skuid/skuid-cli/issues"
 )
 
 func ColorSuccessIcon() string {
-	return ColorSuccess.Text(SUCCESS_ICON)
+	return ColorSuccess.Text(SuccessIcon)
 }
 
 func ColorFailureIcon() string {
-	return ColorFailure.Text(FAILURE_ICON)
+	return ColorFailure.Text(FailureIcon)
 }
 
 func ColorStartText() string {
-	return ColorStart.Text(START_TEXT)
+	return ColorStart.Text(StartText)
 }
 
 func ColorResult(err error) LogColor {
@@ -69,9 +69,9 @@ func ColorResultText(err error) string {
 func ColorResultConditionText(condition bool) string {
 	c := ColorResultCondition(condition)
 	if condition {
-		return c.Text(SUCCESS_TEXT)
+		return c.Text(SuccessText)
 	} else {
-		return c.Text(FAILURE_TEXT)
+		return c.Text(FailureText)
 	}
 }
 

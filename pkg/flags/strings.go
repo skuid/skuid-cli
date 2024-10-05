@@ -8,7 +8,7 @@ var (
 	Host = &Flag[string, string]{
 		Name:          "host",
 		Usage:         "Skuid NLX Host, e.g., https://my.skuidsite.com, my.skuidsite.com",
-		LegacyEnvVars: []string{constants.ENV_PLINY_HOST},
+		LegacyEnvVars: []string{constants.EnvPlinyHost},
 		Required:      true,
 		Parse:         ParseHost,
 	}
@@ -19,7 +19,7 @@ var (
 		Name:          "password",
 		Shorthand:     "p",
 		Usage:         "Skuid NLX Password",
-		LegacyEnvVars: []string{constants.ENV_SKUID_PW},
+		LegacyEnvVars: []string{constants.EnvSkuidPw},
 		Required:      true,
 		Parse:         ParseString(ParseStringOptions{AllowBlank: false}),
 		Redact: func(val string) string {
@@ -34,7 +34,7 @@ var (
 	Username = &Flag[string, string]{
 		Name:          "username",
 		Shorthand:     "u",
-		LegacyEnvVars: []string{constants.ENV_SKUID_UN},
+		LegacyEnvVars: []string{constants.EnvSkuidUn},
 		Required:      true,
 		Usage:         "Skuid NLX Username",
 		Parse:         ParseString(ParseStringOptions{AllowBlank: false}),
@@ -43,7 +43,7 @@ var (
 	App = &Flag[string, string]{
 		Name:          "app",
 		Shorthand:     "a",
-		LegacyEnvVars: []string{constants.ENV_SKUID_APP_NAME},
+		LegacyEnvVars: []string{constants.EnvSkuidAppName},
 		Usage:         "Scope the operation to a specific Skuid NLX App Name",
 	}
 
@@ -51,7 +51,7 @@ var (
 		Name:          "dir",
 		Shorthand:     "d",
 		Usage:         "Target directory for this operation",
-		LegacyEnvVars: []string{constants.ENV_SKUID_DEFAULT_FOLDER},
+		LegacyEnvVars: []string{constants.EnvSkuidDefaultFolder},
 		Parse:         ParseDirectory,
 	}
 
@@ -60,7 +60,7 @@ var (
 		Shorthand:     "l",
 		Usage:         "Target directory for file logging",
 		Default:       ".logs",
-		LegacyEnvVars: []string{constants.ENV_SKUID_LOGGING_LOCATION},
+		LegacyEnvVars: []string{constants.EnvSkuidLoggingLocation},
 		Global:        true,
 	}
 )

@@ -194,7 +194,7 @@ func listenForEvents(cmd *cobra.Command, w *watcher.Watcher, abort <-chan struct
 							logger.FatalGoRoutineConditionf(recover(), "deploying entity for file %v", logging.QuoteText(event.Path))
 						}()
 						if _, err := handleEvent(auth, sourceDirectory, event, logger); err != nil {
-							logger.WithError(err).Error(logging.ColorFailure.Sprintf("%v deploying entity for file %v: %v", logging.FAILURE_ICON, logging.QuoteText(event.Path), err))
+							logger.WithError(err).Error(logging.ColorFailure.Sprintf("%v deploying entity for file %v: %v", logging.FailureIcon, logging.QuoteText(event.Path), err))
 						}
 						logWaitMsg()
 					}(event)
