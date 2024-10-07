@@ -130,11 +130,11 @@ func (c *watchCommander) watch(cmd *cobra.Command, args []string) (err error) {
 }
 
 func listenForEvents(cmd *cobra.Command, w *watcher.Watcher, abort <-chan struct{}, auth *pkg.Authorization, sourceDirectory string, logger *logging.Logger) <-chan error {
-	done := make(chan error, 1)       // notification to send back to calling function
-	term := make(chan error, 1)       // notification from watcher polling go routine
-	cancel := make(chan os.Signal, 1) // signal notification (e.g., Ctrl+C, Ctrl+Z)
-	quit := make(chan struct{}, 1)    // notification that w.Close() has completed
-	signal.Notify(cancel, os.Interrupt, syscall.SIGTERM, syscall.SIGTSTP)
+	done := make(chan error, 1)                          // notification to send back to calling function
+	term := make(chan error, 1)                          // notification from watcher polling go routine
+	cancel := make(chan os.Signal, 1)                    // signal notification (e.g., Ctrl+C)
+	quit := make(chan struct{}, 1)                       // notification that w.Close() has completed
+	signal.Notify(cancel, os.Interrupt, syscall.SIGTERM) // intercept SIGINT and SIGTERM signals
 
 	go func() {
 		defer func() {
