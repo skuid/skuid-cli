@@ -110,8 +110,8 @@ func (c *retrieveCommander) getPlanFilter(logger *logging.Logger) *pkg.NlxPlanFi
 
 	if c.since != nil {
 		initFilter()
-		filter.Since = c.since.UTC()
-		logger.Debugf("Filtering retrieval to metadata records updated since %v", logging.ColorFilter.QuoteText(flags.FormatSince(c.since)))
+		filter.Since = c.since
+		logger.Debugf("Filtering retrieval to metadata records updated since %v", logging.ColorFilter.QuoteText(logging.FormatTime(c.since)))
 	}
 
 	return filter

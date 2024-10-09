@@ -57,7 +57,7 @@ type nlxPlanPayload struct {
 	Endpoint          string                `json:"url"`
 	Type              string                `json:"type"`
 	Metadata          metadata.NlxMetadata  `json:"metadata"`
-	Since             string                `json:"since"`
+	Since             *time.Time            `json:"since"`
 	AppSpecific       bool                  `json:"appSpecific"`
 	Warnings          []string              `json:"warnings"`
 	AllPermissionSets []PermissionSetResult `json:"allPermissionSets"`
@@ -81,18 +81,18 @@ type NlxPlanFilter struct {
 	// pages flag does not work as expected so commenting out
 	// TODO: Remove completely or fix issues depending on https://github.com/skuid/skuid-cli/issues/147 & https://github.com/skuid/skuid-cli/issues/148
 	//PageNames     []string  `json:"pages,omitempty"`
-	IgnoreSkuidDb bool      `json:"ignoreSkuidDb,omitempty"`
-	Since         time.Time `json:"since,omitempty"`
+	IgnoreSkuidDb bool       `json:"ignoreSkuidDb,omitempty"`
+	Since         *time.Time `json:"since,omitempty"`
 }
 
 // NewRetrievalRequestBody marshals the NlxMetadata into json and returns
 // the body. This is the payload expected for the Retrieval Request
-func NewRetrievalRequestBody(md metadata.NlxMetadata, since string, appSpecific bool) ([]byte, error) {
+func NewRetrievalRequestBody(md metadata.NlxMetadata, since *time.Time, appSpecific bool) ([]byte, error) {
 	logger := logging.WithName("pkg.NewRetrievalRequestBody")
 
 	content := struct {
 		Metadata    metadata.NlxMetadata `json:"metadata"`
-		Since       string               `json:"since"`
+		Since       *time.Time           `json:"since,omitempty"`
 		AppSpecific bool                 `json:"appSpecific"`
 	}{
 		Metadata:    md,

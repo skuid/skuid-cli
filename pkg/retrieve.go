@@ -127,8 +127,18 @@ func GetRetrievePlan(auth *Authorization, filter *NlxPlanFilter) (plans *NlxPlan
 		return nil, fmt.Errorf("unexpected retrieval plan(s) received, expected a %v plan but did not receive one, %v", logging.QuoteText(PlanNamePliny), logging.FileAnIssueText)
 	}
 
+	// Skuid Review Required - The code in v0.6.7 would "sync" the filter.Since w/ the Since value of the
+	// plan(s) retrieved (although it would not sync it correctly in all cases), however the server
+	// should return the value we expect and if it doesn't, then it's an unexpected response.  See comments
+	// in validateSince function for more details.
+	//
+	// TODO: eliminate the validateSince completely as it shouldn't even be necessary or adjust based on
+	// answer to above
+	//
 	// pliny and warden are supposed to give the since value back for the retrieve, but just in case...
-	syncSince(filter, plans)
+	if err := validateSince(filter, plans); err != nil {
+		return nil, err
+	}
 
 	logger = logger.WithSuccess()
 	return plans, nil
@@ -281,33 +291,50 @@ func executeRetrievePlan(auth *Authorization, plan *NlxPlan, logger *logging.Log
 	return result, nil
 }
 
-func syncSince(planFilter *NlxPlanFilter, plans *NlxPlans) {
-	// Skuid Review Required - The prior code only "synced" the values here when `--since` was specified, however
+func validateSince(planFilter *NlxPlanFilter, plans *NlxPlans) error {
+	// Skuid Review Required - The code in v0.6.7 only "synced" the values here when `--since` was specified, however
 	// if any other filter flag was specified (e.g., --app), a planFilter would be constructed and it would contain
 	// a since value (the zero value of time.Time) so technically there is a "since" value provided to the server
-	// even though its value didn't come from user provided since flag.  Given that, shouldn't this code sync the
-	// values for since if we have a non-nil filter instead of only when --since was specified by user via flag
-	// (e.g., planFilter.Since.IsZero() != true)?  In short, if any filter flag is specified, a "since" value will
-	// be sent to server in the GetRetrievePlans request that will either contain Zero value of time.Time (if no
-	// since was specified, or non-zero value of time if since was specified).  Since we sent a time, shouldn't we
-	// always sync?  Or possibly we change NlxPlanFilter to be *time.Time to avoid writing something unless there
-	// was a flag?
+	// even though its value didn't come from user provided since flag.  Regardless, if the response from the server
+	// for "since" isn't equal to the value that we sent, that is an error/unexpected condition and we shouldn't just
+	// update the "plans" returned from the server with the value that we expected to receive.  It indicates that the
+	// server just simply didn't return the correct value or possibly, didn't even apply the since filter correctly.
+	// Either way, we should error here, not adjust the value.  The broader question is how far do we go validating
+	// every single server response?  Why did the "sync since" code even exist in v0.6.7?  The code didn't validate "appSpecific"
+	// or any other field returned from the server, only "sync" so why just "since"?  At some point, the server needs to be
+	// reliable which, unfortunately, as we know from many issues currently present in the repo is not the case.  Given this,
+	// instead of "syncing" the value, if the value returns in the plans does not match the plan filter, an error is now returned.
 	//
-	// TODO: Based on answer to above, adjust condition below and remove Since from RetrieveOptions as it isn't needed
-	// for anything other than to ensure consistent logic with v0.6.7
-	if planFilter == nil || planFilter.Since.IsZero() {
-		return
+	// TODO: Eliminate the validation completely as it shouldn't even be necessary if the server APIs can be "trusted" or
+	// adjust validation based on answers to above.  If validation remains, then other fields should be validated as well
+	// (e.g., appSpecific) since there is nothing different response wise between "since" and "appSpecific" (or any other
+	// field for that matter).
+	validateTime := func(plan *NlxPlan, since *time.Time) error {
+		if plan.Since == nil && since == nil {
+			return nil
+		}
+
+		if plan.Since == nil && since != nil || plan.Since != nil && since == nil || !plan.Since.Equal(*since) {
+			return fmt.Errorf("plan %v since value %v did not match plan filter since value %v, %v", logging.QuoteText(plan.Name), logging.QuoteText(logging.FormatTime(plan.Since)), logging.QuoteText(logging.FormatTime(since)), logging.FileAnIssueText)
+		}
+		return nil
+	}
+	var expectedSince *time.Time = nil
+	if planFilter != nil {
+		expectedSince = planFilter.Since
 	}
 
-	sinceStr := flags.FormatSince(&planFilter.Since)
-	if plans.MetadataService.Since == "" {
-		plans.MetadataService.Since = sinceStr
+	if err := validateTime(plans.MetadataService, expectedSince); err != nil {
+		return err
 	}
+
 	if plans.CloudDataService != nil {
-		if plans.CloudDataService.Since == "" {
-			plans.CloudDataService.Since = sinceStr
+		if err := validateTime(plans.CloudDataService, expectedSince); err != nil {
+			return err
 		}
 	}
+
+	return nil
 }
 
 func getResultPlanNames(results *NlxRetrievalResults) iter.Seq[PlanName] {

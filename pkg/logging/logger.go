@@ -38,9 +38,9 @@ const (
 	ErrorKey       = "error"
 	CommandNameKey = "command"
 
-	// time.RFC3339Nano applies placeholder 9 to nanoseconds so for consistency of any time
-	// in any portion of a log message, we force 0 placeholder to ensure 9 digits always emitted
-	TimestampFormat = "2006-01-02T15:04:05.000000000Z07:00"
+	// time flags support Nano while logrus defaults to RFC3339 so ensure
+	// all times that are logged correspond to what flags support
+	TimestampFormat = time.RFC3339Nano
 )
 
 var (

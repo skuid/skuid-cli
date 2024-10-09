@@ -59,14 +59,6 @@ func UseDebugMessage() string {
 	return fmt.Sprintf("use %v for more information", logging.QuoteText(fmt.Sprintf("--%v %v", LogLevel.Name, logrus.DebugLevel)))
 }
 
-func FormatSince(since *time.Time) string {
-	if since == nil {
-		return ""
-	} else {
-		return since.Format(time.RFC3339)
-	}
-}
-
 // Value[T] is a wrapper for anyflag.Value[T] to address anyflag's issue
 // of correctly resolving the Type() of T
 type Value[T any] struct {
