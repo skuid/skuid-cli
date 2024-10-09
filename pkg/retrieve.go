@@ -130,7 +130,7 @@ func GetRetrievePlan(auth *Authorization, filter *NlxPlanFilter) (plans *NlxPlan
 	// Skuid Review Required - The code in v0.6.7 would "sync" the filter.Since w/ the Since value of the
 	// plan(s) retrieved (although it would not sync it correctly in all cases), however the server
 	// should return the value we expect and if it doesn't, then it's an unexpected response.  See comments
-	// in validateSince function for more details.
+	// in validateSince function for more details. See https://github.com/skuid/skuid-cli/issues/233
 	//
 	// TODO: eliminate the validateSince completely as it shouldn't even be necessary or adjust based on
 	// answer to above
@@ -304,8 +304,9 @@ func validateSince(planFilter *NlxPlanFilter, plans *NlxPlans) error {
 	// or any other field returned from the server, only "sync" so why just "since"?  At some point, the server needs to be
 	// reliable which, unfortunately, as we know from many issues currently present in the repo is not the case.  Given this,
 	// instead of "syncing" the value, if the value returns in the plans does not match the plan filter, an error is now returned.
+	// See https://github.com/skuid/skuid-cli/issues/233
 	//
-	// TODO: Eliminate the validation completely as it shouldn't even be necessary if the server APIs can be "trusted" or
+	// TODO: Per above, eliminate the validation completely as it shouldn't even be necessary if the server APIs can be "trusted" or
 	// adjust validation based on answers to above.  If validation remains, then other fields should be validated as well
 	// (e.g., appSpecific) since there is nothing different response wise between "since" and "appSpecific" (or any other
 	// field for that matter).

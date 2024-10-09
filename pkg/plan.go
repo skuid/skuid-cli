@@ -51,6 +51,9 @@ type NlxPlans struct {
 // Skuid Review Required - Is the NlxPlan struct accurate based on current APIs?
 // Any residual portions of it remaining that should be removed based on removal of SFX support?
 // Any items missing that should be here given current API functionality?
+// Also, see see https://github.com/skuid/skuid-cli/issues/234
+//
+// TODO: Update nlxPlanPayload per answers to above and https://github.com/skuid/skuid-cli/issues/234
 type nlxPlanPayload struct {
 	Host              string                `json:"host"`
 	Port              string                `json:"port"`
@@ -73,6 +76,9 @@ type NlxPlan struct {
 // Skuid Review Required - Is the NlxPlanFilter struct accurate based on current APIs?
 // Any residual portions of it remaining that should be removed based on removal of SFX support?
 // Any items missing that should be here given current API functionality?
+// Also, see See https://github.com/skuid/skuid-cli/issues/234
+//
+// TODO: Update NlxPlanFilter per answers to above and https://github.com/skuid/skuid-cli/issues/234
 //
 // NlxPlanFilter should be serialized and provided with the
 // request for retrieval
@@ -90,6 +96,9 @@ type NlxPlanFilter struct {
 func NewRetrievalRequestBody(md metadata.NlxMetadata, since *time.Time, appSpecific bool) ([]byte, error) {
 	logger := logging.WithName("pkg.NewRetrievalRequestBody")
 
+	// Skuid Review Required - See See https://github.com/skuid/skuid-cli/issues/234
+	//
+	// TODO: Update below based on answers to See https://github.com/skuid/skuid-cli/issues/234
 	content := struct {
 		Metadata    metadata.NlxMetadata `json:"metadata"`
 		Since       *time.Time           `json:"since,omitempty"`
