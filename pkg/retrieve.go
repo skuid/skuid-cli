@@ -315,7 +315,7 @@ func validateSince(planFilter *NlxPlanFilter, plans *NlxPlans) error {
 			return nil
 		}
 
-		if plan.Since == nil && since != nil || plan.Since != nil && since == nil || !plan.Since.Equal(*since) {
+		if plan.Since == nil || since == nil || !plan.Since.Equal(*since) {
 			return fmt.Errorf("plan %v since value %v did not match plan filter since value %v, %v", logging.QuoteText(plan.Name), logging.QuoteText(logging.FormatTime(plan.Since)), logging.QuoteText(logging.FormatTime(since)), logging.FileAnIssueText)
 		}
 		return nil
