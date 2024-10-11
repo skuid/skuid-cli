@@ -124,12 +124,6 @@ type MetadataEntity struct {
 	PathRelative string          // Path to the entity relative to the metadata directory (e.g., my_page, logo/my_logo)
 }
 
-func MetadataEntityPaths(entities []MetadataEntity) set.Of[string] {
-	return set.Collect(seqs.Map(slices.Values(entities), func(me MetadataEntity) string {
-		return me.Path
-	}))
-}
-
 type MetadataEntityFile struct {
 	Entity                 MetadataEntity // Entity the file is associated to
 	Name                   string         // Name of the file (e.g., my_page.xml)
@@ -412,6 +406,13 @@ func UniqueEntities[S ~[]MetadataEntity](s S) []MetadataEntity {
 	// values and appropriate approach implemented
 	slices.SortFunc(a, sortEntities)
 	return slices.Compact(a)
+}
+
+// returns the metadata entity paths for the given entities
+func MetadataEntityPaths(entities []MetadataEntity) set.Of[string] {
+	return set.Collect(seqs.Map(slices.Values(entities), func(me MetadataEntity) string {
+		return me.Path
+	}))
 }
 
 // parses either a entity name path (e.g., pages/my_page) or an entity file path (e.g., pages/my_page.xml)

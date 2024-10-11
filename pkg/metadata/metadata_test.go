@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/bobg/go-generics/v4/set"
 	"github.com/orsinium-labs/enum"
 	"github.com/skuid/skuid-cli/pkg/metadata"
 	"github.com/stretchr/testify/assert"
@@ -1398,6 +1399,43 @@ func TestUniqueEntities(t *testing.T) {
 			assert.ElementsMatch(t, tc.wantValue, actualValue)
 		})
 	}
+}
+
+func TestMetadataEntityPaths(t *testing.T) {
+	testCases := []struct {
+		testDescription string
+		giveValue       []metadata.MetadataEntity
+		wantValue       set.Of[string]
+	}{
+		{
+			testDescription: "nil entities",
+			giveValue:       nil,
+			wantValue:       set.New[string](),
+		},
+		{
+			testDescription: "empty entities",
+			giveValue:       []metadata.MetadataEntity{},
+			wantValue:       set.New[string](),
+		},
+		{
+			testDescription: "has entities - no duplicates",
+			giveValue:       []metadata.MetadataEntity{createEntity(t, "pages/my_entity"), createEntity(t, "apps/my_entity"), createEntity(t, "datasources/my_entity")},
+			wantValue:       set.New[string]("pages/my_entity", "apps/my_entity", "datasources/my_entity"),
+		},
+		{
+			testDescription: "has entities - with duplicates",
+			giveValue:       []metadata.MetadataEntity{createEntity(t, "datasources/my_entity"), createEntity(t, "pages/my_entity"), createEntity(t, "apps/my_entity"), createEntity(t, "apps/my_entity"), createEntity(t, "pages/my_entity"), createEntity(t, "datasources/my_entity")},
+			wantValue:       set.New[string]("pages/my_entity", "apps/my_entity", "datasources/my_entity"),
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.testDescription, func(t *testing.T) {
+			actualValue := metadata.MetadataEntityPaths(tc.giveValue)
+			assert.Equal(t, tc.wantValue, actualValue)
+		})
+	}
+
 }
 
 type MetadataEntityTestSuite struct {

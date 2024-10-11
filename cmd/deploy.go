@@ -68,7 +68,8 @@ func (c *deployCommander) deploy(cmd *cobra.Command, args []string) (err error) 
 		"app":                  c.app,
 		"ignoreSkuidDb":        c.ignoreSkuidDb,
 		"skipDataSources":      c.skipDataSources,
-		"entites":              logging.CSV(metadata.MetadataEntityPaths(c.entities).All()),
+		"entities":             logging.CSV(metadata.MetadataEntityPaths(c.entities).All()),
+		"entitiesFrom":         fmt.Sprintf("--%v flag", flags.Entities.Name),
 	}
 	logger := logging.WithTracking("cmd.deploy", message, fields).StartTracking()
 	defer func() {
