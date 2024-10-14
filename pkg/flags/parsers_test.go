@@ -2,6 +2,8 @@ package flags_test
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -389,6 +391,81 @@ func TestParseMetadataEntity(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.testDescription, func(t *testing.T) {
 			actualValue, err := flags.ParseMetadataEntity(tc.giveValue)
+			if tc.wantError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+			assert.Equal(t, tc.wantValue, actualValue)
+		})
+	}
+}
+
+func TestParseDirectory(t *testing.T) {
+	wd, err := os.Getwd()
+	require.Nil(t, err)
+
+	testCases := []struct {
+		testDescription string
+		giveValue       string
+		wantValue       string
+		wantError       bool
+	}{
+		{
+			testDescription: "empty",
+			giveValue:       "",
+			wantValue:       wd,
+		},
+		{
+			testDescription: "blank",
+			giveValue:       "      ",
+			wantValue:       filepath.Join(wd, "      "),
+		},
+		{
+			testDescription: "relative path .",
+			giveValue:       ".",
+			wantValue:       wd,
+		},
+		{
+			testDescription: "relative path . with segment",
+			giveValue:       "./foo",
+			wantValue:       filepath.Join(wd, "foo"),
+		},
+		{
+			testDescription: "relative path ..",
+			giveValue:       "..",
+			wantValue:       filepath.Join(wd, ".."),
+		},
+		{
+			testDescription: "relative path .. with segment",
+			giveValue:       "../foo",
+			wantValue:       filepath.Join(wd, "..", "foo"),
+		},
+		{
+			testDescription: "relative path single segment",
+			giveValue:       "foo",
+			wantValue:       filepath.Join(wd, "foo"),
+		},
+		{
+			testDescription: "relative path multi segment",
+			giveValue:       "foo/bar/mydir",
+			wantValue:       filepath.Join(wd, "foo", "bar", "mydir"),
+		},
+		{
+			testDescription: "absolute path single segment",
+			giveValue:       "/foo",
+			wantValue:       filepath.FromSlash("/foo"),
+		},
+		{
+			testDescription: "absolute path multi segment",
+			giveValue:       "/foo/bar/mydir",
+			wantValue:       filepath.FromSlash("/foo/bar/mydir"),
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.testDescription, func(t *testing.T) {
+			actualValue, err := flags.ParseDirectory(tc.giveValue)
 			if tc.wantError {
 				assert.Error(t, err)
 			} else {

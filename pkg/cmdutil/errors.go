@@ -46,7 +46,8 @@ func CheckError(cmd *cobra.Command, err error, recovered any) error {
 }
 
 // Wrap any returned err from a command with CommandError to allow for main.go to obtain the name of the
-// command that was executed for logging purposes.  If no error, log the final success message
+// command that was executed for logging purposes.  If no error, log the final success message when
+// message not empty string.
 func HandleCommandResult(cmd *cobra.Command, logger *logging.Logger, err error, message string) error {
 	if err != nil {
 		return NewCommandError(cmd.Name(), err)

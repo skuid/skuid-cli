@@ -1,6 +1,7 @@
 package metadata_test
 
 import (
+	"errors"
 	"fmt"
 	"path"
 	"path/filepath"
@@ -122,6 +123,74 @@ type ValidateFile struct {
 	FileName         string
 	FileContent      string
 	IsDefinitionFile bool
+}
+
+func TestMetadataPathError(t *testing.T) {
+	testCases := []struct {
+		testDescription string
+		givePath        string
+		givePathType    metadata.MetadataPathType
+		giveError       error
+		wantName        string
+		wantPanic       bool
+		wantError       error
+	}{
+		{
+			testDescription: "panics when path empty and err nil",
+			givePath:        "",
+			givePathType:    metadata.MetadataPathTypeEntity,
+			giveError:       nil,
+			wantName:        "",
+			wantPanic:       true,
+			wantError:       nil,
+		},
+		{
+			testDescription: "panics when path not empty and err nil",
+			givePath:        "pages/foobar",
+			givePathType:    metadata.MetadataPathTypeEntity,
+			giveError:       nil,
+			wantName:        "mycmd",
+			wantPanic:       true,
+			wantError:       nil,
+		},
+		{
+			testDescription: "return error when path empty and err not nil",
+			givePath:        "",
+			givePathType:    metadata.MetadataPathTypeEntity,
+			giveError:       assert.AnError,
+			wantName:        "",
+			wantError:       assert.AnError,
+		},
+		{
+			testDescription: "return error when path not empty and err not nil",
+			givePath:        "pages/foobar",
+			givePathType:    metadata.MetadataPathTypeEntity,
+			giveError:       assert.AnError,
+			wantName:        "mycmd",
+			wantError:       assert.AnError,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.testDescription, func(t *testing.T) {
+			e := metadata.NewMetadataPathError(tc.givePath, tc.givePathType, tc.giveError)
+			require.NotNil(t, e)
+			var asMpError *metadata.MetadataPathError
+			require.ErrorAs(t, e, &asMpError)
+			assert.Equal(t, tc.givePath, asMpError.Path)
+			assert.Equal(t, tc.givePathType, asMpError.PathType)
+			assert.Equal(t, tc.wantError, asMpError.Unwrap())
+			if tc.wantPanic {
+				assert.Panics(t, func() {
+					assert.Equal(t, tc.wantError.Error(), asMpError.Error())
+				})
+			} else {
+				assert.Equal(t, tc.wantError.Error(), asMpError.Error())
+			}
+			var isMpError *metadata.MetadataPathError
+			assert.False(t, errors.Is(e, isMpError))
+		})
+	}
 }
 
 type NlxMetadataTestSuite struct {
