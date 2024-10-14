@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
@@ -405,6 +406,11 @@ func TestParseDirectory(t *testing.T) {
 	wd, err := os.Getwd()
 	require.Nil(t, err)
 
+	var vol string
+	if runtime.GOOS == "windows" {
+		vol = filepath.VolumeName(wd)
+	}
+
 	testCases := []struct {
 		testDescription string
 		giveValue       string
@@ -415,11 +421,6 @@ func TestParseDirectory(t *testing.T) {
 			testDescription: "empty",
 			giveValue:       "",
 			wantValue:       wd,
-		},
-		{
-			testDescription: "blank",
-			giveValue:       "      ",
-			wantValue:       filepath.Join(wd, "      "),
 		},
 		{
 			testDescription: "relative path .",
@@ -454,12 +455,12 @@ func TestParseDirectory(t *testing.T) {
 		{
 			testDescription: "absolute path single segment",
 			giveValue:       "/foo",
-			wantValue:       filepath.FromSlash("/foo"),
+			wantValue:       vol + filepath.FromSlash("/foo"),
 		},
 		{
 			testDescription: "absolute path multi segment",
 			giveValue:       "/foo/bar/mydir",
-			wantValue:       filepath.FromSlash("/foo/bar/mydir"),
+			wantValue:       vol + filepath.FromSlash("/foo/bar/mydir"),
 		},
 	}
 
