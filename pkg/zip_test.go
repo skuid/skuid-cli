@@ -14,6 +14,7 @@ import (
 	"github.com/bobg/go-generics/v4/slices"
 	"github.com/orsinium-labs/enum"
 	"github.com/skuid/skuid-cli/pkg"
+	"github.com/skuid/skuid-cli/pkg/logging"
 	"github.com/skuid/skuid-cli/pkg/metadata"
 	pkgmocks "github.com/skuid/skuid-cli/pkg/mocks"
 	"github.com/skuid/skuid-cli/pkg/util"
@@ -431,7 +432,7 @@ func (suite *ArchiveTestSuite) TestEntityValidationFailure() {
 				giveFS:             fsys,
 				giveFileUtil:       util.NewFileUtil(),
 				giveArchiveFilter:  nil,
-				wantError:          fmt.Errorf("one or more entities found in %#q were invalid", fmt.Sprint(fsys)),
+				wantError:          fmt.Errorf("one or more entities found in %v were invalid", logging.QuoteText(fmt.Sprint(fsys))),
 				wantResultFiles:    nil,
 				wantResultEntities: nil,
 			})

@@ -7,6 +7,7 @@ import (
 	"github.com/skuid/skuid-cli/pkg"
 	"github.com/skuid/skuid-cli/pkg/cmdutil"
 	"github.com/skuid/skuid-cli/pkg/flags"
+	"github.com/skuid/skuid-cli/pkg/logging"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
@@ -138,27 +139,27 @@ func TestEnvVarName(t *testing.T) {
 }
 
 func expectInvalidFlagNameError(name string) error {
-	return fmt.Errorf("flag name %q is invalid", name)
+	return fmt.Errorf("flag name %v is invalid", name)
 }
 
 func expectInvalidUsageError(name string, usage string) error {
-	return fmt.Errorf("flag usage %q is invalid for flag name %q", usage, name)
+	return fmt.Errorf("flag usage %v is invalid for flag name %v", logging.QuoteText(usage), name)
 }
 
 func expectInvalidParseError[T flags.FlagType | ~[]F, F flags.FlagType](name string) error {
-	return fmt.Errorf("flag type %T does not support Parse for flag name %q", new(flags.Flag[T, F]), name)
+	return fmt.Errorf("flag type %T does not support Parse for flag name %v", new(flags.Flag[T, F]), name)
 }
 
 func expectMissingParseError[T flags.FlagType | ~[]F, F flags.FlagType](name string) error {
-	return fmt.Errorf("flag type %T requires Parse to be defined for flag name %q", new(flags.Flag[T, F]), name)
+	return fmt.Errorf("flag type %T requires Parse to be defined for flag name %v", new(flags.Flag[T, F]), name)
 }
 
 func expectInvalidRedactError[T flags.FlagType | ~[]F, F flags.FlagType](name string) error {
-	return fmt.Errorf("flag type %T does not support Redact for flag name %q", new(flags.Flag[T, F]), name)
+	return fmt.Errorf("flag type %T does not support Redact for flag name %v", new(flags.Flag[T, F]), name)
 }
 
 func expectMissingRedactError[T flags.FlagType | ~[]F, F flags.FlagType](name string) error {
-	return fmt.Errorf("flag type %T requires Redact to be defined for flag name %q", new(flags.Flag[T, F]), name)
+	return fmt.Errorf("flag type %T requires Redact to be defined for flag name %v", new(flags.Flag[T, F]), name)
 }
 
 func emptyParse[F flags.FlagType](val string) (F, error) {

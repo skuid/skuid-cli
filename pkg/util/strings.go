@@ -8,6 +8,7 @@ import (
 	"github.com/bobg/go-generics/v4/slices"
 	"github.com/goschtalt/approx"
 	"github.com/itlightning/dateparse"
+	"github.com/skuid/skuid-cli/pkg/logging"
 )
 
 type timeFormat struct {
@@ -45,7 +46,7 @@ func StringSliceContainsAnyKey(strings []string, keys []string) bool {
 func GetTime(value string, reference time.Time, noFuture bool) (time.Time, error) {
 	value = strings.TrimSpace(value)
 	if value == "" || value == "0" {
-		return time.Time{}, fmt.Errorf("value is not a valid time or duration: %q", value)
+		return time.Time{}, fmt.Errorf("value is not a valid time or duration: %v", logging.QuoteText(value))
 	}
 
 	// try duration first for two reasons:
@@ -62,7 +63,7 @@ func GetTime(value string, reference time.Time, noFuture bool) (time.Time, error
 	}
 
 	if noFuture && t.Compare(reference) > 0 {
-		return time.Time{}, fmt.Errorf("value %q cannot represent a time in the future: %v", value, t.Format(time.RFC3339))
+		return time.Time{}, fmt.Errorf("value %v cannot represent a time in the future: %v", logging.QuoteText(value), logging.FormatTime(&t))
 	}
 
 	return t, nil
@@ -121,7 +122,7 @@ func parseTime(value string, reference time.Time) (time.Time, error) {
 		}
 	}
 
-	return time.Time{}, fmt.Errorf("failed to parse value as time or duration: %q", value)
+	return time.Time{}, fmt.Errorf("failed to parse value as time or duration: %v", logging.QuoteText(value))
 }
 
 func forceCurrentDate(t time.Time, reference time.Time) time.Time {

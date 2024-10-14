@@ -11,6 +11,7 @@ import (
 
 	"github.com/bobg/go-generics/v4/set"
 	"github.com/orsinium-labs/enum"
+	"github.com/skuid/skuid-cli/pkg/logging"
 	"github.com/skuid/skuid-cli/pkg/metadata"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -294,7 +295,7 @@ func (suite *NlxMetadataTestSuite) TestGetFieldValue() {
 		{
 			description:    "bad",
 			given:          metadata.MetadataType{"bad"},
-			wantPanicError: fmt.Errorf("unable to locate metadata field for metadata type %q", "bad"),
+			wantPanicError: fmt.Errorf("unable to locate metadata field for metadata type %v", "bad"),
 		},
 	} {
 		suite.Run(tc.description, func() {
@@ -363,7 +364,7 @@ func (suite *NlxMetadataTestSuite) TestFilterItem() {
 					Type: metadata.MetadataType{"bad"},
 				},
 			},
-			wantPanicError: fmt.Errorf("unable to locate metadata field for metadata type %q", "bad"),
+			wantPanicError: fmt.Errorf("unable to locate metadata field for metadata type %v", "bad"),
 		},
 	}
 
@@ -1273,7 +1274,7 @@ func TestNewMetadataEntityFile(t *testing.T) {
 			if tc.wantError != nil {
 				assert.EqualError(t, err, tc.wantError.Error(), "expected not nil err, got nil for path %v", tc.givePath)
 			} else {
-				assert.NoError(t, err, "expected nil err, got not nil for path %q", tc.givePath)
+				assert.NoError(t, err, "expected nil err, got not nil for path %v", logging.QuoteText(tc.givePath))
 			}
 			assert.Equal(t, tc.wantEntityFile, entityFile)
 		})
@@ -1743,15 +1744,15 @@ func TestMetadataEntityTestSuite(t *testing.T) {
 }
 
 func createPathError(mdt metadata.MetadataType, path string) error {
-	return fmt.Errorf("metadata type %q does not support the entity path: %q", mdt.Name(), filepath.FromSlash(path))
+	return fmt.Errorf("metadata type %v does not support the entity path: %v", mdt.Name(), logging.QuoteText(filepath.FromSlash(path)))
 }
 
 func createContainMetadataNameError(path string) error {
-	return fmt.Errorf("directory name matching a valid metadata type name must exist in entity path: %q", filepath.FromSlash(path))
+	return fmt.Errorf("directory name matching a valid metadata type name must exist in entity path: %v", logging.QuoteText(filepath.FromSlash(path)))
 }
 
 func createInvalidMetadataNameError(typename string, path string) error {
-	return fmt.Errorf("invalid metadata type name %q for entity path: %q", typename, filepath.FromSlash(path))
+	return fmt.Errorf("invalid metadata type name %v for entity path: %v", logging.QuoteText(typename), logging.QuoteText(filepath.FromSlash(path)))
 }
 
 func createEntity(t *testing.T, entityPath string) metadata.MetadataEntity {

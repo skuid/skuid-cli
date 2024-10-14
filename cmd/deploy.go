@@ -118,7 +118,7 @@ func (c *deployCommander) getPlanFilter(logger *logging.Logger) *pkg.NlxPlanFilt
 	/*
 		if len(c.pages) > 0 {
 			logEntry.Data["pages"] = c.pages
-			logEntry.Infof("Filtering retrieval to pages: %q", c.pages)
+			logEntry.Infof("Filtering retrieval to pages: %v", c.pages)
 			filter.PageNames = c.pages
 		}
 	*/

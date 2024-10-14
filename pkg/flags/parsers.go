@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
+	"github.com/skuid/skuid-cli/pkg/logging"
 	"github.com/skuid/skuid-cli/pkg/metadata"
 	"github.com/skuid/skuid-cli/pkg/util"
 )
@@ -96,7 +97,7 @@ func ParseString(options ParseStringOptions) func(val string) (string, error) {
 func ParseLogLevel(val string) (logrus.Level, error) {
 	// simple wrapper to customize error message, otherwise it will contain the word logrus
 	if l, err := logrus.ParseLevel(strings.TrimSpace(val)); err != nil {
-		return l, fmt.Errorf("not a valid log level: %q", val)
+		return l, fmt.Errorf("not a valid log level: %v", logging.QuoteText(val))
 	} else {
 		return l, nil
 	}
@@ -112,7 +113,7 @@ func ParseMetadataEntity(val string) (metadata.MetadataEntity, error) {
 
 func ParseDirectory(val string) (string, error) {
 	if targetDirectory, err := filepath.Abs(val); err != nil {
-		return "", fmt.Errorf("unable to convert %q to absolute path: %w", val, err)
+		return "", fmt.Errorf("unable to convert %v to absolute path: %w", logging.QuoteText(val), err)
 	} else {
 		return targetDirectory, nil
 	}

@@ -208,7 +208,7 @@ func (suite *ApplyEnvVarsTestSuite) TestFailsToUpdate() {
 
 	err := testutil.ExecuteCommand(cmd, []string{}...)
 
-	assert.ErrorContains(t, err, fmt.Sprintf("unable to use value from environment variable %v for flag %q", "SKUID_FOO", f.Name))
+	assert.ErrorContains(t, err, fmt.Sprintf("unable to use value from environment variable %v for flag --%v", "SKUID_FOO", f.Name))
 	assert.Equal(t, len(appliedEnvVars), 0)
 }
 

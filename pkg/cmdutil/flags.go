@@ -106,17 +106,17 @@ func setAnnotations[T flags.FlagType | ~[]F, F flags.FlagType](fs *pflag.FlagSet
 
 func checkValidFlag[T flags.FlagType | ~[]F, F flags.FlagType](f *flags.Flag[T, F], allowParse bool, allowRedact bool) {
 	// should never happen in production
-	errutil.MustConditionf(flagNameValidator.MatchString(f.Name), "flag name %q is invalid", f.Name)
-	errutil.MustConditionf(len(f.Usage) >= 10, "flag usage %q is invalid for flag name %q", f.Usage, f.Name)
+	errutil.MustConditionf(flagNameValidator.MatchString(f.Name), "flag name %v is invalid", f.Name)
+	errutil.MustConditionf(len(f.Usage) >= 10, "flag usage %v is invalid for flag name %v", logging.QuoteText(f.Usage), f.Name)
 	if allowParse {
-		errutil.MustConditionf(f.Parse != nil, "flag type %T requires Parse to be defined for flag name %q", f, f.Name)
+		errutil.MustConditionf(f.Parse != nil, "flag type %T requires Parse to be defined for flag name %v", f, f.Name)
 	} else {
-		errutil.MustConditionf(f.Parse == nil, "flag type %T does not support Parse for flag name %q", f, f.Name)
+		errutil.MustConditionf(f.Parse == nil, "flag type %T does not support Parse for flag name %v", f, f.Name)
 	}
 	if allowRedact {
-		errutil.MustConditionf(f.Redact != nil, "flag type %T requires Redact to be defined for flag name %q", f, f.Name)
+		errutil.MustConditionf(f.Redact != nil, "flag type %T requires Redact to be defined for flag name %v", f, f.Name)
 	} else {
-		errutil.MustConditionf(f.Redact == nil, "flag type %T does not support Redact for flag name %q", f, f.Name)
+		errutil.MustConditionf(f.Redact == nil, "flag type %T does not support Redact for flag name %v", f, f.Name)
 	}
 	// due to limitations of Go generics, it is possible to define a flags.Flag that has mismatched types
 	// for T & F when T is not a slice.  The below will validate that T & F point to the same type when T
@@ -129,7 +129,7 @@ func checkValidFlag[T flags.FlagType | ~[]F, F flags.FlagType](f *flags.Flag[T, 
 	tType := reflect.TypeOf(*new(T))
 	if tType.Kind() != reflect.Slice {
 		fType := reflect.TypeOf(*new(F))
-		errutil.MustConditionf(tType == fType, "type parameters must be the same type for flag name %q", f.Name)
+		errutil.MustConditionf(tType == fType, "type parameters must be the same type for flag name %v", f.Name)
 	}
 }
 

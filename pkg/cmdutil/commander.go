@@ -52,7 +52,7 @@ func applyEnvVar(cmd *cobra.Command, pf *pflag.Flag) (*AppliedEnvVar, error) {
 		// MUST use flagSet.Set to ensure that flag.Changed is updated
 		// calling flag.Value.Set will only set the value
 		if errSet := cmd.Flags().Set(pf.Name, envVal); errSet != nil {
-			return nil, fmt.Errorf("unable to use value from environment variable %v for flag %q: %v", envVarName, pf.Name, errSet)
+			return nil, fmt.Errorf("unable to use value from environment variable %v for flag --%v: %v", envVarName, pf.Name, errSet)
 		}
 
 		// cmd.Flags().Lookup(pf.Name).Value could be used to log the value of the flag at this point

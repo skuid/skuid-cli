@@ -103,7 +103,7 @@ func (c *retrieveCommander) getPlanFilter(logger *logging.Logger) *pkg.NlxPlanFi
 	/*
 		if len(c.pages) > 0 {
 			initFilter()
-			logger.Infof("Filtering retrieval to pages: %q", c.pages)
+			logger.Infof("Filtering retrieval to pages: %v", c.pages)
 			filter.PageNames = c.pages
 		}
 	*/

@@ -66,7 +66,7 @@ func TestStringSliceContainsAnyKey(t *testing.T) {
 func TestGetTime(t *testing.T) {
 	locName := "America/Los_Angeles"
 	loc, err := time.LoadLocation(locName)
-	require.NoError(t, err, "unable to load timezone location information for %q", locName)
+	require.NoError(t, err, "unable to load timezone location information for %v", locName)
 	reference := time.Date(2006, 1, 2, 15, 4, 5, 0, loc)
 
 	// inSameClock returns a copy of t in the provided location. The copy

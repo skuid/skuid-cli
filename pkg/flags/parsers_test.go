@@ -10,6 +10,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/skuid/skuid-cli/pkg/flags"
+	"github.com/skuid/skuid-cli/pkg/logging"
 	"github.com/skuid/skuid-cli/pkg/metadata"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -251,7 +252,7 @@ func TestParseString(t *testing.T) {
 
 func TestParseLogLevel(t *testing.T) {
 	expectError := func(val string) error {
-		return fmt.Errorf("not a valid log level: %q", val)
+		return fmt.Errorf("not a valid log level: %v", logging.QuoteText(val))
 	}
 
 	testCases := []struct {

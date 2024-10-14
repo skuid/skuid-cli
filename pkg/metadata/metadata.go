@@ -52,7 +52,7 @@ const (
 	MetadataPathTypeEntityFile
 
 	EntityNameSite                     string = "site"
-	metadataTypeEntityPathNotSupported string = "metadata type %q does not support the entity path: %q"
+	metadataTypeEntityPathNotSupported string = "metadata type %v does not support the entity path: %v"
 	AnyValue                           string = "*"
 )
 
@@ -281,7 +281,7 @@ func (from NlxMetadata) GetFieldValue(target MetadataType) []string {
 	value := reflect.ValueOf(from)
 	field := value.FieldByName(name)
 	// should never occur in production
-	errutil.MustConditionf(field.IsValid(), "unable to locate metadata field for metadata type %q", name)
+	errutil.MustConditionf(field.IsValid(), "unable to locate metadata field for metadata type %v", name)
 	return field.Interface().([]string)
 }
 
@@ -317,7 +317,7 @@ func NewMetadataEntity(entityPath string) (*MetadataEntity, error) {
 	}
 	valid := validateEntityName(details)
 	if !valid {
-		return nil, NewMetadataPathError(entityPath, MetadataPathTypeEntity, fmt.Errorf(metadataTypeEntityPathNotSupported, details.Type.Name(), entityPath))
+		return nil, NewMetadataPathError(entityPath, MetadataPathTypeEntity, fmt.Errorf(metadataTypeEntityPathNotSupported, details.Type.Name(), logging.QuoteText(entityPath)))
 	}
 	entity := MetadataEntity{
 		Type:         details.Type,
@@ -338,13 +338,13 @@ func NewMetadataEntityFile(entityFilePath string) (*MetadataEntityFile, error) {
 	}
 	entityName, entityRelativePath, isEntityDefinitionFile, valid := entityNameFromFilePath(details)
 	if !valid {
-		return nil, NewMetadataPathError(entityFilePath, MetadataPathTypeEntityFile, fmt.Errorf(metadataTypeEntityPathNotSupported, details.Type.Name(), entityFilePath))
+		return nil, NewMetadataPathError(entityFilePath, MetadataPathTypeEntityFile, fmt.Errorf(metadataTypeEntityPathNotSupported, details.Type.Name(), logging.QuoteText(entityFilePath)))
 	}
 
 	// not really necessary but a santity check for future proofing against code adjustments that don't have full test coverage
 	// recognizing that just because it has a .json extension doesn't mean its a json file :(
 	// should never happen in production
-	errutil.MustConditionf(!isEntityDefinitionFile || path.Ext(details.Path) == ".json", "entity definition file does not have .json extension: %q", details.Path)
+	errutil.MustConditionf(!isEntityDefinitionFile || path.Ext(details.Path) == ".json", "entity definition file does not have .json extension: %v", logging.QuoteText(details.Path))
 
 	item := &MetadataEntityFile{
 		Entity: MetadataEntity{
@@ -427,7 +427,7 @@ func parseEntityPath(originalEntityPath string) (*entityPathDetails, error) {
 	relativeEntityPath := path.Join(relativePathSegments...)
 	subType, ok := parseMetadataSubType(*metadataType, relativeEntityPath)
 	if !ok {
-		return nil, fmt.Errorf(metadataTypeEntityPathNotSupported, (*metadataType).Name(), originalEntityPath)
+		return nil, fmt.Errorf(metadataTypeEntityPathNotSupported, (*metadataType).Name(), logging.QuoteText(originalEntityPath))
 	}
 
 	details := &entityPathDetails{
@@ -451,7 +451,7 @@ func parseMetadataType(originalEntityPath string) (string, *MetadataType, []stri
 	normalizedEntityPath := filepath.ToSlash(filepath.Clean(originalEntityPath))
 	directory := path.Dir(normalizedEntityPath)
 	if path.IsAbs(directory) || directory == "" || directory == "." {
-		return "", nil, nil, fmt.Errorf("directory name matching a valid metadata type name must exist in entity path: %q", originalEntityPath)
+		return "", nil, nil, fmt.Errorf("directory name matching a valid metadata type name must exist in entity path: %v", logging.QuoteText(originalEntityPath))
 	}
 
 	// Find the top/root level folder
@@ -459,7 +459,7 @@ func parseMetadataType(originalEntityPath string) (string, *MetadataType, []stri
 	metadataName, subFolders := dirSplit[0], dirSplit[1:]
 	metadataType := enum.Parse(MetadataTypes, MetadataTypeValue(metadataName))
 	if metadataType == nil {
-		return "", nil, nil, fmt.Errorf("invalid metadata type name %q for entity path: %q", metadataName, originalEntityPath)
+		return "", nil, nil, fmt.Errorf("invalid metadata type name %v for entity path: %v", logging.QuoteText(metadataName), logging.QuoteText(originalEntityPath))
 	}
 
 	return normalizedEntityPath, metadataType, subFolders, nil
