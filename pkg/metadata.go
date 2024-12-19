@@ -27,6 +27,8 @@ type NlxMetadata struct {
 	SessionVariables   []string `json:"sessionvariables"`
 	Site               []string `json:"site"`
 	Themes             []string `json:"themes"`
+	Tables             []string `json:"tables"`
+	Workflows          []string `json:"workflows"`
 }
 
 func GetFieldValueByNameError(target string) error {
@@ -95,6 +97,24 @@ func (from NlxMetadata) FilterItem(item string) (keep bool) {
 	}) {
 		keep = true
 		return
+	}
+
+	if metadataType == "tables" {
+		filePathParts := strings.Split(filePath, ".")
+		if len(filePathParts) == 2 && util.StringSliceContainsKey(validMetadataNames, filePathParts[0]) {
+			logging.Get().Tracef("Keeping tables metadata file: %v", filePath)
+			keep = true
+			return
+		}
+	}
+
+	if metadataType == "workflows" {
+		filePathParts := strings.Split(filePath, ".")
+		if len(filePathParts) == 2 && util.StringSliceContainsKey(validMetadataNames, filePathParts[0]) {
+			logging.Get().Tracef("Keeping tables metadata file: %v", filePath)
+			keep = true
+			return
+		}
 	}
 
 	// Check for children of a component pack
