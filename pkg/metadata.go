@@ -29,6 +29,7 @@ type NlxMetadata struct {
 	Themes             []string `json:"themes"`
 	Tables             []string `json:"tables"`
 	Workflows          []string `json:"workflows"`
+	Documents          []string `json:"documents"`
 }
 
 func GetFieldValueByNameError(target string) error {
@@ -99,19 +100,11 @@ func (from NlxMetadata) FilterItem(item string) (keep bool) {
 		return
 	}
 
-	if metadataType == "tables" {
+	validMetadataTypes := []string{"tables", "workflows", "documents"}
+	if util.StringSliceContainsKey(validMetadataTypes, metadataType) {
 		filePathParts := strings.Split(filePath, ".")
 		if len(filePathParts) == 2 && util.StringSliceContainsKey(validMetadataNames, filePathParts[0]) {
-			logging.Get().Tracef("Keeping tables metadata file: %v", filePath)
-			keep = true
-			return
-		}
-	}
-
-	if metadataType == "workflows" {
-		filePathParts := strings.Split(filePath, ".")
-		if len(filePathParts) == 2 && util.StringSliceContainsKey(validMetadataNames, filePathParts[0]) {
-			logging.Get().Tracef("Keeping tables metadata file: %v", filePath)
+			logging.Get().Tracef("Keeping %v metadata file: %v", metadataType, filePath)
 			keep = true
 			return
 		}
