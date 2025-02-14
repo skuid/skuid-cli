@@ -91,10 +91,10 @@ func TestWrite(t *testing.T) {
 			wantError:       nil,
 		},
 		{
-			testDescription: "retrieve nonvalid skuid metadata files",
+			testDescription: "retrieve files outside of a base directory",
 			giveTargetDir:   "",
-			giveFiles:       []RetrieveFile{{"readme.txt", "This archive contains some text files"}, {"gopher.txt", "Gopher names:\nGeorge\nGeoffrey\nGonzo"}, {"todo.txt", "Get animal handling licence.\nWrite more examples"}},
-			wantFiles:       []RetrieveFile{},
+			giveFiles:       []RetrieveFile{{"manifest.txt", "This archive contains some text files"}},
+			wantFiles:       []RetrieveFile{{"manifest.txt", "This archive contains some text files"}},
 			wantDirectories: []string{},
 			wantError:       nil,
 		},
