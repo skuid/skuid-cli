@@ -67,10 +67,6 @@ func UnzipArchive(sourceFileLocation, targetLocation string, fileCreator FileCre
 					logging.Get().Warnf("Unable to create intermediary directory: %v", err)
 					return
 				}
-			} else {
-				// If we don't have an intermediate path, skip out.
-				// Currently Skuid CLI does not create any files in the base directory
-				return nil
 			}
 		}
 
