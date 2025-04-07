@@ -43,4 +43,11 @@ var (
 		Usage:       "Force deployment by ignoring skuid db errors",
 		EnvVarNames: []string{constants.ENV_SKUID_IGNORE_SKUIDDB},
 	}
+
+	IgnoreCompatibilityCheck = &Flag[bool]{
+		Name:        "ignore-compatibility-check",
+		Shorthand:   "c",
+		Usage:       "Force deployment by ignoring package compatibility check",
+		EnvVarNames: []string{constants.ENV_SKUID_IGNORE_SKUIDDB},
+	}
 )
