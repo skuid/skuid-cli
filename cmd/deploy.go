@@ -26,6 +26,7 @@ func init() {
 	flags.AddFlags(deployCmd, flags.NLXLoginFlags...)
 	flags.AddFlags(deployCmd, flags.Directory, flags.AppName)
 	flags.AddFlags(deployCmd, flags.IgnoreSkuidDb)
+	flags.AddFlags(deployCmd, flags.IgnoreCompatibilityCheck)
 	flags.AddFlags(deployCmd, flags.Pages)
 	AppCmd = append(AppCmd, deployCmd)
 }
@@ -100,6 +101,16 @@ func Deploy(cmd *cobra.Command, _ []string) (err error) {
 		initFilter()
 		fields["ignoreSkuidDb"] = ignoreSkuidDb
 		filter.IgnoreSkuidDb = ignoreSkuidDb
+	}
+
+	// ignore compatibility check
+	var ignoreCompatibilityCheck bool
+	if ignoreCompatibilityCheck, err = cmd.Flags().GetBool(flags.IgnoreCompatibilityCheck.Name); err != nil {
+		return
+	} else {
+		initFilter()
+		fields["ignoreCompatibilityCheck"] = ignoreCompatibilityCheck
+		filter.IgnoreCompatibilityCheck = ignoreCompatibilityCheck
 	}
 
 	// get directory argument

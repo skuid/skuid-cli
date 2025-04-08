@@ -37,10 +37,11 @@ func (t JSONTime) MarshalJSON() ([]byte, error) {
 // NlxPlanFilter should be serialized and provided with the
 // request for retrieval
 type NlxPlanFilter struct {
-	AppName       string    `json:"appName,omitempty"`
-	PageNames     []string  `json:"pages,omitempty"`
-	IgnoreSkuidDb bool      `json:"ignoreSkuidDb,omitempty"`
-	Since         time.Time `json:"since,omitempty"`
+	AppName                  string    `json:"appName,omitempty"`
+	PageNames                []string  `json:"pages,omitempty"`
+	IgnoreSkuidDb            bool      `json:"ignoreSkuidDb,omitempty"`
+	IgnoreCompatibilityCheck bool      `json:"ignoreCompatibilityCheck,omitempty"`
+	Since                    time.Time `json:"since,omitempty"`
 }
 
 // NewRetrievalRequestBody marshals the NlxMetadata into json and returns

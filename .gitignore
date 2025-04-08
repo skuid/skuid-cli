@@ -19,3 +19,4 @@ logs
 work/
 .DS_Store
 .vscode/
+scripts/

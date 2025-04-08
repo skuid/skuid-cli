@@ -24,10 +24,11 @@ const (
 type NlxDynamicPlanMap map[string]NlxPlan
 
 type FilteredRequestBody struct {
-	AppName       string   `json:"appName"`
-	PageNames     []string `json:"pageNames"`
-	PlanBytes     []byte   `json:"plan"`
-	IgnoreSkuidDb bool     `json:"ignoreSkuidDb"`
+	AppName                  string   `json:"appName"`
+	PageNames                []string `json:"pageNames"`
+	PlanBytes                []byte   `json:"plan"`
+	IgnoreSkuidDb            bool     `json:"ignoreSkuidDb"`
+	IgnoreCompatibilityCheck bool     `json:"ignoreCompatibilityCheck"`
 }
 
 type PermissionSetResult struct {
@@ -70,6 +71,7 @@ func GetDeployPlan(auth *Authorization, deploymentPlan []byte, filter *NlxPlanFi
 			filter.PageNames,
 			deploymentPlan,
 			filter.IgnoreSkuidDb,
+			filter.IgnoreCompatibilityCheck,
 		}
 
 		if body, err = json.Marshal(requestBody); err != nil {
