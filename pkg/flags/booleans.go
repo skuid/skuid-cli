@@ -48,6 +48,6 @@ var (
 		Name:        "ignore-compatibility-check",
 		Shorthand:   "c",
 		Usage:       "Force deployment by ignoring package compatibility check",
-		EnvVarNames: []string{constants.ENV_SKUID_IGNORE_SKUIDDB},
+		EnvVarNames: []string{constants.SKUID_IGNORE_COMPATIBILITY_CHECK},
 	}
 )
