@@ -13,10 +13,10 @@ To read documentation for the current stable release, [see the Skuid docs site.]
 To retrieve/deploy using a branch of skuid CLI, run the command in the root of this directory with go run main.go prepended. For example:
 ### Retrieve
 
-To retrieve run ```go run main.go retrieve --host='site.pliny.webserver' -d /directory -u='user' -p='pass' -v```
+To retrieve run ```go run main.go retrieve --host='site.pliny.webserver:3000' -d directory -u='user' -p='pass' -v```
 To get more information about retrieve flags, use ```go run main.go retrieve --help```
 
 ### Deploy
 
-To deploy run ```go run main.go deploy --host='site.pliny.webserver' -d /directory -u='user' -p='pass' -v```
+To deploy run ```go run main.go deploy --host='site.pliny.webserver:3000' -d directory -u='user' -p='pass' -v```
 To get more information about deploy flags, use ```go run main.go deploy --help```

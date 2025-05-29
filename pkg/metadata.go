@@ -13,23 +13,24 @@ import (
 )
 
 type NlxMetadata struct {
-	Apps               []string `json:"apps"`
-	AuthProviders      []string `json:"authproviders"`
-	ComponentPacks     []string `json:"componentpacks"`
-	DataServices       []string `json:"dataservices"`
-	DataSources        []string `json:"datasources"`
-	DesignSystems      []string `json:"designsystems"`
-	Variables          []string `json:"variables"`
-	Files              []string `json:"files"`
-	Pages              []string `json:"pages"`
-	PermissionSets     []string `json:"permissionsets"`
-	SitePermissionSets []string `json:"sitepermissionsets"`
-	SessionVariables   []string `json:"sessionvariables"`
-	Site               []string `json:"site"`
-	Themes             []string `json:"themes"`
-	Tables             []string `json:"tables"`
-	Workflows          []string `json:"workflows"`
-	Documents          []string `json:"documents"`
+	Apps                []string `json:"apps"`
+	AuthProviders       []string `json:"authproviders"`
+	ComponentPacks      []string `json:"componentpacks"`
+	DataServices        []string `json:"dataservices"`
+	DataSources         []string `json:"datasources"`
+	DesignSystems       []string `json:"designsystems"`
+	Variables           []string `json:"variables"`
+	ConnectionVariables []string `json:"connectionvariables"`
+	Files               []string `json:"files"`
+	Pages               []string `json:"pages"`
+	PermissionSets      []string `json:"permissionsets"`
+	SitePermissionSets  []string `json:"sitepermissionsets"`
+	SessionVariables    []string `json:"sessionvariables"`
+	Site                []string `json:"site"`
+	Themes              []string `json:"themes"`
+	Tables              []string `json:"tables"`
+	Workflows           []string `json:"workflows"`
+	Documents           []string `json:"documents"`
 }
 
 func GetFieldValueByNameError(target string) error {
