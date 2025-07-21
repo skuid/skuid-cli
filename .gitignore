@@ -21,3 +21,4 @@ work/
 .vscode/
 scripts/
 directory
+.github/workflows/veracode-upload-and-scan.yml
