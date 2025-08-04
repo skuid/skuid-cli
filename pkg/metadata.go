@@ -121,6 +121,21 @@ func (from NlxMetadata) FilterItem(item string) (keep bool) {
 		}
 	}
 
+	// Special handling for connection variables (with format datasourcename-variablename)
+	if metadataType == "connectionvariables" {
+		filePathWithoutExt := strings.TrimSuffix(filePath, ".json")
+		filePathParts := strings.Split(filePathWithoutExt, "-")
+		if len(filePathParts) >= 2 {
+			variableName := filePathParts[1]
+			for _, validName := range validMetadataNames {
+				if strings.EqualFold(validName, variableName) {
+					keep = true
+					return
+				}
+			}
+		}
+	}
+
 	if util.StringSliceContainsAnyKey(validMetadataNames, []string{
 		// Check for our metadata with .xml stripped
 		strings.TrimSuffix(filePath, ".xml"),
