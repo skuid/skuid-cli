@@ -12,6 +12,10 @@ import (
 	"github.com/skuid/skuid-cli/pkg/util"
 )
 
+// MANIFEST_FILE_NAME is the package metadata file a retrieve writes to the
+// root of the target directory, next to the metadata type directories
+const MANIFEST_FILE_NAME = "manifest.json"
+
 type NlxMetadata struct {
 	Apps                []string `json:"apps"`
 	AuthProviders       []string `json:"authproviders"`
@@ -135,6 +139,18 @@ func (from NlxMetadata) FilterItem(item string) (keep bool) {
 	}
 
 	return
+}
+
+// IsMetadataPath returns true if the path (relative to the metadata directory)
+// is Skuid metadata: a file within one of the metadata type directories, or the
+// package manifest at the root. Anything else, such as a README or the CLI
+// binary sitting next to the metadata, is not.
+func IsMetadataPath(relativePath string) bool {
+	pathParts := strings.Split(util.FromWindowsPath(relativePath), string(filepath.Separator))
+	if len(pathParts) == 1 {
+		return pathParts[0] == MANIFEST_FILE_NAME
+	}
+	return util.StringSliceContainsKey(GetMetadataTypeDirNames(), pathParts[0])
 }
 
 // GetMetadataTypeDirNames returns the directory names for a type
