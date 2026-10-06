@@ -117,13 +117,14 @@ func RequestHelper(
 	defer resp.Body.Close()
 	statusCode := resp.StatusCode
 
+	// this error gets logged (and pasted into support tickets), so never print credentials
 	httpError := func() error {
 		return errors.Critical("%s:\nStatus Code: %v\nBody: %v\nURI: %v\nHeaders: %v",
 			color.Red.Sprint("ERROR"),
 			color.Yellow.Sprint(statusCode),
 			color.Cyan.Sprint(string(responseBody)),
 			color.Red.Sprint(route),
-			color.Cyan.Sprint(headers),
+			color.Cyan.Sprint(RedactHeaders(headers)),
 		)
 	}
 

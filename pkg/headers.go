@@ -2,6 +2,7 @@ package pkg
 
 import (
 	"fmt"
+	"strings"
 )
 
 const (
@@ -11,6 +12,8 @@ const (
 	GZIP_CONTENT_ENCODING    = "gzip"
 
 	HEADER_SKUID_PUBLIC_KEY_ENDPOINT = "x-skuid-public-key-endpoint"
+
+	REDACTED_HEADER_VALUE = "[REDACTED]"
 )
 
 // Headers
@@ -196,6 +199,20 @@ func ContainsHeader(headers RequestHeaders, header string, value string) bool {
 		}
 	}
 	return false
+}
+
+// RedactHeaders returns a copy of headers that is safe to log or include in an error:
+// Authorization and Proxy-Authorization values (header names matched case-insensitively)
+// are replaced with REDACTED_HEADER_VALUE. The given headers are not modified.
+func RedactHeaders(headers RequestHeaders) RequestHeaders {
+	redacted := make(RequestHeaders, len(headers))
+	for header, value := range headers {
+		if strings.EqualFold(header, HeaderAuthorization) || strings.EqualFold(header, HeaderProxyAuthorization) {
+			value = REDACTED_HEADER_VALUE
+		}
+		redacted[header] = value
+	}
+	return redacted
 }
 
 // GeneratePlanHeaders is a lot like GenerateRoute. We check whether it's a warden

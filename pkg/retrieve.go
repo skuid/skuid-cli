@@ -71,7 +71,7 @@ func ExecuteRetrieval(auth *Authorization, plans NlxPlanPayload) (duration time.
 		headers := GeneratePlanHeaders(auth, plan)
 		headers[HeaderContentType] = JSON_CONTENT_TYPE
 
-		for k, header := range headers {
+		for k, header := range RedactHeaders(headers) {
 			logging.Get().Tracef("header: (%v => %v)", color.Yellow.Sprint(k), color.Green.Sprint(header))
 		}
 

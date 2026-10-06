@@ -162,7 +162,7 @@ func ExecuteDeployPlan(auth *Authorization, plans NlxDynamicPlanMap, targetDir s
 		}
 
 		headers := GeneratePlanHeaders(auth, plan)
-		logging.Get().Tracef("Plan Headers: %v\n", headers)
+		logging.Get().Tracef("Plan Headers: %v\n", RedactHeaders(headers))
 
 		url := GenerateRoute(auth, plan)
 		logging.Get().Tracef("Plan Request: %v\n", url)
