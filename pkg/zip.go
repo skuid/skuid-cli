@@ -29,6 +29,14 @@ func Archive(inFilePath string, filter *NlxMetadata) (result []byte, err error) 
 	})
 }
 
+// ArchiveMetadata compresses only the Skuid metadata in a directory, leaving
+// out any other files in it (READMEs, scripts, the CLI binary itself, ...).
+// Pliny only expects the manifest at the root of the archive, and nothing
+// outside the metadata type directories is deployed anyway.
+func ArchiveMetadata(inFilePath string) ([]byte, error) {
+	return ArchiveWithFilterFunc(inFilePath, IsMetadataPath)
+}
+
 // ArchivePartial compresses all files in a file/directory matching a relative prefix to a writer
 func ArchivePartial(inFilePath string, basePrefix string) ([]byte, error) {
 	return ArchiveWithFilterFunc(inFilePath, func(relativePath string) bool {

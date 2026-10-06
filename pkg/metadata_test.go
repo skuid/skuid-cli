@@ -1,6 +1,7 @@
 package pkg_test
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/skuid/skuid-cli/pkg"
@@ -80,6 +81,69 @@ import (
 // 		})
 // 	}
 // }
+
+func TestIsMetadataPath(t *testing.T) {
+	for _, tc := range []struct {
+		description string
+		given       string
+		expected    bool
+	}{
+		{
+			description: "page json",
+			given:       filepath.FromSlash("pages/MyPage.json"),
+			expected:    true,
+		},
+		{
+			description: "page xml",
+			given:       filepath.FromSlash("pages/MyPage.xml"),
+			expected:    true,
+		},
+		{
+			description: "nested component pack file",
+			given:       filepath.FromSlash("componentpacks/MyPack/runtime.js"),
+			expected:    true,
+		},
+		{
+			description: "windows path",
+			given:       "pages\\MyPage.json",
+			expected:    true,
+		},
+		{
+			description: "manifest",
+			given:       "manifest.json",
+			expected:    true,
+		},
+		{
+			description: "manifest outside the root",
+			given:       filepath.FromSlash("docs/manifest.json"),
+			expected:    false,
+		},
+		{
+			description: "readme",
+			given:       "README.md",
+			expected:    false,
+		},
+		{
+			description: "cli binary",
+			given:       "skuid_windows_amd64.exe",
+			expected:    false,
+		},
+		{
+			description: "file named like a metadata type",
+			given:       "pages",
+			expected:    false,
+		},
+		{
+			description: "unknown directory",
+			given:       filepath.FromSlash("node_modules/left-pad/index.js"),
+			expected:    false,
+		},
+	} {
+		t.Run(tc.description, func(t *testing.T) {
+			assert.Equal(t, tc.expected, pkg.IsMetadataPath(tc.given))
+		})
+	}
+}
 
 func TestGetMetadataByString(t *testing.T) {
 

@@ -125,7 +125,7 @@ func Deploy(cmd *cobra.Command, _ []string) (err error) {
 	logging.WithFields(fields).Info("Getting Deployment Payload")
 
 	var deploymentPlan []byte
-	if deploymentPlan, err = pkg.Archive(targetDirectory, nil); err != nil {
+	if deploymentPlan, err = pkg.ArchiveMetadata(targetDirectory); err != nil {
 		return
 	}
 
